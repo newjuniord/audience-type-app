@@ -1,0 +1,38 @@
+﻿{
+  "status": "success",
+  "result": [
+    {
+      "projectId": "apple-pay-1",
+      "projectNumber": "809104874876",
+      "displayName": "apple-pay-1",
+      "name": "projects/apple-pay-1",
+      "resources": {
+        "hostingSite": "apple-pay-1"
+      },
+      "state": "ACTIVE",
+      "etag": "1_92b83927-c442-4dd9-ada9-60d1eeb4db3e"
+    },
+    {
+      "projectId": "citron-2024",
+      "projectNumber": "22034036101",
+      "displayName": "Citron",
+      "name": "projects/citron-2024",
+      "resources": {
+        "hostingSite": "citron-2024"
+      },
+      "state": "ACTIVE",
+      "etag": "1_a16e5e1b-19d2-4ecc-9467-c5bc10494f3e"
+    },
+    {
+      "projectId": "legacy-cf6gw7",
+      "projectNumber": "514833549960",
+      "displayName": "Legacy",
+      "name": "projects/legacy-cf6gw7",
+      "resources": {
+        "hostingSite": "legacy-cf6gw7"
+      },
+      "state": "ACTIVE",
+      "etag": "1_60695fb4-9b49-4e23-8759-a61ab8a0ce45"
+    }
+  ]
+}

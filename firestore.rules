@@ -1,0 +1,105 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if user is accessing their own document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Check if user has admin role (in custom claims or user document)
+    // Note: For this MVP, we check the 'role' field in the user document.
+    // In production, Custom Claims are safer.
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // --- Collection Rules ---
+
+    // Users: Users can read/write their own profile. Admins can access all.
+    match /users/{userId} {
+      allow read, update: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId); // Users create their own profile on signup
+      allow delete: if isAdmin();
+    }
+
+    // Products Collection (Unified): Public read, Admin write.
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Legacy/Specific Collections (Courses, Ebooks, Services): Public read, Admin write.
+    match /courses/{courseId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      
+      // Subcollection: Modules (for Courses)
+      match /modules/{moduleId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
+    match /ebooks/{ebookId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders: Users create and read their own. Admins read all.
+    match /orders/{orderId} {
+      allow create: if isAuthenticated(); // User creates order (simulated payment)
+      allow read: if isAuthenticated() && (resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+
+    // Enrollments: Users create (simulated) and read their own. Admins read/write all.
+    match /enrollments/{enrollmentId} {
+      allow create: if isAuthenticated(); // Simulating purchase flow client-side
+      allow read: if isAuthenticated() && (resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || isAdmin());
+      allow update: if isAuthenticated() && (resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || isAdmin()); // For progress updates
+      allow delete: if isAdmin();
+    }
+
+    // Reviews: Public read. Auth users create. Owners/Admins update/delete.
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || isAdmin());
+    }
+
+    // Bookings: Users create/read own. Admins read/write all.
+    match /bookings/{bookingId} {
+      allow create: if isAuthenticated();
+      allow read: if isAuthenticated() && (resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+
+    // Booking Applications
+    match /bookingApplications/{applicationId} {
+      allow create: if isAuthenticated();
+      allow read: if isAuthenticated() && (resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+
+     // Storage Assets (metadata in Firestore)
+    match /assets/{assetId} {
+      allow read: if true; // Or restrict to admins? Usually public for website images.
+      allow write: if isAdmin();
+    }
+  }
+}

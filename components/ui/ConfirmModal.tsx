@@ -1,0 +1,116 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+interface ConfirmModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm?: () => Promise<void> | void;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    isDanger?: boolean;
+    isLoading?: boolean;
+    type?: 'confirm' | 'alert'; // 'confirm' has 2 buttons, 'alert' has 1 (OK)
+}
+
+export default function ConfirmModal({
+    isOpen,
+    onClose,
+    onConfirm,
+    title,
+    message,
+    confirmText = "Confirm",
+    cancelText = "Cancel",
+    isDanger = false,
+    isLoading = false,
+    type = 'confirm'
+}: ConfirmModalProps) {
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setIsVisible(true);
+            document.body.style.overflow = 'hidden';
+        } else {
+            const timer = setTimeout(() => setIsVisible(false), 300);
+            document.body.style.overflow = 'unset';
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
+
+    if (!isVisible && !isOpen) return null;
+
+    return (
+        <div className={`fixed inset-0 z-[150] flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+            {/* Backdrop */}
+            <div
+                className="absolute inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm"
+                onClick={() => !isLoading && onClose()}
+            />
+
+            {/* Modal Content */}
+            <div className={`bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl shadow-black/10 w-full max-w-md relative overflow-hidden transform transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
+                <div className="p-8 text-center">
+                    {/* Icon */}
+                    <div className={`size-16 rounded-full flex items-center justify-center mx-auto mb-6 ${isDanger
+                            ? 'bg-red-50 text-red-500'
+                            : 'bg-black/5 dark:bg-white/5 text-primary dark:text-white'
+                        }`}>
+                        <span className="material-symbols-outlined text-3xl">
+                            {isDanger ? 'warning' : 'info'}
+                        </span>
+                    </div>
+
+                    <h3 className="text-2xl font-black text-primary dark:text-white mb-2">{title}</h3>
+                    <p className="text-black/50 dark:text-white/50 text-sm font-medium mb-8 leading-relaxed">
+                        {message}
+                    </p>
+
+                    <div className="flex gap-4">
+                        {type === 'confirm' && (
+                            <button
+                                onClick={onClose}
+                                disabled={isLoading}
+                                className="flex-1 h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-primary dark:text-white rounded-xl font-bold text-sm transition-colors"
+                            >
+                                {cancelText}
+                            </button>
+                        )}
+
+                        <button
+                            onClick={async () => {
+                                if (onConfirm) {
+                                    await onConfirm();
+                                } else {
+                                    onClose();
+                                }
+                            }}
+                            disabled={isLoading}
+                            className={`flex-1 h-12 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2 ${type === 'alert'
+                                    ? 'bg-black dark:bg-white text-white dark:text-primary hover:opacity-90'
+                                    : isDanger
+                                        ? 'bg-red-500 hover:bg-red-600 text-white'
+                                        : 'bg-primary hover:bg-primary/90 text-white'
+                                }`}
+                        >
+                            {isLoading ? (
+                                <span className="animate-spin material-symbols-outlined text-lg">progress_activity</span>
+                            ) : (
+                                <>
+                                    {type === 'confirm' && (
+                                        <span className="material-symbols-outlined text-lg">
+                                            {isDanger ? 'delete' : 'check'}
+                                        </span>
+                                    )}
+                                    {type === 'alert' ? 'OK' : confirmText}
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

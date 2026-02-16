@@ -1,0 +1,2 @@
+﻿components/CoursesDemo.tsx(4,22): error TS2305: Module '"@/lib/courses"' has no exported member 'getCourseModules'.
+components/ReviewsDemo.tsx(35,15): error TS2741: Property 'userEmail' is missing in type '{ isVisible: true; comment: string; createdAt: Timestamp; productId: DocumentReference<DocumentData, DocumentData>; productTitle: string; rating: number; userId: DocumentReference<...>; userName: string; }' but required in type 'Omit<Review, "id">'.

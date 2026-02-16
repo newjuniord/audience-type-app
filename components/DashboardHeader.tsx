@@ -1,0 +1,125 @@
+"use client";
+
+import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
+import { useState, useEffect, useRef } from "react";
+
+export default function DashboardHeader() {
+    const { user, loading } = useAuth();
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    if (loading) return null;
+
+    return (
+        <header className="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-solid border-primary/10 px-6 md:px-10 lg:px-40 py-4 flex items-center justify-between whitespace-nowrap">
+            <div className="flex items-center gap-4 text-primary dark:text-white">
+                <Link href="/" className="flex items-center gap-4">
+                    <h2 className="text-xl font-bold leading-tight tracking-tight">Audience Type</h2>
+                </Link>
+            </div>
+            <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
+                {user && (
+                    <nav className="hidden md:flex items-center gap-9">
+                        <Link href="/products" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                            Produits
+                        </Link>
+                        <Link href="/dashboard" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                            Mon contenu
+                        </Link>
+                        <Link href="/dashboard/transactions" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                            Transactions
+                        </Link>
+                        <Link href="/dashboard/profile" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                            Profil
+                        </Link>
+                    </nav>
+                )}
+
+                <div className="flex items-center gap-4">
+                    {user ? (
+                        <div className="relative" ref={dropdownRef}>
+                            <button
+                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                className="flex items-center focus:outline-none"
+                            >
+                                <div
+                                    className="h-10 w-10 rounded-full bg-cover bg-center border border-primary/10 hover:opacity-80 transition-opacity cursor-pointer"
+                                    style={{ backgroundImage: `url("${user.photoURL || 'https://lh3.googleusercontent.com/a/default-user'}")` }}
+                                >
+                                </div>
+                            </button>
+
+                            {/* Profile Dropdown */}
+                            <div
+                                className={`absolute right-0 mt-4 w-64 bg-white dark:bg-background-dark border border-black/5 dark:border-white/5 rounded-3xl shadow-2xl transition-all duration-300 transform origin-top-right ${isDropdownOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
+                                    }`}
+                            >
+                                <div className="p-4 flex flex-col gap-1">
+                                    <div className="px-3 py-2 mb-2 border-b border-black/5 dark:border-white/5">
+                                        <p className="text-xs font-bold text-primary/50 dark:text-white/50 uppercase tracking-widest mb-1">Connecté en tant que</p>
+                                        <p className="text-sm font-black truncate">{user.displayName || user.email}</p>
+                                    </div>
+                                    <Link
+                                        href="/products"
+                                        onClick={() => setIsDropdownOpen(false)}
+                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">storefront</span>
+                                        Produits
+                                    </Link>
+                                    <Link
+                                        href="/dashboard"
+                                        onClick={() => setIsDropdownOpen(false)}
+                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">grid_view</span>
+                                        Mon contenu
+                                    </Link>
+                                    <Link
+                                        href="/dashboard/transactions"
+                                        onClick={() => setIsDropdownOpen(false)}
+                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">receipt_long</span>
+                                        Transactions
+                                    </Link>
+                                    <Link
+                                        href="/dashboard/profile"
+                                        onClick={() => setIsDropdownOpen(false)}
+                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold border-b border-black/5 dark:border-white/5"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">person</span>
+                                        Profil
+                                    </Link>
+
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <Link
+                            href="/login"
+                            className="bg-primary dark:bg-white text-white dark:text-primary px-8 h-10 rounded-full text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg flex items-center justify-center"
+                        >
+                            Se connecter
+                        </Link>
+                    )}
+                </div>
+            </div>
+        </header>
+    );
+}
+
