@@ -1,0 +1,22 @@
+env:
+  - variable: NEXT_PUBLIC_BASE_URL
+    value: https://audience-type-backend--audience-type.us-east4.hosted.app
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: FIREBASE_PROJECT_ID
+    value: audience-type
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: FIREBASE_CLIENT_EMAIL
+    value: firebase-adminsdk-fbsvc@audience-type.iam.gserviceaccount.com
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: DODO_PAYMENTS_API_KEY
+    secret: DODO_PAYMENTS_API_KEY
+  - variable: FIREBASE_PRIVATE_KEY
+    secret: FIREBASE_PRIVATE_KEY
+  - variable: CRON_SECRET
+    secret: CRON_SECRET
