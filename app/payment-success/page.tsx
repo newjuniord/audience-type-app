@@ -20,9 +20,13 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
     const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'failed' | 'pending'>('loading');
     const [orderData, setOrderData] = useState<any>(null);
 
+    // Ref pour éviter le double appel en React Strict Mode (Dev)
+    const isVerifying = React.useRef(false);
+
     // Effet pour vérifier le paiement dès le chargement si on a un payment_id
     useEffect(() => {
-        if (paymentId) {
+        if (paymentId && !isVerifying.current) {
+            isVerifying.current = true;
             const verifyPayment = async () => {
                 try {
                     const res = await fetch('/api/dodo/verify-payment', {
@@ -171,7 +175,7 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
 
                     {/* Footer Details */}
                     <div className="mt-10">
-                        <a href="mailto:support@example.com" className="text-primary/40 dark:text-white/40 text-sm font-medium hover:text-primary dark:hover:text-white underline underline-offset-4 decoration-primary/20 transition-colors">
+                        <a href="mailto:contact@audiencetype.com" className="text-primary/40 dark:text-white/40 text-sm font-medium hover:text-primary dark:hover:text-white underline underline-offset-4 decoration-primary/20 transition-colors">
                             Besoin d'aide ? Contacter le support
                         </a>
                     </div>

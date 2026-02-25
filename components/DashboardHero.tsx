@@ -1,4 +1,13 @@
+"use client";
+
+import { useAuth } from "@/context/AuthContext";
+
 export default function DashboardHero() {
+    const { user } = useAuth();
+
+    // Fallback: DisplayName -> Email prefix -> "l'ami"
+    const userName = user?.displayName || user?.email?.split('@')[0] || "l'ami";
+
     return (
         <div className="flex flex-wrap justify-between items-end gap-6 mb-12">
             <div className="flex flex-col gap-2">
@@ -6,7 +15,7 @@ export default function DashboardHero() {
                     Votre Bibliothèque
                 </h1>
                 <p className="text-primary/60 dark:text-white/60 text-lg font-normal max-w-md">
-                    Bienvenue, Alex. Continuez là où vous vous étiez arrêté dans votre collection numérique.
+                    Bienvenue, <span className="font-semibold text-primary/80 dark:text-white/80">{userName}</span>. Continuez là où vous vous étiez arrêté dans votre collection numérique.
                 </p>
             </div>
             <a

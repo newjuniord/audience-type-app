@@ -54,6 +54,15 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
         }
     }, [isOpen]);
 
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'dodo' | 'moncash'>('dodo');
+
+    // Helper to get price in Gourdes
+    const getGourdesPrice = () => {
+        if (!product?.price) return 0;
+        const priceNumber = parseFloat(product.price.replace(/[^0-9.]/g, ''));
+        return isNaN(priceNumber) ? 0 : Math.floor(priceNumber * 100); // x100 conversion
+    };
+
     const handlePurchase = async () => {
         if (!user) {
             router.push("/login");
@@ -64,31 +73,89 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
 
         setIsPurchasing(true);
         try {
-            // Call our API to create a Dodo Payment Link
-            const response = await fetch("/api/dodo/checkout", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    productId: product.id,
-                    userId: user.uid,
-                    userEmail: user.email,
-                    userName: user.displayName || "Client", // Fallback name
-                }),
-            });
+            if (selectedPaymentMethod === 'moncash') {
+                // Determine collection for product reference
+                let collectionName = "courses";
+                if (product.type.toLowerCase() === "ebook") collectionName = "ebooks";
+                else if (product.type.toLowerCase() === "service" || product.type.toLowerCase() === "booking") collectionName = "services";
 
-            const data = await response.json();
+                // 1. Create pending order in Firestore
+                const priceInGourdes = getGourdesPrice();
+                const orderData = {
+                    userId: user.uid, // Interface allows string
+                    userEmail: user.email!, // Interface requires string
+                    productId: doc(db, collectionName, product.id!), // Interface requires DocumentReference
+                    productThumbnailUrl: product.image,
+                    productTitle: product.title,
+                    productType: product.type.toLowerCase(),
+                    transactionId: "", // Pending
+                    amount: priceInGourdes,
+                    currency: "HTG",
+                    status: "pending",
+                    paymentMethod: "moncash",
+                    createdAt: Timestamp.now(),
+                };
 
-            if (!response.ok) {
-                throw new Error(data.error || "Failed to create checkout session");
-            }
+                const orderId = await createOrder(orderData);
 
-            if (data.checkoutUrl) {
-                // Redirect user to Dodo Payments
-                window.location.href = data.checkoutUrl;
+                // 2. Call Bazik Payment API
+                const response = await fetch("/api/bazik/payment", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        orderId,
+                        amount: priceInGourdes,
+                        description: product.title,
+                        customerFirstName: user.displayName || "Client",
+                        userId: user.uid,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Failed to initialize Moncash payment");
+                }
+
+                // Bazik returns 'redirectUrl' (camelCase)
+                const redirectUrl = data.redirectUrl || data.redirect_url || data.payment_link;
+
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                } else if (data.payment_token?.redirect_url) {
+                    window.location.href = data.payment_token.redirect_url;
+                } else {
+                    console.error("No redirect URL found in Bazik response:", data);
+                    throw new Error("No redirect URL returned from payment provider");
+                }
+
             } else {
-                throw new Error("No checkout URL returned");
+                // Dodo Payments Flow
+                const response = await fetch("/api/dodo/checkout", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        productId: product.id,
+                        userId: user.uid,
+                        userEmail: user.email,
+                        userName: user.displayName || "Client", // Fallback name
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Failed to create checkout session");
+                }
+
+                if (data.checkoutUrl) {
+                    // Redirect user to Dodo Payments
+                    window.location.href = data.checkoutUrl;
+                } else {
+                    throw new Error("No checkout URL returned");
+                }
             }
 
         } catch (error: any) {
@@ -238,16 +305,40 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                                     {isApplying ? "Envoi en cours..." : "Envoyer ma candidature"}
                                 </BubbleButton>
                             ) : (
-                                <BubbleButton
-                                    variant="rounded"
-                                    disabled={product.isOwned}
-                                    onClick={() => {
-                                        if (product.isOwned) return;
-                                        setIsPurchaseModalOpen(true);
-                                    }}
-                                >
-                                    {product.isOwned ? "Déjà possédé" : "Acheter maintenant"}
-                                </BubbleButton>
+                                <div className="flex flex-col gap-4 w-full">
+                                    <BubbleButton
+                                        variant="rounded"
+                                        disabled={product.isOwned}
+                                        onClick={() => {
+                                            if (product.isOwned) return;
+                                            setSelectedPaymentMethod('dodo');
+                                            setIsPurchaseModalOpen(true);
+                                        }}
+                                    >
+                                        {product.isOwned ? "Déjà possédé" : "Acheter maintenant"}
+                                    </BubbleButton>
+
+                                    {!product.isOwned && (
+                                        <>
+                                            <div className="flex items-center gap-4 text-xs font-bold text-primary/30 dark:text-white/30 uppercase tracking-widest text-center">
+                                                <div className="h-px bg-primary/10 dark:bg-white/10 flex-1"></div>
+                                                <span>ou</span>
+                                                <div className="h-px bg-primary/10 dark:bg-white/10 flex-1"></div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedPaymentMethod('moncash');
+                                                    setIsPurchaseModalOpen(true);
+                                                }}
+                                                className="w-full h-12 rounded-full bg-red-600/10 text-red-600 hover:bg-red-600/20 font-bold transition-all flex items-center justify-center gap-2 active:scale-95"
+                                            >
+                                                <span className="material-symbols-outlined">payments</span>
+                                                Payer avec Moncash
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>
@@ -259,8 +350,12 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                 onClose={() => setIsPurchaseModalOpen(false)}
                 onConfirm={handlePurchase}
                 title="Confirmer l'achat"
-                message={`Voulez-vous vraiment acheter "${product?.title}" pour ${product?.price} ? (Ceci est une simulation)`}
-                confirmText="Confirmer l'achat"
+                message={
+                    selectedPaymentMethod === 'moncash'
+                        ? `Voulez-vous vraiment acheter "${product?.title}" pour ${getGourdesPrice()} gourdes et payer avec moncash ?`
+                        : `Voulez-vous vraiment acheter "${product?.title}" pour ${product?.price} ? (Ceci est une simulation)`
+                }
+                confirmText={selectedPaymentMethod === 'moncash' ? "Payer avec Moncash" : "Confirmer l'achat"}
                 isLoading={isPurchasing}
             />
 

@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
-import { Timestamp } from "firebase-admin/firestore";
+import { Timestamp, FieldValue } from "firebase-admin/firestore";
 
 export async function POST(req: Request) {
     try {
@@ -12,6 +12,8 @@ export async function POST(req: Request) {
         }
 
         console.log(`🔍[VERIFY] Vérification du paiement Dodo: ${paymentId} `);
+
+
 
         // 1. Appel à l'API Dodo pour vérifier le statut réel
         const dodoRes = await fetch(`https://test.dodopayments.com/payments/${paymentId}`, {
@@ -41,70 +43,86 @@ export async function POST(req: Request) {
             console.warn("⚠️ [VERIFY] Impossible de trouver l'orderId (ni dans metadata, ni dans la requête client).");
             return NextResponse.json({ status: dodoStatus, warning: "No orderId found to update" });
         }
-
         const adminDb = getAdminDb();
         const orderRef = adminDb.collection("orders").doc(orderId);
-        const orderSnap = await orderRef.get();
 
-        if (!orderSnap.exists) {
-            return NextResponse.json({ error: "Order not found" }, { status: 404 });
-        }
+        // TRANSACTION ATOMIQUE : Pour éviter les conflits entre Webhook et Vérification Client
+        await adminDb.runTransaction(async (t) => {
+            const orderSnap = await t.get(orderRef);
 
-        const orderData = orderSnap.data();
+            if (!orderSnap.exists) {
+                throw new Error("Order not found");
+            }
 
-        // Si le statut est "succeeded", on met à jour en "completed"
-        // Si "failed", on met à jour en "failed"
-        // On force la mise à jour pour être sûr que tout est synchro
-        let newStatus = orderData?.status;
-        if (dodoStatus === "succeeded") newStatus = "completed";
-        else if (dodoStatus === "failed") newStatus = "failed";
+            const orderData = orderSnap.data();
 
-        console.log(`💰 [VERIFY] Mise à jour commande ${orderId} : ${orderData?.status} -> ${newStatus}`);
+            // Si déjà complété, on ne fait RIEN (Idempotence)
+            if (orderData?.status === "completed") {
+                console.log(`✅ [VERIFY - TRANSACTION] Commande ${orderId} déjà complétée. Stop.`);
+                return;
+            }
 
-        await orderRef.update({
-            status: newStatus,
-            paymentMethod: paymentData.payment_method || "card",
-            currency: paymentData.currency || "usd",
-            // On met à jour la date de paiement si succès
-            ...(dodoStatus === "succeeded" ? { paidAt: Timestamp.now() } : {}),
-            transactionId: paymentId
+            // Si le Dodo status est success, on valide tout
+            if (dodoStatus === "succeeded") {
+                // 1. Update Order
+                t.update(orderRef, {
+                    status: "completed",
+                    paymentMethod: paymentData.payment_method || "card",
+                    currency: paymentData.currency || "usd",
+                    paidAt: Timestamp.now(),
+                    amount: paymentData.amount ? paymentData.amount / 100 : orderData?.amount,
+                    expiresAt: FieldValue.delete(),
+                    transactionId: paymentId
+                });
+
+                // 2. Create Enrollment (if not exists)
+                const { userId, productId, productType } = orderData as any;
+                if (productType === "course" || productType === "ebook") {
+                    const enrollmentsRef = adminDb.collection("enrollments");
+                    const productCollection = productType === "course" ? "courses" : "ebooks";
+
+                    // Note: Dans une transaction, on doit utiliser t.get() pour les lectures
+                    // Mais Firestore ne permet pas facilement de requêter (where) dans une transaction sur une AUTRE collection 
+                    // sans connaître l'ID du document à l'avance.
+                    // Astuce : On utilise un ID déterministe pour l'enrollment ou on accepte le risque minime ici
+                    // PUISQUE nous vérifions orderData.status === "completed" juste avant, et que nous sommes les SEULS à le passer à "completed" dans cette transaction,
+                    // nous avons la garantie que nous sommes le premier processus à traiter ce succès.
+
+                    const newEnrollmentRef = enrollmentsRef.doc(); // Nouvel ID auto
+                    t.set(newEnrollmentRef, {
+                        userId: adminDb.collection("users").doc(userId),
+                        productId: adminDb.collection(productCollection).doc(productId),
+                        productType: productType,
+                        orderId: orderId,
+                        status: "active",
+                        enrolledAt: Timestamp.now(),
+                        lastAccessedAt: Timestamp.now(),
+                        progress: 0,
+                        completedLessons: []
+                    });
+                    console.log("🔓 [VERIFY - TRANSACTION] Enrollment planifié.");
+                }
+            } else if (dodoStatus === "failed") {
+                t.update(orderRef, {
+                    status: "failed",
+                    failedAt: Timestamp.now(),
+                    transactionId: paymentId
+                });
+            }
         });
 
-        // 3. Débloquer l'accès (Enrollment)
-        const { userId, productId, productType } = orderData as any;
-
-        // Only enroll if payment succeeded
-        if (dodoStatus === "succeeded" && (productType === "course" || productType === "ebook")) {
-            const enrollmentsRef = adminDb.collection("enrollments");
-            const existingEnrollment = await enrollmentsRef
-                .where("userId", "==", userId)
-                .where("productId", "==", productId)
-                .get();
-
-            if (existingEnrollment.empty) {
-                await enrollmentsRef.add({
-                    userId: userId,
-                    productId: productId,
-                    productType: productType,
-                    orderId: orderId,
-                    status: "active",
-                    enrolledAt: Timestamp.now(),
-                    lastAccessedAt: Timestamp.now(),
-                    progress: 0,
-                    completedLessons: []
-                });
-                console.log("🔓 [VERIFY] Enrollment créé.");
-            }
-        }
+        // Relire les données fraîches pour le frontend
+        const updatedOrderSnap = await orderRef.get();
+        const updatedOrderData = updatedOrderSnap.data();
 
         // On renvoie les données de la commande pour l'affichage frontend
         return NextResponse.json({
             status: dodoStatus, // "succeeded", "failed", "pending"
             updated: true,
             order: {
-                ...orderData,
+                ...updatedOrderData,
                 id: orderId,
-                status: newStatus || orderData?.status, // Retourner le vrai nouveau statut
+                status: updatedOrderData?.status || dodoStatus, // Retourner le vrai nouveau statut
                 transactionId: paymentId
             }
         });

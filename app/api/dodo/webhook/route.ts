@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
-import { Timestamp } from "firebase-admin/firestore";
+import { Timestamp, FieldValue } from "firebase-admin/firestore";
 
 import crypto from "crypto";
 
@@ -21,23 +21,51 @@ export async function POST(req: Request) {
         const signature = req.headers.get("webhook-signature");
         const webhookSecret = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
 
-        if (webhookSecret) {
-            // Calcul du hash HMAC SHA256
-            const computedSignature = crypto
-                .createHmac("sha256", webhookSecret)
-                .update(rawBody)
-                .digest("hex");
 
-            // Comparaison sécurisée (timing safe)
-            // Note: Dodo envoie peut-être "t=timestamp,v1=signature" ou juste la signature. 
-            // On suppose ici un format simple hex. À adapter selon la doc réelle si besoin.
-            if (signature !== computedSignature) {
-                // Essayer une comparaison 't=...' si le format simple échoue ? 
-                // Pour l'instant on reste strict.
-                console.error(`❌ [WEBHOOK] Signature invalide. Reçu: ${signature}, Calculé: ${computedSignature}`);
+
+        if (webhookSecret) {
+            // 1. Gestion de la clé Svix (whsec_...)
+            let key = webhookSecret;
+            if (webhookSecret.startsWith("whsec_")) {
+                key = webhookSecret.substring(6); // Remove 'whsec_'
+                // Note: Si la clé est en base64, il faudrait peut-être la décoder.
+                // Svix keys are usually base64 encoded.
+                // Mais crypto.createHmac gère les strings ou buffers.
+                // Essayons d'abord de l'utiliser telle quelle ou décodée selon la doc Svix standard.
+            }
+
+            // Svix Standard Verification:
+            // Payload = ${msgId}.${timestamp}.${body}
+            const msgId = req.headers.get("webhook-id");
+            const msgTimestamp = req.headers.get("webhook-timestamp");
+
+            if (!msgId || !msgTimestamp) {
+                console.error("❌ [WEBHOOK] Manque webhook-id ou webhook-timestamp");
+                return NextResponse.json({ error: "Missing headers" }, { status: 400 });
+            }
+
+            // Construction du contenu à signer
+            // IMPORTANT: Dodo/Svix signe "msgId.timestamp.body"
+            const signedContent = `${msgId}.${msgTimestamp}.${rawBody}`;
+
+            // Pour la clé : si c'est whsec_, c'est souvent du Base64.
+            const secretBytes = webhookSecret.startsWith("whsec_")
+                ? Buffer.from(webhookSecret.substring(6), "base64")
+                : Buffer.from(webhookSecret); // Fallback
+
+            const computedSignature = crypto
+                .createHmac("sha256", secretBytes)
+                .update(signedContent)
+                .digest("base64");
+
+            // Dodo envoie "v1,signature_en_base64"
+            const receivedSignature = signature?.startsWith("v1,") ? signature.split(",")[1] : signature;
+
+            if (receivedSignature !== computedSignature) {
+                console.error(`❌ [WEBHOOK] Signature invalide.`);
                 return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
             }
-            console.log("Vk [WEBHOOK] Signature vérifiée avec succès.");
+            console.log("✅ [WEBHOOK] Signature Svix vérifiée avec succès.");
         } else {
             console.warn("⚠️ [WEBHOOK] Pas de clé secrète (DODO_PAYMENTS_WEBHOOK_KEY) configurée. Vérification sautée.");
         }
@@ -94,7 +122,8 @@ export async function POST(req: Request) {
                 currency: data.currency || currency || "usd",
                 amount: (data.amount || amount) ? (data.amount || amount) / 100 : orderData.amount, // Conversion centimes -> réel
                 paidAt: Timestamp.now(),
-                transactionId: effectivePaymentId // Confirmation du ID de transaction
+                transactionId: effectivePaymentId, // Confirmation du ID de transaction
+                expiresAt: FieldValue.delete() // Plus d'expiration nécessaire
             });
 
             // 5. Donner accès au contenu (Enrollment)
@@ -111,16 +140,21 @@ export async function POST(req: Request) {
 
                 const enrollmentsRef = adminDb.collection("enrollments");
 
-                // Vérifier doublon
+                // Déterminer la collection produit
+                const productCollection = productType === "course" ? "courses" : "ebooks";
+
+                // Vérifier doublon (Correction: Utiliser des références dans la query)
                 const existingEnrollment = await enrollmentsRef
-                    .where("userId", "==", userId)
-                    .where("productId", "==", productId)
+                    .where("userId", "==", adminDb.collection("users").doc(userId))
+                    .where("productId", "==", adminDb.collection(productCollection).doc(productId))
                     .get();
 
                 if (existingEnrollment.empty) {
+
+
                     await enrollmentsRef.add({
-                        userId: userId,
-                        productId: productId, // string ID
+                        userId: adminDb.collection("users").doc(userId), // Reference
+                        productId: adminDb.collection(productCollection).doc(productId), // Reference
                         productType: productType,
                         orderId: orderId,
                         status: "active",
@@ -144,7 +178,8 @@ export async function POST(req: Request) {
             console.log("❌ [WEBHOOK] Paiement échoué.");
             await orderRef.update({
                 status: "failed",
-                failedAt: Timestamp.now()
+                failedAt: Timestamp.now(),
+                transactionId: effectivePaymentId
             });
         }
 

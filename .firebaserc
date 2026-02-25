@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "audience-type-app"
+    "default": "audience-type"
   },
   "targets": {},
   "etags": {}
