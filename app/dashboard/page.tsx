@@ -87,7 +87,7 @@ export default function Dashboard() {
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden bg-background-light dark:bg-background-dark text-primary dark:text-white">
             <div className="layout-container flex h-full grow flex-col">
-                <main className="px-6 md:px-10 lg:px-40 flex flex-1 justify-center py-10">
+                <main className="px-6 md:px-10 flex flex-1 justify-center py-10">
                     <div className="layout-content-container flex flex-col max-w-[1200px] flex-1">
                         <DashboardHero />
                         <FilterBar activeFilter={activeFilter} onFilterChange={setActiveFilter} />

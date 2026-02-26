@@ -12,24 +12,24 @@ export default function FilterBar({ activeFilter, onFilterChange }: FilterBarPro
     ];
 
     return (
-        <div className="flex gap-3 mb-10 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-10 overflow-x-auto md:overflow-visible pb-2 md:pb-0 scrollbar-hide">
             {filters.map((filter) => (
                 <button
                     key={filter.name}
                     onClick={() => onFilterChange(filter.name)}
-                    className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6 transition-all hover:scale-105 active:scale-95 ${activeFilter === filter.name
+                    className={`flex h-12 md:h-10 shrink-0 items-center justify-center md:justify-start gap-x-2 rounded-2xl md:rounded-full px-8 md:px-6 transition-all hover:bg-primary/10 dark:hover:bg-white/10 active:scale-95 w-full md:w-auto ${activeFilter === filter.name
                         ? "bg-primary text-white"
-                        : "bg-primary/5 dark:bg-white/5 hover:bg-primary/10 dark:hover:bg-white/10"
+                        : "bg-primary/5 dark:bg-white/5"
                         }`}
                 >
                     {filter.icon && (
-                        <span className={`material-symbols-outlined text-lg ${activeFilter === filter.name ? "text-white" : "text-primary dark:text-white"
+                        <span className={`material-symbols-outlined text-xl md:text-lg ${activeFilter === filter.name ? "text-white" : "text-primary dark:text-white"
                             }`}>
                             {filter.icon}
                         </span>
                     )}
-                    <span className={`${activeFilter === filter.name ? "text-white font-semibold" : "text-primary dark:text-white font-medium"
-                        } text-sm leading-normal`}>
+                    <span className={`${activeFilter === filter.name ? "text-white font-bold md:font-semibold" : "text-primary dark:text-white font-medium"
+                        } text-base md:text-sm leading-normal`}>
                         {filter.name}
                     </span>
                 </button>
