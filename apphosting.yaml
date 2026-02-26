@@ -1,6 +1,6 @@
 env:
   - variable: NEXT_PUBLIC_BASE_URL
-    value: https://audience-type-backend--audience-type.us-east4.hosted.app
+    value: https://audiencetype.com
     availability:
       - BUILD
       - RUNTIME

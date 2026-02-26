@@ -16,18 +16,23 @@ export async function POST(req: Request) {
         const payload = JSON.parse(rawBody);
         console.log("📦 [BAZIK PAYLOAD]:", JSON.stringify(payload, null, 2));
 
-        // Bazik Payload Structure Analysis (Assumed/Generic)
-        // We look for referenceId or metadata.referenceId
-        const orderId = payload.referenceId || payload.reference_id || payload.order_id || payload.metadata?.referenceId || payload.metadata?.orderId;
-        const status = payload.status || (payload.success ? "completed" : "failed");
+        // Bazik Payload Structure Analysis
+        // We look for referenceId (our orderId) or others provided by Bazik
+        const orderId = payload.referenceId ||
+            payload.reference_id ||
+            payload.metadata?.referenceId ||
+            payload.orderId ||
+            payload.order_id;
+
+        const rawStatus = (payload.status || payload.state || "").toString().toLowerCase();
         const transactionId = payload.transactionId || payload.transaction_id || payload.id;
 
         if (!orderId) {
-            console.warn("⚠️ [BAZIK WEBHOOK] Missing order identifier in payload. Raw payload above.");
+            console.warn("⚠️ [BAZIK WEBHOOK] Missing order identifier in payload.");
             return NextResponse.json({ message: "Ignored: No order identifier" }, { status: 200 });
         }
 
-        console.log(`🔎 [BAZIK WEBHOOK] Processing Order ID: ${orderId}, Status: ${status}`);
+        console.log(`🔎 [BAZIK WEBHOOK] Processing Order ID: ${orderId}, Raw Status: ${rawStatus}`);
 
         const adminDb = getAdminDb();
         const orderRef = adminDb.collection("orders").doc(orderId);
@@ -47,7 +52,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Already completed" }, { status: 200 });
         }
 
-        if (status === "completed" || status === "success" || status === "paid") {
+        const successStatuses = ["completed", "success", "paid", "success_payment", "successful"];
+        const failureStatuses = ["failed", "cancelled", "canceled", "rejected", "error"];
+
+        if (successStatuses.includes(rawStatus) || payload.success === true) {
             console.log("💰 [BAZIK WEBHOOK] Payment successful. Updating order...");
 
             await orderRef.update({
@@ -101,7 +109,7 @@ export async function POST(req: Request) {
                 }
             }
 
-        } else if (status === "failed" || status === "cancelled") {
+        } else if (failureStatuses.includes(rawStatus)) {
             console.log("❌ [BAZIK WEBHOOK] Payment failed/cancelled.");
             await orderRef.update({
                 status: "failed",
