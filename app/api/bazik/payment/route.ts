@@ -13,9 +13,11 @@ export async function POST(request: Request) {
         const BAZIK_SECRET_KEY = process.env.BAZIK_SECRET_KEY;
         const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
+        console.log("🔍 [BAZIK DEBUG] Env Check - USER_ID:", BAZIK_USER_ID ? "PRESENT" : "MISSING", "SECRET_KEY:", BAZIK_SECRET_KEY ? "PRESENT" : "MISSING", "BASE_URL:", BASE_URL);
+
         if (!BAZIK_USER_ID || !BAZIK_SECRET_KEY) {
-            console.error("Missing Bazik credentials");
-            return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+            console.error("Missing Bazik credentials in environment variables");
+            return NextResponse.json({ error: "Server configuration error: Credentials missing" }, { status: 500 });
         }
 
         // 1. Get Access Token
