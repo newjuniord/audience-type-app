@@ -132,9 +132,9 @@ export default function FeaturedProducts({ title = "Produits en vedette", showBo
 
     return (
         <section className={`w-full max-w-[1200px] px-6 py-20 ${showBorder ? 'border-t border-primary/5 dark:border-white/5' : ''}`}>
-            <div className="flex items-center justify-between mb-12">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
                 <h2 className="text-2xl font-black uppercase tracking-tighter">{title}</h2>
-                <div className="flex gap-4">
+                <div className="flex flex-col md:flex-row gap-4 md:gap-8">
                     {displayCategories.map(cat => (
                         <button
                             key={cat.id}
@@ -142,7 +142,7 @@ export default function FeaturedProducts({ title = "Produits en vedette", showBo
                                 setActiveFilter(cat.id);
                                 setVisibleCount(6); // Reset pagination on filter change
                             }}
-                            className={`text-xs font-bold uppercase tracking-widest transition-all pb-1 border-b-2 ${activeFilter === cat.id
+                            className={`text-xs font-bold uppercase tracking-widest transition-all pb-1 border-b-2 w-fit ${activeFilter === cat.id
                                 ? "border-primary opacity-100"
                                 : "border-transparent opacity-40 hover:opacity-100"
                                 }`}
