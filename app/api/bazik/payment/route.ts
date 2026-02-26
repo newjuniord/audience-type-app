@@ -9,9 +9,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        const BAZIK_USER_ID = process.env.BAZIK_USER_ID;
-        const BAZIK_SECRET_KEY = process.env.BAZIK_SECRET_KEY;
-        const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+        const BAZIK_USER_ID = process.env.BAZIK_USER_ID?.trim();
+        const BAZIK_SECRET_KEY = process.env.BAZIK_SECRET_KEY?.trim();
+        const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL?.trim();
 
         console.log("🔍 [BAZIK DEBUG] Env Check - USER_ID:", BAZIK_USER_ID ? "PRESENT" : "MISSING", "SECRET_KEY:", BAZIK_SECRET_KEY ? "PRESENT" : "MISSING", "BASE_URL:", BASE_URL);
 
