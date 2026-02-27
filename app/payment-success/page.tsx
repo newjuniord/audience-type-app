@@ -26,22 +26,54 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
     // Effet pour vérifier le paiement dès le chargement
     useEffect(() => {
         const verifyPayment = async () => {
-            // Priority 1: Bazik (Moncash) - check for success indicator and orderId/referenceId
-            const isBazikSuccess = params.payment === 'success' || !!params.referenceId;
-            const bzkOrderId = typeof params.orderId === 'object' ? params.orderId[1] : (typeof params.orderId === 'string' ? params.orderId : null);
-            const refId = typeof params.referenceId === 'string' ? params.referenceId : null;
+            // Diagnostic initial
+            console.log("🔍 [VERIFY DEBUG] unwrapped params from props:", params);
 
-            console.log("🔍 [VERIFY DEBUG] Starting verification check:", { isBazikSuccess, refId, bzkOrderId, paymentId });
+            // Backup extraction from URL
+            const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
 
-            if (isBazikSuccess && (refId || bzkOrderId) && !isVerifying.current) {
+            const getP = (key: string) => {
+                const val = params[key];
+                if (Array.isArray(val)) return val[0];
+                return (val as string) || urlParams.get(key);
+            };
+
+            const getAllP = (key: string) => {
+                const p = params[key];
+                if (Array.isArray(p)) return p;
+                if (p) return [p];
+                return urlParams.getAll(key);
+            };
+
+            const paymentStatus = getP('payment');
+            const refId = getP('referenceId');
+            const orderIds = getAllP('orderId');
+            const pId = getP('payment_id');
+
+            // Bazik logic
+            const bzkOrderId = orderIds.length > 1 ? orderIds[1] : (orderIds.length > 0 ? orderIds[0] : null);
+            const internalOrderId = refId || (orderIds.length > 0 ? orderIds[0] : null);
+            const isBazikSuccess = paymentStatus === 'success' || !!refId;
+
+            console.log("🔍 [VERIFY DEBUG] Processed Check:", {
+                isBazikSuccess,
+                internalOrderId,
+                bzkOrderId,
+                paymentId: pId,
+                paymentStatus,
+                refId,
+                orderIdsCount: orderIds.length
+            });
+
+            if (isBazikSuccess && (internalOrderId || bzkOrderId) && !isVerifying.current) {
                 isVerifying.current = true;
-                console.log("🚀 [VERIFY DEBUG] Triggering Bazik Verification API...");
+                console.log("🚀 [VERIFY DEBUG] Triggering Bazik Verification API for:", internalOrderId);
                 try {
                     const res = await fetch('/api/bazik/verify-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            orderId: refId || bzkOrderId,
+                            orderId: internalOrderId,
                             bzkOrderId: bzkOrderId
                         }),
                     });
@@ -62,14 +94,15 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                 return;
             }
 
-            // Priority 2: Dodo Payments
-            if (paymentId && !isVerifying.current) {
+            // Dodo Payments logic
+            if (pId && !isVerifying.current) {
                 isVerifying.current = true;
+                console.log("🚀 [VERIFY DEBUG] Triggering Dodo Verification API for:", pId);
                 try {
                     const res = await fetch('/api/dodo/verify-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ paymentId, orderId }),
+                        body: JSON.stringify({ paymentId: pId, orderId: internalOrderId }),
                     });
                     const data = await res.json();
                     if (data.status === 'succeeded') {
@@ -87,20 +120,21 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                 return;
             }
 
-            // Fallback: Si rien n'est détecté après 2s, on assume succès (ou on laisse loading)
-            if (!paymentId && !isBazikSuccess) {
+            // Fallback
+            if (!pId && !isBazikSuccess) {
+                console.log("ℹ️ [VERIFY DEBUG] No payment keys found. Defaulting to success state.");
                 setVerificationStatus('success');
             }
         };
 
         verifyPayment();
-    }, [paymentId, params.payment, params.orderId, params.referenceId]);
+    }, [params, paymentId, orderId]);
 
     // Valeurs d'affichage (priorité aux données vérifiées de la DB, sinon URL)
     const displayAmount = orderData ? (orderData.amount).toFixed(2) : (typeof params.amount === 'string' ? params.amount : '0.00');
     const displayCurrency = orderData ? (orderData.currency || 'USD').toUpperCase() : (typeof params.currency === 'string' ? params.currency : 'USD');
     const displayTitle = orderData?.productTitle || "Accès Contenu Numérique";
-    const displayOrderId = orderData?.id || (typeof params.orderId === 'string' ? params.orderId : '#PENDING');
+    const displayOrderId = orderData?.id || (Array.isArray(params.orderId) ? params.orderId[0] : (typeof params.orderId === 'string' ? params.orderId : '#PENDING'));
 
     // Contenu dynamique selon le statut
     const getStatusContent = () => {
