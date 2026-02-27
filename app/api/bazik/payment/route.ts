@@ -46,8 +46,8 @@ export async function POST(request: Request) {
             customerFirstName: customerFirstName || "Client",
             description: description || "Paiement Moncash",
             referenceId: orderId,
-            successUrl: `${BASE_URL}/dashboard?payment=success&orderId=${orderId}`,
-            errorUrl: `${BASE_URL}/dashboard?payment=error&orderId=${orderId}`,
+            successUrl: `${BASE_URL}/payment-success?payment=success&orderId=${orderId}`,
+            errorUrl: `${BASE_URL}/payment-success?payment=error&orderId=${orderId}`,
             webhookUrl: `${BASE_URL}/api/bazik/webhook`, // Can be ngrok url for testing
         };
 

@@ -24,8 +24,8 @@ export async function GET(req: Request) {
         const adminDb = getAdminDb();
         const ordersRef = adminDb.collection("orders");
 
-        // Date actuelle moins 48 heures
-        const expirationThreshold = new Date(Date.now() - 48 * 60 * 60 * 1000);
+        // Date actuelle moins 72 heures
+        const expirationThreshold = new Date(Date.now() - 72 * 60 * 60 * 1000);
 
         // Requête : status == 'pending' ET createdAt < threshold
         // Note: Firestore nécessite un index composite pour cette requête.
