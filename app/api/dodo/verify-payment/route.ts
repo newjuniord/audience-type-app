@@ -89,18 +89,40 @@ export async function POST(req: Request) {
                     // nous avons la garantie que nous sommes le premier processus à traiter ce succès.
 
                     const newEnrollmentRef = enrollmentsRef.doc(); // Nouvel ID auto
+
+                    const userRef = adminDb.collection("users").doc(userId);
+                    const productRef = adminDb.collection(productCollection).doc(productId.id || productId);
+
+                    // Fetch extra metadata for enrollment
+                    const [productSnap, userSnap] = await Promise.all([
+                        productRef.get(),
+                        userRef.get()
+                    ]);
+
+                    const pData = productSnap.exists ? productSnap.data() : {};
+                    const uData = userSnap.exists ? userSnap.data() : {};
+
                     t.set(newEnrollmentRef, {
-                        userId: adminDb.collection("users").doc(userId),
-                        productId: adminDb.collection(productCollection).doc(productId),
+                        userId: userRef,
+                        productId: productRef,
                         productType: productType,
                         orderId: orderId,
                         status: "active",
+                        accessGranted: true,
                         enrolledAt: Timestamp.now(),
                         lastAccessedAt: Timestamp.now(),
                         progress: 0,
-                        completedLessons: []
+                        completedLessons: [],
+                        currentLessonId: "",
+                        downloadCount: "0",
+                        // New metadata fields
+                        totalLessons: pData?.totalLessons || 0,
+                        productTitle: pData?.title || orderData?.productTitle || "",
+                        productThumbnailUrl: pData?.thumbnail || pData?.coverImage || orderData?.productThumbnailUrl || "",
+                        userEmail: uData?.email || orderData?.userEmail || "",
+                        userName: uData?.name || orderData?.userName || ""
                     });
-                    console.log("🔓 [VERIFY - TRANSACTION] Enrollment planifié.");
+                    console.log("🔓 [VERIFY - TRANSACTION] Enrollment planifié avec métadonnées complètes.");
                 }
             } else if (dodoStatus === "failed") {
                 t.update(orderRef, {

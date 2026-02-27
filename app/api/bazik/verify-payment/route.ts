@@ -77,6 +77,15 @@ export async function POST(request: Request) {
                 const productCollection = productType === "course" ? "courses" : "ebooks";
                 const productRef = adminDb.collection(productCollection).doc(productId.id || productId);
 
+                // Fetch extra metadata for enrollment
+                const [productSnap, userSnap] = await Promise.all([
+                    productRef.get(),
+                    userRef.get()
+                ]);
+
+                const pData = productSnap.exists ? productSnap.data() : {};
+                const uData = userSnap.exists ? userSnap.data() : {};
+
                 const enrollmentsRef = adminDb.collection("enrollments");
                 const existingEnrollment = await enrollmentsRef
                     .where("userId", "==", userRef)
@@ -90,10 +99,19 @@ export async function POST(request: Request) {
                         productType: productType,
                         orderId: orderId,
                         status: "active",
+                        accessGranted: true,
                         enrolledAt: Timestamp.now(),
                         lastAccessedAt: Timestamp.now(),
                         progress: 0,
-                        completedLessons: []
+                        completedLessons: [],
+                        currentLessonId: "",
+                        downloadCount: "0",
+                        // New fields
+                        totalLessons: pData?.totalLessons || 0,
+                        productTitle: pData?.title || orderData?.productTitle || "",
+                        productThumbnailUrl: pData?.thumbnail || pData?.coverImage || orderData?.productThumbnailUrl || "",
+                        userEmail: uData?.email || orderData?.userEmail || "",
+                        userName: uData?.name || orderData?.userName || ""
                     });
                 }
             }

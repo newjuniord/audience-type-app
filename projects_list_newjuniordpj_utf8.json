@@ -1,0 +1,27 @@
+﻿{
+  "status": "success",
+  "result": [
+    {
+      "projectId": "audience-type",
+      "projectNumber": "598058051445",
+      "displayName": "Audience Type",
+      "name": "projects/audience-type",
+      "resources": {
+        "hostingSite": "audience-type"
+      },
+      "state": "ACTIVE",
+      "etag": "1_6c19c100-e77f-45d6-91a6-4a4242248b6f"
+    },
+    {
+      "projectId": "my-chat-app-asga3y",
+      "projectNumber": "525288047087",
+      "displayName": "myChatApp",
+      "name": "projects/my-chat-app-asga3y",
+      "resources": {
+        "hostingSite": "my-chat-app-asga3y"
+      },
+      "state": "ACTIVE",
+      "etag": "1_7b560a68-8dcc-4bcf-a4c6-d19faf318d88"
+    }
+  ]
+}

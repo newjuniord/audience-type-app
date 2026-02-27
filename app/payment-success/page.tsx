@@ -12,37 +12,30 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
     // Unwrap searchParams Promise with React.use()
     const params = use(searchParams);
 
-    // Extraction sécurisée des paramètres d'URL
-    const orderId = typeof params.orderId === 'string' ? params.orderId : null; // On récupère l'orderId aussi
-    const paymentId = typeof params.payment_id === 'string' ? params.payment_id : null;
-
     // État local pour le statut de vérification et les données de commande
     const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'failed' | 'pending'>('loading');
     const [orderData, setOrderData] = useState<any>(null);
 
-    // Ref pour éviter le double appel en React Strict Mode (Dev)
-    const isVerifying = React.useRef(false);
+    // Ref pour éviter le double appel et les boucles infinies
+    const hasTriggered = React.useRef(false);
 
     // Effet pour vérifier le paiement dès le chargement
     useEffect(() => {
         const verifyPayment = async () => {
-            // Diagnostic initial
-            console.log("🔍 [VERIFY DEBUG] unwrapped params from props:", params);
+            // Guard: On ne veut déclencher la logique qu'une seule fois
+            if (hasTriggered.current) return;
 
-            // Backup extraction from URL
+            console.log("🔍 [VERIFY DEBUG] Component Mounted - Beginning extraction...");
+
+            // Extraction robuste : Backup via window.location si searchParams de Next.js est instable
             const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
 
-            const getP = (key: string) => {
-                const val = params[key];
-                if (Array.isArray(val)) return val[0];
-                return (val as string) || urlParams.get(key);
-            };
-
+            const getP = (key: string) => urlParams.get(key) || (params[key] as string);
             const getAllP = (key: string) => {
+                const urlList = urlParams.getAll(key);
+                if (urlList.length > 0) return urlList;
                 const p = params[key];
-                if (Array.isArray(p)) return p;
-                if (p) return [p];
-                return urlParams.getAll(key);
+                return Array.isArray(p) ? p : (p ? [p] : []);
             };
 
             const paymentStatus = getP('payment');
@@ -50,24 +43,16 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
             const orderIds = getAllP('orderId');
             const pId = getP('payment_id');
 
-            // Bazik logic
+            // Logique Bazik
             const bzkOrderId = orderIds.length > 1 ? orderIds[1] : (orderIds.length > 0 ? orderIds[0] : null);
             const internalOrderId = refId || (orderIds.length > 0 ? orderIds[0] : null);
             const isBazikSuccess = paymentStatus === 'success' || !!refId;
 
-            console.log("🔍 [VERIFY DEBUG] Processed Check:", {
-                isBazikSuccess,
-                internalOrderId,
-                bzkOrderId,
-                paymentId: pId,
-                paymentStatus,
-                refId,
-                orderIdsCount: orderIds.length
-            });
+            console.log("🔍 [VERIFY DEBUG] Config Détectée:", { isBazikSuccess, internalOrderId, bzkOrderId, pId });
 
-            if (isBazikSuccess && (internalOrderId || bzkOrderId) && !isVerifying.current) {
-                isVerifying.current = true;
-                console.log("🚀 [VERIFY DEBUG] Triggering Bazik Verification API for:", internalOrderId);
+            if (isBazikSuccess && (internalOrderId || bzkOrderId)) {
+                hasTriggered.current = true;
+                console.log("🚀 [VERIFY DEBUG] Lancement Vérification Bazik...");
                 try {
                     const res = await fetch('/api/bazik/verify-payment', {
                         method: 'POST',
@@ -78,7 +63,7 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                         }),
                     });
                     const data = await res.json();
-                    console.log("✅ [VERIFY DEBUG] Bazik API Response:", data);
+                    console.log("✅ [VERIFY DEBUG] Résultat Bazik:", data);
                     if (data.status === 'succeeded' || data.status === 'success') {
                         setVerificationStatus('success');
                         if (data.order) setOrderData(data.order);
@@ -88,16 +73,16 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                         setVerificationStatus('pending');
                     }
                 } catch (error) {
-                    console.error("Bazik Verification failed:", error);
+                    console.error("Bazik verify error:", error);
                     setVerificationStatus('failed');
                 }
                 return;
             }
 
-            // Dodo Payments logic
-            if (pId && !isVerifying.current) {
-                isVerifying.current = true;
-                console.log("🚀 [VERIFY DEBUG] Triggering Dodo Verification API for:", pId);
+            // Logique Dodo Payments
+            if (pId) {
+                hasTriggered.current = true;
+                console.log("🚀 [VERIFY DEBUG] Lancement Vérification Dodo...");
                 try {
                     const res = await fetch('/api/dodo/verify-payment', {
                         method: 'POST',
@@ -105,30 +90,33 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                         body: JSON.stringify({ paymentId: pId, orderId: internalOrderId }),
                     });
                     const data = await res.json();
+                    console.log("✅ [VERIFY DEBUG] Résultat Dodo:", data);
                     if (data.status === 'succeeded') {
                         setVerificationStatus('success');
                         if (data.order) setOrderData(data.order);
-                    } else if (data.status === 'failed') {
-                        setVerificationStatus('failed');
                     } else {
-                        setVerificationStatus('pending');
+                        setVerificationStatus(data.status === 'failed' ? 'failed' : 'pending');
                     }
                 } catch (error) {
-                    console.error("Dodo Verification failed:", error);
+                    console.error("Dodo verify error:", error);
                     setVerificationStatus('failed');
                 }
                 return;
             }
 
-            // Fallback
-            if (!pId && !isBazikSuccess) {
-                console.log("ℹ️ [VERIFY DEBUG] No payment keys found. Defaulting to success state.");
-                setVerificationStatus('success');
-            }
+            // Fallback (Si aucun paramètre n'est trouvé après 1.5s, on montre un succès par défaut)
+            const timeout = setTimeout(() => {
+                if (!hasTriggered.current && verificationStatus === 'loading') {
+                    console.log("ℹ️ [VERIFY DEBUG] Aucun paramètre de paiement trouvé. Mode succès simple.");
+                    setVerificationStatus('success');
+                }
+            }, 1500);
+
+            return () => clearTimeout(timeout);
         };
 
         verifyPayment();
-    }, [params, paymentId, orderId]);
+    }, []); // Dépendance vide : ne s'exécute qu'une seule fois au montage du composant
 
     // Valeurs d'affichage (priorité aux données vérifiées de la DB, sinon URL)
     const displayAmount = orderData ? (orderData.amount).toFixed(2) : (typeof params.amount === 'string' ? params.amount : '0.00');
@@ -250,7 +238,7 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                 </main>
             </div>
 
-            {/* Background Decoration (Optional subtle hints) */}
+            {/* Background Decoration */}
             <div className="fixed bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-black/5 to-transparent -z-10 dark:hidden"></div>
         </div>
     );
