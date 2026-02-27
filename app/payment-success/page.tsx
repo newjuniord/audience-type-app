@@ -23,44 +23,78 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
     // Ref pour éviter le double appel en React Strict Mode (Dev)
     const isVerifying = React.useRef(false);
 
-    // Effet pour vérifier le paiement dès le chargement si on a un payment_id
+    // Effet pour vérifier le paiement dès le chargement
     useEffect(() => {
-        if (paymentId && !isVerifying.current) {
-            isVerifying.current = true;
-            const verifyPayment = async () => {
+        const verifyPayment = async () => {
+            // Priority 1: Bazik (Moncash) - check for success indicator and orderId/referenceId
+            const isBazikSuccess = params.payment === 'success' || !!params.referenceId;
+            const bzkOrderId = typeof params.orderId === 'object' ? params.orderId[1] : (typeof params.orderId === 'string' ? params.orderId : null);
+            const refId = typeof params.referenceId === 'string' ? params.referenceId : null;
+
+            console.log("🔍 [VERIFY DEBUG] Starting verification check:", { isBazikSuccess, refId, bzkOrderId, paymentId });
+
+            if (isBazikSuccess && (refId || bzkOrderId) && !isVerifying.current) {
+                isVerifying.current = true;
+                console.log("🚀 [VERIFY DEBUG] Triggering Bazik Verification API...");
+                try {
+                    const res = await fetch('/api/bazik/verify-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            orderId: refId || bzkOrderId,
+                            bzkOrderId: bzkOrderId
+                        }),
+                    });
+                    const data = await res.json();
+                    console.log("✅ [VERIFY DEBUG] Bazik API Response:", data);
+                    if (data.status === 'succeeded' || data.status === 'success') {
+                        setVerificationStatus('success');
+                        if (data.order) setOrderData(data.order);
+                    } else if (data.status === 'failed') {
+                        setVerificationStatus('failed');
+                    } else {
+                        setVerificationStatus('pending');
+                    }
+                } catch (error) {
+                    console.error("Bazik Verification failed:", error);
+                    setVerificationStatus('failed');
+                }
+                return;
+            }
+
+            // Priority 2: Dodo Payments
+            if (paymentId && !isVerifying.current) {
+                isVerifying.current = true;
                 try {
                     const res = await fetch('/api/dodo/verify-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            paymentId,
-                            orderId // On envoie l'orderId en secours
-                        }),
+                        body: JSON.stringify({ paymentId, orderId }),
                     });
                     const data = await res.json();
-
                     if (data.status === 'succeeded') {
                         setVerificationStatus('success');
                         if (data.order) setOrderData(data.order);
                     } else if (data.status === 'failed') {
                         setVerificationStatus('failed');
                     } else {
-                        // Pending ou autre
-                        console.warn("Payment verification status:", data.status);
                         setVerificationStatus('pending');
                     }
-
                 } catch (error) {
-                    console.error("Verification failed:", error);
+                    console.error("Dodo Verification failed:", error);
                     setVerificationStatus('failed');
                 }
-            };
-            verifyPayment();
-        } else {
-            // Pas de payment_id ? On affiche un succès générique mais c'est bizarre
-            setVerificationStatus('success');
-        }
-    }, [paymentId]);
+                return;
+            }
+
+            // Fallback: Si rien n'est détecté après 2s, on assume succès (ou on laisse loading)
+            if (!paymentId && !isBazikSuccess) {
+                setVerificationStatus('success');
+            }
+        };
+
+        verifyPayment();
+    }, [paymentId, params.payment, params.orderId, params.referenceId]);
 
     // Valeurs d'affichage (priorité aux données vérifiées de la DB, sinon URL)
     const displayAmount = orderData ? (orderData.amount).toFixed(2) : (typeof params.amount === 'string' ? params.amount : '0.00');
