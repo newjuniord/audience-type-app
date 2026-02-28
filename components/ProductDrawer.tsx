@@ -308,14 +308,17 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                                 <div className="flex flex-col gap-4 w-full">
                                     <BubbleButton
                                         variant="rounded"
-                                        disabled={product.isOwned}
                                         onClick={() => {
-                                            if (product.isOwned) return;
+                                            if (product.isOwned) {
+                                                router.push('/dashboard');
+                                                onClose();
+                                                return;
+                                            }
                                             setSelectedPaymentMethod('dodo');
                                             setIsPurchaseModalOpen(true);
                                         }}
                                     >
-                                        {product.isOwned ? "Déjà possédé" : "Acheter maintenant"}
+                                        {product.isOwned ? "Accéder au produit" : "Acheter maintenant"}
                                     </BubbleButton>
 
                                     {!product.isOwned && (

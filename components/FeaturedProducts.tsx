@@ -10,9 +10,11 @@ import { useAuth } from "@/context/AuthContext";
 import { getEnrollmentsByUser } from "@/lib/enrollments";
 import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
 
 export default function FeaturedProducts({ title = "Produits en vedette", showBorder = true }: { title?: string, showBorder?: boolean }) {
     const { user } = useAuth();
+    const router = useRouter();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -107,6 +109,10 @@ export default function FeaturedProducts({ title = "Produits en vedette", showBo
     }, [user]); // Re-run when user changes to update ownership status
 
     const handleProductClick = (product: Product) => {
+        if (product.isOwned) {
+            router.push('/dashboard');
+            return;
+        }
         setSelectedProduct(product);
         setIsDrawerOpen(true);
     };
@@ -170,7 +176,6 @@ export default function FeaturedProducts({ title = "Produits en vedette", showBo
                             <div className="mt-auto">
                                 <BubbleButton
                                     onClick={() => handleProductClick(product)}
-                                    disabled={product.isOwned}
                                 >
                                     {product.isOwned
                                         ? "Possédé"
