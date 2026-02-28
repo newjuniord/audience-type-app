@@ -15,11 +15,14 @@ export async function POST(req: Request) {
 
 
 
+        const apiKey = process.env.DODO_PAYMENTS_API_KEY || "";
+        const dodoBaseUrl = apiKey.includes('test') ? "https://test.dodopayments.com" : "https://api.dodopayments.com";
+
         // 1. Appel à l'API Dodo pour vérifier le statut réel
-        const dodoRes = await fetch(`https://test.dodopayments.com/payments/${paymentId}`, {
+        const dodoRes = await fetch(`${dodoBaseUrl}/payments/${paymentId}`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${process.env.DODO_PAYMENTS_API_KEY}`,
+                "Authorization": `Bearer ${apiKey}`,
                 "Content-Type": "application/json",
             },
         });

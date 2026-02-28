@@ -150,10 +150,11 @@ export async function POST(req: Request) {
                 // Pour l'instant, faisons confiance à la création implicite OU implémentons la création explicite si demandée.
                 // L'utilisateur a fourni un exemple avec fetch sur /customers, intégrons cette logique.
 
-                const createCustomerRes = await fetch("https://test.dodopayments.com/customers", {
+                const dodoBaseUrl = apiKey.includes('test') ? "https://test.dodopayments.com" : "https://api.dodopayments.com";
+                const createCustomerRes = await fetch(`${dodoBaseUrl}/customers`, {
                     method: "POST",
                     headers: {
-                        "Authorization": `Bearer ${process.env.DODO_PAYMENTS_API_KEY}`,
+                        "Authorization": `Bearer ${apiKey}`,
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
