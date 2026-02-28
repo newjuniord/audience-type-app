@@ -12,11 +12,19 @@ import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 
-export default function FeaturedProducts({ title = "Produits en vedette", showBorder = true }: { title?: string, showBorder?: boolean }) {
+export default function FeaturedProducts({
+    title = "Produits en vedette",
+    showBorder = true,
+    initialProducts = []
+}: {
+    title?: string,
+    showBorder?: boolean,
+    initialProducts?: Product[]
+}) {
     const { user } = useAuth();
     const router = useRouter();
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [products, setProducts] = useState<Product[]>(initialProducts);
+    const [loading, setLoading] = useState(initialProducts.length === 0);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [activeFilter, setActiveFilter] = useState("All");
@@ -53,13 +61,12 @@ export default function FeaturedProducts({ title = "Produits en vedette", showBo
                     }
                 }
 
-
                 const formattedCourses: Product[] = courses
                     .filter(c => c.statut === 'published')
                     .map(c => ({
                         id: c.id,
                         title: c.title,
-                        price: `$${c.price}`,
+                        price: `$${c.price}`, // Dynamic price from Firestore
                         type: "Course",
                         image: c.thumbnail || "https://images.unsplash.com/photo-1542744094-24638eff58bb?q=80&w=2071&auto=format&fit=crop",
                         description: c.description,
@@ -72,7 +79,7 @@ export default function FeaturedProducts({ title = "Produits en vedette", showBo
                     .map(e => ({
                         id: e.id,
                         title: e.title,
-                        price: `$${e.price}`,
+                        price: `$${e.price}`, // Dynamic price from Firestore
                         type: "Ebook",
                         image: e.coverImage || "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=2074&auto=format&fit=crop",
                         description: e.description,
@@ -85,19 +92,20 @@ export default function FeaturedProducts({ title = "Produits en vedette", showBo
                     .map(s => ({
                         id: s.id,
                         title: s.title,
-                        price: s.price.includes('$') || s.price.includes('€') ? s.price : `$${s.price}`,
+                        price: s.price.includes('$') || s.price.includes('€') ? s.price : `$${s.price}`, // Dynamic price
                         type: "Service",
-                        image: s.imageUrl || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=2074&auto=format&fit=crop", // Placeholder as services might not have images yet
+                        image: s.imageUrl || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=2074&auto=format&fit=crop",
                         description: s.description,
                         features: s.includedItems || [],
-                        isOwned: false // Services usually aren't "owned" in the same way, or need different logic
+                        isOwned: false
                     }));
 
-                // Combine and shuffle or sort (here sorted by newest effective via separate fetches, but mixing them)
                 const allProducts = [...formattedCourses, ...formattedEbooks, ...formattedServices];
-                // Simple shuffle to mix types
-                const shuffled = allProducts.sort(() => 0.5 - Math.random());
 
+                // If we have initial data, we try to preserve the order/mix if possible, 
+                // but usually a fresh fetch is better for the full state.
+                // We shuffle to keep the "featured" feel.
+                const shuffled = allProducts.sort(() => 0.5 - Math.random());
                 setProducts(shuffled);
             } catch (error) {
                 console.error("Failed to fetch featured products", error);
@@ -106,7 +114,7 @@ export default function FeaturedProducts({ title = "Produits en vedette", showBo
             }
         }
         fetchData();
-    }, [user]); // Re-run when user changes to update ownership status
+    }, [user]);
 
     const handleProductClick = (product: Product) => {
         if (product.isOwned) {
