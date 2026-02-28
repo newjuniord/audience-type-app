@@ -64,6 +64,15 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
         return isNaN(priceNumber) ? 0 : Math.floor(priceNumber * 100); // x100 conversion
     };
 
+    const handlePaymentMethodSelect = (method: 'dodo' | 'moncash') => {
+        setIsPaymentSelectorOpen(false);
+        // Smooth transition: wait for selector to start closing before opening confirmation
+        setTimeout(() => {
+            setSelectedPaymentMethod(method);
+            setIsPurchaseModalOpen(true);
+        }, 200);
+    };
+
     const handlePurchase = async () => {
         if (!user) {
             router.push("/login");
@@ -340,11 +349,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                         <h3 className="text-xl font-black text-center mb-6">Choisir le mode de paiement</h3>
                         <div className="space-y-4">
                             <button
-                                onClick={() => {
-                                    setSelectedPaymentMethod('dodo');
-                                    setIsPaymentSelectorOpen(false);
-                                    setIsPurchaseModalOpen(true);
-                                }}
+                                onClick={() => handlePaymentMethodSelect('dodo')}
                                 className="w-full h-14 rounded-2xl bg-primary text-white font-bold flex items-center justify-between px-6 hover:opacity-90 transition-all active:scale-[0.98]"
                             >
                                 <div className="flex items-center gap-3">
@@ -361,11 +366,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                             </div>
 
                             <button
-                                onClick={() => {
-                                    setSelectedPaymentMethod('moncash');
-                                    setIsPaymentSelectorOpen(false);
-                                    setIsPurchaseModalOpen(true);
-                                }}
+                                onClick={() => handlePaymentMethodSelect('moncash')}
                                 className="w-full h-14 rounded-2xl bg-red-600/10 text-red-600 border border-red-600/20 font-bold flex items-center justify-between px-6 hover:bg-red-600/20 transition-all active:scale-[0.98]"
                             >
                                 <div className="flex items-center gap-3">
