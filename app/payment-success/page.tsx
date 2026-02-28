@@ -64,7 +64,7 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                     });
                     const data = await res.json();
                     console.log("✅ [VERIFY DEBUG] Résultat Bazik:", data);
-                    if (data.status === 'succeeded' || data.status === 'success') {
+                    if (data.status === 'succeeded' || data.status === 'success' || data.status === 'completed') {
                         setVerificationStatus('success');
                         if (data.order) setOrderData(data.order);
                     } else if (data.status === 'failed') {
@@ -91,7 +91,7 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                     });
                     const data = await res.json();
                     console.log("✅ [VERIFY DEBUG] Résultat Dodo:", data);
-                    if (data.status === 'succeeded') {
+                    if (data.status === 'succeeded' || data.status === 'completed') {
                         setVerificationStatus('success');
                         if (data.order) setOrderData(data.order);
                     } else {

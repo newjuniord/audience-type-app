@@ -66,7 +66,7 @@ export async function POST(req: Request) {
             }
 
             // Si le Dodo status est success, on valide tout
-            if (dodoStatus === "succeeded") {
+            if (dodoStatus === "succeeded" || dodoStatus === "completed") {
                 // 1. Update Order
                 t.update(orderRef, {
                     status: "completed",
