@@ -3,6 +3,8 @@
 import { useState } from "react";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const faqs = [
     {
@@ -27,14 +29,27 @@ export default function SupportPage() {
     const [formStatus, setFormStatus] = useState<"idle" | "submitting" | "success">("idle");
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const formData = new FormData(e.target as HTMLFormElement);
+
         setFormStatus("submitting");
-        // Simulate API call
-        setTimeout(() => {
+
+        try {
+            await addDoc(collection(db, "support_messages"), {
+                fullName: formData.get("fullName"),
+                email: formData.get("email"),
+                subject: formData.get("subject"),
+                message: formData.get("message"),
+                createdAt: serverTimestamp(),
+            });
             setFormStatus("success");
             (e.target as HTMLFormElement).reset();
-        }, 1500);
+        } catch (error) {
+            console.error("Error sending message:", error);
+            setFormStatus("idle");
+            alert("Une erreur est survenue lors de l'envoi du message. Veuillez réessayer.");
+        }
     };
 
     return (
@@ -60,6 +75,7 @@ export default function SupportPage() {
                                     <label className="text-[10px] font-black uppercase tracking-widest opacity-50">Nom complet</label>
                                     <input
                                         required
+                                        name="fullName"
                                         type="text"
                                         className="w-full h-14 bg-primary/5 dark:bg-white/5 border border-primary/10 dark:border-white/10 px-6 focus:border-primary dark:focus:border-white outline-none transition-all font-medium"
                                         placeholder="Jean Dupont"
@@ -69,6 +85,7 @@ export default function SupportPage() {
                                     <label className="text-[10px] font-black uppercase tracking-widest opacity-50">Email</label>
                                     <input
                                         required
+                                        name="email"
                                         type="email"
                                         className="w-full h-14 bg-primary/5 dark:bg-white/5 border border-primary/10 dark:border-white/10 px-6 focus:border-primary dark:focus:border-white outline-none transition-all font-medium"
                                         placeholder="jean@exemple.com"
@@ -79,6 +96,7 @@ export default function SupportPage() {
                                 <label className="text-[10px] font-black uppercase tracking-widest opacity-50">Sujet</label>
                                 <input
                                     required
+                                    name="subject"
                                     type="text"
                                     className="w-full h-14 bg-primary/5 dark:bg-white/5 border border-primary/10 dark:border-white/10 px-6 focus:border-primary dark:focus:border-white outline-none transition-all font-medium"
                                     placeholder="Comment pouvons-nous vous aider ?"
@@ -88,6 +106,7 @@ export default function SupportPage() {
                                 <label className="text-[10px] font-black uppercase tracking-widest opacity-50">Message</label>
                                 <textarea
                                     required
+                                    name="message"
                                     rows={5}
                                     className="w-full bg-primary/5 dark:bg-white/5 border border-primary/10 dark:border-white/10 p-6 focus:border-primary dark:focus:border-white outline-none transition-all font-medium resize-none"
                                     placeholder="Décrivez votre demande en détail..."
@@ -139,8 +158,9 @@ export default function SupportPage() {
                         <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="p-8 bg-primary dark:bg-white text-white dark:text-primary">
                                 <span className="material-symbols-outlined mb-4">mail</span>
-                                <h3 className="font-black uppercase tracking-widest text-xs mb-2">Email direct</h3>
+                                <h3 className="font-black uppercase tracking-widest text-xs mb-2">Contact direct</h3>
                                 <p className="text-sm opacity-70">contact@audiencetype.com</p>
+                                <p className="text-sm font-bold mt-1">+1 829 669 2914</p>
                             </div>
                             <div className="p-8 border border-primary/10 dark:border-white/10">
                                 <span className="material-symbols-outlined mb-4">schedule</span>
