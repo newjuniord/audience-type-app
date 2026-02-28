@@ -396,7 +396,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                 message={
                     selectedPaymentMethod === 'moncash'
                         ? `Voulez-vous vraiment acheter "${product?.title}" pour ${getGourdesPrice()} gourdes et payer avec moncash ?`
-                        : `Voulez-vous vraiment acheter "${product?.title}" pour ${product?.price} ? (Ceci est une simulation)`
+                        : `Voulez-vous vraiment acheter "${product?.title}" pour ${product?.price} ?`
                 }
                 confirmText={selectedPaymentMethod === 'moncash' ? "Payer avec Moncash" : "Confirmer l'achat"}
                 isLoading={isPurchasing}
