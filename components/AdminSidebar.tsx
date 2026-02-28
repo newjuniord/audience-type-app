@@ -14,6 +14,7 @@ export default function AdminSidebar() {
         { label: "Ebooks", icon: "menu_book", href: "/admin/ebooks" },
         { label: "Booking Application", icon: "calendar_today", href: "/admin/booking-application" },
         { label: "Bookings", icon: "calendar_today", href: "/admin/bookings" },
+        { label: "Messages", icon: "mail", href: "/admin/messages" },
         { label: "Reviews", icon: "reviews", href: "/admin/reviews" },
         { label: "Storage", icon: "folder", href: "/admin/storage" },
     ];
