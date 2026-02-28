@@ -141,13 +141,15 @@ export async function POST(req: Request) {
         const updatedOrderData = updatedOrderSnap.data();
 
         // On renvoie les données de la commande pour l'affichage frontend
+        const finalStatus = updatedOrderData?.status === "completed" ? "succeeded" : dodoStatus;
+
         return NextResponse.json({
-            status: dodoStatus, // "succeeded", "failed", "pending"
+            status: finalStatus, // "succeeded", "failed", "pending"
             updated: true,
             order: {
                 ...updatedOrderData,
                 id: orderId,
-                status: updatedOrderData?.status || dodoStatus, // Retourner le vrai nouveau statut
+                status: updatedOrderData?.status || dodoStatus,
                 transactionId: paymentId
             }
         });

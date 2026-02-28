@@ -60,63 +60,62 @@ export async function POST(request: Request) {
         const normalizedStatus = (statusData.status || "").toLowerCase();
         const successStatuses = ["completed", "success", "paid", "success_payment", "successful", "succeeded"];
 
-        if (successStatuses.includes(normalizedStatus) && orderData?.status !== "completed") {
-            console.log("✅ [BAZIK VERIFY] Payment confirmed manually. Updating order...");
+        if (orderData?.status === "completed" || successStatuses.includes(normalizedStatus)) {
+            if (orderData?.status !== "completed") {
+                console.log("✅ [BAZIK VERIFY] Payment confirmed manually. Updating order...");
+                await orderRef.update({
+                    status: "completed",
+                    paymentMethod: "moncash",
+                    paidAt: Timestamp.now(),
+                    transactionId: statusData.transactionId || `manual_verify_${verificationId}`,
+                });
 
-            await orderRef.update({
-                status: "completed",
-                paymentMethod: "moncash",
-                paidAt: Timestamp.now(),
-                transactionId: statusData.transactionId || `manual_verify_${verificationId}`,
-            });
+                // Unlock Content
+                const { userId, productId, productType } = orderData as any;
+                if (productType === "course" || productType === "ebook") {
+                    const userRef = adminDb.collection("users").doc(userId);
+                    const productCollection = productType === "course" ? "courses" : "ebooks";
+                    const productRef = adminDb.collection(productCollection).doc(productId.id || productId);
 
-            // Unlock Content (Duplicate logic from webhook for resilience)
-            const { userId, productId, productType } = orderData as any;
-            if (productType === "course" || productType === "ebook") {
-                const userRef = adminDb.collection("users").doc(userId);
-                const productCollection = productType === "course" ? "courses" : "ebooks";
-                const productRef = adminDb.collection(productCollection).doc(productId.id || productId);
+                    const [productSnap, userSnap] = await Promise.all([
+                        productRef.get(),
+                        userRef.get()
+                    ]);
 
-                // Fetch extra metadata for enrollment
-                const [productSnap, userSnap] = await Promise.all([
-                    productRef.get(),
-                    userRef.get()
-                ]);
+                    const pData = productSnap.exists ? productSnap.data() : {};
+                    const uData = userSnap.exists ? userSnap.data() : {};
 
-                const pData = productSnap.exists ? productSnap.data() : {};
-                const uData = userSnap.exists ? userSnap.data() : {};
+                    const enrollmentsRef = adminDb.collection("enrollments");
+                    const existingEnrollment = await enrollmentsRef
+                        .where("userId", "==", userRef)
+                        .where("productId", "==", productRef)
+                        .get();
 
-                const enrollmentsRef = adminDb.collection("enrollments");
-                const existingEnrollment = await enrollmentsRef
-                    .where("userId", "==", userRef)
-                    .where("productId", "==", productRef)
-                    .get();
-
-                if (existingEnrollment.empty) {
-                    await enrollmentsRef.add({
-                        userId: userRef,
-                        productId: productRef,
-                        productType: productType,
-                        orderId: orderId,
-                        status: "active",
-                        accessGranted: true,
-                        enrolledAt: Timestamp.now(),
-                        lastAccessedAt: Timestamp.now(),
-                        progress: 0,
-                        completedLessons: [],
-                        currentLessonId: "",
-                        downloadCount: "0",
-                        // New fields
-                        totalLessons: pData?.totalLessons || 0,
-                        productTitle: pData?.title || orderData?.productTitle || "",
-                        productThumbnailUrl: pData?.thumbnail || pData?.coverImage || orderData?.productThumbnailUrl || "",
-                        userEmail: uData?.email || orderData?.userEmail || "",
-                        userName: uData?.name || orderData?.userName || ""
-                    });
+                    if (existingEnrollment.empty) {
+                        await enrollmentsRef.add({
+                            userId: userRef,
+                            productId: productRef,
+                            productType: productType,
+                            orderId: orderId,
+                            status: "active",
+                            accessGranted: true,
+                            enrolledAt: Timestamp.now(),
+                            lastAccessedAt: Timestamp.now(),
+                            progress: 0,
+                            completedLessons: [],
+                            currentLessonId: "",
+                            downloadCount: "0",
+                            totalLessons: pData?.totalLessons || 0,
+                            productTitle: pData?.title || orderData?.productTitle || "",
+                            productThumbnailUrl: pData?.thumbnail || pData?.coverImage || orderData?.productThumbnailUrl || "",
+                            userEmail: uData?.email || orderData?.userEmail || "",
+                            userName: uData?.name || orderData?.userName || ""
+                        });
+                    }
                 }
             }
 
-            return NextResponse.json({ status: "succeeded", order: { ...orderData, status: "completed" } });
+            return NextResponse.json({ status: "succeeded", order: (await orderRef.get()).data() });
         }
 
         return NextResponse.json({
