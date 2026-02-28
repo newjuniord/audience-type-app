@@ -354,6 +354,12 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                                 <span className="material-symbols-outlined text-sm">arrow_forward_ios</span>
                             </button>
 
+                            <div className="flex items-center gap-4 text-xs font-bold text-primary/10 dark:text-white/10 uppercase tracking-widest text-center py-2">
+                                <div className="h-px bg-primary/10 dark:bg-white/10 flex-1"></div>
+                                <span>ou</span>
+                                <div className="h-px bg-primary/10 dark:bg-white/10 flex-1"></div>
+                            </div>
+
                             <button
                                 onClick={() => {
                                     setSelectedPaymentMethod('moncash');
