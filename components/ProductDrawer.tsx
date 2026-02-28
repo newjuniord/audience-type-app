@@ -32,6 +32,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
     const router = useRouter();
     const [isVisible, setIsVisible] = useState(false);
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+    const [isPaymentSelectorOpen, setIsPaymentSelectorOpen] = useState(false);
     const [isPurchasing, setIsPurchasing] = useState(false);
 
     // Application State
@@ -314,33 +315,11 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                                                 onClose();
                                                 return;
                                             }
-                                            setSelectedPaymentMethod('dodo');
-                                            setIsPurchaseModalOpen(true);
+                                            setIsPaymentSelectorOpen(true);
                                         }}
                                     >
                                         {product.isOwned ? "Accéder au produit" : "Acheter maintenant"}
                                     </BubbleButton>
-
-                                    {!product.isOwned && (
-                                        <>
-                                            <div className="flex items-center gap-4 text-xs font-bold text-primary/30 dark:text-white/30 uppercase tracking-widest text-center">
-                                                <div className="h-px bg-primary/10 dark:bg-white/10 flex-1"></div>
-                                                <span>ou</span>
-                                                <div className="h-px bg-primary/10 dark:bg-white/10 flex-1"></div>
-                                            </div>
-
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedPaymentMethod('moncash');
-                                                    setIsPurchaseModalOpen(true);
-                                                }}
-                                                className="w-full h-12 rounded-full bg-red-600/10 text-red-600 hover:bg-red-600/20 font-bold transition-all flex items-center justify-center gap-2 active:scale-95"
-                                            >
-                                                <span className="material-symbols-outlined">payments</span>
-                                                Payer avec Moncash
-                                            </button>
-                                        </>
-                                    )}
                                 </div>
                             )}
                         </div>
@@ -348,11 +327,65 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                 )}
             </div>
 
+            {/* Payment Method Selector Modal */}
+            <div className={`fixed inset-0 z-[160] flex items-center justify-center p-4 transition-all duration-300 ${isPaymentSelectorOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                {/* Backdrop */}
+                <div
+                    className="absolute inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm"
+                    onClick={() => setIsPaymentSelectorOpen(false)}
+                />
+
+                <div className={`bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl w-full max-w-sm relative overflow-hidden transform transition-all duration-300 ${isPaymentSelectorOpen ? 'scale-100' : 'scale-95'}`}>
+                    <div className="p-8">
+                        <h3 className="text-xl font-black text-center mb-6">Choisir le mode de paiement</h3>
+                        <div className="space-y-4">
+                            <button
+                                onClick={() => {
+                                    setSelectedPaymentMethod('dodo');
+                                    setIsPaymentSelectorOpen(false);
+                                    setIsPurchaseModalOpen(true);
+                                }}
+                                className="w-full h-14 rounded-2xl bg-primary text-white font-bold flex items-center justify-between px-6 hover:opacity-90 transition-all active:scale-[0.98]"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="material-symbols-outlined">credit_card</span>
+                                    <span>Payer par carte</span>
+                                </div>
+                                <span className="material-symbols-outlined text-sm">arrow_forward_ios</span>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setSelectedPaymentMethod('moncash');
+                                    setIsPaymentSelectorOpen(false);
+                                    setIsPurchaseModalOpen(true);
+                                }}
+                                className="w-full h-14 rounded-2xl bg-red-600/10 text-red-600 border border-red-600/20 font-bold flex items-center justify-between px-6 hover:bg-red-600/20 transition-all active:scale-[0.98]"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <img src="/images/moncash-logo.png" alt="Moncash" className="h-6 w-6 object-contain" />
+                                    <span>Payer avec Moncash</span>
+                                </div>
+                                <span className="material-symbols-outlined text-sm">arrow_forward_ios</span>
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => setIsPaymentSelectorOpen(false)}
+                            className="w-full mt-6 text-sm font-bold opacity-40 hover:opacity-100 transition-opacity"
+                        >
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <ConfirmModal
                 isOpen={isPurchaseModalOpen}
                 onClose={() => setIsPurchaseModalOpen(false)}
                 onConfirm={handlePurchase}
                 title="Confirmer l'achat"
+                image={selectedPaymentMethod === 'moncash' ? "/images/moncash-logo.png" : undefined}
                 message={
                     selectedPaymentMethod === 'moncash'
                         ? `Voulez-vous vraiment acheter "${product?.title}" pour ${getGourdesPrice()} gourdes et payer avec moncash ?`

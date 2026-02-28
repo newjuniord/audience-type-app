@@ -12,6 +12,7 @@ interface ConfirmModalProps {
     cancelText?: string;
     isDanger?: boolean;
     isLoading?: boolean;
+    image?: string;
     type?: 'confirm' | 'alert'; // 'confirm' has 2 buttons, 'alert' has 1 (OK)
 }
 
@@ -25,6 +26,7 @@ export default function ConfirmModal({
     cancelText = "Cancel",
     isDanger = false,
     isLoading = false,
+    image,
     type = 'confirm'
 }: ConfirmModalProps) {
     const [isVisible, setIsVisible] = useState(false);
@@ -55,13 +57,19 @@ export default function ConfirmModal({
                 <div className="p-8 text-center">
                     {/* Icon */}
                     <div className={`size-16 rounded-full flex items-center justify-center mx-auto mb-6 ${isDanger
-                            ? 'bg-red-50 text-red-500'
-                            : 'bg-black/5 dark:bg-white/5 text-primary dark:text-white'
+                        ? 'bg-red-50 text-red-500'
+                        : 'bg-black/5 dark:bg-white/5 text-primary dark:text-white'
                         }`}>
                         <span className="material-symbols-outlined text-3xl">
                             {isDanger ? 'warning' : 'info'}
                         </span>
                     </div>
+
+                    {image && (
+                        <div className="mb-6 flex justify-center">
+                            <img src={image} alt="Logo" className="h-20 w-20 object-contain rounded-2xl shadow-lg" />
+                        </div>
+                    )}
 
                     <h3 className="text-2xl font-black text-primary dark:text-white mb-2">{title}</h3>
                     <p className="text-black/50 dark:text-white/50 text-sm font-medium mb-8 leading-relaxed">
@@ -89,10 +97,10 @@ export default function ConfirmModal({
                             }}
                             disabled={isLoading}
                             className={`flex-1 h-12 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2 ${type === 'alert'
-                                    ? 'bg-black dark:bg-white text-white dark:text-primary hover:opacity-90'
-                                    : isDanger
-                                        ? 'bg-red-500 hover:bg-red-600 text-white'
-                                        : 'bg-primary hover:bg-primary/90 text-white'
+                                ? 'bg-black dark:bg-white text-white dark:text-primary hover:opacity-90'
+                                : isDanger
+                                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                                    : 'bg-primary hover:bg-primary/90 text-white'
                                 }`}
                         >
                             {isLoading ? (
