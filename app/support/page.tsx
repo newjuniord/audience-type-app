@@ -3,8 +3,6 @@
 import { useState } from "react";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const faqs = [
     {
@@ -33,16 +31,26 @@ export default function SupportPage() {
         e.preventDefault();
         const formData = new FormData(e.target as HTMLFormElement);
 
+        const payload = {
+            fullName: formData.get("fullName"),
+            email: formData.get("email"),
+            subject: formData.get("subject"),
+            message: formData.get("message"),
+        };
+
         setFormStatus("submitting");
 
         try {
-            await addDoc(collection(db, "support_messages"), {
-                fullName: formData.get("fullName"),
-                email: formData.get("email"),
-                subject: formData.get("subject"),
-                message: formData.get("message"),
-                createdAt: serverTimestamp(),
+            const response = await fetch("/api/support", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
             });
+
+            if (!response.ok) {
+                throw new Error("Failed to send message");
+            }
+
             setFormStatus("success");
             (e.target as HTMLFormElement).reset();
         } catch (error) {
