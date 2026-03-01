@@ -38,13 +38,17 @@ export default function AdminMessagesPage() {
     useEffect(() => {
         if (role !== "admin") return;
 
+        console.log("📡 [ADMIN MESSAGES] Starting listener for support_messages...");
         const q = query(collection(db, "support_messages"), orderBy("createdAt", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            console.log(`✅ [ADMIN MESSAGES] Received ${snapshot.size} messages.`);
             const msgs = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             })) as SupportMessage[];
             setMessages(msgs);
+        }, (error) => {
+            console.error("❌ [ADMIN MESSAGES] Snapshot error:", error);
         });
 
         return () => unsubscribe();
