@@ -42,26 +42,34 @@ export const getOrdersByUser = async (userId: string): Promise<Order[]> => {
     try {
         console.log("🔍 [LIB/ORDERS] Querying orders for userId:", userId);
         const ref = collection(db, COLLECTION_NAME);
+        const allDocs: any[] = [];
 
-        // Try querying by string ID first (new format)
-        const qString = query(ref, where("userId", "==", userId));
-        const snapshotString = await getDocs(qString);
-        console.log(`🔍 [LIB/ORDERS] Found ${snapshotString.size} orders with string userId.`);
+        // 1. Try querying by string ID (Newer format)
+        try {
+            const qString = query(ref, where("userId", "==", userId));
+            const snapshotString = await getDocs(qString);
+            console.log(`🔍 [LIB/ORDERS] Found ${snapshotString.size} orders with string userId.`);
+            allDocs.push(...snapshotString.docs);
+        } catch (err) {
+            console.warn("⚠️ [LIB/ORDERS] String-based query failed (possibly permissions):", err);
+        }
 
-        // Try querying by DocumentReference (old/alternate format)
-        const userRef = doc(db, "users", userId);
-        const qRef = query(ref, where("userId", "==", userRef));
-        const snapshotRef = await getDocs(qRef);
-        console.log(`🔍 [LIB/ORDERS] Found ${snapshotRef.size} orders with Reference userId.`);
+        // 2. Try querying by DocumentReference (Older/Alternative format)
+        try {
+            const userRef = doc(db, "users", userId);
+            const qRef = query(ref, where("userId", "==", userRef));
+            const snapshotRef = await getDocs(qRef);
+            console.log(`🔍 [LIB/ORDERS] Found ${snapshotRef.size} orders with Reference userId.`);
 
-        // Combine and deduplicate
-        const allDocs = [...snapshotString.docs];
-        // Add ref docs if not already in list (unlikely to have both for same record, but safe)
-        snapshotRef.docs.forEach(d => {
-            if (!allDocs.find(existing => existing.id === d.id)) {
-                allDocs.push(d);
-            }
-        });
+            // Add ref docs if not already in list
+            snapshotRef.docs.forEach(d => {
+                if (!allDocs.find(existing => existing.id === d.id)) {
+                    allDocs.push(d);
+                }
+            });
+        } catch (err) {
+            console.warn("⚠️ [LIB/ORDERS] Reference-based query failed (expected for non-admins if rules are strict):", err);
+        }
 
         const orders = allDocs.map(doc => ({
             id: doc.id,
@@ -70,7 +78,7 @@ export const getOrdersByUser = async (userId: string): Promise<Order[]> => {
 
         return orders;
     } catch (error) {
-        console.error("❌ [LIB/ORDERS] Erreur récup orders par user:", error);
+        console.error("❌ [LIB/ORDERS] Critical error in getOrdersByUser:", error);
         throw error;
     }
 };
