@@ -40,15 +40,37 @@ export const getOrders = async (): Promise<Order[]> => {
  */
 export const getOrdersByUser = async (userId: string): Promise<Order[]> => {
     try {
+        console.log("🔍 [LIB/ORDERS] Querying orders for userId:", userId);
         const ref = collection(db, COLLECTION_NAME);
-        const q = query(ref, where("userId", "==", userId));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({
+
+        // Try querying by string ID first (new format)
+        const qString = query(ref, where("userId", "==", userId));
+        const snapshotString = await getDocs(qString);
+        console.log(`🔍 [LIB/ORDERS] Found ${snapshotString.size} orders with string userId.`);
+
+        // Try querying by DocumentReference (old/alternate format)
+        const userRef = doc(db, "users", userId);
+        const qRef = query(ref, where("userId", "==", userRef));
+        const snapshotRef = await getDocs(qRef);
+        console.log(`🔍 [LIB/ORDERS] Found ${snapshotRef.size} orders with Reference userId.`);
+
+        // Combine and deduplicate
+        const allDocs = [...snapshotString.docs];
+        // Add ref docs if not already in list (unlikely to have both for same record, but safe)
+        snapshotRef.docs.forEach(d => {
+            if (!allDocs.find(existing => existing.id === d.id)) {
+                allDocs.push(d);
+            }
+        });
+
+        const orders = allDocs.map(doc => ({
             id: doc.id,
             ...doc.data()
         })) as Order[];
+
+        return orders;
     } catch (error) {
-        console.error("Erreur récup orders par user:", error);
+        console.error("❌ [LIB/ORDERS] Erreur récup orders par user:", error);
         throw error;
     }
 };

@@ -18,10 +18,15 @@ export default function TransactionsPage() {
 
     useEffect(() => {
         const fetchOrders = async () => {
-            if (!user) return;
+            if (!user) {
+                console.log("📡 [TRANSACTIONS] No user found in AuthContext");
+                return;
+            }
+            console.log("📡 [TRANSACTIONS] Fetching orders for UID:", user.uid);
             try {
-                // const userRef = doc(db, "users", user.uid); // Plus besoin de ref
                 const userOrders = await getOrdersByUser(user.uid);
+                console.log(`✅ [TRANSACTIONS] Fetched ${userOrders.length} orders.`);
+
                 // Sort by date desc
                 userOrders.sort((a, b) => {
                     const dateA = a.createdAt?.toDate().getTime() || 0;
@@ -30,7 +35,7 @@ export default function TransactionsPage() {
                 });
                 setOrders(userOrders);
             } catch (error) {
-                console.error("Error fetching transactions:", error);
+                console.error("❌ [TRANSACTIONS] Error fetching transactions:", error);
             } finally {
                 setLoading(false);
             }
@@ -39,9 +44,11 @@ export default function TransactionsPage() {
         if (user) {
             fetchOrders();
         } else {
-            setLoading(false);
+            console.log("📡 [TRANSACTIONS] Waiting for user or loading...");
+            // Non-loading state without user means we've checked and it's empty
+            if (!loading) setLoading(false);
         }
-    }, [user]);
+    }, [user, loading]);
 
     // Filtering
     const filteredOrders = orders.filter(order =>
