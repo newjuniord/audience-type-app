@@ -45,8 +45,8 @@ export default function TransactionsPage() {
 
     // Filtering
     const filteredOrders = orders.filter(order =>
-        order.productTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.transactionId.toLowerCase().includes(searchTerm.toLowerCase())
+        (order.productTitle || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.transactionId || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Pagination
@@ -196,11 +196,15 @@ export default function TransactionsPage() {
                                                 {formatCurrency(order.amount, order.currency)}
                                             </td>
                                             <td className="py-5 px-4 text-center">
-                                                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${order.status === 'paid'
+                                                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${['paid', 'completed'].includes(order.status)
                                                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                                    : order.status === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                                                     }`}>
-                                                    {order.status === 'paid' ? 'Payé' : order.status}
+                                                    {['paid', 'completed'].includes(order.status) ? 'Payé' :
+                                                        order.status === 'pending' ? 'En attente' :
+                                                            order.status === 'failed' ? 'Échoué' :
+                                                                order.status}
                                                 </span>
                                             </td>
                                         </tr>
