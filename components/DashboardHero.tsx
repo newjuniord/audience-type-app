@@ -15,7 +15,7 @@ export default function DashboardHero() {
                     Votre Bibliothèque
                 </h1>
                 <p className="text-primary/60 dark:text-white/60 text-lg font-normal max-w-md">
-                    Bienvenue, <span className="font-semibold text-primary/80 dark:text-white/80">{userName}</span>. Votre catalogue est prêt.
+                    <span>Bienvenue, </span><span className="font-semibold text-primary/80 dark:text-white/80"><span>{userName}</span></span><span>. Votre catalogue est prêt.</span>
                 </p>
             </div>
         </div>

@@ -24,14 +24,14 @@ export default function FilterBar({ activeFilter, onFilterChange }: FilterBarPro
                         }`}
                 >
                     {filter.icon && (
-                        <span className={`material-symbols-outlined text-xl md:text-lg ${activeFilter === filter.name ? "text-white" : "text-primary dark:text-white"
-                            }`}>
+                        <span className={`material-symbols-outlined text-xl md:text-lg notranslate ${activeFilter === filter.name ? "text-white" : "text-primary dark:text-white"
+                            }`} translate="no">
                             {filter.icon}
                         </span>
                     )}
                     <span className={`${activeFilter === filter.name ? "text-white font-bold md:font-semibold" : "text-primary dark:text-white font-medium"
                         } text-base md:text-sm leading-normal`}>
-                        {filter.name}
+                        <span>{filter.name}</span>
                     </span>
                 </button>
             ))}

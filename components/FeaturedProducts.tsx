@@ -147,7 +147,7 @@ export default function FeaturedProducts({
     return (
         <section className={`w-full max-w-[1200px] px-6 py-20 ${showBorder ? 'border-t border-primary/5 dark:border-white/5' : ''}`}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
-                <h2 className="text-2xl font-black uppercase tracking-tighter">{title}</h2>
+                <h2 className="text-2xl font-black uppercase tracking-tighter"><span>{title}</span></h2>
                 <div className="flex flex-col md:flex-row gap-4 md:gap-8">
                     {displayCategories.map(cat => (
                         <button
@@ -175,10 +175,10 @@ export default function FeaturedProducts({
                         </div>
                         <div className="p-6 flex flex-col flex-grow">
                             <div className="flex justify-between items-start mb-2">
-                                <h3 className="text-xl font-black leading-tight">{product.title}</h3>
-                                <span className="text-lg font-bold">{product.price}</span>
+                                <h3 className="text-xl font-black leading-tight"><span>{product.title}</span></h3>
+                                <span className="text-lg font-bold"><span>{product.price}</span></span>
                             </div>
-                            <p className="text-sm text-primary/60 dark:text-white/60 mb-8 line-clamp-2">{product.description}</p>
+                            <p className="text-sm text-primary/60 dark:text-white/60 mb-8 line-clamp-2"><span>{product.description}</span></p>
                             <div className="mt-auto">
                                 <BubbleButton
                                     onClick={() => handleProductClick(product)}
@@ -196,7 +196,7 @@ export default function FeaturedProducts({
                 ))}
                 {filteredProducts.length === 0 && (
                     <div className="col-span-full flex items-center justify-center py-20">
-                        <p className="text-primary/40 uppercase font-bold tracking-widest">Aucun produit trouvé dans cette catégorie</p>
+                        <p className="text-primary/40 uppercase font-bold tracking-widest"><span>Aucun produit trouvé dans cette catégorie</span></p>
                     </div>
                 )}
             </div>
@@ -206,8 +206,8 @@ export default function FeaturedProducts({
                         onClick={handleLoadMore}
                         className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest border border-primary/20 dark:border-white/20 px-10 py-4 hover:border-primary dark:hover:border-white transition-colors"
                     >
-                        Voir plus
-                        <span className="material-symbols-outlined text-sm">trending_flat</span>
+                        <span>Voir plus</span>
+                        <span className="material-symbols-outlined text-sm notranslate" translate="no">trending_flat</span>
                     </button>
                 </div>
             )}

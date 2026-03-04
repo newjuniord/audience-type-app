@@ -102,8 +102,8 @@ export default function Dashboard() {
                         ) : filteredEnrollments.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
                                 <span className="material-symbols-outlined text-6xl mb-4">folder_open</span>
-                                <h3 className="text-xl font-bold">Aucun produit trouvé</h3>
-                                <p className="text-sm mt-2">Vous n'avez pas encore de produits dans cette catégorie.</p>
+                                <h3 className="text-xl font-bold"><span>Aucun produit trouvé</span></h3>
+                                <p className="text-sm mt-2"><span>Vous n'avez pas encore de produits dans cette catégorie.</span></p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-8">
@@ -129,14 +129,14 @@ export default function Dashboard() {
 
                                             {/* Type Badge */}
                                             <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-md text-[10px] font-black uppercase tracking-widest shadow-lg">
-                                                {item.productType}
+                                                <span>{item.productType}</span>
                                             </div>
                                         </div>
 
                                         {/* Content */}
                                         <div className="p-6 flex flex-col flex-1">
                                             <h3 className="text-lg font-bold leading-tight mb-2 group-hover:text-primary dark:group-hover:text-white transition-colors">
-                                                {item.productTitle}
+                                                <span>{item.productTitle}</span>
                                             </h3>
 
                                             <div className="mt-auto pt-4 flex items-center justify-between border-t border-black/5 dark:border-white/5">
@@ -152,16 +152,16 @@ export default function Dashboard() {
                                                     </div>
                                                 ) : (
                                                     <span className="text-xs font-bold uppercase tracking-wider opacity-60 flex items-center gap-2">
-                                                        <span className="material-symbols-outlined text-sm">
+                                                        <span className="material-symbols-outlined text-sm notranslate">
                                                             {item.productType.toLowerCase().includes('ebook') ? 'download' : 'calendar_month'}
                                                         </span>
-                                                        {item.productType.toLowerCase().includes('ebook') ? 'Télécharger' : 'Détails'}
+                                                        <span>{item.productType.toLowerCase().includes('ebook') ? 'Télécharger' : 'Détails'}</span>
                                                     </span>
                                                 )}
 
                                                 {item.productType.toLowerCase().includes('ebook') && item.downloadCount !== undefined && (
                                                     <span className="text-[10px] opacity-40">
-                                                        {item.downloadCount} downloads
+                                                        <span>{item.downloadCount}</span> <span>downloads</span>
                                                     </span>
                                                 )}
                                             </div>
@@ -177,14 +177,14 @@ export default function Dashboard() {
 
                             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                                 <div className="text-center md:text-left">
-                                    <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic mb-3">Rejoignez l'aventure</h2>
-                                    <p className="text-sm md:text-base opacity-80 max-w-md">Devenez partenaire d'Audience Type et gagnez des commissions sur chaque vente réalisée grâce à vous.</p>
+                                    <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic mb-3"><span>Rejoignez l'aventure</span></h2>
+                                    <p className="text-sm md:text-base opacity-80 max-w-md"><span>Devenez partenaire d'Audience Type et gagnez des commissions sur chaque vente réalisée grâce à vous.</span></p>
                                 </div>
                                 <button
                                     onClick={() => router.push('/support?subject=Demande d\'affiliation')}
                                     className="h-14 px-10 bg-white dark:bg-primary text-primary dark:text-white font-black uppercase tracking-widest text-xs rounded-full hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10 dark:shadow-white/5"
                                 >
-                                    Demande d'affiliation
+                                    <span>Demande d'affiliation</span>
                                 </button>
                             </div>
                         </div>
