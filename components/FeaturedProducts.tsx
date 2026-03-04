@@ -161,7 +161,7 @@ export default function FeaturedProducts({
                                 : "border-transparent opacity-40 hover:opacity-100"
                                 }`}
                         >
-                            {cat.label}
+                            <span>{cat.label}</span>
                         </button>
                     ))}
                 </div>
@@ -171,9 +171,7 @@ export default function FeaturedProducts({
                     <div key={index} className="group flex flex-col bg-white dark:bg-transparent overflow-hidden border border-primary/10 dark:border-white/10 hover:border-primary dark:hover:border-white transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="aspect-[4/3] bg-primary/5 dark:bg-white/5 overflow-hidden relative">
                             <img alt={product.title} className="w-full h-full object-cover grayscale transition-transform duration-500 group-hover:scale-105 group-hover:grayscale-0" src={product.image} />
-                            <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm dark:bg-black/90 px-3 py-1 text-[10px] font-black uppercase tracking-widest">
-                                {product.type === "Course" ? "Cours" : product.type === "Ebook" ? "Ebook" : "Service"}
-                            </div>
+                            <span>{product.type === "Course" ? "Cours" : product.type === "Ebook" ? "Ebook" : "Service"}</span>
                         </div>
                         <div className="p-6 flex flex-col flex-grow">
                             <div className="flex justify-between items-start mb-2">
@@ -185,10 +183,12 @@ export default function FeaturedProducts({
                                 <BubbleButton
                                     onClick={() => handleProductClick(product)}
                                 >
-                                    {product.isOwned
-                                        ? "Possédé"
-                                        : (product.type === "Service" ? "Réserver" : "Acheter")
-                                    }
+                                    <span>
+                                        {product.isOwned
+                                            ? "Possédé"
+                                            : (product.type === "Service" ? "Réserver" : "Acheter")
+                                        }
+                                    </span>
                                 </BubbleButton>
                             </div>
                         </div>

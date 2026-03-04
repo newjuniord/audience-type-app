@@ -69,16 +69,18 @@ export default function DashboardHeader() {
                                     }`}
                             >
                                 <div className="p-4 flex flex-col gap-1">
-                                    <div className="px-3 py-2 mb-2 border-b border-black/5 dark:border-white/5">
-                                        <p className="text-xs font-bold text-primary/50 dark:text-white/50 uppercase tracking-widest mb-1">Connecté en tant que</p>
-                                        <p className="text-sm font-black truncate">{user.displayName || user.email}</p>
-                                    </div>
+                                    <p className="text-xs font-bold text-primary/50 dark:text-white/50 uppercase tracking-widest mb-1">
+                                        <span>Connecté en tant que</span>
+                                    </p>
+                                    <p className="text-sm font-black truncate">
+                                        <span>{user.displayName || user.email}</span>
+                                    </p>
                                     <Link
                                         href="/products"
                                         onClick={() => setIsDropdownOpen(false)}
                                         className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
                                     >
-                                        <span className="material-symbols-outlined text-lg">storefront</span>
+                                        <span className="material-symbols-outlined text-lg notranslate">storefront</span>
                                         Produits
                                     </Link>
                                     <Link
@@ -86,7 +88,7 @@ export default function DashboardHeader() {
                                         onClick={() => setIsDropdownOpen(false)}
                                         className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
                                     >
-                                        <span className="material-symbols-outlined text-lg">grid_view</span>
+                                        <span className="material-symbols-outlined text-lg notranslate">grid_view</span>
                                         Mon contenu
                                     </Link>
                                     <Link
@@ -94,7 +96,7 @@ export default function DashboardHeader() {
                                         onClick={() => setIsDropdownOpen(false)}
                                         className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
                                     >
-                                        <span className="material-symbols-outlined text-lg">receipt_long</span>
+                                        <span className="material-symbols-outlined text-lg notranslate">receipt_long</span>
                                         Transactions
                                     </Link>
                                     <Link
@@ -102,7 +104,7 @@ export default function DashboardHeader() {
                                         onClick={() => setIsDropdownOpen(false)}
                                         className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold border-b border-black/5 dark:border-white/5"
                                     >
-                                        <span className="material-symbols-outlined text-lg">person</span>
+                                        <span className="material-symbols-outlined text-lg notranslate">person</span>
                                         Profil
                                     </Link>
 
@@ -114,7 +116,7 @@ export default function DashboardHeader() {
                             href="/login"
                             className="bg-primary dark:bg-white text-white dark:text-primary px-8 h-10 rounded-full text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg flex items-center justify-center"
                         >
-                            Se connecter
+                            <span>Se connecter</span>
                         </Link>
                     )}
                 </div>

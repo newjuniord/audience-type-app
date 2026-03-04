@@ -39,7 +39,7 @@ export default function ConnectionStatus() {
                 } ${showBanner && isOnline ? "!translate-y-0" : ""}`}
             style={{ color: 'white' }}
         >
-            {isOnline ? "Connexion rétablie" : "Connexion internet instable"}
+            <span>{isOnline ? "Connexion rétablie" : "Connexion internet instable"}</span>
         </div>
     );
 }
