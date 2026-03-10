@@ -19,6 +19,7 @@ export interface Product {
     description: string;
     features?: string[];
     isOwned?: boolean;
+    whopPlanId?: string;
 }
 
 interface ProductDrawerProps {
@@ -55,7 +56,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
         }
     }, [isOpen]);
 
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'dodo' | 'moncash'>('dodo');
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'whop' | 'moncash'>('whop');
 
     // Helper to get price in Gourdes
     const getGourdesPrice = () => {
@@ -64,7 +65,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
         return isNaN(priceNumber) ? 0 : Math.floor(priceNumber * 100); // x100 conversion
     };
 
-    const handlePaymentMethodSelect = (method: 'dodo' | 'moncash') => {
+    const handlePaymentMethodSelect = (method: 'whop' | 'moncash') => {
         setIsPaymentSelectorOpen(false);
         // Smooth transition: wait for selector to start closing before opening confirmation
         setTimeout(() => {
@@ -83,32 +84,34 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
 
         setIsPurchasing(true);
         try {
+            const priceInGourdes = getGourdesPrice();
+
+            // Determine collection for product reference
+            let collectionName = "courses";
+            if (product.type.toLowerCase() === "ebook") collectionName = "ebooks";
+            else if (product.type.toLowerCase() === "service" || product.type.toLowerCase() === "booking") collectionName = "services";
+
+            // 1. Create pending order in Firestore
+            const orderData = {
+                userId: user.uid,
+                userEmail: user.email!,
+                productId: doc(db, collectionName, product.id!),
+                productThumbnailUrl: product.image || "",
+                productTitle: product.title,
+                productType: product.type.toLowerCase(),
+                transactionId: "", // Pending
+                amount: selectedPaymentMethod === 'moncash' ? priceInGourdes : parseFloat(product.price.replace(/[^0-9.]/g, '')),
+                currency: selectedPaymentMethod === 'moncash' ? "HTG" : "USD",
+                status: "pending",
+                paymentMethod: selectedPaymentMethod,
+                whopPlanId: product.whopPlanId || "", // Store the plan ID directly in the order
+                createdAt: Timestamp.now(),
+            };
+
+            const orderId = await createOrder(orderData as any);
+
             if (selectedPaymentMethod === 'moncash') {
-                // Determine collection for product reference
-                let collectionName = "courses";
-                if (product.type.toLowerCase() === "ebook") collectionName = "ebooks";
-                else if (product.type.toLowerCase() === "service" || product.type.toLowerCase() === "booking") collectionName = "services";
-
-                // 1. Create pending order in Firestore
-                const priceInGourdes = getGourdesPrice();
-                const orderData = {
-                    userId: user.uid, // Interface allows string
-                    userEmail: user.email!, // Interface requires string
-                    productId: doc(db, collectionName, product.id!), // Interface requires DocumentReference
-                    productThumbnailUrl: product.image,
-                    productTitle: product.title,
-                    productType: product.type.toLowerCase(),
-                    transactionId: "", // Pending
-                    amount: priceInGourdes,
-                    currency: "HTG",
-                    status: "pending",
-                    paymentMethod: "moncash",
-                    createdAt: Timestamp.now(),
-                };
-
-                const orderId = await createOrder(orderData);
-
-                // 2. Call Bazik Payment API
+                // Revert Moncash: Call Bazik API and redirect directly
                 const response = await fetch("/api/bazik/payment", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -127,45 +130,16 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                     throw new Error(data.error || "Failed to initialize Moncash payment");
                 }
 
-                // Bazik returns 'redirectUrl' (camelCase)
                 const redirectUrl = data.redirectUrl || data.redirect_url || data.payment_link;
 
                 if (redirectUrl) {
                     window.location.href = redirectUrl;
-                } else if (data.payment_token?.redirect_url) {
-                    window.location.href = data.payment_token.redirect_url;
                 } else {
-                    console.error("No redirect URL found in Bazik response:", data);
                     throw new Error("No redirect URL returned from payment provider");
                 }
-
             } else {
-                // Dodo Payments Flow
-                const response = await fetch("/api/dodo/checkout", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        productId: product.id,
-                        userId: user.uid,
-                        userEmail: user.email,
-                        userName: user.displayName || "Client", // Fallback name
-                    }),
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || "Failed to create checkout session");
-                }
-
-                if (data.checkoutUrl) {
-                    // Redirect user to Dodo Payments
-                    window.location.href = data.checkoutUrl;
-                } else {
-                    throw new Error("No checkout URL returned");
-                }
+                // Redirect directly to the Dodo Payments link as requested
+                window.location.href = "https://checkout.dodopayments.com/buy/pdt_0NZX5Y8qX10eQADRoOFTN?quantity=1";
             }
 
         } catch (error: any) {
@@ -349,11 +323,11 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                         <h3 className="text-xl font-black text-center mb-6">Choisir le mode de paiement</h3>
                         <div className="space-y-4">
                             <button
-                                onClick={() => handlePaymentMethodSelect('dodo')}
+                                onClick={() => handlePaymentMethodSelect('whop')}
                                 className="w-full h-14 rounded-2xl bg-primary text-white font-bold flex items-center justify-between px-6 hover:opacity-90 transition-all active:scale-[0.98]"
                             >
                                 <div className="flex items-center gap-3">
-                                    <span className="material-symbols-outlined">credit_card</span>
+                                    <span className="material-symbols-outlined">payments</span>
                                     <span>Payer par carte</span>
                                 </div>
                                 <span className="material-symbols-outlined text-sm">arrow_forward_ios</span>
