@@ -63,15 +63,22 @@ service cloud.firestore {
     // Orders: Users create and read their own. Admins read all.
     match /orders/{orderId} {
       allow create: if isAuthenticated(); // User creates order (simulated payment)
-      allow read: if isAuthenticated() && (resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || isAdmin());
+      allow read: if isAuthenticated() && (
+        resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || 
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
       allow update, delete: if isAdmin();
     }
 
     // Enrollments: Users create (simulated) and read their own. Admins read/write all.
     match /enrollments/{enrollmentId} {
       allow create: if isAuthenticated(); // Simulating purchase flow client-side
-      allow read: if isAuthenticated() && (resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || isAdmin());
-      allow update: if isAuthenticated() && (resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || isAdmin()); // For progress updates
+      allow read, update: if isAuthenticated() && (
+        resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || 
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
       allow delete: if isAdmin();
     }
 
@@ -79,20 +86,32 @@ service cloud.firestore {
     match /reviews/{reviewId} {
       allow read: if true;
       allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || isAdmin());
+      allow update, delete: if isAuthenticated() && (
+        resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || 
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
     }
 
     // Bookings: Users create/read own. Admins read/write all.
     match /bookings/{bookingId} {
       allow create: if isAuthenticated();
-      allow read: if isAuthenticated() && (resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || isAdmin());
+      allow read: if isAuthenticated() && (
+        resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || 
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
       allow update, delete: if isAdmin();
     }
 
     // Booking Applications
     match /bookingApplications/{applicationId} {
       allow create: if isAuthenticated();
-      allow read: if isAuthenticated() && (resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || isAdmin());
+      allow read: if isAuthenticated() && (
+        resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || 
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
       allow update, delete: if isAdmin();
     }
 
@@ -106,6 +125,12 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // Support Messages: Admin access
+    match /support_messages/{messageId} {
+      allow read, delete: if isAdmin();
+      allow create: if true;
     }
   }
 }

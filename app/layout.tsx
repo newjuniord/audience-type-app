@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import ConnectionStatus from "@/components/ConnectionStatus";
 import AnnouncementBar from "@/components/AnnouncementBar";
+import WhatsAppPromptModal from "@/components/WhatsAppPromptModal";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -38,6 +39,7 @@ export default function RootLayout({
         <AuthProvider>
           <AnnouncementBar />
           <ConnectionStatus />
+          <WhatsAppPromptModal />
           {children}
         </AuthProvider>
       </body>

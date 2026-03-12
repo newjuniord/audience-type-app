@@ -1,24 +1,30 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { User as FirebaseUser } from "firebase/auth";
 import { auth, db } from "../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { User as FirestoreUser } from "../lib/types";
 
 interface AuthContextType {
-    user: User | null;
+    user: FirebaseUser | null;
+    userData: FirestoreUser | null;
     role: string | null;
     loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
+    userData: null,
     role: null,
     loading: true,
 });
 
+import { onAuthStateChanged } from "firebase/auth";
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<FirebaseUser | null>(null);
+    const [userData, setUserData] = useState<FirestoreUser | null>(null);
     const [role, setRole] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -26,20 +32,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
             if (authUser) {
                 setUser(authUser);
-                // Fetch role from Firestore
+                // Fetch user data and role from Firestore
                 try {
                     const userDoc = await getDoc(doc(db, "users", authUser.uid));
                     if (userDoc.exists()) {
-                        setRole(userDoc.data().role || "customer");
+                        const data = userDoc.data() as FirestoreUser;
+                        setUserData({ ...data, uid: authUser.uid });
+                        setRole(data.role || "customer");
                     } else {
+                        setUserData(null);
                         setRole("customer");
                     }
                 } catch (error) {
-                    console.error("Error fetching user role:", error);
+                    console.error("Error fetching user data:", error);
+                    setUserData(null);
                     setRole("customer");
                 }
             } else {
                 setUser(null);
+                setUserData(null);
                 setRole(null);
             }
             setLoading(false);
@@ -49,7 +60,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, role, loading }}>
+        <AuthContext.Provider value={{ user, userData, role, loading }}>
             {children}
         </AuthContext.Provider>
     );
