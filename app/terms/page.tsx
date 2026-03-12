@@ -147,7 +147,7 @@ export default function TermsOfServicePage() {
                                     <p>Le règlement de vos commandes sur Audience Type est sécurisé et délégué à des prestataires de services de paiement reconnus.</p>
                                     <ul className="list-disc pl-5 space-y-4">
                                         <li>
-                                            <strong>Traitement par des tiers :</strong> Vous reconnaissez que vos transactions sont traitées par des services tiers tels que Dodo Payments ou d'autres plateformes de paiement sécurisées. En effectuant un achat, vous acceptez de vous conformer également à leurs propres conditions générales et politiques de confidentialité.
+                                            <strong>Traitement par des tiers :</strong> Vous reconnaissez que vos transactions sont traitées par des services tiers spécialisés ou d'autres plateformes de paiement sécurisées. En effectuant un achat, vous acceptez de vous conformer également à leurs propres conditions générales et politiques de confidentialité.
                                         </li>
                                         <li>
                                             <strong>Facturation et Taxes :</strong> Les prix sont indiqués sur la plateforme au moment de l'achat. Selon le prestataire utilisé, celui-ci peut agir en tant que revendeur agréé ou intermédiaire de paiement, incluant les taxes applicables (TVA, etc.) selon votre zone géographique.
@@ -199,7 +199,7 @@ export default function TermsOfServicePage() {
                                             <ul className="list-circle pl-5 mt-2 space-y-2">
                                                 <li>Violation de nos droits de propriété intellectuelle (copie, revente).</li>
                                                 <li>Partage d'accès ou de compte avec des tiers.</li>
-                                                <li>Comportement frauduleux ou défaut de paiement via nos prestataires (Dodo Payments, etc.).</li>
+                                                <li>Comportement frauduleux ou défaut de paiement via nos prestataires de paiement sécurisés.</li>
                                             </ul>
                                         </li>
                                         <li>
