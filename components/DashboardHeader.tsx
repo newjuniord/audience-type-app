@@ -7,7 +7,7 @@ import { signOut } from "firebase/auth";
 import { useState, useEffect, useRef } from "react";
 
 export default function DashboardHeader() {
-    const { user, loading } = useAuth();
+    const { user, loading, role } = useAuth();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -34,6 +34,11 @@ export default function DashboardHeader() {
             <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
                 {user && (
                     <nav className="hidden md:flex items-center gap-9">
+                        {role === 'admin' && (
+                            <Link href="/admin" className="text-primary dark:text-white text-sm font-bold leading-normal px-4 py-2 bg-primary/5 dark:bg-white/5 rounded-full hover:bg-primary/10 dark:hover:bg-white/10 transition-colors">
+                                Admin
+                            </Link>
+                        )}
                         <Link href="/products" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
                             Produits
                         </Link>

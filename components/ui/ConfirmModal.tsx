@@ -37,9 +37,13 @@ export default function ConfirmModal({
             document.body.style.overflow = 'hidden';
         } else {
             const timer = setTimeout(() => setIsVisible(false), 300);
-            document.body.style.overflow = 'unset';
+            document.body.style.overflow = '';
             return () => clearTimeout(timer);
         }
+        // Cleanup on unmount
+        return () => {
+            document.body.style.overflow = '';
+        };
     }, [isOpen]);
 
     if (!isVisible && !isOpen) return null;

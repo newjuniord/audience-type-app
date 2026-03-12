@@ -28,9 +28,13 @@ export default function InvitationCodeModal({
             document.body.style.overflow = 'hidden';
         } else {
             const timer = setTimeout(() => setIsVisible(false), 500);
-            document.body.style.overflow = 'unset';
+            document.body.style.overflow = '';
             return () => clearTimeout(timer);
         }
+        // Cleanup on unmount
+        return () => {
+            document.body.style.overflow = '';
+        };
     }, [isOpen]);
 
     const handleSubmit = (e: React.FormEvent) => {

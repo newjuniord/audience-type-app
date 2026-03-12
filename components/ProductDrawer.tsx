@@ -41,9 +41,13 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
             document.body.style.overflow = 'hidden'; // Prevent scrolling
         } else {
             const timer = setTimeout(() => setIsVisible(false), 300); // Match transition duration
-            document.body.style.overflow = 'unset';
+            document.body.style.overflow = '';
             return () => clearTimeout(timer);
         }
+        // Cleanup on unmount
+        return () => {
+            document.body.style.overflow = '';
+        };
     }, [isOpen]);
 
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'dodo' | 'moncash'>('dodo');
@@ -268,6 +272,37 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                                             </li>
                                         ))}
                                     </ul>
+                                </div>
+                            )}
+
+                            {/* Weekly Availability Display */}
+                            {isService && product.availability && (
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-primary/40 dark:text-white/40">Disponibilités hebdomadaires</h3>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {Object.entries(product.availability).map(([day, data]) => (
+                                            <div 
+                                                key={day} 
+                                                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                                                    data.enabled 
+                                                        ? 'bg-primary/5 dark:bg-white/5 border-primary/10 dark:border-white/10' 
+                                                        : 'opacity-30 border-transparent grayscale'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`size-2 rounded-full ${data.enabled ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-primary/20 dark:bg-white/20'}`} />
+                                                    <span className="text-xs font-black uppercase tracking-tight">{day}</span>
+                                                </div>
+                                                {data.enabled ? (
+                                                    <span className="text-xs font-bold text-primary/60 dark:text-white/60">
+                                                        {data.startTime} — {data.endTime}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Indisponible</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 

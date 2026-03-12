@@ -22,9 +22,13 @@ export default function SuccessModal({ isOpen, onClose, title = "Succès !", mes
             // return () => clearTimeout(timer);
         } else {
             const timer = setTimeout(() => setIsVisible(false), 300);
-            document.body.style.overflow = 'unset';
+            document.body.style.overflow = '';
             return () => clearTimeout(timer);
         }
+        // Cleanup on unmount
+        return () => {
+            document.body.style.overflow = '';
+        };
     }, [isOpen, onClose]);
 
     if (!isOpen && !isVisible) return null;

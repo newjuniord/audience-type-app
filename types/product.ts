@@ -9,4 +9,11 @@ export interface Product {
     isOwned?: boolean;
     isInvitationOnly?: boolean;
     invitationCode?: string;
+    availability?: {
+        [key: string]: {
+            enabled: boolean;
+            startTime: string;
+            endTime: string;
+        };
+    };
 }

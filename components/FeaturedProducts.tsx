@@ -107,7 +107,8 @@ export default function FeaturedProducts({
                         features: s.includedItems || [],
                         isOwned: false,
                         isInvitationOnly: s.isInvitationOnly || false,
-                        invitationCode: s.invitationCode || ""
+                        invitationCode: s.invitationCode || "",
+                        availability: s.availability
                     }));
 
                 const allProducts = [...formattedCourses, ...formattedEbooks, ...formattedServices];
@@ -170,7 +171,7 @@ export default function FeaturedProducts({
     if (loading) return null; // Or a skeleton
 
     return (
-        <section className={`w-full max-w-[1200px] px-6 py-20 ${showBorder ? 'border-t border-primary/5 dark:border-white/5' : ''}`}>
+        <section className={`w-full max-w-[1200px] px-6 pb-20 pt-8 ${showBorder ? 'border-t border-primary/5 dark:border-white/5' : ''}`}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
                 <h2 className="text-2xl font-black uppercase tracking-tighter"><span>{title}</span></h2>
                 <div className="flex flex-col md:flex-row gap-4 md:gap-8">

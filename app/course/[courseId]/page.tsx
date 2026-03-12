@@ -28,7 +28,11 @@ export default function CoursePlayerPage() {
 
     useEffect(() => {
         const fetchData = async () => {
-            if (!user || !courseId) return;
+            if (!courseId) return;
+            if (!user) {
+                setLoading(false);
+                return;
+            }
 
             try {
                 // 1. Fetch Course details
@@ -150,7 +154,18 @@ export default function CoursePlayerPage() {
         }
     };
 
-    if (loading) {
+    // Navigation logic handled in useEffect to avoid render-phase updates
+    useEffect(() => {
+        if (!loading) {
+            if (!user) {
+                router.push("/login");
+            } else if (course && !enrollment) {
+                router.push("/products");
+            }
+        }
+    }, [loading, user, enrollment, course, router]);
+
+    if (loading || !user || (course && !enrollment)) {
         return <div className="min-h-screen flex items-center justify-center dark:text-white">Chargement du cours...</div>;
     }
 

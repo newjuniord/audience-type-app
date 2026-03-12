@@ -52,7 +52,7 @@ export default async function ProductCatalog() {
         <div className="min-h-screen bg-background-light dark:bg-background-dark text-primary dark:text-white transition-colors">
             <DashboardHeader />
 
-            <main className="flex flex-col items-center pt-24 pb-20">
+            <main className="flex flex-col items-center pt-0 pb-20">
                 <FeaturedProducts title="Catalogue de Produits" showBorder={false} initialProducts={initialProducts} />
             </main>
 

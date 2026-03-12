@@ -111,3 +111,15 @@ export const incrementEnrollmentDownloadCount = async (id: string): Promise<void
         throw error;
     }
 };
+/**
+ * Supprime une inscription (retrait d'accès).
+ */
+export const deleteEnrollment = async (id: string): Promise<void> => {
+    try {
+        const ref = doc(db, COLLECTION_NAME, id);
+        await deleteDoc(ref);
+    } catch (error) {
+        console.error("Erreur suppression enrollment:", error);
+        throw error;
+    }
+};
