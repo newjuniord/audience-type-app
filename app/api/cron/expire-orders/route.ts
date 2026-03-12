@@ -32,9 +32,10 @@ export async function GET(req: Request) {
         // Requête : status == 'pending' ET createdAt < threshold
         // Note: Firestore nécessite un index composite pour cette requête.
         // Si l'index manque, le serveur renverra une erreur avec un lien pour le créer.
+        // Requête : status == 'pending' ET createdAt < threshold
+        // On récupère toutes les commandes en attente (Dodo et Bazik)
         const snapshot = await ordersRef
             .where("status", "==", "pending")
-            .where("paymentMethod", "==", "card") // On cible spécifiquement les paiements carte initiaux
             .where("createdAt", "<", expirationThreshold)
             .get();
 
@@ -56,28 +57,74 @@ export async function GET(req: Request) {
 
             try {
                 let isActuallyPaid = false;
-                let finalDodoStatus = "pending";
+                let finalProviderStatus = "pending";
                 let paymentDetails: any = null;
+                let providerType: 'dodo' | 'bazik' | 'unknown' = 'unknown';
 
-                if (transactionId) {
-                    // 1. Tenter de récupérer la session de checkout
-                    try {
-                        const session = await (dodo as any).checkoutSessions.retrieve(transactionId);
-                        finalDodoStatus = session.status?.toLowerCase();
-                        
-                        // Si la session est complétée, on cherche le payment_id
-                        if (session.payments && session.payments.length > 0) {
-                            paymentDetails = session.payments.find((p: any) => 
-                                p.status?.toLowerCase() === "succeeded" || 
-                                p.status?.toLowerCase() === "completed"
-                            ) || session.payments[0];
+                const paymentMethod = orderData.paymentMethod?.toLowerCase();
+
+                // --- LOGIQUE DODO PAYMENTS (CARD) ---
+                if (paymentMethod === 'card' || !paymentMethod) {
+                    providerType = 'dodo';
+                    if (transactionId) {
+                        try {
+                            const session = await (dodo as any).checkoutSessions.retrieve(transactionId);
+                            finalProviderStatus = session.status?.toLowerCase();
                             
-                            if (paymentDetails.status?.toLowerCase() === "succeeded" || paymentDetails.status?.toLowerCase() === "completed") {
-                                isActuallyPaid = true;
+                            if (session.payments && session.payments.length > 0) {
+                                paymentDetails = session.payments.find((p: any) => 
+                                    p.status?.toLowerCase() === "succeeded" || 
+                                    p.status?.toLowerCase() === "completed"
+                                ) || session.payments[0];
+                                
+                                if (paymentDetails.status?.toLowerCase() === "succeeded" || paymentDetails.status?.toLowerCase() === "completed") {
+                                    isActuallyPaid = true;
+                                }
                             }
+                        } catch (e) {
+                            console.warn(`[CRON] Impossible de vérifier Dodo pour ${orderId}`);
                         }
-                    } catch (e) {
-                        console.warn(`[CRON] Impossible de vérifier la session ${transactionId} pour l'ordre ${orderId}`);
+                    }
+                }
+                // --- LOGIQUE BAZIK (MONCASH) ---
+                else if (paymentMethod === 'moncash' || paymentMethod === 'bazik') {
+                    providerType = 'bazik';
+                    const BAZIK_USER_ID = process.env.BAZIK_USER_ID?.trim();
+                    const BAZIK_SECRET_KEY = process.env.BAZIK_SECRET_KEY?.trim();
+
+                    if (BAZIK_USER_ID && BAZIK_SECRET_KEY) {
+                        try {
+                            // 1. Get Token
+                            const tokenRes = await fetch("https://api.bazik.io/token", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ userID: BAZIK_USER_ID, secretKey: BAZIK_SECRET_KEY }),
+                            });
+                            const tokenData = await tokenRes.json();
+                            
+                            if (tokenRes.ok && tokenData.token) {
+                                // 2. Check Status
+                                const verificationId = transactionId || orderId;
+                                const statusRes = await fetch(`https://api.bazik.io/order/${verificationId}`, {
+                                    headers: { "Authorization": `Bearer ${tokenData.token}` },
+                                });
+                                const statusData = await statusRes.json();
+                                finalProviderStatus = (statusData.status || "").toLowerCase();
+                                
+                                const successStatuses = ["completed", "success", "paid", "success_payment", "successful", "succeeded"];
+                                if (successStatuses.includes(finalProviderStatus)) {
+                                    isActuallyPaid = true;
+                                    paymentDetails = {
+                                        payment_id: statusData.transactionId || `manual_cron_${verificationId}`,
+                                        payment_method: "moncash",
+                                        currency: "usd", // Bazik est généralement en USD/HTG mais on normalise
+                                        amount: orderData.amount
+                                    };
+                                }
+                            }
+                        } catch (e) {
+                            console.warn(`[CRON] Impossible de vérifier Bazik pour ${orderId}`);
+                        }
                     }
                 }
 
@@ -132,15 +179,16 @@ export async function GET(req: Request) {
 
                         successCount++;
                     } else if (
-                        finalDodoStatus === "failed" || 
-                        finalDodoStatus === "cancelled" || 
-                        finalDodoStatus === "expired" ||
+                        finalProviderStatus === "failed" || 
+                        finalProviderStatus === "cancelled" || 
+                        finalProviderStatus === "rejected" ||
+                        finalProviderStatus === "expired" ||
                         (!isActuallyPaid && orderData.createdAt.toDate() < expirationThreshold)
                     ) {
-                        // ÉCHEC : Commande expirée ou confirmée en échec par Dodo
+                        // ÉCHEC : Commande expirée ou confirmée en échec par le prestataire
                         t.update(orderDoc.ref, {
                             status: "failed",
-                            failedReason: finalDodoStatus === "pending" ? "expired_timeout" : `dodo_${finalDodoStatus}`,
+                            failedReason: finalProviderStatus === "pending" ? "expired_timeout" : `${providerType}_${finalProviderStatus}`,
                             updatedAt: new Date()
                         });
                         failedCount++;
