@@ -10,16 +10,7 @@ import { createBookingApplication } from "@/lib/booking-applications";
 import ConfirmModal from "./ui/ConfirmModal";
 import SuccessModal from "./ui/SuccessModal";
 
-export interface Product {
-    id?: string;
-    title: string;
-    price: string;
-    type: string;
-    image: string;
-    description: string;
-    features?: string[];
-    isOwned?: boolean;
-}
+import { Product } from "@/types/product";
 
 interface ProductDrawerProps {
     isOpen: boolean;
@@ -234,8 +225,14 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                         {/* Header / Close */}
                         <div className="flex items-center justify-between p-6 border-b border-primary/5 dark:border-white/5">
                             <div className="flex items-center gap-2">
-                                <span className="bg-primary/5 dark:bg-white/5 text-primary dark:text-white text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-sm">
-                                    {product.type}
+                                <span className={`text-[10px] uppercase tracking-[0.2em] font-black px-3 py-1.5 rounded-full border shadow-sm ${
+                                    product.type === "Course" 
+                                        ? "bg-black text-white border-black/10 dark:bg-white dark:text-black" 
+                                        : product.type === "Ebook"
+                                            ? "bg-blue-600 text-white border-blue-500/20"
+                                            : "bg-emerald-600 text-white border-emerald-500/20"
+                                }`}>
+                                    {product.type === "Course" ? "Cours" : product.type === "Ebook" ? "Ebook" : "Service"}
                                 </span>
                             </div>
                             <button

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import ProductDrawer, { Product } from "./ProductDrawer";
+import ProductDrawer from "./ProductDrawer";
+import InvitationCodeModal from "./InvitationCodeModal";
+import { Product } from "@/types/product";
 import BubbleButton from "./BubbleButton";
 import { getCourses } from "@/lib/courses";
 import { getEbooks } from "@/lib/ebooks";
@@ -30,6 +32,8 @@ export default function FeaturedProducts({
     const [activeFilter, setActiveFilter] = useState("All");
     const [visibleCount, setVisibleCount] = useState(6);
     const [ownedProductIds, setOwnedProductIds] = useState<Set<string>>(new Set());
+    const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false);
+    const [invitationTarget, setInvitationTarget] = useState<Product | null>(null);
 
     useEffect(() => {
         async function fetchData() {
@@ -71,7 +75,9 @@ export default function FeaturedProducts({
                         image: c.thumbnail || "https://images.unsplash.com/photo-1542744094-24638eff58bb?q=80&w=2071&auto=format&fit=crop",
                         description: c.description,
                         features: c.includedItems || [],
-                        isOwned: c.id ? ownedIds.has(c.id) : false
+                        isOwned: c.id ? ownedIds.has(c.id) : false,
+                        isInvitationOnly: c.isInvitationOnly || false,
+                        invitationCode: c.invitationCode || ""
                     }));
 
                 const formattedEbooks: Product[] = ebooks
@@ -84,7 +90,9 @@ export default function FeaturedProducts({
                         image: e.coverImage || "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=2074&auto=format&fit=crop",
                         description: e.description,
                         features: e.includedItems || [],
-                        isOwned: e.id ? ownedIds.has(e.id) : false
+                        isOwned: e.id ? ownedIds.has(e.id) : false,
+                        isInvitationOnly: e.isInvitationOnly || false,
+                        invitationCode: e.invitationCode || ""
                     }));
 
                 const formattedServices: Product[] = services
@@ -97,7 +105,9 @@ export default function FeaturedProducts({
                         image: s.imageUrl || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=2074&auto=format&fit=crop",
                         description: s.description,
                         features: s.includedItems || [],
-                        isOwned: false
+                        isOwned: false,
+                        isInvitationOnly: s.isInvitationOnly || false,
+                        invitationCode: s.invitationCode || ""
                     }));
 
                 const allProducts = [...formattedCourses, ...formattedEbooks, ...formattedServices];
@@ -121,8 +131,23 @@ export default function FeaturedProducts({
             router.push('/dashboard');
             return;
         }
+
+        if (product.isInvitationOnly && product.invitationCode) {
+            setInvitationTarget(product);
+            setIsInvitationModalOpen(true);
+            return;
+        }
+
         setSelectedProduct(product);
         setIsDrawerOpen(true);
+    };
+
+    const handleInvitationSuccess = () => {
+        if (invitationTarget) {
+            setSelectedProduct(invitationTarget);
+            setIsDrawerOpen(true);
+            setInvitationTarget(null);
+        }
     };
 
     const displayCategories = [
@@ -171,7 +196,17 @@ export default function FeaturedProducts({
                     <div key={index} className="group flex flex-col bg-white dark:bg-transparent overflow-hidden border border-primary/10 dark:border-white/10 hover:border-primary dark:hover:border-white transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="aspect-[4/3] bg-primary/5 dark:bg-white/5 overflow-hidden relative">
                             <img alt={product.title} className="w-full h-full object-cover grayscale transition-transform duration-500 group-hover:scale-105 group-hover:grayscale-0" src={product.image} />
-                            <span>{product.type === "Course" ? "Cours" : product.type === "Ebook" ? "Ebook" : "Service"}</span>
+                            <div className="absolute top-4 left-4 z-10">
+                                <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 backdrop-blur-md rounded-full border ${
+                                    product.type === "Course" 
+                                        ? "bg-black/80 text-white border-white/20" 
+                                        : product.type === "Ebook"
+                                            ? "bg-blue-600/80 text-white border-blue-400/20"
+                                            : "bg-emerald-600/80 text-white border-emerald-400/20"
+                                } shadow-xl`}>
+                                    {product.type === "Course" ? "Cours" : product.type === "Ebook" ? "Ebook" : "Service"}
+                                </span>
+                            </div>
                         </div>
                         <div className="p-6 flex flex-col flex-grow">
                             <div className="flex justify-between items-start mb-2">
@@ -217,6 +252,19 @@ export default function FeaturedProducts({
                 onClose={() => setIsDrawerOpen(false)}
                 product={selectedProduct}
             />
+
+            {invitationTarget && (
+                <InvitationCodeModal
+                    isOpen={isInvitationModalOpen}
+                    onClose={() => {
+                        setIsInvitationModalOpen(false);
+                        setInvitationTarget(null);
+                    }}
+                    correctCode={invitationTarget.invitationCode || ""}
+                    onSuccess={handleInvitationSuccess}
+                    productName={invitationTarget.title}
+                />
+            )}
         </section>
     );
 }

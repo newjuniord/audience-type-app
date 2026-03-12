@@ -22,6 +22,8 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
     const [description, setDescription] = useState("");
     const [thumbnail, setThumbnail] = useState("");
     const [includedItems, setIncludedItems] = useState<string[]>([""]);
+    const [isInvitationOnly, setIsInvitationOnly] = useState(false);
+    const [invitationCode, setInvitationCode] = useState("");
 
     useEffect(() => {
         if (isOpen) {
@@ -37,6 +39,8 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
                 setDescription(initialData.description || "");
                 setThumbnail(initialData.thumbnail || "");
                 setIncludedItems(initialData.includedItems?.length ? initialData.includedItems : [""]);
+                setIsInvitationOnly(initialData.isInvitationOnly || false);
+                setInvitationCode(initialData.invitationCode || "");
             } else {
                 // Reset for new course
                 setTitle("");
@@ -46,6 +50,8 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
                 setDescription("");
                 setThumbnail("");
                 setIncludedItems([""]);
+                setIsInvitationOnly(false);
+                setInvitationCode("");
             }
         } else {
             const timer = setTimeout(() => setIsVisible(false), 300);
@@ -66,7 +72,9 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
                 statut: status,
                 description,
                 thumbnail,
-                includedItems: includedItems.filter(i => i.trim() !== "")
+                includedItems: includedItems.filter(i => i.trim() !== ""),
+                isInvitationOnly,
+                invitationCode: isInvitationOnly ? invitationCode : ""
             });
             onClose();
         } catch (error) {
@@ -219,6 +227,37 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                             ></textarea>
+                        </div>
+
+                        <div className="pt-4 border-t border-black/5 dark:border-white/5 space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl">
+                                <div>
+                                    <p className="text-sm font-bold">Sur invitation uniquement</p>
+                                    <p className="text-[10px] text-black/40 dark:text-white/40 uppercase tracking-widest mt-1">Nécessite un code pour l'accès</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        className="sr-only peer" 
+                                        checked={isInvitationOnly}
+                                        onChange={(e) => setIsInvitationOnly(e.target.checked)}
+                                    />
+                                    <div className="w-11 h-6 bg-black/10 peer-focus:outline-none rounded-full peer dark:bg-white/10 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                                </label>
+                            </div>
+
+                            {isInvitationOnly && (
+                                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">Code d'invitation</label>
+                                    <input
+                                        value={invitationCode}
+                                        onChange={(e) => setInvitationCode(e.target.value)}
+                                        className="w-full h-14 px-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium"
+                                        placeholder="ex: VIP2024"
+                                        type="text"
+                                    />
+                                </div>
+                            )}
                         </div>
                     </section>
 

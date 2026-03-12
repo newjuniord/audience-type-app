@@ -36,6 +36,8 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
     const [includedItems, setIncludedItems] = useState<string[]>([]);
     const [availability, setAvailability] = useState<Availability>(initialAvailability);
     const [status, setStatus] = useState<'published' | 'draft' | 'archived'>('published');
+    const [isInvitationOnly, setIsInvitationOnly] = useState(false);
+    const [invitationCode, setInvitationCode] = useState("");
     const [loading, setLoading] = useState(false);
     const [alertConfig, setAlertConfig] = useState<{ isOpen: boolean, title: string, message: string, type: 'alert' | 'confirm' }>({
         isOpen: false,
@@ -59,6 +61,8 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                 setIncludedItems(initialData.includedItems || []);
                 setAvailability(initialData.availability || initialAvailability);
                 setStatus((initialData.status as 'published' | 'draft' | 'archived') || (initialData.active ? 'published' : 'draft'));
+                setIsInvitationOnly(initialData.isInvitationOnly || false);
+                setInvitationCode(initialData.invitationCode || "");
             } else {
                 // Reset form if creating
                 setTitle("");
@@ -72,6 +76,8 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                     "Follow-up email support"
                 ]);
                 setAvailability(initialAvailability);
+                setIsInvitationOnly(false);
+                setInvitationCode("");
             }
 
         } else {
@@ -105,7 +111,9 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                 includedItems: includedItems.filter(item => item.trim() !== ""),
                 availability,
                 active: status === 'published',
-                status
+                status,
+                isInvitationOnly,
+                invitationCode: isInvitationOnly ? invitationCode : ""
             });
             onClose();
         } catch (error) {
@@ -254,6 +262,37 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                                     placeholder="Décrivez la valeur de ce service..."
                                     rows={4}
                                 ></textarea>
+                            </div>
+
+                            <div className="pt-4 border-t border-black/5 dark:border-white/5 space-y-4">
+                                <div className="flex items-center justify-between p-4 bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl">
+                                    <div>
+                                        <p className="text-sm font-bold">Sur invitation uniquement</p>
+                                        <p className="text-[10px] text-black/40 dark:text-white/40 uppercase tracking-widest mt-1">Nécessite un code pour l'accès</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            className="sr-only peer" 
+                                            checked={isInvitationOnly}
+                                            onChange={(e) => setIsInvitationOnly(e.target.checked)}
+                                        />
+                                        <div className="w-11 h-6 bg-black/10 peer-focus:outline-none rounded-full peer dark:bg-white/10 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                                    </label>
+                                </div>
+
+                                {isInvitationOnly && (
+                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">Code d'invitation</label>
+                                        <input
+                                            value={invitationCode}
+                                            onChange={(e) => setInvitationCode(e.target.value)}
+                                            className="w-full h-14 px-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium"
+                                            placeholder="ex: VIP2024"
+                                            type="text"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </section>

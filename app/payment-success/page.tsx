@@ -25,8 +25,6 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
             // Guard: On ne veut déclencher la logique qu'une seule fois
             if (hasTriggered.current) return;
 
-            console.log("🔍 [VERIFY DEBUG] Component Mounted - Beginning extraction...");
-
             // Extraction robuste : Backup via window.location si searchParams de Next.js est instable
             const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
 
@@ -38,17 +36,34 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                 return Array.isArray(p) ? p : (p ? [p] : []);
             };
 
-            const paymentStatus = getP('payment');
+            const urlStatus = (getP('status') || getP('payment'))?.toLowerCase();
             const refId = getP('referenceId');
             const orderIds = getAllP('orderId');
             const pId = getP('payment_id');
 
+            // On vérifie si l'URL indique déjà un échec de manière explicite
+            const isExplicitFailure = urlStatus === 'failed' || urlStatus === 'cancelled' || urlStatus === 'rejected';
+
             // Logique Bazik
             const bzkOrderId = orderIds.length > 1 ? orderIds[1] : (orderIds.length > 0 ? orderIds[0] : null);
             const internalOrderId = refId || (orderIds.length > 0 ? orderIds[0] : null);
-            const isBazikSuccess = paymentStatus === 'success' || !!refId;
+            const isBazikSuccess = urlStatus === 'success' || !!refId;
 
-            console.log("🔍 [VERIFY DEBUG] Config Détectée:", { isBazikSuccess, internalOrderId, bzkOrderId, pId });
+            console.log("🔍 [VERIFY DEBUG] Config Détectée:", { isBazikSuccess, isExplicitFailure, internalOrderId, pId, urlStatus });
+
+            if (isExplicitFailure) {
+                console.log("❌ [VERIFY DEBUG] Échec détecté via URL. Affichage immédiat.");
+                setVerificationStatus('failed');
+                // On peut quand même tenter de vérifier pour mettre à jour la DB si on a un ID
+                if (pId) {
+                    fetch('/api/dodo/verify-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId: pId, orderId: internalOrderId }),
+                    }).catch(err => console.error("Background verify error:", err));
+                }
+                return;
+            }
 
             if (isBazikSuccess && (internalOrderId || bzkOrderId)) {
                 hasTriggered.current = true;
@@ -64,10 +79,11 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                     });
                     const data = await res.json();
                     console.log("✅ [VERIFY DEBUG] Résultat Bazik:", data);
-                    if (data.status === 'succeeded' || data.status === 'success' || data.status === 'completed') {
+                    const status = data.status?.toLowerCase();
+                    if (status === 'succeeded' || status === 'success' || status === 'completed') {
                         setVerificationStatus('success');
                         if (data.order) setOrderData(data.order);
-                    } else if (data.status === 'failed') {
+                    } else if (status === 'failed' || status === 'cancelled' || status === 'rejected') {
                         setVerificationStatus('failed');
                     } else {
                         setVerificationStatus('pending');
@@ -91,11 +107,16 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                     });
                     const data = await res.json();
                     console.log("✅ [VERIFY DEBUG] Résultat Dodo:", data);
-                    if (data.status === 'succeeded' || data.status === 'completed') {
+
+                    const status = data.status?.toLowerCase();
+                    if (status === 'succeeded' || status === 'completed' || status === 'success' || status === 'active') {
                         setVerificationStatus('success');
                         if (data.order) setOrderData(data.order);
+                    } else if (status === 'failed' || status === 'cancelled' || status === 'rejected') {
+                        setVerificationStatus('failed');
                     } else {
-                        setVerificationStatus(data.status === 'failed' ? 'failed' : 'pending');
+                        // Statuts intermédiaires (processing, on_hold, etc.)
+                        setVerificationStatus('pending');
                     }
                 } catch (error) {
                     console.error("Dodo verify error:", error);

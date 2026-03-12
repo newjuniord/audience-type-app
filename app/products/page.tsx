@@ -4,7 +4,7 @@ import FeaturedProducts from "@/components/FeaturedProducts";
 import { getCourses } from "@/lib/courses";
 import { getEbooks } from "@/lib/ebooks";
 import { getServices } from "@/lib/services";
-import { Product } from "@/components/ProductDrawer";
+import { Product } from "@/types/product";
 
 export const revalidate = 3600; // Cache for 1 hour
 

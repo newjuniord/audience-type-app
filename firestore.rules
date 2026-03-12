@@ -98,7 +98,13 @@ service cloud.firestore {
 
      // Storage Assets (metadata in Firestore)
     match /assets/{assetId} {
-      allow read: if true; // Or restrict to admins? Usually public for website images.
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Global Settings (Announcement Bar, etc)
+    match /settings/{settingId} {
+      allow read: if true;
       allow write: if isAdmin();
     }
   }

@@ -82,6 +82,8 @@ export interface Ebook {
      * Permet de savoir quand les informations ont été modifiées pour la dernière fois.
      */
     updatedAt: Timestamp;
+    isInvitationOnly?: boolean;
+    invitationCode?: string;
 }
 
 /**
@@ -126,6 +128,8 @@ export interface Course {
     thumbnail: string; // Image miniature du cours
     title: string;
     updatedAt: Timestamp;
+    isInvitationOnly?: boolean;
+    invitationCode?: string;
 }
 
 /**
@@ -286,4 +290,6 @@ export interface Service {
     status?: 'published' | 'draft' | 'archived'; // Nouveau champ de statut standardisé
     createdAt: Timestamp;
     updatedAt: Timestamp;
+    isInvitationOnly?: boolean;
+    invitationCode?: string;
 }

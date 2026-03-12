@@ -1,8 +1,12 @@
-
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
+import dodo from "@/lib/dodo";
 
+/**
+ * Route API : /api/dodo/verify-payment
+ * Utilise le SDK officiel Dodo Payments pour plus de fiabilité.
+ */
 export async function POST(req: Request) {
     try {
         const { paymentId, orderId: clientOrderId } = await req.json();
@@ -11,151 +15,106 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Missing paymentId" }, { status: 400 });
         }
 
-        console.log(`🔍[VERIFY] Vérification du paiement Dodo: ${paymentId} `);
+        console.log(`🔍 [VERIFY] Vérification du paiement Dodo via SDK : ${paymentId}`);
 
+        try {
+            // Utilisation du SDK officiel (évite les erreurs de fetch/headers/URL)
+            // On utilise 'retrieve' pour obtenir les détails du paiement
+            const paymentData = await (dodo as any).payments.retrieve(paymentId);
+            
+            const dodoStatus = paymentData.status?.toLowerCase();
+            console.log(`✅ [VERIFY] Statut reçu de Dodo : ${dodoStatus}`);
+            console.log("📦 [VERIFY DEBUG] Dodo Payload:", JSON.stringify(paymentData, null, 2));
 
-
-        const apiKey = process.env.DODO_PAYMENTS_API_KEY || "";
-        const dodoBaseUrl = apiKey.includes('test') ? "https://test.dodopayments.com" : "https://api.dodopayments.com";
-
-        // 1. Appel à l'API Dodo pour vérifier le statut réel
-        const dodoRes = await fetch(`${dodoBaseUrl}/payments/${paymentId}`, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${apiKey}`,
-                "Content-Type": "application/json",
-            },
-        });
-
-        if (!dodoRes.ok) {
-            const errorText = await dodoRes.text();
-            console.error("❌ [VERIFY] Erreur API Dodo :", errorText);
-            return NextResponse.json({ error: "Failed to verify payment with Dodo" }, { status: 500 });
-        }
-
-        const paymentData = await dodoRes.json();
-        const dodoStatus = paymentData.status; // succeeded, failed, etc.
-
-        console.log(`✅ [VERIFY] Statut Dodo reçu : ${dodoStatus}`);
-
-        // 2. Identification de la commande (Order)
-        // Priorité : Metadata Dodo > Paramètre client
-        const orderId = paymentData.metadata?.orderId || clientOrderId;
-
-        if (!orderId) {
-            console.warn("⚠️ [VERIFY] Impossible de trouver l'orderId (ni dans metadata, ni dans la requête client).");
-            return NextResponse.json({ status: dodoStatus, warning: "No orderId found to update" });
-        }
-        const adminDb = getAdminDb();
-        const orderRef = adminDb.collection("orders").doc(orderId);
-
-        // TRANSACTION ATOMIQUE : Pour éviter les conflits entre Webhook et Vérification Client
-        await adminDb.runTransaction(async (t) => {
-            const orderSnap = await t.get(orderRef);
-
-            if (!orderSnap.exists) {
-                throw new Error("Order not found");
+            // Identification de la commande
+            const orderId = paymentData.metadata?.orderId || clientOrderId;
+            if (!orderId) {
+                return NextResponse.json({ status: dodoStatus, warning: "Aucun Order ID trouvé" });
             }
 
-            const orderData = orderSnap.data();
+            const adminDb = getAdminDb();
+            const orderRef = adminDb.collection("orders").doc(orderId);
 
-            // Si déjà complété, on ne fait RIEN (Idempotence)
-            if (orderData?.status === "completed") {
-                console.log(`✅ [VERIFY - TRANSACTION] Commande ${orderId} déjà complétée. Stop.`);
-                return;
-            }
+            await adminDb.runTransaction(async (t) => {
+                const orderSnap = await t.get(orderRef);
+                if (!orderSnap.exists) return;
 
-            // Si le Dodo status est success, on valide tout
-            if (dodoStatus === "succeeded" || dodoStatus === "completed") {
-                // 1. Update Order
-                t.update(orderRef, {
-                    status: "completed",
-                    paymentMethod: paymentData.payment_method || "card",
-                    currency: paymentData.currency || "usd",
-                    paidAt: Timestamp.now(),
-                    amount: paymentData.amount ? paymentData.amount / 100 : orderData?.amount,
-                    expiresAt: FieldValue.delete(),
-                    transactionId: paymentId
-                });
+                const orderData = orderSnap.data();
+                if (orderData?.status === "completed") return;
 
-                // 2. Create Enrollment (if not exists)
-                const { userId, productId, productType } = orderData as any;
-                if (productType === "course" || productType === "ebook") {
-                    const enrollmentsRef = adminDb.collection("enrollments");
+                // 1. Gestion du SUCCÈS
+                if (dodoStatus === "succeeded" || dodoStatus === "completed" || dodoStatus === "active") {
+                    t.update(orderRef, {
+                        status: "completed",
+                        paymentMethod: paymentData.payment_method || "card",
+                        currency: paymentData.currency || "usd",
+                        paidAt: Timestamp.now(),
+                        amount: paymentData.amount ? paymentData.amount / 100 : orderData?.amount,
+                        expiresAt: FieldValue.delete(),
+                        transactionId: paymentId
+                    });
+
+                    // Accès au produit
+                    const { userId, productId, productType } = orderData as any;
                     const productCollection = productType === "course" ? "courses" : "ebooks";
-
-                    // Note: Dans une transaction, on doit utiliser t.get() pour les lectures
-                    // Mais Firestore ne permet pas facilement de requêter (where) dans une transaction sur une AUTRE collection 
-                    // sans connaître l'ID du document à l'avance.
-                    // Astuce : On utilise un ID déterministe pour l'enrollment ou on accepte le risque minime ici
-                    // PUISQUE nous vérifions orderData.status === "completed" juste avant, et que nous sommes les SEULS à le passer à "completed" dans cette transaction,
-                    // nous avons la garantie que nous sommes le premier processus à traiter ce succès.
-
-                    const newEnrollmentRef = enrollmentsRef.doc(); // Nouvel ID auto
-
+                    
+                    const newEnrollmentRef = adminDb.collection("enrollments").doc();
                     const userRef = adminDb.collection("users").doc(userId);
                     const productRef = adminDb.collection(productCollection).doc(productId.id || productId);
 
-                    // Fetch extra metadata for enrollment
-                    const [productSnap, userSnap] = await Promise.all([
-                        productRef.get(),
-                        userRef.get()
-                    ]);
-
-                    const pData = productSnap.exists ? productSnap.data() : {};
-                    const uData = userSnap.exists ? userSnap.data() : {};
+                    const [pSnap, uSnap] = await Promise.all([productRef.get(), userRef.get()]);
+                    const pData = pSnap.exists ? pSnap.data() : {};
+                    const uData = uSnap.exists ? uSnap.data() : {};
 
                     t.set(newEnrollmentRef, {
                         userId: userRef,
                         productId: productRef,
-                        productType: productType,
-                        orderId: orderId,
+                        productType,
+                        orderId,
                         status: "active",
                         accessGranted: true,
                         enrolledAt: Timestamp.now(),
                         lastAccessedAt: Timestamp.now(),
                         progress: 0,
                         completedLessons: [],
-                        currentLessonId: "",
-                        downloadCount: "0",
-                        // New metadata fields
-                        totalLessons: pData?.totalLessons || 0,
                         productTitle: pData?.title || orderData?.productTitle || "",
                         productThumbnailUrl: pData?.thumbnail || pData?.coverImage || orderData?.productThumbnailUrl || "",
                         userEmail: uData?.email || orderData?.userEmail || "",
                         userName: uData?.name || orderData?.userName || ""
                     });
-                    console.log("🔓 [VERIFY - TRANSACTION] Enrollment planifié avec métadonnées complètes.");
+                } 
+                // 2. Gestion de l'ÉCHEC
+                else if (dodoStatus === "failed" || dodoStatus === "cancelled" || dodoStatus === "rejected") {
+                    t.update(orderRef, {
+                        status: "failed",
+                        failedAt: Timestamp.now(),
+                        failedReason: dodoStatus,
+                        transactionId: paymentId
+                    });
                 }
-            } else if (dodoStatus === "failed") {
-                t.update(orderRef, {
-                    status: "failed",
-                    failedAt: Timestamp.now(),
-                    transactionId: paymentId
-                });
+            });
+
+            return NextResponse.json({ 
+                status: dodoStatus,
+                order: { id: orderId, status: dodoStatus }
+            });
+
+        } catch (sdkError: any) {
+            console.error("❌ [SDK ERROR] Erreur lors de l'appel Dodo SDK :", sdkError);
+            
+            // Si c'est une erreur de connexion (DNS/Network)
+            if (sdkError.message?.includes('ENOTFOUND')) {
+                return NextResponse.json({ 
+                    error: "Problème DNS : Impossible de joindre api.dodopayments.com. Vérifiez votre connexion.",
+                    status: "error_network" 
+                }, { status: 503 });
             }
-        });
 
-        // Relire les données fraîches pour le frontend
-        const updatedOrderSnap = await orderRef.get();
-        const updatedOrderData = updatedOrderSnap.data();
-
-        // On renvoie les données de la commande pour l'affichage frontend
-        const finalStatus = updatedOrderData?.status === "completed" ? "succeeded" : dodoStatus;
-
-        return NextResponse.json({
-            status: finalStatus, // "succeeded", "failed", "pending"
-            updated: true,
-            order: {
-                ...updatedOrderData,
-                id: orderId,
-                status: updatedOrderData?.status || dodoStatus,
-                transactionId: paymentId
-            }
-        });
+            return NextResponse.json({ error: `Dodo SDK Error: ${sdkError.message}` }, { status: 500 });
+        }
 
     } catch (error: any) {
-        console.error("🔥 [VERIFY ERROR]", error);
+        console.error("🔥 [VERIFY CRITICAL ERROR] :", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

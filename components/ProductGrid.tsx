@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { useState } from "react";
+import InvitationCodeModal from "./InvitationCodeModal";
 
 interface Product {
     title: string;
@@ -7,6 +9,8 @@ interface Product {
     price: string;
     image: string;
     action: string;
+    isInvitationOnly?: boolean;
+    invitationCode?: string;
 }
 
 const products: Product[] = [
@@ -49,6 +53,9 @@ interface ProductGridProps {
 }
 
 export default function ProductGrid({ activeFilter }: ProductGridProps) {
+    const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false);
+    const [invitationTarget, setInvitationTarget] = useState<Product | null>(null);
+
     const filteredProducts = activeFilter === "Tous"
         ? products
         : products.filter(p => {
@@ -60,8 +67,16 @@ export default function ProductGrid({ activeFilter }: ProductGridProps) {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[400px]">
-            {filteredProducts.map((product, index) => (
-                <div key={index} className="flex flex-col group bg-white dark:bg-white/5 rounded-3xl p-4 border border-primary/5 dark:border-white/5 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:scale-[1.01] animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {filteredProducts.map((product, index) => {
+                const handleAction = () => {
+                    if (product.isInvitationOnly && product.invitationCode) {
+                        setInvitationTarget(product);
+                        setIsInvitationModalOpen(true);
+                    }
+                };
+
+                return (
+                    <div key={index} className="flex flex-col group bg-white dark:bg-white/5 rounded-3xl p-4 border border-primary/5 dark:border-white/5 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:scale-[1.01] animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div
                         className="w-full bg-center bg-no-repeat aspect-[16/10] bg-cover rounded-2xl mb-6 relative overflow-hidden"
                         style={{ backgroundImage: `url("${product.image}")` }}
@@ -88,24 +103,50 @@ export default function ProductGrid({ activeFilter }: ProductGridProps) {
                             )}
                             {product.type === "Course" ? (
                                 <Link
-                                    href="/course"
+                                    href={product.isInvitationOnly ? "#" : "/course"}
+                                    onClick={(e) => {
+                                        if (product.isInvitationOnly) {
+                                            e.preventDefault();
+                                            handleAction();
+                                        }
+                                    }}
                                     className="w-full flex items-center justify-center rounded-full h-12 bg-primary text-white text-sm font-bold tracking-tight hover:scale-[1.02] active:scale-95 transition-all"
                                 >
                                     {product.action}
                                 </Link>
                             ) : (
-                                <button className="w-full flex items-center justify-center rounded-full h-12 bg-primary text-white text-sm font-bold tracking-tight hover:scale-[1.02] active:scale-95 transition-all">
+                                <button 
+                                    onClick={handleAction}
+                                    className="w-full flex items-center justify-center rounded-full h-12 bg-primary text-white text-sm font-bold tracking-tight hover:scale-[1.02] active:scale-95 transition-all"
+                                >
                                     {product.action}
                                 </button>
                             )}
                         </div>
                     </div>
                 </div>
-            ))}
+            )})}
             {filteredProducts.length === 0 && (
                 <div className="col-span-full flex items-center justify-center py-20">
                     <p className="text-primary/40 uppercase font-bold tracking-widest">Aucun élément trouvé dans cette catégorie</p>
                 </div>
+            )}
+            {invitationTarget && (
+                <InvitationCodeModal
+                    isOpen={isInvitationModalOpen}
+                    onClose={() => {
+                        setIsInvitationModalOpen(false);
+                        setInvitationTarget(null);
+                    }}
+                    correctCode={invitationTarget.invitationCode || ""}
+                    onSuccess={() => {
+                        // For mockup, just alert success
+                        alert("Accès autorisé ! Pour le mockup, nous n'ouvrons pas de tiroir.");
+                        setIsInvitationModalOpen(false);
+                        setInvitationTarget(null);
+                    }}
+                    productName={invitationTarget.title}
+                />
             )}
         </div>
     );
