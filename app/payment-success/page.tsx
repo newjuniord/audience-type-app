@@ -16,18 +16,21 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
     const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'failed' | 'pending'>('loading');
     const [orderData, setOrderData] = useState<any>(null);
 
-    // Ref pour éviter le double appel et les boucles infinies
-    const hasTriggered = React.useRef(false);
-
-    // Effet pour vérifier le paiement dès le chargement
+    // Effet pour vérifier le paiement dès le chargement + Polling
     useEffect(() => {
+        let pollTimer: NodeJS.Timeout;
+        let isPolling = false;
+
         const verifyPayment = async () => {
-            // Guard: On ne veut déclencher la logique qu'une seule fois
-            if (hasTriggered.current) return;
+            // Si on a déjà un résultat final, on arrête
+            if (verificationStatus === 'success' || verificationStatus === 'failed') return;
+            
+            // Éviter les appels concurrents
+            if (isPolling) return;
+            isPolling = true;
 
-            // Extraction robuste : Backup via window.location si searchParams de Next.js est instable
+            // Extraction robuste
             const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-
             const getP = (key: string) => urlParams.get(key) || (params[key] as string);
             const getAllP = (key: string) => {
                 const urlList = urlParams.getAll(key);
@@ -41,64 +44,39 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
             const orderIds = getAllP('orderId');
             const pId = getP('payment_id');
 
-            // On vérifie si l'URL indique déjà un échec de manière explicite
             const isExplicitFailure = urlStatus === 'failed' || urlStatus === 'cancelled' || urlStatus === 'rejected';
-
-            // Logique Bazik
-            const bzkOrderId = orderIds.length > 1 ? orderIds[1] : (orderIds.length > 0 ? orderIds[0] : null);
             const internalOrderId = refId || (orderIds.length > 0 ? orderIds[0] : null);
-            const isBazikSuccess = urlStatus === 'success' || !!refId;
-
-            console.log("🔍 [VERIFY DEBUG] Config Détectée:", { isBazikSuccess, isExplicitFailure, internalOrderId, pId, urlStatus });
+            const bzkOrderId = orderIds.length > 1 ? orderIds[1] : (orderIds.length > 0 ? orderIds[0] : null);
 
             if (isExplicitFailure) {
-                console.log("❌ [VERIFY DEBUG] Échec détecté via URL. Affichage immédiat.");
                 setVerificationStatus('failed');
-                // On peut quand même tenter de vérifier pour mettre à jour la DB si on a un ID
-                if (pId) {
-                    fetch('/api/dodo/verify-payment', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ paymentId: pId, orderId: internalOrderId }),
-                    }).catch(err => console.error("Background verify error:", err));
-                }
+                isPolling = false;
                 return;
             }
 
-            // 1. Logique Dodo Payments (Prioritaire si payment_id est présent)
-            if (pId) {
-                hasTriggered.current = true;
-                console.log("🚀 [VERIFY DEBUG] Lancement Vérification Dodo...");
-                try {
+            try {
+                let statusFound: 'loading' | 'success' | 'failed' | 'pending' = 'loading';
+                let data: any = null;
+
+                // 1. Dodo Payments
+                if (pId) {
                     const res = await fetch('/api/dodo/verify-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ paymentId: pId, orderId: internalOrderId }),
                     });
-                    const data = await res.json();
-                    console.log("✅ [VERIFY DEBUG] Résultat Dodo:", data);
-
-                    const status = data.status?.toLowerCase();
-                    if (status === 'succeeded' || status === 'completed' || status === 'success' || status === 'active') {
-                        setVerificationStatus('success');
-                        if (data.order) setOrderData(data.order);
-                    } else if (status === 'failed' || status === 'cancelled' || status === 'rejected') {
-                        setVerificationStatus('failed');
+                    data = await res.json();
+                    const dStatus = data.status?.toLowerCase();
+                    if (dStatus === 'succeeded' || dStatus === 'completed' || dStatus === 'success' || dStatus === 'active') {
+                        statusFound = 'success';
+                    } else if (dStatus === 'failed' || dStatus === 'cancelled' || dStatus === 'rejected') {
+                        statusFound = 'failed';
                     } else {
-                        setVerificationStatus('pending');
+                        statusFound = 'pending';
                     }
-                } catch (error) {
-                    console.error("Dodo verify error:", error);
-                    setVerificationStatus('failed');
-                }
-                return;
-            }
-
-            // 2. Logique Bazik / Moncash
-            if (internalOrderId || bzkOrderId || refId) {
-                hasTriggered.current = true;
-                console.log("🚀 [VERIFY DEBUG] Lancement Vérification Bazik...");
-                try {
+                } 
+                // 2. Bazik
+                else if (internalOrderId || bzkOrderId || refId) {
                     const res = await fetch('/api/bazik/verify-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -107,36 +85,45 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                             bzkOrderId: bzkOrderId
                         }),
                     });
-                    const data = await res.json();
-                    console.log("✅ [VERIFY DEBUG] Résultat Bazik:", data);
-                    const status = data.status?.toLowerCase();
-                    if (status === 'succeeded' || status === 'success' || status === 'completed') {
-                        setVerificationStatus('success');
-                        if (data.order) setOrderData(data.order);
-                    } else if (status === 'failed' || status === 'cancelled' || status === 'rejected') {
-                        setVerificationStatus('failed');
+                    data = await res.json();
+                    const bStatus = data.status?.toLowerCase();
+                    if (bStatus === 'succeeded' || bStatus === 'success' || bStatus === 'completed') {
+                        statusFound = 'success';
+                    } else if (bStatus === 'failed' || bStatus === 'cancelled' || bStatus === 'rejected') {
+                        statusFound = 'failed';
                     } else {
-                        setVerificationStatus('pending');
+                        statusFound = 'pending';
                     }
-                } catch (error) {
-                    console.error("Bazik verify error:", error);
-                    setVerificationStatus('failed');
                 }
-                return;
-            }
 
-            // 3. Fallback (Si aucun paramètre n'est trouvé après 2s)
-            const timeout = setTimeout(() => {
-                if (!hasTriggered.current && verificationStatus === 'loading') {
-                    console.log("ℹ️ [VERIFY DEBUG] Aucun paramètre détecté. Statut : Pending");
+                if (statusFound !== 'loading') {
+                    setVerificationStatus(statusFound);
+                    if (data?.order) setOrderData(data.order);
+                    
+                    // Si c'est toujours en attente, on relance dans 5 secondes
+                    if (statusFound === 'pending') {
+                        pollTimer = setTimeout(() => {
+                            isPolling = false;
+                            verifyPayment();
+                        }, 5000);
+                    }
+                } else {
+                    // Si rien n'est trouvé, on arrête après un délai
                     setVerificationStatus('pending');
                 }
-            }, 2000);
-
-            return () => clearTimeout(timeout);
+            } catch (error) {
+                console.error("Verification error:", error);
+                setVerificationStatus('failed');
+            } finally {
+                isPolling = false;
+            }
         };
 
         verifyPayment();
+
+        return () => {
+            if (pollTimer) clearTimeout(pollTimer);
+        };
     }, []);
 
     // Valeurs d'affichage (priorité aux données vérifiées de la DB, sinon URL)
