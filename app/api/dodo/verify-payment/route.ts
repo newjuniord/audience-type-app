@@ -44,12 +44,16 @@ export async function POST(req: Request) {
 
                 // 1. Gestion du SUCCÈS
                 if (dodoStatus === "succeeded" || dodoStatus === "completed" || dodoStatus === "active") {
+                    const currency = (paymentData.currency || "usd").toLowerCase();
+                    const totalAmount = paymentData.total_amount || paymentData.amount;
+                    const finalAmount = currency === "usd" ? (totalAmount / 100) : totalAmount;
+
                     t.update(orderRef, {
                         status: "completed",
                         paymentMethod: paymentData.payment_method || "card",
-                        currency: paymentData.currency || "usd",
+                        currency: currency,
                         paidAt: Timestamp.now(),
-                        amount: paymentData.amount ? paymentData.amount / 100 : orderData?.amount,
+                        amount: finalAmount,
                         expiresAt: FieldValue.delete(),
                         transactionId: paymentId
                     });

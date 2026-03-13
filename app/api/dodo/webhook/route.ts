@@ -116,11 +116,15 @@ export async function POST(req: Request) {
             console.log("💰 [WEBHOOK] Paiement validé. Mise à jour de la commande...");
 
             // Mise à jour de la commande
+            const finalCurrency = (data.currency || currency || "usd").toLowerCase();
+            const totalAmount = data.total_amount || data.amount || amount;
+            const finalAmount = finalCurrency === "usd" ? (totalAmount / 100) : totalAmount;
+
             await orderRef.update({
                 status: "completed",
                 paymentMethod: data.payment_method || payment_method || "card",
-                currency: data.currency || currency || "usd",
-                amount: (data.amount || amount) ? (data.amount || amount) / 100 : orderData.amount, // Conversion centimes -> réel
+                currency: finalCurrency,
+                amount: finalAmount,
                 paidAt: Timestamp.now(),
                 transactionId: effectivePaymentId, // Confirmation du ID de transaction
                 expiresAt: FieldValue.delete() // Plus d'expiration nécessaire
