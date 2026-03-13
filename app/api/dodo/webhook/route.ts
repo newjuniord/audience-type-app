@@ -116,9 +116,13 @@ export async function POST(req: Request) {
             console.log("💰 [WEBHOOK] Paiement validé. Mise à jour de la commande...");
 
             // Mise à jour de la commande
-            const finalCurrency = (data.currency || currency || "usd").toLowerCase();
-            const totalAmount = data.total_amount || data.amount || amount;
-            const finalAmount = finalCurrency === "usd" ? (totalAmount / 100) : totalAmount;
+            const finalCurrency = (data.currency || currency || orderData?.currency || "usd").toLowerCase();
+            const totalFromApi = data.total_amount || data.amount || amount;
+            
+            let finalAmount = orderData?.amount || 0;
+            if (totalFromApi !== undefined && totalFromApi !== null) {
+                finalAmount = finalCurrency === "usd" ? (totalFromApi / 100) : totalFromApi;
+            }
 
             await orderRef.update({
                 status: "completed",

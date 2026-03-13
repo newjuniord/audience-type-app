@@ -61,9 +61,13 @@ export async function POST(req: Request) {
 
                 // 1. Gestion du SUCCÈS
                 if (dodoStatus === "succeeded" || dodoStatus === "completed" || dodoStatus === "active") {
-                    const currency = (paymentData.currency || "usd").toLowerCase();
-                    const totalAmount = paymentData.total_amount || paymentData.amount;
-                    const finalAmount = currency === "usd" ? (totalAmount / 100) : totalAmount;
+                    const currency = (paymentData.currency || orderData?.currency || "usd").toLowerCase();
+                    const totalFromApi = paymentData.total_amount || paymentData.amount;
+                    
+                    let finalAmount = orderData?.amount || 0;
+                    if (totalFromApi !== undefined && totalFromApi !== null) {
+                        finalAmount = currency === "usd" ? (totalFromApi / 100) : totalFromApi;
+                    }
 
                     t.update(orderRef, {
                         status: "completed",

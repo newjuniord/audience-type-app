@@ -168,6 +168,20 @@ export default function TransactionsPage() {
                                                 <div className="flex items-center gap-2">
                                                     #{order.transactionId?.substring(0, 8)}...
                                                     <span className="material-symbols-outlined text-[14px] opacity-0 group-hover/copy:opacity-100 transition-opacity">content_copy</span>
+                                                    {order.transactionId?.startsWith('pay_') && (
+                                                        <a 
+                                                            href={`https://live.dodopayments.com/invoices/payments/${order.transactionId}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center justify-center p-1 rounded-full bg-primary/5 hover:bg-primary/20 text-primary transition-colors ml-2"
+                                                            title="Télécharger la facture"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation(); // Prevents row copy trigger
+                                                            }}
+                                                        >
+                                                            <span className="material-symbols-outlined text-[14px]">download</span>
+                                                        </a>
+                                                    )}
                                                 </div>
                                                 {copiedId === order.transactionId && (
                                                     <span className="absolute top-1 right-2 bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded animate-in fade-in zoom-in">

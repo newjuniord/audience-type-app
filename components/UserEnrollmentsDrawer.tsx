@@ -230,9 +230,23 @@ export default function UserEnrollmentsDrawer({ isOpen, onClose, user }: UserEnr
                                         <div className="flex justify-between items-start mb-2">
                                             <div className="flex-1 min-w-0 mr-4">
                                                 <h4 className="font-bold text-sm truncate">{order.productTitle}</h4>
-                                                <p className="text-[10px] text-black/40 dark:text-white/40 mt-0.5">
-                                                    ID: {order.transactionId || order.id?.substring(0, 8)}
-                                                </p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <p className="text-[10px] text-black/40 dark:text-white/40">
+                                                        ID: {order.transactionId || order.id?.substring(0, 8)}
+                                                    </p>
+                                                    {order.transactionId?.startsWith('pay_') && (
+                                                        <a 
+                                                            href={`https://live.dodopayments.com/invoices/payments/${order.transactionId}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center justify-center p-1 rounded-full bg-primary/5 hover:bg-primary/20 text-primary transition-colors"
+                                                            title="Voir la facture"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            <span className="material-symbols-outlined text-[12px]">download</span>
+                                                        </a>
+                                                    )}
+                                                </div>
                                             </div>
                                             <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tight ${order.status === 'paid'
                                                 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
