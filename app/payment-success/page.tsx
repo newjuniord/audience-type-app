@@ -12,6 +12,10 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
     // Unwrap searchParams Promise with React.use()
     const params = use(searchParams);
 
+    // États locaux pour le statut et les données de commande
+    const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'failed' | 'pending'>('loading');
+    const [orderData, setOrderData] = useState<any>(null);
+
     // Ref pour éviter le double appel (React Strict Mode + Navigation)
     const hasTriggered = React.useRef(false);
 
