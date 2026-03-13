@@ -65,7 +65,37 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                 return;
             }
 
-            if (isBazikSuccess && (internalOrderId || bzkOrderId)) {
+            // 1. Logique Dodo Payments (Prioritaire si payment_id est présent)
+            if (pId) {
+                hasTriggered.current = true;
+                console.log("🚀 [VERIFY DEBUG] Lancement Vérification Dodo...");
+                try {
+                    const res = await fetch('/api/dodo/verify-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId: pId, orderId: internalOrderId }),
+                    });
+                    const data = await res.json();
+                    console.log("✅ [VERIFY DEBUG] Résultat Dodo:", data);
+
+                    const status = data.status?.toLowerCase();
+                    if (status === 'succeeded' || status === 'completed' || status === 'success' || status === 'active') {
+                        setVerificationStatus('success');
+                        if (data.order) setOrderData(data.order);
+                    } else if (status === 'failed' || status === 'cancelled' || status === 'rejected') {
+                        setVerificationStatus('failed');
+                    } else {
+                        setVerificationStatus('pending');
+                    }
+                } catch (error) {
+                    console.error("Dodo verify error:", error);
+                    setVerificationStatus('failed');
+                }
+                return;
+            }
+
+            // 2. Logique Bazik / Moncash
+            if (internalOrderId || bzkOrderId || refId) {
                 hasTriggered.current = true;
                 console.log("🚀 [VERIFY DEBUG] Lancement Vérification Bazik...");
                 try {
@@ -73,7 +103,7 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            orderId: internalOrderId,
+                            orderId: internalOrderId || bzkOrderId,
                             bzkOrderId: bzkOrderId
                         }),
                     });
@@ -95,49 +125,19 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                 return;
             }
 
-            // Logique Dodo Payments
-            if (pId) {
-                hasTriggered.current = true;
-                console.log("🚀 [VERIFY DEBUG] Lancement Vérification Dodo...");
-                try {
-                    const res = await fetch('/api/dodo/verify-payment', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ paymentId: pId, orderId: internalOrderId }),
-                    });
-                    const data = await res.json();
-                    console.log("✅ [VERIFY DEBUG] Résultat Dodo:", data);
-
-                    const status = data.status?.toLowerCase();
-                    if (status === 'succeeded' || status === 'completed' || status === 'success' || status === 'active') {
-                        setVerificationStatus('success');
-                        if (data.order) setOrderData(data.order);
-                    } else if (status === 'failed' || status === 'cancelled' || status === 'rejected') {
-                        setVerificationStatus('failed');
-                    } else {
-                        // Statuts intermédiaires (processing, on_hold, etc.)
-                        setVerificationStatus('pending');
-                    }
-                } catch (error) {
-                    console.error("Dodo verify error:", error);
-                    setVerificationStatus('failed');
-                }
-                return;
-            }
-
-            // Fallback (Si aucun paramètre n'est trouvé après 1.5s, on montre un succès par défaut)
+            // 3. Fallback (Si aucun paramètre n'est trouvé après 2s)
             const timeout = setTimeout(() => {
                 if (!hasTriggered.current && verificationStatus === 'loading') {
-                    console.log("ℹ️ [VERIFY DEBUG] Aucun paramètre de paiement trouvé. Mode succès simple.");
-                    setVerificationStatus('success');
+                    console.log("ℹ️ [VERIFY DEBUG] Aucun paramètre détecté. Statut : Pending");
+                    setVerificationStatus('pending');
                 }
-            }, 1500);
+            }, 2000);
 
             return () => clearTimeout(timeout);
         };
 
         verifyPayment();
-    }, []); // Dépendance vide : ne s'exécute qu'une seule fois au montage du composant
+    }, []);
 
     // Valeurs d'affichage (priorité aux données vérifiées de la DB, sinon URL)
     const displayAmount = orderData && typeof orderData.amount === 'number' 
