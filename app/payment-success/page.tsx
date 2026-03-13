@@ -12,9 +12,16 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
     // Unwrap searchParams Promise with React.use()
     const params = use(searchParams);
 
-    // État local pour le statut de vérification et les données de commande
+    // État local et Ref pour le statut de vérification (évite les bugs de closure dans le polling)
     const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'failed' | 'pending'>('loading');
+    const statusRef = React.useRef<'loading' | 'success' | 'failed' | 'pending'>('loading');
     const [orderData, setOrderData] = useState<any>(null);
+
+    // Fonction pour mettre à jour le statut (Sync State and Ref)
+    const updateStatus = (newStatus: 'loading' | 'success' | 'failed' | 'pending') => {
+        setVerificationStatus(newStatus);
+        statusRef.current = newStatus;
+    };
 
     // Effet pour vérifier le paiement dès le chargement + Polling
     useEffect(() => {
@@ -23,13 +30,13 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
 
         const verifyPayment = async () => {
             // Si on a déjà un résultat final, on arrête
-            if (verificationStatus === 'success' || verificationStatus === 'failed') return;
+            if (statusRef.current === 'success' || statusRef.current === 'failed') return;
             
             // Éviter les appels concurrents
             if (isPolling) return;
             isPolling = true;
 
-            // Extraction robuste
+            // Extraction des paramètres
             const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
             const getP = (key: string) => urlParams.get(key) || (params[key] as string);
             const getAllP = (key: string) => {
@@ -49,14 +56,14 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
             const bzkOrderId = orderIds.length > 1 ? orderIds[1] : (orderIds.length > 0 ? orderIds[0] : null);
 
             if (isExplicitFailure) {
-                setVerificationStatus('failed');
+                updateStatus('failed');
                 isPolling = false;
                 return;
             }
 
             try {
                 let statusFound: 'loading' | 'success' | 'failed' | 'pending' = 'loading';
-                let data: any = null;
+                let responseData: any = null;
 
                 // 1. Dodo Payments
                 if (pId) {
@@ -65,8 +72,10 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ paymentId: pId, orderId: internalOrderId }),
                     });
-                    data = await res.json();
-                    const dStatus = data.status?.toLowerCase();
+                    responseData = await res.json();
+                    const dStatus = responseData.status?.toLowerCase();
+                    
+                    // Si le serveur dit 'success' ou si la commande est déjà 'completed' dans la DB
                     if (dStatus === 'succeeded' || dStatus === 'completed' || dStatus === 'success' || dStatus === 'active') {
                         statusFound = 'success';
                     } else if (dStatus === 'failed' || dStatus === 'cancelled' || dStatus === 'rejected') {
@@ -85,8 +94,8 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                             bzkOrderId: bzkOrderId
                         }),
                     });
-                    data = await res.json();
-                    const bStatus = data.status?.toLowerCase();
+                    responseData = await res.json();
+                    const bStatus = responseData.status?.toLowerCase();
                     if (bStatus === 'succeeded' || bStatus === 'success' || bStatus === 'completed') {
                         statusFound = 'success';
                     } else if (bStatus === 'failed' || bStatus === 'cancelled' || bStatus === 'rejected') {
@@ -97,10 +106,10 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                 }
 
                 if (statusFound !== 'loading') {
-                    setVerificationStatus(statusFound);
-                    if (data?.order) setOrderData(data.order);
+                    updateStatus(statusFound);
+                    if (responseData?.order) setOrderData(responseData.order);
                     
-                    // Si c'est toujours en attente, on relance dans 5 secondes
+                    // Polling : Si c'est toujours en attente, on relance dans 5 secondes
                     if (statusFound === 'pending') {
                         pollTimer = setTimeout(() => {
                             isPolling = false;
@@ -108,12 +117,11 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                         }, 5000);
                     }
                 } else {
-                    // Si rien n'est trouvé, on arrête après un délai
-                    setVerificationStatus('pending');
+                    updateStatus('pending');
                 }
             } catch (error) {
                 console.error("Verification error:", error);
-                setVerificationStatus('failed');
+                updateStatus('failed');
             } finally {
                 isPolling = false;
             }
