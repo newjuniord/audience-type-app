@@ -40,7 +40,7 @@ export async function POST(req: Request) {
                 if (!orderSnap.exists) return;
 
                 const orderData = orderSnap.data();
-                if (orderData?.status === "completed") return;
+                if (orderData?.status !== "pending") return;
 
                 // 1. Gestion du SUCCÈS
                 if (dodoStatus === "succeeded" || dodoStatus === "completed" || dodoStatus === "active") {

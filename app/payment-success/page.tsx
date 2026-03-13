@@ -12,29 +12,14 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
     // Unwrap searchParams Promise with React.use()
     const params = use(searchParams);
 
-    // État local et Ref pour le statut de vérification (évite les bugs de closure dans le polling)
-    const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'failed' | 'pending'>('loading');
-    const statusRef = React.useRef<'loading' | 'success' | 'failed' | 'pending'>('loading');
-    const [orderData, setOrderData] = useState<any>(null);
+    // Ref pour éviter le double appel (React Strict Mode + Navigation)
+    const hasTriggered = React.useRef(false);
 
-    // Fonction pour mettre à jour le statut (Sync State and Ref)
-    const updateStatus = (newStatus: 'loading' | 'success' | 'failed' | 'pending') => {
-        setVerificationStatus(newStatus);
-        statusRef.current = newStatus;
-    };
-
-    // Effet pour vérifier le paiement dès le chargement + Polling
+    // Effet pour vérifier le paiement une seule fois au chargement
     useEffect(() => {
-        let pollTimer: NodeJS.Timeout;
-        let isPolling = false;
-
         const verifyPayment = async () => {
-            // Si on a déjà un résultat final, on arrête
-            if (statusRef.current === 'success' || statusRef.current === 'failed') return;
-            
-            // Éviter les appels concurrents
-            if (isPolling) return;
-            isPolling = true;
+            if (hasTriggered.current) return;
+            hasTriggered.current = true;
 
             // Extraction des paramètres
             const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
@@ -56,8 +41,7 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
             const bzkOrderId = orderIds.length > 1 ? orderIds[1] : (orderIds.length > 0 ? orderIds[0] : null);
 
             if (isExplicitFailure) {
-                updateStatus('failed');
-                isPolling = false;
+                setVerificationStatus('failed');
                 return;
             }
 
@@ -75,7 +59,6 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                     responseData = await res.json();
                     const dStatus = responseData.status?.toLowerCase();
                     
-                    // Si le serveur dit 'success' ou si la commande est déjà 'completed' dans la DB
                     if (dStatus === 'succeeded' || dStatus === 'completed' || dStatus === 'success' || dStatus === 'active') {
                         statusFound = 'success';
                     } else if (dStatus === 'failed' || dStatus === 'cancelled' || dStatus === 'rejected') {
@@ -106,32 +89,18 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                 }
 
                 if (statusFound !== 'loading') {
-                    updateStatus(statusFound);
+                    setVerificationStatus(statusFound);
                     if (responseData?.order) setOrderData(responseData.order);
-                    
-                    // Polling : Si c'est toujours en attente, on relance dans 5 secondes
-                    if (statusFound === 'pending') {
-                        pollTimer = setTimeout(() => {
-                            isPolling = false;
-                            verifyPayment();
-                        }, 5000);
-                    }
                 } else {
-                    updateStatus('pending');
+                    setVerificationStatus('pending');
                 }
             } catch (error) {
                 console.error("Verification error:", error);
-                updateStatus('failed');
-            } finally {
-                isPolling = false;
+                setVerificationStatus('failed');
             }
         };
 
         verifyPayment();
-
-        return () => {
-            if (pollTimer) clearTimeout(pollTimer);
-        };
     }, []);
 
     // Valeurs d'affichage (priorité aux données vérifiées de la DB, sinon URL)
