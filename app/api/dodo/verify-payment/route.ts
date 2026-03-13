@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
-import dodo from "@/lib/dodo";
 
 /**
  * Route API : /api/dodo/verify-payment
@@ -18,13 +17,31 @@ export async function POST(req: Request) {
         console.log(`🔍 [VERIFY] Vérification du paiement Dodo via SDK : ${paymentId}`);
 
         try {
-            // Utilisation du SDK officiel (évite les erreurs de fetch/headers/URL)
-            // On utilise 'retrieve' pour obtenir les détails du paiement
-            const paymentData = await (dodo as any).payments.retrieve(paymentId);
-            
+            // Déterminer l'URL (Live ou Test)
+            const apiKey = process.env.DODO_PAYMENTS_API_KEY || '';
+            const isTest = apiKey.startsWith('test_');
+            const baseUrl = isTest ? 'https://test.dodopayments.com' : 'https://live.dodopayments.com';
+            const url = `${baseUrl}/payments/${paymentId}`;
+
+            console.log(`🚀 [VERIFY] Manuel Fetch : ${url}`);
+
+            const dodoRes = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!dodoRes.ok) {
+                const errorData = await dodoRes.text();
+                console.error(`❌ [VERIFY ERROR] Dodo API Error (${dodoRes.status}):`, errorData);
+                return NextResponse.json({ error: `Dodo API Error: ${dodoRes.status}`, details: errorData }, { status: dodoRes.status });
+            }
+
+            const paymentData = await dodoRes.json();
             const dodoStatus = paymentData.status?.toLowerCase();
-            console.log(`✅ [VERIFY] Statut reçu de Dodo : ${dodoStatus}`);
-            console.log("📦 [VERIFY DEBUG] Dodo Payload:", JSON.stringify(paymentData, null, 2));
+            console.log(`✅ [VERIFY] Statut reçu de Dodo (${baseUrl}) : ${dodoStatus}`);
 
             // Identification de la commande
             const orderId = paymentData.metadata?.orderId || clientOrderId;
