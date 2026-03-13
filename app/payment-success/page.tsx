@@ -140,10 +140,17 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
     }, []); // Dépendance vide : ne s'exécute qu'une seule fois au montage du composant
 
     // Valeurs d'affichage (priorité aux données vérifiées de la DB, sinon URL)
-    const displayAmount = orderData ? (orderData.amount).toFixed(2) : (typeof params.amount === 'string' ? params.amount : '0.00');
-    const displayCurrency = orderData ? (orderData.currency || 'USD').toUpperCase() : (typeof params.currency === 'string' ? params.currency : 'USD');
-    const displayTitle = orderData?.productTitle || "Accès Contenu Numérique";
-    const displayOrderId = orderData?.id || (Array.isArray(params.orderId) ? params.orderId[0] : (typeof params.orderId === 'string' ? params.orderId : '#PENDING'));
+    const displayAmount = orderData && typeof orderData.amount === 'number' 
+        ? orderData.amount.toFixed(2) 
+        : (typeof params?.amount === 'string' ? params.amount : '0.00');
+
+    const displayCurrency = orderData?.currency 
+        ? orderData.currency.toUpperCase() 
+        : (typeof params?.currency === 'string' ? params.currency : 'USD');
+
+    const displayTitle = orderData?.productTitle || (typeof params?.title === 'string' ? params.title : "Accès Contenu Numérique");
+    
+    const displayOrderId = orderData?.id || (params && Array.isArray(params.orderId) ? params.orderId[0] : (params && typeof params.orderId === 'string' ? params.orderId : '#PENDING'));
 
     // Contenu dynamique selon le statut
     const getStatusContent = () => {

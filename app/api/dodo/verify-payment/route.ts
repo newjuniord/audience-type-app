@@ -94,9 +94,10 @@ export async function POST(req: Request) {
                 }
             });
 
+            const updatedOrderSnap = await orderRef.get();
             return NextResponse.json({ 
                 status: dodoStatus,
-                order: { id: orderId, status: dodoStatus }
+                order: { id: orderId, ...updatedOrderSnap.data() }
             });
 
         } catch (sdkError: any) {
