@@ -150,28 +150,43 @@ export async function POST(req: Request) {
 
                 // Déterminer la collection produit
                 const productCollection = productType === "course" ? "courses" : "ebooks";
+                const safeUserId = userId.id || userId;
+                const safeProductId = productId.id || productId;
+
+                const userRef = adminDb.collection("users").doc(safeUserId);
+                const productRef = adminDb.collection(productCollection).doc(safeProductId);
 
                 // Vérifier doublon (Correction: Utiliser des références dans la query)
                 const existingEnrollment = await enrollmentsRef
-                    .where("userId", "==", adminDb.collection("users").doc(userId))
-                    .where("productId", "==", adminDb.collection(productCollection).doc(productId))
+                    .where("userId", "==", userRef)
+                    .where("productId", "==", productRef)
                     .get();
 
                 if (existingEnrollment.empty) {
-
+                    const [pSnap, uSnap] = await Promise.all([productRef.get(), userRef.get()]);
+                    const pData = pSnap.exists ? pSnap.data() : {};
+                    const uData = uSnap.exists ? uSnap.data() : {};
 
                     await enrollmentsRef.add({
-                        userId: adminDb.collection("users").doc(userId), // Reference
-                        productId: adminDb.collection(productCollection).doc(productId), // Reference
+                        userId: userRef,
+                        productId: productRef,
                         productType: productType,
                         orderId: orderId,
                         status: "active",
+                        accessGranted: true,
                         enrolledAt: Timestamp.now(),
                         lastAccessedAt: Timestamp.now(),
                         progress: 0,
-                        completedLessons: []
+                        completedLessons: [],
+                        currentLessonId: "",
+                        downloadCount: "0",
+                        totalLessons: pData?.totalLessons || 0,
+                        productTitle: pData?.title || orderData?.productTitle || "",
+                        productThumbnailUrl: pData?.thumbnail || pData?.coverImage || orderData?.productThumbnailUrl || "",
+                        userEmail: uData?.email || orderData?.userEmail || "",
+                        userName: uData?.name || orderData?.userName || ""
                     });
-                    console.log("✅ [WEBHOOK] Enrollment créé avec succès.");
+                    console.log("✅ [WEBHOOK] Enrollment créé avec succès, avec titre et image.");
                 } else {
                     console.log("⚠️ [WEBHOOK] L'utilisateur a déjà accès à ce contenu.");
                 }
