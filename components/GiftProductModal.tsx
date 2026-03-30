@@ -7,6 +7,7 @@ import { getEbooks } from "@/lib/ebooks";
 import { createEnrollment } from "@/lib/enrollments";
 import { Timestamp, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import ConfirmModal from "./ui/ConfirmModal";
 
 interface GiftProductModalProps {
     isOpen: boolean;
@@ -26,6 +27,7 @@ export default function GiftProductModal({ isOpen, onClose, user }: GiftProductM
     const [loadingProducts, setLoadingProducts] = useState(false);
     const [selectedProductId, setSelectedProductId] = useState<string>("");
     const [granting, setGranting] = useState(false);
+    const [successModal, setSuccessModal] = useState({ isOpen: false, message: "" });
 
     useEffect(() => {
         if (isOpen) {
@@ -93,14 +95,22 @@ export default function GiftProductModal({ isOpen, onClose, user }: GiftProductM
                 downloadCount: "0"
             });
 
-            alert(`Accès accordé à ${product.title} pour ${user.displayName || user.email}`);
-            onClose();
+            setSuccessModal({
+                isOpen: true,
+                message: `Accès accordé à ${product.title} pour ${user.displayName || user.email}`
+            });
+            
         } catch (error) {
             console.error("Failed to grant access", error);
             alert("Erreur lors de l'attribution du cadeau.");
-        } finally {
-            setGranting(false);
+            setGranting(false); // only reset on error, on success we keep loading state or let the modal handle it
         }
+    };
+
+    const handleSuccessClose = () => {
+        setSuccessModal({ isOpen: false, message: "" });
+        setGranting(false);
+        onClose();
     };
 
     if (!isOpen || !user) return null;
@@ -158,6 +168,15 @@ export default function GiftProductModal({ isOpen, onClose, user }: GiftProductM
                     </button>
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={successModal.isOpen}
+                onClose={handleSuccessClose}
+                title="Succès"
+                message={successModal.message}
+                type="alert"
+                confirmText="Fermer"
+            />
         </div>
     );
 }
