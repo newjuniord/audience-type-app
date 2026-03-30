@@ -9,8 +9,9 @@ import GiftProductModal from "@/components/GiftProductModal";
 import UserEnrollmentsDrawer from "@/components/UserEnrollmentsDrawer";
 
 import { getEnrollments } from "@/lib/enrollments";
-
-// ... existing imports
+import { auth } from "@/lib/firebase";
+import { signInWithCustomToken } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 export default function UserManagementPage() {
     const [users, setUsers] = useState<User[]>([]);
@@ -18,6 +19,7 @@ export default function UserManagementPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'customer'>('all');
+    const router = useRouter();
 
     // Confirm Modal State
     const [userToDelete, setUserToDelete] = useState<string | null>(null);
@@ -97,6 +99,38 @@ export default function UserManagementPage() {
             // alert("Erreur lors de la suppression.");
         } finally {
             setIsProcessing(false);
+        }
+    };
+
+    const handleImpersonate = async (user: User) => {
+        if (!auth.currentUser) return;
+        
+        try {
+            const token = await auth.currentUser.getIdToken();
+            const res = await fetch("/api/admin/impersonate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ userId: user.uid })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Failed to impersonate");
+            }
+
+            const { customToken } = await res.json();
+            
+            // Sign in with the custom token for that user
+            await signInWithCustomToken(auth, customToken);
+            
+            // Redirect to their dashboard
+            router.push("/dashboard");
+        } catch (error: any) {
+            console.error("Erreur d'impersonation:", error);
+            alert("Erreur: " + error.message);
         }
     };
 
@@ -261,6 +295,13 @@ export default function UserManagementPage() {
                                                     title="Offer Gift"
                                                 >
                                                     <span className="material-symbols-outlined text-sm">redeem</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleImpersonate(user)}
+                                                    className="p-2.5 rounded-full border border-black/5 dark:border-white/10 hover:bg-emerald-400/20 hover:text-emerald-600 hover:border-emerald-400/50 transition-all duration-300"
+                                                    title="Connecter en tant que"
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">login</span>
                                                 </button>
                                                 <button
                                                     onClick={() => handleToggleRole(user)}

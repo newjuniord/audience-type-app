@@ -1,5 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { getAuth, Auth } from 'firebase-admin/auth';
 
 // Singleton-like pattern for caching the db instance
 let dbInstance: Firestore | null = null;
@@ -64,6 +65,38 @@ export function getAdminDb(): Firestore {
         return dbInstance;
     } catch (error) {
         console.error("🔥 FIREBASE ADMIN INIT FAILED:", error);
+        throw error;
+    }
+}
+
+let authInstance: Auth | null = null;
+
+/**
+ * Gets the Firebase Admin Auth instance.
+ * Initializes the SDK if it hasn't been initialized yet.
+ */
+export function getAdminAuth(): Auth {
+    if (authInstance) return authInstance;
+
+    try {
+        if (!getApps().length) {
+            const projectId = process.env.FIREBASE_PROJECT_ID;
+            const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+            const privateKey = formatPrivateKey(process.env.FIREBASE_PRIVATE_KEY);
+
+            if (!projectId || !clientEmail || !privateKey) {
+                throw new Error("Missing Firebase Admin Credentials");
+            }
+
+            initializeApp({
+                credential: cert({ projectId, clientEmail, privateKey }),
+            });
+        }
+
+        authInstance = getAuth();
+        return authInstance;
+    } catch (error) {
+        console.error("🔥 FIREBASE ADMIN AUTH INIT FAILED:", error);
         throw error;
     }
 }
