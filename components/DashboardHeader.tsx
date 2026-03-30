@@ -80,6 +80,16 @@ export default function DashboardHeader() {
                                     <p className="text-sm font-black truncate">
                                         <span>{user.displayName || user.email}</span>
                                     </p>
+                                    {role === 'admin' && (
+                                        <Link
+                                            href="/admin"
+                                            onClick={() => setIsDropdownOpen(false)}
+                                            className="flex items-center gap-3 p-3 rounded-2xl bg-primary/5 dark:bg-white/5 border border-primary/10 dark:border-white/10 hover:bg-primary/10 dark:hover:bg-white/10 transition-colors text-sm font-bold text-primary dark:text-white"
+                                        >
+                                            <span className="material-symbols-outlined text-lg notranslate">shield_person</span>
+                                            Admin Panel
+                                        </Link>
+                                    )}
                                     <Link
                                         href="/products"
                                         onClick={() => setIsDropdownOpen(false)}

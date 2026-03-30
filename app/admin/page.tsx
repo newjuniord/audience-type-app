@@ -145,19 +145,28 @@ export default function UserManagementPage() {
     });
 
     const isUserOnline = (user: User) => {
+        if (!user || user.isOnline === false) return false;
         if (!user.lastActive) return false;
-        if (user.isOnline === false) return false;
         
         try {
-            // Support Timestamp objects or parsed dates depending on how lib/users.ts returns them
-            const lastActiveTime = user.lastActive.toMillis 
-                ? user.lastActive.toMillis() 
-                : new Date(user.lastActive as any).getTime();
+            let lastActiveTime = 0;
+            if (typeof (user.lastActive as any).toMillis === 'function') {
+                lastActiveTime = (user.lastActive as any).toMillis();
+            } else if (typeof (user.lastActive as any).toDate === 'function') {
+                lastActiveTime = (user.lastActive as any).toDate().getTime();
+            } else if (typeof user.lastActive === 'number') {
+                lastActiveTime = user.lastActive;
+            } else {
+                lastActiveTime = new Date(user.lastActive as any).getTime();
+            }
                 
+            if (isNaN(lastActiveTime)) return false;
+            
             const timeSinceLastActive = Date.now() - lastActiveTime;
             // Timeout after 1h 15m (4500000 ms) grace period
             return timeSinceLastActive < 4500000;
         } catch(e) {
+            console.error("isUserOnline check failed:", e);
             return false;
         }
     };
