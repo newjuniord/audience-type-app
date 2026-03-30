@@ -171,20 +171,20 @@ export default function Dashboard() {
                             </div>
                         )}
 
-                        {/* Affiliate Section */}
+                        {/* Discover More Section */}
                         <div className="mt-12 mb-20 p-8 md:p-12 bg-primary dark:bg-white rounded-[3rem] text-white dark:text-primary relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 dark:bg-black/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl transition-transform duration-700 group-hover:scale-110"></div>
 
                             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                                 <div className="text-center md:text-left">
-                                    <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic mb-3"><span>Rejoignez l'aventure</span></h2>
-                                    <p className="text-sm md:text-base opacity-80 max-w-md"><span>Devenez partenaire d'Audience Type et gagnez des commissions sur chaque vente réalisée grâce à vous.</span></p>
+                                    <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic mb-3"><span>Envie d'aller plus loin ?</span></h2>
+                                    <p className="text-sm md:text-base opacity-80 max-w-md"><span>Découvrez notre catalogue complet. De nouveaux cours, ebooks et services sont disponibles pour vous.</span></p>
                                 </div>
                                 <button
-                                    onClick={() => router.push('/support?subject=Demande d\'affiliation')}
+                                    onClick={() => router.push('/products')}
                                     className="h-14 px-10 bg-white dark:bg-primary text-primary dark:text-white font-black uppercase tracking-widest text-xs rounded-full hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10 dark:shadow-white/5"
                                 >
-                                    <span>Demande d'affiliation</span>
+                                    <span>Voir les produits</span>
                                 </button>
                             </div>
                         </div>
