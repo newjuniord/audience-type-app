@@ -11,7 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     useEffect(() => {
         if (!loading) {
-            if (!user || role !== "admin") {
+            if (!user || role?.trim().toLowerCase() !== "admin") {
                 router.push("/");
             }
         }
@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         );
     }
 
-    if (!user || role !== "admin") {
+    if (!user || role?.trim().toLowerCase() !== "admin") {
         return null;
     }
 

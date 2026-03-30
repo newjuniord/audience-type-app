@@ -34,11 +34,7 @@ export default function DashboardHeader() {
             <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
                 {user && (
                     <nav className="hidden md:flex items-center gap-9">
-                        {role === 'admin' && (
-                            <Link href="/admin" className="text-primary dark:text-white text-sm font-bold leading-normal px-4 py-2 bg-primary/5 dark:bg-white/5 rounded-full hover:bg-primary/10 dark:hover:bg-white/10 transition-colors">
-                                Admin
-                            </Link>
-                        )}
+
                         <Link href="/products" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
                             Produits
                         </Link>
@@ -55,6 +51,12 @@ export default function DashboardHeader() {
                 )}
 
                 <div className="flex items-center gap-4">
+                    {user && role?.trim().toLowerCase() === 'admin' && (
+                        <Link href="/admin" className="flex items-center gap-2 bg-primary text-white dark:bg-white dark:text-primary px-4 md:px-5 h-10 rounded-full text-xs font-bold tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg border border-black/5 dark:border-white/5">
+                            <span className="material-symbols-outlined text-sm">security</span>
+                            <span className="hidden md:inline uppercase">Espace Admin</span>
+                        </Link>
+                    )}
                     {user ? (
                         <div className="relative" ref={dropdownRef}>
                             <button
@@ -80,7 +82,7 @@ export default function DashboardHeader() {
                                     <p className="text-sm font-black truncate">
                                         <span>{user.displayName || user.email}</span>
                                     </p>
-                                    {role === 'admin' && (
+                                    {role?.trim().toLowerCase() === 'admin' && (
                                         <Link
                                             href="/admin"
                                             onClick={() => setIsDropdownOpen(false)}

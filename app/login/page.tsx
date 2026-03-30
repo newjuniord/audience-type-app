@@ -17,7 +17,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (!authLoading && user) {
-            if (role === "admin") {
+            if (role?.trim().toLowerCase() === "admin") {
                 router.push("/admin");
             } else {
                 router.push("/dashboard");
@@ -59,7 +59,7 @@ export default function LoginPage() {
                 }, { merge: true }); // "merge: true" permet de ne pas écraser les autres champs (comme le rôle)
             }
             // 4. Redirection vers le tableau approprié
-            if (userSnap.exists() && userSnap.data().role === "admin") {
+            if (userSnap.exists() && userSnap.data().role?.trim().toLowerCase() === "admin") {
                 window.location.href = "/admin";
             } else {
                 window.location.href = "/dashboard";
