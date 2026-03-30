@@ -35,34 +35,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 // Fetch user data and role from Firestore
                 try {
                     const userDoc = await getDoc(doc(db, "users", authUser.uid));
+                    let data: any = null;
+                    let foundByUid = false;
+
                     if (userDoc.exists()) {
-                        const data = userDoc.data();
-                        console.log("AuthContext: User data found by UID:", data);
-                        setUserData({ ...data, uid: authUser.uid } as FirestoreUser);
-                        
-                        const rawRole = (data.role || data.Role || data.ROLE || "customer")?.toString();
-                        const finalRole = rawRole.trim().toLowerCase();
-                        setRole(finalRole);
-                    } else {
-                        // FALLBACK: Search by email if UID fails
-                        console.warn("AuthContext: No UID doc found, trying email fallback for:", authUser.email);
+                        data = userDoc.data();
+                        // Check if this is a "real" profile (has a role) or just a "shadow" presence doc
+                        if (data.role || data.Role || data.ROLE) {
+                            console.log("AuthContext: Real profile found by UID:", data);
+                            foundByUid = true;
+                        } else {
+                            console.warn("AuthContext: Shadow/empty doc found by UID, trying email fallback...");
+                        }
+                    }
+
+                    if (!foundByUid) {
+                        // FALLBACK: Search by email if UID fails or if UID doc is empty
+                        console.log("AuthContext: Searching by email for:", authUser.email);
                         const q = query(collection(db, "users"), where("email", "==", authUser.email), limit(1));
                         const querySnapshot = await getDocs(q);
                         
                         if (!querySnapshot.empty) {
                             const foundDoc = querySnapshot.docs[0];
-                            const data = foundDoc.data();
-                            console.log("AuthContext: User data found by Email Fallback:", data);
-                            setUserData({ ...data, uid: foundDoc.id } as FirestoreUser);
+                            data = foundDoc.data();
+                            console.log("AuthContext: Real profile found by Email Fallback:", data);
                             
-                            const rawRole = (data.role || data.Role || data.ROLE || "customer")?.toString();
-                            const finalRole = rawRole.trim().toLowerCase();
-                            setRole(finalRole);
+                            // Optional: If we found by email but it's not the same as UID, 
+                            // we should probably link them later, but for now just use this data.
                         } else {
-                            console.warn("AuthContext: No document found by UID or Email.");
-                            setUserData(null);
-                            setRole("customer");
+                            console.warn("AuthContext: No document found by UID or Email with a role.");
                         }
+                    }
+
+                    if (data) {
+                        setUserData({ ...data, uid: authUser.uid } as FirestoreUser);
+                        const rawRole = (data.role || data.Role || data.ROLE || "customer")?.toString();
+                        const finalRole = rawRole.trim().toLowerCase();
+                        setRole(finalRole);
+                    } else {
+                        setUserData(null);
+                        setRole("customer");
                     }
                 } catch (error) {
                     console.error("AuthContext: Error fetching user data:", error);
@@ -80,17 +92,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return () => unsubscribe();
     }, []);
 
-    // Presence management
+    // Presence management - ONLY start after loading is done and we have a real user
     useEffect(() => {
-        if (!user) return;
+        if (!user || loading) return;
 
         const presenceRef = doc(db, "users", user.uid);
 
         const updatePresence = async () => {
             try {
+                // Ensure we don't overwrite the role with an empty object!
+                // We use merge: true to just add the online status.
                 await setDoc(presenceRef, {
                     isOnline: true,
-                    lastActive: serverTimestamp()
+                    lastActive: serverTimestamp(),
+                    email: user.email, // Also keep email in UID-based doc for future lookups
+                    displayName: user.displayName
                 }, { merge: true });
             } catch (error) {
                 console.error("Error updating presence:", error);
@@ -105,7 +121,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Disconnect hook (best effort on web)
         const handleBeforeUnload = () => {
-            // Non-blocking write on tab close
             setDoc(presenceRef, { isOnline: false }, { merge: true }).catch(() => {});
         };
 
@@ -114,10 +129,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return () => {
             clearInterval(interval);
             window.removeEventListener("beforeunload", handleBeforeUnload);
-            // Marquer comme hors ligne au démontage complet (déconnexion)
+            // Marquer comme hors ligne au démontage
             setDoc(presenceRef, { isOnline: false }, { merge: true }).catch(() => {});
         };
-    }, [user]);
+    }, [user, loading]); // Added loading to dependencies
 
     return (
         <AuthContext.Provider value={{ user, userData, role, loading }}>
