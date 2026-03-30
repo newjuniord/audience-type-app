@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import VideoPlayer from "@/components/VideoPlayer";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 export default function SettingsPage() {
     const [videoUrl, setVideoUrl] = useState("");
     const [videoVisible, setVideoVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [messageModal, setMessageModal] = useState({ isOpen: false, title: "", message: "", type: "alert" as "alert" | "confirm" });
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -41,11 +43,21 @@ export default function SettingsPage() {
                 videoVisible
             }, { merge: true });
             
-            // Optional: Show a subtle success toast or animation
-            alert("Paramètres sauvegardés avec succès !");
+            // Show success toast
+            setMessageModal({
+                isOpen: true,
+                title: "Succès",
+                message: "Paramètres sauvegardés avec succès !",
+                type: "alert"
+            });
         } catch (error) {
             console.error("Error saving settings:", error);
-            alert("Erreur lors de la sauvegarde.");
+            setMessageModal({
+                isOpen: true,
+                title: "Erreur",
+                message: "Erreur lors de la sauvegarde.",
+                type: "alert"
+            });
         } finally {
             setIsSaving(false);
         }
@@ -147,6 +159,15 @@ export default function SettingsPage() {
                     </button>
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={messageModal.isOpen}
+                onClose={() => setMessageModal({ ...messageModal, isOpen: false })}
+                title={messageModal.title}
+                message={messageModal.message}
+                type={messageModal.type}
+                confirmText="Fermer"
+            />
         </div>
     );
 }
