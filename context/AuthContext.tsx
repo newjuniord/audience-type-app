@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User as FirebaseUser } from "firebase/auth";
 import { auth, db } from "../lib/firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, limit } from "firebase/firestore";
 import { User as FirestoreUser } from "../lib/types";
 
 interface AuthContextType {
@@ -36,15 +36,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 try {
                     const userDoc = await getDoc(doc(db, "users", authUser.uid));
                     if (userDoc.exists()) {
-                        const data = userDoc.data() as FirestoreUser;
-                        setUserData({ ...data, uid: authUser.uid });
-                        setRole(data.role || "customer");
+                        const data = userDoc.data();
+                        console.log("AuthContext: User data found by UID:", data);
+                        setUserData({ ...data, uid: authUser.uid } as FirestoreUser);
+                        
+                        const rawRole = (data.role || data.Role || data.ROLE || "customer")?.toString();
+                        const finalRole = rawRole.trim().toLowerCase();
+                        setRole(finalRole);
                     } else {
-                        setUserData(null);
-                        setRole("customer");
+                        // FALLBACK: Search by email if UID fails
+                        console.warn("AuthContext: No UID doc found, trying email fallback for:", authUser.email);
+                        const q = query(collection(db, "users"), where("email", "==", authUser.email), limit(1));
+                        const querySnapshot = await getDocs(q);
+                        
+                        if (!querySnapshot.empty) {
+                            const foundDoc = querySnapshot.docs[0];
+                            const data = foundDoc.data();
+                            console.log("AuthContext: User data found by Email Fallback:", data);
+                            setUserData({ ...data, uid: foundDoc.id } as FirestoreUser);
+                            
+                            const rawRole = (data.role || data.Role || data.ROLE || "customer")?.toString();
+                            const finalRole = rawRole.trim().toLowerCase();
+                            setRole(finalRole);
+                        } else {
+                            console.warn("AuthContext: No document found by UID or Email.");
+                            setUserData(null);
+                            setRole("customer");
+                        }
                     }
                 } catch (error) {
-                    console.error("Error fetching user data:", error);
+                    console.error("AuthContext: Error fetching user data:", error);
                     setUserData(null);
                     setRole("customer");
                 }

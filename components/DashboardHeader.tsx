@@ -51,8 +51,15 @@ export default function DashboardHeader() {
                 )}
 
                 <div className="flex items-center gap-4">
-                    {user && role?.trim().toLowerCase() === 'admin' && (
-                        <Link href="/admin" className="flex items-center gap-2 bg-primary text-white dark:bg-white dark:text-primary px-4 md:px-5 h-10 rounded-full text-xs font-bold tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg border border-black/5 dark:border-white/5">
+                    {/* Diagnostic Debug - Visible for admins or when needed */}
+                    {user && (
+                        <div className="hidden lg:flex flex-col items-end opacity-[0.1] hover:opacity-100 transition-opacity pointer-events-none select-none">
+                            <span className="text-[7px] font-mono leading-none">ROLE: {role || 'none'}</span>
+                            <span className="text-[7px] font-mono leading-none">UID: {user.uid.slice(0, 6)}...</span>
+                        </div>
+                    )}
+                    {user && role === 'admin' && (
+                        <Link href="/admin" className="flex items-center gap-2 bg-primary text-white dark:bg-white dark:text-primary px-4 md:px-5 h-10 rounded-full text-xs font-bold tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg border border-black/5 dark:border-white/10">
                             <span className="material-symbols-outlined text-sm">security</span>
                             <span className="hidden md:inline uppercase">Espace Admin</span>
                         </Link>
@@ -82,7 +89,7 @@ export default function DashboardHeader() {
                                     <p className="text-sm font-black truncate">
                                         <span>{user.displayName || user.email}</span>
                                     </p>
-                                    {role?.trim().toLowerCase() === 'admin' && (
+                                    {role === 'admin' && (
                                         <Link
                                             href="/admin"
                                             onClick={() => setIsDropdownOpen(false)}
