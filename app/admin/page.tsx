@@ -144,6 +144,24 @@ export default function UserManagementPage() {
         return matchesSearch && matchesRole;
     });
 
+    const isUserOnline = (user: User) => {
+        if (!user.lastActive) return false;
+        if (user.isOnline === false) return false;
+        
+        try {
+            // Support Timestamp objects or parsed dates depending on how lib/users.ts returns them
+            const lastActiveTime = user.lastActive.toMillis 
+                ? user.lastActive.toMillis() 
+                : new Date(user.lastActive as any).getTime();
+                
+            const timeSinceLastActive = Date.now() - lastActiveTime;
+            // Timeout after 1h 15m (4500000 ms) grace period
+            return timeSinceLastActive < 4500000;
+        } catch(e) {
+            return false;
+        }
+    };
+
     const stats = {
         total: users.length,
         admins: users.filter(u => u.role === 'admin').length,
@@ -256,7 +274,20 @@ export default function UserManagementPage() {
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold">{user.displayName || "Unknown User"}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm font-bold">{user.displayName || "Unknown User"}</p>
+                                                        {isUserOnline(user) ? (
+                                                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                                <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none">En Ligne</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-black/20 dark:bg-white/20"></span>
+                                                                <span className="text-[9px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest leading-none">Hors Ligne</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                     <p className="text-xs text-black/40 dark:text-white/40">{user.email}</p>
                                                     {user.phoneNumber && (
                                                         <p className="text-[10px] text-black/40 dark:text-white/40 font-medium mt-0.5 flex items-center gap-1">

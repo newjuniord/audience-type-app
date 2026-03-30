@@ -266,6 +266,8 @@ export interface User {
     lastLogin?: Timestamp;
     phoneNumber?: string;
     purchases?: string[]; // Liste des IDs produits achetés (optionnel)
+    isOnline?: boolean;
+    lastActive?: Timestamp;
     dodoCustomerId?: string; // ID du client Dodo Payments
 }
 
