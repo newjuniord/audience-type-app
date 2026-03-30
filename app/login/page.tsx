@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { signInWithPopup, onAuthStateChanged } from "firebase/auth";
+import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider, db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 // Importation des fonctions Firestore pour manipuler les documents
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -12,16 +13,17 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+    const { user, role, loading: authLoading } = useAuth();
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
+        if (!authLoading && user) {
+            if (role === "admin") {
+                router.push("/admin");
+            } else {
                 router.push("/dashboard");
             }
-        });
-
-        return () => unsubscribe();
-    }, [router]);
+        }
+    }, [user, role, authLoading, router]);
 
     const handleGoogleLogin = async () => {
         setIsLoading(true);
@@ -56,9 +58,12 @@ export default function LoginPage() {
                     photoURL: user.photoURL || userSnap.data().photoURL,
                 }, { merge: true }); // "merge: true" permet de ne pas écraser les autres champs (comme le rôle)
             }
-
-            // 4. Redirection vers le tableau de bord
-            window.location.href = "/dashboard";
+            // 4. Redirection vers le tableau approprié
+            if (userSnap.exists() && userSnap.data().role === "admin") {
+                window.location.href = "/admin";
+            } else {
+                window.location.href = "/dashboard";
+            }
         } catch (err: any) {
             console.error("Login error:", err);
             setError("Une erreur est survenue lors de la connexion. Veuillez réessayer.");
