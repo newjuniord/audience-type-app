@@ -192,7 +192,10 @@ export interface Order {
     amount: number;
     currency: string;
     createdAt?: Timestamp; // J'ajoute ceci car c'est crucial pour trier les commandes, même si absent de votre liste immédiate
-    productId: DocumentReference; // Référence au produit (Ebook, Course, etc.)
+    expiresAt?: Timestamp | string;
+    failedAt?: Timestamp | string;
+    failedReason?: string;
+    productId: DocumentReference | string; // Référence au produit (Ebook, Course, etc.)
     productThumbnailUrl: string;
     productTitle: string;
     productType: string; // Ex: "ebook", "course"
@@ -200,6 +203,7 @@ export interface Order {
     transactionId: string;
     userEmail: string;
     userId: DocumentReference | string; // Référence à l'acheteur ou ID string
+    userName?: string;
     paymentMethod?: string; // Ex: "card", "paypal"
 }
 

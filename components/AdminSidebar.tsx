@@ -30,6 +30,7 @@ export default function AdminSidebar() {
         {
             title: "Système",
             items: [
+                { label: "Transactions", icon: "receipt", href: "/admin/orders" },
                 { label: "Storage", icon: "folder", href: "/admin/storage" },
             ]
         }
