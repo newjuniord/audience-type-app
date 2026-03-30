@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import VideoPlayer from "./VideoPlayer";
 
 interface LessonDrawerProps {
     isOpen: boolean;
@@ -158,84 +159,7 @@ export default function LessonDrawer({ isOpen, onClose, lesson, onSave }: Lesson
                     <section className={`transition-all duration-700 delay-[450ms] ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
                         <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest mb-4">Video Preview</label>
                         <div className="w-full aspect-video rounded-3xl bg-black/10 dark:bg-white/10 overflow-hidden relative group">
-                            {videoUrl ? (
-                                (() => {
-                                    // YouTube
-                                    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
-                                    const youtubeMatch = videoUrl.match(youtubeRegex);
-
-                                    // Vimeo
-                                    const vimeoRegex = /(?:vimeo\.com\/)(\d+)/;
-                                    const vimeoMatch = videoUrl.match(vimeoRegex);
-
-                                    if (youtubeMatch) {
-                                        return (
-                                            <iframe
-                                                src={`https://www.youtube.com/embed/${youtubeMatch[1]}`}
-                                                className="w-full h-full"
-                                                title="Video Preview"
-                                                frameBorder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                allowFullScreen
-                                            ></iframe>
-                                        );
-                                    } else if (vimeoMatch) {
-                                        return (
-                                            <iframe
-                                                src={`https://player.vimeo.com/video/${vimeoMatch[1]}`}
-                                                className="w-full h-full"
-                                                title="Video Preview"
-                                                frameBorder="0"
-                                                allow="autoplay; fullscreen; picture-in-picture"
-                                                allowFullScreen
-                                            ></iframe>
-                                        );
-                                    }
-
-                                    // Bunny.net
-                                    const bunnyRegex = /https?:\/\/(?:www\.)?(?:player|iframe)\.mediadelivery\.net\/(?:embed|play)\/([\w-]+)\/([\w-]+)/;
-                                    const bunnyMatch = videoUrl.match(bunnyRegex);
-
-                                    if (bunnyMatch) {
-                                        return (
-                                            <iframe
-                                                src={`https://iframe.mediadelivery.net/embed/${bunnyMatch[1]}/${bunnyMatch[2]}?autoplay=false&loop=false&muted=false&preload=true&responsive=true`}
-                                                loading="lazy"
-                                                className="w-full h-full"
-                                                title="Video Preview"
-                                                frameBorder="0"
-                                                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                                                allowFullScreen
-                                            ></iframe>
-                                        );
-                                    }
-
-                                    {
-                                        // Try HTML5 video or fallback
-                                        return (
-                                            <video
-                                                src={videoUrl}
-                                                controls
-                                                className="w-full h-full object-cover bg-black"
-                                                onError={(e) => {
-                                                    // Hide video element on error and show placeholder
-                                                    (e.target as HTMLVideoElement).style.display = 'none';
-                                                    // Ideally we would show failure UI here
-                                                }}
-                                            >
-                                                Your browser does not support the video tag.
-                                            </video>
-                                        );
-                                    }
-                                })()
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center text-black/20 dark:text-white/20 select-none">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <span className="material-symbols-outlined text-4xl">videocam_off</span>
-                                        <span className="text-xs font-bold uppercase tracking-widest">No Video URL</span>
-                                    </div>
-                                </div>
-                            )}
+                            <VideoPlayer url={videoUrl} roundedClassName="rounded-none" className="h-full object-cover" />
                         </div>
                     </section>
 

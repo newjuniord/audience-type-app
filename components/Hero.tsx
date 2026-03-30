@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import TypingAnimation from './TypingAnimation';
+import HomeVideo from './HomeVideo';
 
 export default function Hero() {
     return (
@@ -27,6 +28,8 @@ export default function Hero() {
                     <span>Aucune carte de crédit requise</span>
                 </p>
             </div>
+            
+            <HomeVideo />
         </section>
     );
 }

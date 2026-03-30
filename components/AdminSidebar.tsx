@@ -32,6 +32,7 @@ export default function AdminSidebar() {
             items: [
                 { label: "Transactions", icon: "receipt", href: "/admin/orders" },
                 { label: "Storage", icon: "folder", href: "/admin/storage" },
+                { label: "Settings", icon: "settings", href: "/admin/settings" },
             ]
         }
     ];
