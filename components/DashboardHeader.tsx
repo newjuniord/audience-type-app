@@ -7,7 +7,7 @@ import { signOut } from "firebase/auth";
 import { useState, useEffect, useRef } from "react";
 
 export default function DashboardHeader() {
-    const { user, loading, role } = useAuth();
+    const { user, loading, role, signOutUser } = useAuth();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -131,7 +131,16 @@ export default function DashboardHeader() {
                                         <span className="material-symbols-outlined text-lg notranslate">person</span>
                                         Profil
                                     </Link>
-
+                                    <button
+                                        onClick={() => {
+                                            setIsDropdownOpen(false);
+                                            signOutUser();
+                                        }}
+                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-red-500/10 text-red-500 transition-colors text-sm font-bold w-full text-left mt-1"
+                                    >
+                                        <span className="material-symbols-outlined text-lg notranslate">logout</span>
+                                        Se déconnecter
+                                    </button>
                                 </div>
                             </div>
                         </div>

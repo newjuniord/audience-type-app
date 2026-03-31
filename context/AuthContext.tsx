@@ -11,6 +11,7 @@ interface AuthContextType {
     userData: FirestoreUser | null;
     role: string | null;
     loading: boolean;
+    signOutUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,9 +19,10 @@ const AuthContext = createContext<AuthContextType>({
     userData: null,
     role: null,
     loading: true,
+    signOutUser: async () => {},
 });
 
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -132,10 +134,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Marquer comme hors ligne au démontage
             setDoc(presenceRef, { isOnline: false }, { merge: true }).catch(() => {});
         };
-    }, [user, loading]); // Added loading to dependencies
+    }, [user, loading]);
+
+    const signOutUser = async () => {
+        if (user) {
+            try {
+                const presenceRef = doc(db, "users", user.uid);
+                await setDoc(presenceRef, { isOnline: false }, { merge: true });
+            } catch (error) {
+                console.error("Error setting offline status on logout:", error);
+            }
+        }
+        await signOut(auth);
+    };
 
     return (
-        <AuthContext.Provider value={{ user, userData, role, loading }}>
+        <AuthContext.Provider value={{ user, userData, role, loading, signOutUser }}>
             {children}
         </AuthContext.Provider>
     );
