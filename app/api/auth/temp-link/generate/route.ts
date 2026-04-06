@@ -59,7 +59,9 @@ export async function POST(req: Request) {
             });
         });
 
-        const baseUrl = new URL(req.url).origin;
+        const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "audiencetype.com";
+        const protocol = host.includes("localhost") ? "http" : "https";
+        const baseUrl = `${protocol}://${host}`;
         const link = `${baseUrl}/login/temp?token=${token}`;
 
         return NextResponse.json({ link, expiresAt });
