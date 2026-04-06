@@ -205,6 +205,7 @@ export interface Order {
     userId: DocumentReference | string; // Référence à l'acheteur ou ID string
     userName?: string;
     paymentMethod?: string; // Ex: "card", "paypal"
+    referenceCode?: string; // Code de référence optionnel
 }
 
 /**
@@ -269,6 +270,21 @@ export interface User {
     isOnline?: boolean;
     lastActive?: Timestamp;
     dodoCustomerId?: string; // ID du client Dodo Payments
+    referenceCode?: string; // Code de référence unique
+    canGenerateTempLinks?: boolean; // Autorisation admin pour générer des liens
+    tempLinksCount?: number; // Compteur de liens générés (max 2)
+}
+
+/**
+ * Interface représentant un Lien de Connexion Temporaire.
+ * Correspond à la collection `temp_links` dans Firestore.
+ */
+export interface TempLink {
+    id?: string; // Le token lui-même
+    userId: string; // L'ID de l'utilisateur qui a généré le lien
+    expiresAt: Timestamp; // Date d'expiration (24h)
+    used: boolean; // Si le lien a déjà été utilisé
+    createdAt: Timestamp;
 }
 
 /**
@@ -298,4 +314,20 @@ export interface Service {
     updatedAt: Timestamp;
     isInvitationOnly?: boolean;
     invitationCode?: string;
+}
+
+/**
+ * Interface représentant un Parrainage (Referral).
+ * Correspond à la collection `referrals` dans Firestore.
+ */
+export interface Referral {
+    id?: string;
+    referrerId: DocumentReference; // La personne qui possède le code
+    refereeId: DocumentReference;  // La personne qui a acheté
+    productId: DocumentReference;  // Le produit acheté
+    productTitle: string;
+    referenceCode: string;
+    amount: number;
+    status: 'pending' | 'rewarded';
+    createdAt: Timestamp;
 }

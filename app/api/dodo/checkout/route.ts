@@ -25,12 +25,14 @@ export async function POST(req: Request) {
         } catch (e) {
             return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
         }
-        const { productId, userId, userEmail, userName } = body;
+        const { productId, userId, userEmail, userName, referenceCode } = body;
 
         if (!productId || !userId) {
             console.error("❌ [ERREUR REQUÊTE] Paramètres manquants");
             return NextResponse.json({ error: "Information manquante" }, { status: 400 });
         }
+
+        // ... (rest of the code stays same until orderData)
 
         // ÉTAPE 3 : RÉCUPÉRATION DU PRODUIT DEPUIS FIRESTORE (PARALLÈLE)
         console.log("🔍 [RECHERCHE] Recherche du produit dans toutes les collections...");
@@ -82,7 +84,8 @@ export async function POST(req: Request) {
             createdAt: new Date(),
             expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
             userEmail: userEmail || "unknown",
-            userName: userName || "unknown"
+            userName: userName || "unknown",
+            referenceCode: referenceCode || ""
         };
 
         // Opération A : Sauvegarder la commande initiale (Firebase Admin write)
@@ -137,7 +140,7 @@ export async function POST(req: Request) {
                 },
                 product_cart: [{ product_id: dodoProductId, quantity: 1 }],
                 return_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/payment-success?orderId=${orderId}&amount=${productData.price}&currency=USD`,
-                metadata: { orderId, userId, productId }
+                metadata: { orderId, userId, productId, referenceCode }
             };
 
             // Appel API Dodo

@@ -23,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 import { onAuthStateChanged, signOut } from "firebase/auth";
+import { generateUniqueReferenceCode } from "@/lib/utils/reference-code";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -70,6 +71,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     }
 
                     if (data) {
+                        // BACKFILL: If missing referenceCode, generate and assign it
+                        if (!data.referenceCode) {
+                            try {
+                                const refCode = await generateUniqueReferenceCode();
+                                await setDoc(doc(db, "users", authUser.uid), { referenceCode: refCode }, { merge: true });
+                                data.referenceCode = refCode;
+                                console.log("AuthContext: Backfilled referenceCode for user:", authUser.uid);
+                            } catch (err) {
+                                console.error("AuthContext: Failed to backfill referenceCode:", err);
+                            }
+                        }
+
                         setUserData({ ...data, uid: authUser.uid } as FirestoreUser);
                         const rawRole = (data.role || data.Role || data.ROLE || "customer")?.toString();
                         const finalRole = rawRole.trim().toLowerCase();

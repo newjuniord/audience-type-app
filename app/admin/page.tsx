@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getUsers, updateUserRole, deleteUserDocument } from "@/lib/users";
+import { getUsers, updateUserRole, deleteUserDocument, updateUser } from "@/lib/users";
 import { User } from "@/lib/types";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
@@ -131,6 +131,28 @@ export default function UserManagementPage() {
         } catch (error: any) {
             console.error("Erreur d'impersonation:", error);
             alert("Erreur: " + error.message);
+        }
+    };
+
+    const handleToggleTempLinks = async (user: User) => {
+        try {
+            const newValue = !user.canGenerateTempLinks;
+            await updateUser(user.uid, { canGenerateTempLinks: newValue });
+            setUsers(users.map(u => u.uid === user.uid ? { ...u, canGenerateTempLinks: newValue } : u));
+        } catch (error) {
+            console.error("Failed to toggle temp links", error);
+            alert("Erreur lors de la mise à jour des permissions.");
+        }
+    };
+
+    const handleResetTempLinksCount = async (user: User) => {
+        if (!confirm("Réinitialiser le compteur de liens pour cet utilisateur ?")) return;
+        try {
+            await updateUser(user.uid, { tempLinksCount: 0 });
+            setUsers(users.map(u => u.uid === user.uid ? { ...u, tempLinksCount: 0 } : u));
+        } catch (error) {
+            console.error("Failed to reset count", error);
+            alert("Erreur lors de la réinitialisation.");
         }
     };
 
@@ -349,6 +371,22 @@ export default function UserManagementPage() {
                                                 >
                                                     {user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
                                                 </button>
+                                                <button
+                                                    onClick={() => handleToggleTempLinks(user)}
+                                                    className={`p-2.5 rounded-full border border-black/5 dark:border-white/10 transition-all duration-300 ${user.canGenerateTempLinks === false ? 'bg-red-400/20 text-red-600 border-red-400/50' : 'bg-purple-400/20 text-purple-600 border-purple-400/50'}`}
+                                                    title={user.canGenerateTempLinks === false ? "Réactiver Partage d'accès" : "Bloquer Partage d'accès"}
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">{user.canGenerateTempLinks === false ? 'block' : 'share_reviews'}</span>
+                                                </button>
+                                                {user.tempLinksCount && user.tempLinksCount > 0 ? (
+                                                    <button
+                                                        onClick={() => handleResetTempLinksCount(user)}
+                                                        className="p-2.5 rounded-full border border-black/5 dark:border-white/10 hover:bg-orange-400/20 hover:text-orange-600 hover:border-orange-400/50 transition-all duration-300"
+                                                        title="Réinitialiser Quota Liens"
+                                                    >
+                                                        <span className="material-symbols-outlined text-sm">history</span>
+                                                    </button>
+                                                ) : null}
                                                 <button
                                                     onClick={() => handleDeleteUser(user.uid)}
                                                     className="p-2.5 rounded-full border border-black/5 dark:border-white/10 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-300"

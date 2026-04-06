@@ -29,6 +29,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
     // Application State
     const [applicationMessage, setApplicationMessage] = useState("");
     const [userPhone, setUserPhone] = useState("");
+    const [referenceCode, setReferenceCode] = useState("");
     const [isApplying, setIsApplying] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -99,6 +100,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                     status: "pending",
                     paymentMethod: "moncash",
                     createdAt: Timestamp.now(),
+                    referenceCode: referenceCode || undefined,
                 };
 
                 const orderId = await createOrder(orderData);
@@ -146,6 +148,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                         userId: user.uid,
                         userEmail: user.email,
                         userName: user.displayName || "Client", // Fallback name
+                        referenceCode: referenceCode || "",
                     }),
                 });
 
@@ -432,6 +435,10 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                 }
                 confirmText={selectedPaymentMethod === 'moncash' ? "Payer avec Moncash" : "Confirmer l'achat"}
                 isLoading={isPurchasing}
+                showIcon={false}
+                showReferenceInput={true}
+                referenceValue={referenceCode}
+                onReferenceChange={setReferenceCode}
             />
 
             <SuccessModal

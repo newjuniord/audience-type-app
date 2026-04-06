@@ -133,5 +133,10 @@ service cloud.firestore {
       allow read, delete: if isAdmin();
       allow create: if true;
     }
+
+    // Referrals: Admin access
+    match /referrals/{referralId} {
+      allow read, write: if isAdmin();
+    }
   }
 }

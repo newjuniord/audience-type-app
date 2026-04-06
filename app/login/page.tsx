@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 // Importation des fonctions Firestore pour manipuler les documents
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { generateUniqueReferenceCode } from "@/lib/utils/reference-code";
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -42,6 +43,9 @@ export default function LoginPage() {
 
             if (!userSnap.exists()) {
                 // SI L'UTILISATEUR N'EXISTE PAS : On crée son profil complet
+                // Génération d'un code de référence unique
+                const refCode = await generateUniqueReferenceCode();
+                
                 await setDoc(userRef, {
                     fullName: user.displayName || "Anonyme", // Nom récupéré de Google
                     email: user.email,                      // Email récupéré de Google
@@ -49,6 +53,7 @@ export default function LoginPage() {
                     phone: user.phoneNumber || "",          // Numéro de téléphone (si disponible)
                     role: "user",                           // Rôle par défaut
                     createdAt: serverTimestamp(),           // Date de création via le serveur Firebase
+                    referenceCode: refCode,                 // Code de référence unique
                 });
             } else {
                 // SI L'UTILISATEUR EXISTE DÉJÀ : On peut mettre à jour ses infos (facultatif)

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
+import { handleReferralOnOrderSuccess } from "@/lib/referrals-admin";
 
 import crypto from "crypto";
 
@@ -133,6 +134,13 @@ export async function POST(req: Request) {
                 transactionId: effectivePaymentId, // Confirmation du ID de transaction
                 expiresAt: FieldValue.delete() // Plus d'expiration nécessaire
             });
+
+            // 4b. Traiter le parrainage si disponible
+            // On récupère les données mises à jour pour s'assurer d'avoir le context complet
+            const updatedOrderSnap = await orderRef.get();
+            if (updatedOrderSnap.exists) {
+                await handleReferralOnOrderSuccess(orderId, updatedOrderSnap.data());
+            }
 
             // 5. Donner accès au contenu (Enrollment)
             const { userId, productId, productType } = orderData as any;

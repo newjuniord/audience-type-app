@@ -14,6 +14,10 @@ interface ConfirmModalProps {
     isLoading?: boolean;
     image?: string;
     type?: 'confirm' | 'alert'; // 'confirm' has 2 buttons, 'alert' has 1 (OK)
+    showIcon?: boolean;
+    showReferenceInput?: boolean;
+    referenceValue?: string;
+    onReferenceChange?: (value: string) => void;
 }
 
 export default function ConfirmModal({
@@ -27,7 +31,11 @@ export default function ConfirmModal({
     isDanger = false,
     isLoading = false,
     image,
-    type = 'confirm'
+    type = 'confirm',
+    showIcon = true,
+    showReferenceInput = false,
+    referenceValue = "",
+    onReferenceChange
 }: ConfirmModalProps) {
     const [isVisible, setIsVisible] = useState(false);
 
@@ -60,14 +68,16 @@ export default function ConfirmModal({
             <div className={`bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl shadow-black/10 w-full max-w-md relative overflow-hidden transform transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
                 <div className="p-8 text-center">
                     {/* Icon */}
-                    <div className={`size-16 rounded-full flex items-center justify-center mx-auto mb-6 ${isDanger
-                        ? 'bg-red-50 text-red-500'
-                        : 'bg-black/5 dark:bg-white/5 text-primary dark:text-white'
-                        }`}>
-                        <span className="material-symbols-outlined text-3xl">
-                            {isDanger ? 'warning' : 'info'}
-                        </span>
-                    </div>
+                    {showIcon && (
+                        <div className={`size-16 rounded-full flex items-center justify-center mx-auto mb-6 ${isDanger
+                            ? 'bg-red-50 text-red-500'
+                            : 'bg-black/5 dark:bg-white/5 text-primary dark:text-white'
+                            }`}>
+                            <span className="material-symbols-outlined text-3xl">
+                                {isDanger ? 'warning' : 'info'}
+                            </span>
+                        </div>
+                    )}
 
                     {image && (
                         <div className="mb-6 flex justify-center">
@@ -76,9 +86,29 @@ export default function ConfirmModal({
                     )}
 
                     <h3 className="text-2xl font-black text-primary dark:text-white mb-2">{title}</h3>
-                    <p className="text-black/50 dark:text-white/50 text-sm font-medium mb-8 leading-relaxed">
+                    <p className={`text-black/50 dark:text-white/50 text-sm font-medium leading-relaxed ${showReferenceInput ? 'mb-6' : 'mb-8'}`}>
                         {message}
                     </p>
+
+                    {showReferenceInput && (
+                        <div className="mb-8 group">
+                            <label className="block text-left text-[10px] font-black uppercase tracking-widest text-primary/40 dark:text-white/40 mb-2 ml-1">
+                                Code de référence (Optionnel)
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={referenceValue}
+                                    onChange={(e) => onReferenceChange?.(e.target.value)}
+                                    placeholder="Entrez votre code..."
+                                    className="w-full h-12 bg-black/[0.03] dark:bg-white/[0.03] border border-black/5 dark:border-white/5 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 dark:focus:ring-white/20 transition-all placeholder:text-black/20 dark:placeholder:text-white/20"
+                                />
+                                <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary/20 dark:text-white/20 text-lg">
+                                    tag
+                                </span>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex gap-4">
                         {type === 'confirm' && (
@@ -126,3 +156,4 @@ export default function ConfirmModal({
         </div>
     );
 }
+

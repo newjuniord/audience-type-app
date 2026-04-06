@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
+import { handleReferralOnOrderSuccess } from "@/lib/referrals-admin";
 
 export async function POST(req: Request) {
     console.log("🔔 [BAZIK WEBHOOK] Event received");
@@ -64,6 +65,12 @@ export async function POST(req: Request) {
                 paidAt: Timestamp.now(),
                 transactionId: transactionId || "bazik_unknown",
             });
+
+            // Traitement du parrainage
+            const updatedOrderSnap = await orderRef.get();
+            if (updatedOrderSnap.exists) {
+                await handleReferralOnOrderSuccess(orderId, updatedOrderSnap.data());
+            }
 
             // Create Enrollment / Unlock Content
             const { userId, productId, productType } = orderData as any;
