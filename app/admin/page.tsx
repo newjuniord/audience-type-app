@@ -24,6 +24,7 @@ export default function UserManagementPage() {
     // Confirm Modal State
     const [userToDelete, setUserToDelete] = useState<string | null>(null);
     const [userToToggle, setUserToToggle] = useState<User | null>(null);
+    const [userToResetCount, setUserToResetCount] = useState<User | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Gift & Enrollments State
@@ -145,14 +146,22 @@ export default function UserManagementPage() {
         }
     };
 
-    const handleResetTempLinksCount = async (user: User) => {
-        if (!confirm("Réinitialiser le compteur de liens pour cet utilisateur ?")) return;
+    const handleResetTempLinksCount = (user: User) => {
+        setUserToResetCount(user);
+    };
+
+    const confirmResetCount = async () => {
+        if (!userToResetCount) return;
+        setIsProcessing(true);
         try {
-            await updateUser(user.uid, { tempLinksCount: 0 });
-            setUsers(users.map(u => u.uid === user.uid ? { ...u, tempLinksCount: 0 } : u));
+            await updateUser(userToResetCount.uid, { tempLinksCount: 0 });
+            setUsers(users.map(u => u.uid === userToResetCount.uid ? { ...u, tempLinksCount: 0 } : u));
+            setUserToResetCount(null);
         } catch (error) {
             console.error("Failed to reset count", error);
             alert("Erreur lors de la réinitialisation.");
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -411,18 +420,22 @@ export default function UserManagementPage() {
                 </div>
             </div>
             <ConfirmModal
-                isOpen={!!userToDelete || !!userToToggle}
+                isOpen={!!userToDelete || !!userToToggle || !!userToResetCount}
                 onClose={() => {
                     if (!isProcessing) {
                         setUserToDelete(null);
                         setUserToToggle(null);
+                        setUserToResetCount(null);
                     }
                 }}
-                onConfirm={userToDelete ? confirmDeleteUser : confirmToggleRole}
-                title={userToDelete ? "Supprimer l'utilisateur ?" : "Modifier le rôle ?"}
+                onConfirm={userToDelete ? confirmDeleteUser : (userToToggle ? confirmToggleRole : confirmResetCount)}
+                title={userToDelete ? "Supprimer l'utilisateur ?" : (userToToggle ? "Modifier le rôle ?" : "Réinitialiser le compteur ?")}
                 message={userToDelete
                     ? "ATTENTION: Cette action est irréversible. L'utilisateur sera supprimé de la base de données (Note: cela ne supprime pas le compte Auth Firebase)."
-                    : `Voulez-vous vraiment ${userToToggle?.role === 'admin' ? "rétrograder cet utilisateur comme Client" : "promouvoir cet utilisateur comme Admin"} ?`
+                    : (userToToggle 
+                        ? `Voulez-vous vraiment ${userToToggle?.role === 'admin' ? "rétrograder" : "promouvoir"} l'utilisateur ${userToToggle?.displayName || userToToggle?.email} ?`
+                        : `Voulez-vous vraiment réinitialiser le compteur de liens pour l'utilisateur ${userToResetCount?.displayName || userToResetCount?.email} ?`
+                    )
                 }
                 confirmText={userToDelete ? "Supprimer" : "Confirmer"}
                 isDanger={!!userToDelete}
