@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 // Importation des fonctions Firestore pour manipuler les documents
@@ -13,6 +13,11 @@ import { generateUniqueReferenceCode } from "@/lib/utils/reference-code";
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [message, setMessage] = useState<string | null>(null);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [isLoginView, setIsLoginView] = useState(true);
     const router = useRouter();
     const { user, role, loading: authLoading } = useAuth();
 
@@ -25,6 +30,97 @@ export default function LoginPage() {
             }
         }
     }, [user, role, authLoading, router]);
+
+    const handleResetPassword = async () => {
+        if (!email) {
+            setError("Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.");
+            setMessage(null);
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        setMessage(null);
+        try {
+            await sendPasswordResetEmail(auth, email);
+            setMessage("Un e-mail de réinitialisation a été envoyé à votre adresse.");
+        } catch (err: any) {
+            console.error("Reset password error:", err);
+            if (err.code === 'auth/user-not-found') {
+                setError("Aucun utilisateur trouvé avec cette adresse e-mail.");
+            } else {
+                setError("Erreur lors de l'envoi de l'e-mail de réinitialisation.");
+            }
+        }
+        setIsLoading(false);
+    };
+
+    const handleEmailAuth = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!email || !password) return;
+
+        if (!isLoginView) {
+            if (password !== confirmPassword) {
+                setError("Les mots de passe ne correspondent pas.");
+                return;
+            }
+            if (password.length < 6) {
+                setError("Le mot de passe doit contenir au moins 6 caractères.");
+                return;
+            }
+        }
+
+        setIsLoading(true);
+        setError(null);
+        setMessage(null);
+        try {
+            let user;
+            if (isLoginView) {
+                const result = await signInWithEmailAndPassword(auth, email, password);
+                user = result.user;
+            } else {
+                const result = await createUserWithEmailAndPassword(auth, email, password);
+                user = result.user;
+            }
+            
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                const refCode = await generateUniqueReferenceCode();
+                await setDoc(userRef, {
+                    fullName: email.split('@')[0],
+                    email: user.email,
+                    photoURL: "",
+                    phone: "",
+                    role: "user",
+                    createdAt: serverTimestamp(),
+                    referenceCode: refCode,
+                });
+                window.location.href = "/dashboard";
+                return;
+            }
+
+            if (userSnap.exists() && userSnap.data().role?.trim().toLowerCase() === "admin") {
+                window.location.href = "/admin";
+            } else {
+                window.location.href = "/dashboard";
+            }
+        } catch (err: any) {
+            console.error("Auth error:", err);
+            if (isLoginView) {
+                setError("Email ou mot de passe incorrect.");
+            } else {
+                if (err.code === 'auth/email-already-in-use') {
+                    setError("Cette adresse e-mail est déjà utilisée.");
+                } else if (err.code === 'auth/weak-password') {
+                    setError("Le mot de passe doit contenir au moins 6 caractères.");
+                } else {
+                    setError("Une erreur est survenue lors de l'inscription.");
+                }
+            }
+            setIsLoading(false);
+        }
+    };
 
     const handleGoogleLogin = async () => {
         setIsLoading(true);
@@ -99,7 +195,104 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-6">
+                        {error && (
+                            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium text-center">
+                                {error}
+                            </div>
+                        )}
+                        {message && (
+                            <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-500 text-sm font-medium text-center">
+                                {message}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 p-[20px] border border-primary/10 dark:border-white/10 rounded-2xl bg-white/50 dark:bg-white/5 backdrop-blur-sm">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Adresse e-mail</label>
+                                <input 
+                                    type="email" 
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl bg-white dark:bg-black/50 border border-primary/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:focus:ring-white/20 transition-all text-sm"
+                                    placeholder="nom@exemple.com"
+                                    required
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <div className="flex justify-between items-center">
+                                    <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Mot de passe</label>
+                                    {isLoginView && (
+                                        <button 
+                                            type="button" 
+                                            onClick={handleResetPassword}
+                                            className="text-xs text-primary/60 dark:text-white/60 hover:text-primary dark:hover:text-white transition-colors"
+                                        >
+                                            Mot de passe oublié ?
+                                        </button>
+                                    )}
+                                </div>
+                                <input 
+                                    type="password" 
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl bg-white dark:bg-black/50 border border-primary/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:focus:ring-white/20 transition-all text-sm"
+                                    placeholder="••••••••"
+                                    required
+                                    minLength={isLoginView ? undefined : 6}
+                                />
+                            </div>
+                            {!isLoginView && (
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Confirmer le mot de passe</label>
+                                    <input 
+                                        type="password" 
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl bg-white dark:bg-black/50 border border-primary/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:focus:ring-white/20 transition-all text-sm"
+                                        placeholder="••••••••"
+                                        required
+                                        minLength={6}
+                                    />
+                                </div>
+                            )}
+                            <button 
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full py-3 mt-2 bg-black dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+                            >
+                                {isLoading ? (
+                                    <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                    isLoginView ? "Se connecter" : "S'inscrire"
+                                )}
+                            </button>
+
+                            <div className="text-center mt-2">
+                                <button 
+                                    type="button"
+                                    onClick={() => {
+                                        setIsLoginView(!isLoginView);
+                                        setError(null);
+                                        setMessage(null);
+                                    }}
+                                    className="text-sm text-primary/60 dark:text-white/60 hover:text-primary dark:hover:text-white transition-colors"
+                                >
+                                    {isLoginView ? "Pas encore de compte ? S'inscrire" : "Déjà un compte ? Se connecter"}
+                                </button>
+                            </div>
+                        </form>
+
+                        <div className="relative flex items-center justify-center">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-primary/10 dark:border-white/10"></div>
+                            </div>
+                            <div className="relative bg-white dark:bg-background-dark px-4 text-xs font-medium text-primary/40 dark:text-white/40 uppercase tracking-wider">
+                                Ou continuer avec
+                            </div>
+                        </div>
+
                         <button
+                            type="button"
                             onClick={handleGoogleLogin}
                             disabled={isLoading}
                             className="group relative w-full h-16 flex items-center justify-center gap-4 bg-white dark:bg-white/5 border-2 border-primary/10 dark:border-white/10 rounded-2xl text-lg font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 shadow-xl shadow-black/5 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none"
