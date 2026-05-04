@@ -307,15 +307,26 @@ export default function UserManagementPage() {
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
                                                 <div className="size-10 rounded-full bg-black/5 dark:bg-white/5 overflow-hidden flex items-center justify-center">
-                                                    {user.photoURL ? (
-                                                        <img alt={user.displayName} className="w-full h-full object-cover" src={user.photoURL} />
+                                                    {(user.photoURL || (user as any).photoUrl) ? (
+                                                        <img 
+                                                            alt={user.displayName || (user as any).fullName} 
+                                                            className="w-full h-full object-cover" 
+                                                            src={user.photoURL || (user as any).photoUrl} 
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).onerror = null;
+                                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                                if ((e.target as HTMLImageElement).parentElement) {
+                                                                    (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="material-symbols-outlined text-black/20 dark:text-white/20">person</span>';
+                                                                }
+                                                            }}
+                                                        />
                                                     ) : (
                                                         <span className="material-symbols-outlined text-black/20 dark:text-white/20">person</span>
                                                     )}
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <p className="text-sm font-bold">{user.displayName || "Unknown User"}</p>
+                                                        <p className="text-sm font-bold">{user.displayName || (user as any).fullName || "Unknown User"}</p>
                                                         {isUserOnline(user) ? (
                                                             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>

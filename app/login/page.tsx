@@ -100,10 +100,16 @@ export default function LoginPage() {
                 return;
             }
 
-            if (userSnap.exists() && userSnap.data().role?.trim().toLowerCase() === "admin") {
-                window.location.href = "/admin";
-            } else {
-                window.location.href = "/dashboard";
+            if (userSnap.exists()) {
+                if (!userSnap.data().createdAt) {
+                    await setDoc(userRef, { createdAt: serverTimestamp() }, { merge: true });
+                }
+                if (userSnap.data().role?.trim().toLowerCase() === "admin") {
+                    window.location.href = "/admin";
+                } else {
+                    window.location.href = "/dashboard";
+                }
+                return;
             }
         } catch (err: any) {
             console.error("Auth error:", err);
@@ -152,12 +158,18 @@ export default function LoginPage() {
                     referenceCode: refCode,                 // Code de référence unique
                 });
             } else {
-                // SI L'UTILISATEUR EXISTE DÉJÀ : On peut mettre à jour ses infos (facultatif)
-                // Ici on met à jour la photo et le nom au cas où ils auraient changé sur Google
-                await setDoc(userRef, {
-                    fullName: user.displayName || userSnap.data().fullName,
-                    photoURL: user.photoURL || userSnap.data().photoURL,
-                }, { merge: true }); // "merge: true" permet de ne pas écraser les autres champs (comme le rôle)
+                // SI L'UTILISATEUR EXISTE DÉJÀ : On met à jour ses infos et on s'assure qu'il a une date de création
+                const existingData = userSnap.data();
+                const updates: any = {
+                    fullName: user.displayName || existingData.fullName,
+                    photoURL: user.photoURL || existingData.photoURL,
+                };
+                
+                if (!existingData.createdAt) {
+                    updates.createdAt = serverTimestamp();
+                }
+
+                await setDoc(userRef, updates, { merge: true });
             }
             // 4. Redirection vers le tableau approprié
             if (userSnap.exists() && userSnap.data().role?.trim().toLowerCase() === "admin") {

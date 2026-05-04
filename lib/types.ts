@@ -22,6 +22,11 @@ export interface Ebook {
     dodoProductId?: string;
 
     /**
+     * ID du produit dans Lemon Squeezy (pour le paiement).
+     */
+    lemonSqueezyProductId?: string;
+
+    /**
      * L'URL de l'image de couverture du livre.
      * Typiquement une URL pointant vers Firebase Storage ou un autre service d'hébergement d'images.
      */
@@ -119,6 +124,7 @@ export interface Module {
 export interface Course {
     id?: string;
     dodoProductId?: string; // ID Dodo Payments
+    lemonSqueezyProductId?: string; // ID Lemon Squeezy
     createdAt: Timestamp;
     description: string;
     includedItems: string[];
@@ -295,6 +301,7 @@ export interface TempLink {
 export interface Service {
     id?: string;
     dodoProductId?: string; // ID Dodo Payments
+    lemonSqueezyProductId?: string; // ID Lemon Squeezy
     title: string;
     description: string;
     price: string; // Ex: "150" ou "150$"

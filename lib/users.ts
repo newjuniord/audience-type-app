@@ -21,12 +21,19 @@ const COLLECTION_NAME = "users";
  */
 export async function getUsers(): Promise<User[]> {
     try {
-        const q = query(collection(db, COLLECTION_NAME), orderBy("createdAt", "desc"));
+        const q = query(collection(db, COLLECTION_NAME));
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({
+        const users = snapshot.docs.map(doc => ({
             uid: doc.id,
             ...doc.data()
         } as User));
+
+        // Sort in-memory to avoid filtering out docs missing the field
+        return users.sort((a, b) => {
+            const timeA = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+            const timeB = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+            return timeB - timeA;
+        });
     } catch (error) {
         console.error("Error fetching users:", error);
         return [];

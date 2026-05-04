@@ -25,6 +25,8 @@ export default function UserEnrollmentsDrawer({ isOpen, onClose, user }: UserEnr
     const [enrollmentToDelete, setEnrollmentToDelete] = useState<Enrollment | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    const [showPhotoPopup, setShowPhotoPopup] = useState(false);
+
     useEffect(() => {
         if (isOpen && user) {
             fetchEnrollments();
@@ -33,6 +35,7 @@ export default function UserEnrollmentsDrawer({ isOpen, onClose, user }: UserEnr
             setEnrollments([]);
             setOrders([]);
             setActiveTab('enrollments');
+            setShowPhotoPopup(false);
         }
     }, [isOpen, user]);
 
@@ -96,11 +99,33 @@ export default function UserEnrollmentsDrawer({ isOpen, onClose, user }: UserEnr
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h2 className="text-2xl font-black tracking-tight">Produits</h2>
-                            <p className="text-sm text-black/50 dark:text-white/50">
-                                Bibliothèque de {user?.displayName || "l'utilisateur"}
-                            </p>
+                        <div className="flex items-center gap-4">
+                            <button 
+                                onClick={() => (user?.photoURL || (user as any)?.photoUrl) && setShowPhotoPopup(true)}
+                                className={`size-20 rounded-full overflow-hidden bg-black/5 dark:bg-white/5 flex items-center justify-center border border-black/5 dark:border-white/10 flex-shrink-0 transition-all ${ (user?.photoURL || (user as any)?.photoUrl) ? 'cursor-pointer hover:scale-105 active:scale-95 hover:border-primary/30' : 'cursor-default' }`}
+                            >
+                                {(user?.photoURL || (user as any)?.photoUrl) ? (
+                                    <img 
+                                        src={user?.photoURL || (user as any)?.photoUrl} 
+                                        alt="" 
+                                        className="w-full h-full object-cover" 
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                            if ((e.target as HTMLImageElement).parentElement) {
+                                                (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="material-symbols-outlined text-black/20 dark:text-white/20">person</span>';
+                                            }
+                                        }}
+                                    />
+                                ) : (
+                                    <span className="material-symbols-outlined text-black/20 dark:text-white/20">person</span>
+                                )}
+                            </button>
+                            <div>
+                                <h2 className="text-2xl font-black tracking-tight">Produits</h2>
+                                <p className="text-base font-medium text-black/60 dark:text-white/60">
+                                    Bibliothèque de {user?.displayName || (user as any)?.fullName || "l'utilisateur"}
+                                </p>
+                            </div>
                         </div>
                         <button
                             onClick={onClose}
@@ -152,12 +177,18 @@ export default function UserEnrollmentsDrawer({ isOpen, onClose, user }: UserEnr
                                         className="group p-4 bg-white dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl hover:border-primary/50 transition-colors"
                                     >
                                         <div className="flex gap-4">
-                                            <div className="w-16 h-16 rounded-lg bg-black/5 dark:bg-white/5 overflow-hidden flex-shrink-0">
+                                            <div className="w-[70px] h-[70px] rounded-full bg-black/5 dark:bg-white/5 overflow-hidden flex-shrink-0 border border-black/5 dark:border-white/10">
                                                 {enrollment.productThumbnailUrl ? (
                                                     <img
                                                         src={enrollment.productThumbnailUrl}
                                                         alt={enrollment.productTitle}
                                                         className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).style.display = 'none';
+                                                            if ((e.target as HTMLImageElement).parentElement) {
+                                                                (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><span class="material-symbols-outlined text-2xl opacity-20">image</span></div>';
+                                                            }
+                                                        }}
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center">
@@ -292,6 +323,31 @@ export default function UserEnrollmentsDrawer({ isOpen, onClose, user }: UserEnr
                 isDanger={true}
                 isLoading={isDeleting}
             />
+
+            {/* Photo Popup */}
+            {showPhotoPopup && (user?.photoURL || (user as any)?.photoUrl) && (
+                <div 
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300 px-6"
+                    onClick={() => setShowPhotoPopup(false)}
+                >
+                    <div 
+                        className="relative w-full max-w-[400px] aspect-square bg-white dark:bg-black rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/10 animate-in zoom-in-95 duration-300"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <img 
+                            src={(user?.photoURL || (user as any)?.photoUrl)?.replace(/=s\d+-c/, "=s400-c")} 
+                            alt={user?.displayName} 
+                            className="w-full h-full object-cover" 
+                        />
+                        <button 
+                            onClick={() => setShowPhotoPopup(false)}
+                            className="absolute top-6 right-6 size-12 rounded-full bg-black/50 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/70 transition-all active:scale-90"
+                        >
+                            <span className="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

@@ -71,16 +71,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     }
 
                     if (data) {
-                        // BACKFILL: If missing referenceCode, generate and assign it
+                        // BACKFILL: If missing referenceCode or createdAt, generate and assign them
+                        const updates: any = {};
                         if (!data.referenceCode) {
                             try {
-                                const refCode = await generateUniqueReferenceCode();
-                                await setDoc(doc(db, "users", authUser.uid), { referenceCode: refCode }, { merge: true });
-                                data.referenceCode = refCode;
-                                console.log("AuthContext: Backfilled referenceCode for user:", authUser.uid);
+                                updates.referenceCode = await generateUniqueReferenceCode();
+                                console.log("AuthContext: Generating missing referenceCode for user:", authUser.uid);
                             } catch (err) {
-                                console.error("AuthContext: Failed to backfill referenceCode:", err);
+                                console.error("AuthContext: Failed to generate referenceCode:", err);
                             }
+                        }
+                        if (!data.createdAt) {
+                            updates.createdAt = serverTimestamp();
+                            console.log("AuthContext: Backfilling missing createdAt for user:", authUser.uid);
+                        }
+
+                        if (Object.keys(updates).length > 0) {
+                            await setDoc(doc(db, "users", authUser.uid), updates, { merge: true });
+                            // Update local data object too
+                            Object.assign(data, updates);
                         }
 
                         setUserData({ ...data, uid: authUser.uid } as FirestoreUser);
@@ -115,13 +124,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         const updatePresence = async () => {
             try {
-                // Ensure we don't overwrite the role with an empty object!
-                // We use merge: true to just add the online status.
+                // Fetch latest data to avoid overwriting fullName/displayName with null
+                const snap = await getDoc(presenceRef);
+                const currentData = snap.exists() ? snap.data() : {};
+                
+                const finalName = user.displayName || currentData.displayName || currentData.fullName || "";
+                const finalPhoto = user.photoURL || currentData.photoURL || currentData.photoUrl || "";
+
                 await setDoc(presenceRef, {
                     isOnline: true,
                     lastActive: serverTimestamp(),
-                    email: user.email, // Also keep email in UID-based doc for future lookups
-                    displayName: user.displayName
+                    email: user.email,
+                    displayName: finalName,
+                    photoURL: finalPhoto
                 }, { merge: true });
             } catch (error) {
                 console.error("Error updating presence:", error);

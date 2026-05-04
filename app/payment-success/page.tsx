@@ -53,8 +53,32 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                 let statusFound: 'loading' | 'success' | 'failed' | 'pending' = 'loading';
                 let responseData: any = null;
 
-                // 1. Dodo Payments
-                if (pId) {
+                const provider = getP('provider')?.toLowerCase();
+
+                // 1. Lemon Squeezy
+                if (provider === 'lemonsqueezy') {
+                    const lsOrderId = getP('ls_order_id');
+                    const res = await fetch('/api/lemonsqueezy/verify-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            orderId: internalOrderId,
+                            lsOrderId: lsOrderId
+                        }),
+                    });
+                    responseData = await res.json();
+                    const lsStatus = responseData.status?.toLowerCase();
+                    
+                    if (lsStatus === 'paid' || lsStatus === 'success' || lsStatus === 'completed') {
+                        statusFound = 'success';
+                    } else if (lsStatus === 'failed' || lsStatus === 'failed_api') {
+                        statusFound = 'failed';
+                    } else {
+                        statusFound = 'pending';
+                    }
+                }
+                // 2. Dodo Payments
+                else if (pId) {
                     const res = await fetch('/api/dodo/verify-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -71,7 +95,7 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                         statusFound = 'pending';
                     }
                 } 
-                // 2. Bazik
+                // 3. Bazik / Moncash
                 else if (internalOrderId || bzkOrderId || refId) {
                     const res = await fetch('/api/bazik/verify-payment', {
                         method: 'POST',
