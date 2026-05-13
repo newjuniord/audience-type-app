@@ -23,15 +23,17 @@ export default function Dashboard() {
 
     useEffect(() => {
         const fetchEnrollments = async () => {
+            // Si on n'a pas encore d'utilisateur, on attend (le chargement continue)
             if (!user) return;
-            setLoading(true);
+
             try {
-                const userRef = doc(db, "users", user.uid);
-                const data = await getEnrollmentsByUser(userRef);
+                // On passe directement l'UID (string) c'est plus sûr et plus rapide
+                const data = await getEnrollmentsByUser(user.uid);
                 setEnrollments(data);
             } catch (error) {
                 console.error("Failed to fetch enrollments", error);
             } finally {
+                // Quoi qu'il arrive, on arrête le spinner de chargement
                 setLoading(false);
             }
         };
@@ -50,7 +52,22 @@ export default function Dashboard() {
 
                 // 2. Fetch File URL from Product Doc
                 if (enrollment.productId) {
-                    const productDoc = await getDoc(enrollment.productId);
+                    let productDocRef: DocumentReference;
+                    
+                    if (typeof enrollment.productId === 'string') {
+                        // Si c'est un string, on doit reconstruire la référence
+                        let collectionName = "courses";
+                        const type = enrollment.productType.toLowerCase();
+                        if (type.includes('ebook')) collectionName = "ebooks";
+                        else if (type.includes('service') || type.includes('booking')) collectionName = "services";
+                        
+                        productDocRef = doc(db, collectionName, enrollment.productId);
+                    } else {
+                        // C'est déjà une référence
+                        productDocRef = enrollment.productId;
+                    }
+
+                    const productDoc = await getDoc(productDocRef);
                     if (productDoc.exists()) {
                         const productData = productDoc.data();
                         if (productData.fileUrl) {
@@ -67,7 +84,10 @@ export default function Dashboard() {
         } else if (enrollment.productType.toLowerCase().includes('course')) {
             // Course Logic
             if (enrollment.productId) {
-                router.push(`/course/${enrollment.productId.id}`);
+                const courseId = typeof enrollment.productId === 'string' 
+                    ? enrollment.productId 
+                    : enrollment.productId.id;
+                router.push(`/course/${courseId}`);
             }
         } else {
             // Service / Other Logic

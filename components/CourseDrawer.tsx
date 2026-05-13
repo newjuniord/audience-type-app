@@ -17,7 +17,6 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
     // Form State
     const [title, setTitle] = useState("");
     const [price, setPrice] = useState("");
-    const [dodoProductId, setDodoProductId] = useState(""); // Add State
     const [lemonSqueezyProductId, setLemonSqueezyProductId] = useState("");
     const [status, setStatus] = useState("draft"); // Default to draft
     const [description, setDescription] = useState("");
@@ -35,7 +34,6 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
             if (initialData) {
                 setTitle(initialData.title || "");
                 setPrice(initialData.price?.toString() || "");
-                setDodoProductId(initialData.dodoProductId || ""); // Load existing ID
                 setLemonSqueezyProductId(initialData.lemonSqueezyProductId || "");
                 setStatus(initialData.statut || "draft");
                 setDescription(initialData.description || "");
@@ -47,7 +45,6 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
                 // Reset for new course
                 setTitle("");
                 setPrice("");
-                setDodoProductId(""); // Reset
                 setLemonSqueezyProductId("");
                 setStatus("draft");
                 setDescription("");
@@ -71,7 +68,6 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
             await onSave({
                 title,
                 price: parseFloat(price) || 0,
-                dodoProductId, // Save ID
                 lemonSqueezyProductId,
                 statut: status,
                 description,
@@ -187,17 +183,7 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
                                     onChange={(e) => setPrice(e.target.value)}
                                 />
                             </div>
-                            <div>
-                                <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest mb-2">ID Dodo (Paiement)</label>
-                                <input
-                                    className="w-full px-6 py-4 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all text-sm font-medium"
-                                    placeholder="pdt_..."
-                                    type="text"
-                                    value={dodoProductId}
-                                    onChange={(e) => setDodoProductId(e.target.value)}
-                                />
-                                <p className="text-[10px] text-black/30 dark:text-white/30 mt-1 ml-2">ID du produit dans le tableau de bord Dodo Payments</p>
-                            </div>
+
                             <div>
                                 <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest mb-2">ID Lemon Squeezy</label>
                                 <input

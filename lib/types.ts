@@ -17,11 +17,6 @@ export interface Ebook {
     id?: string;
 
     /**
-     * ID du produit dans Dodo Payments (pour le paiement).
-     */
-    dodoProductId?: string;
-
-    /**
      * ID du produit dans Lemon Squeezy (pour le paiement).
      */
     lemonSqueezyProductId?: string;
@@ -123,7 +118,6 @@ export interface Module {
  */
 export interface Course {
     id?: string;
-    dodoProductId?: string; // ID Dodo Payments
     lemonSqueezyProductId?: string; // ID Lemon Squeezy
     createdAt: Timestamp;
     description: string;
@@ -211,7 +205,6 @@ export interface Order {
     userId: DocumentReference | string; // Référence à l'acheteur ou ID string
     userName?: string;
     paymentMethod?: string; // Ex: "card", "paypal"
-    referenceCode?: string; // Code de référence optionnel
 }
 
 /**
@@ -275,8 +268,6 @@ export interface User {
     purchases?: string[]; // Liste des IDs produits achetés (optionnel)
     isOnline?: boolean;
     lastActive?: Timestamp;
-    dodoCustomerId?: string; // ID du client Dodo Payments
-    referenceCode?: string; // Code de référence unique
     canGenerateTempLinks?: boolean; // Autorisation admin pour générer des liens
     tempLinksCount?: number; // Compteur de liens générés (max 2)
 }
@@ -300,7 +291,6 @@ export interface TempLink {
  */
 export interface Service {
     id?: string;
-    dodoProductId?: string; // ID Dodo Payments
     lemonSqueezyProductId?: string; // ID Lemon Squeezy
     title: string;
     description: string;
@@ -323,18 +313,4 @@ export interface Service {
     invitationCode?: string;
 }
 
-/**
- * Interface représentant un Parrainage (Referral).
- * Correspond à la collection `referrals` dans Firestore.
- */
-export interface Referral {
-    id?: string;
-    referrerId: DocumentReference; // La personne qui possède le code
-    refereeId: DocumentReference;  // La personne qui a acheté
-    productId: DocumentReference;  // Le produit acheté
-    productTitle: string;
-    referenceCode: string;
-    amount: number;
-    status: 'pending' | 'rewarded';
-    createdAt: Timestamp;
-}
+

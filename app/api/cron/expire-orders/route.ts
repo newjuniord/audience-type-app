@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
-import dodo from "@/lib/dodo";
+
 
 // Cette route est destinée à être appelée par un CRON job (ex: Vercel Cron ou externe)
-// Elle vérifie les paiements Dodo avant de nettoyer les commandes 'pending'.
+// Elle nettoie les commandes 'pending' après vérification.
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const authHeader = req.headers.get("authorization");
@@ -59,36 +59,10 @@ export async function GET(req: Request) {
                 let isActuallyPaid = false;
                 let finalProviderStatus = "pending";
                 let paymentDetails: any = null;
-                let providerType: 'dodo' | 'bazik' | 'unknown' = 'unknown';
-
                 const paymentMethod = orderData.paymentMethod?.toLowerCase();
 
-                // --- LOGIQUE DODO PAYMENTS (CARD) ---
-                if (paymentMethod === 'card' || !paymentMethod) {
-                    providerType = 'dodo';
-                    if (transactionId) {
-                        try {
-                            const session = await (dodo as any).checkoutSessions.retrieve(transactionId);
-                            finalProviderStatus = session.status?.toLowerCase();
-                            
-                            if (session.payments && session.payments.length > 0) {
-                                paymentDetails = session.payments.find((p: any) => 
-                                    p.status?.toLowerCase() === "succeeded" || 
-                                    p.status?.toLowerCase() === "completed"
-                                ) || session.payments[0];
-                                
-                                if (paymentDetails.status?.toLowerCase() === "succeeded" || paymentDetails.status?.toLowerCase() === "completed") {
-                                    isActuallyPaid = true;
-                                }
-                            }
-                        } catch (e) {
-                            console.warn(`[CRON] Impossible de vérifier Dodo pour ${orderId}`);
-                        }
-                    }
-                }
                 // --- LOGIQUE BAZIK (MONCASH) ---
-                else if (paymentMethod === 'moncash' || paymentMethod === 'bazik') {
-                    providerType = 'bazik';
+                if (paymentMethod === 'moncash' || paymentMethod === 'bazik') {
                     const BAZIK_USER_ID = process.env.BAZIK_USER_ID?.trim();
                     const BAZIK_SECRET_KEY = process.env.BAZIK_SECRET_KEY?.trim();
 
@@ -188,7 +162,7 @@ export async function GET(req: Request) {
                         // ÉCHEC : Commande expirée ou confirmée en échec par le prestataire
                         t.update(orderDoc.ref, {
                             status: "failed",
-                            failedReason: finalProviderStatus === "pending" ? "expired_timeout" : `${providerType}_${finalProviderStatus}`,
+                            failedReason: finalProviderStatus === "pending" ? "expired_timeout" : finalProviderStatus,
                             updatedAt: new Date()
                         });
                         failedCount++;

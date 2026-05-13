@@ -22,7 +22,6 @@ export default function ProfilePage() {
     const [photoURL, setPhotoURL] = useState("");
     const [memberSince, setMemberSince] = useState("");
     const [email, setEmail] = useState("");
-    const [referenceCode, setReferenceCode] = useState("");
     const [copied, setCopied] = useState(false);
 
     // Temp Link states
@@ -46,15 +45,16 @@ export default function ProfilePage() {
             if (!user) return;
 
             try {
+                console.log("🔍 Fetching profile data for:", user.uid);
                 // 1. Fetch User Document from Firestore
                 const userDoc = await getUserById(user.uid);
+                console.log("✅ User Doc status:", userDoc ? "Found" : "Not Found");
 
                 if (userDoc) {
                     setDisplayName(userDoc.displayName || user.displayName || "");
                     setPhoneNumber(userDoc.phoneNumber || "");
                     setPhotoURL(userDoc.photoURL || user.photoURL || "");
                     setEmail(userDoc.email || user.email || "");
-                    setReferenceCode(userDoc.referenceCode || "");
                     setCanGenerateTempLinks(userDoc.canGenerateTempLinks || false);
                     setTempLinksCount(userDoc.tempLinksCount || 0);
 
@@ -72,27 +72,40 @@ export default function ProfilePage() {
                 }
 
                 // 2. Fetch Stats
+                console.log("🔍 Fetching stats (enrollments & bookings)...");
                 const userRef = firestoreDoc(db, "users", user.uid);
+                
+                try {
+                    const [enrollments, bookings] = await Promise.all([
+                        getEnrollmentsByUser(user.uid).catch(e => {
+                            console.warn("⚠️ Failed to fetch enrollments:", e.message);
+                            return [];
+                        }),
+                        getBookingApplicationsByUser(userRef).catch(e => {
+                            console.warn("⚠️ Failed to fetch bookings:", e.message);
+                            return [];
+                        })
+                    ]);
+                    console.log("✅ Stats fetched:", { enrollments: enrollments.length, bookings: bookings.length });
 
-                const [enrollments, bookings] = await Promise.all([
-                    getEnrollmentsByUser(userRef),
-                    getBookingApplicationsByUser(userRef)
-                ]);
+                    const coursesCount = enrollments.filter(e => e.productType === 'Course' || e.productType === 'course').length;
+                    const ebooksCount = enrollments.filter(e => e.productType === 'Ebook' || e.productType === 'ebook').length;
+                    const activeBookings = bookings.filter(b => b.status === 'pending' || b.status === 'accepted').length;
 
-                const coursesCount = enrollments.filter(e => e.productType === 'Course' || e.productType === 'course').length;
-                const ebooksCount = enrollments.filter(e => e.productType === 'Ebook' || e.productType === 'ebook').length;
-                const activeBookings = bookings.filter(b => b.status === 'pending' || b.status === 'accepted').length;
-
-                setStats({
-                    coursesRaw: coursesCount,
-                    ebooks: ebooksCount,
-                    bookings: activeBookings
-                });
+                    setStats({
+                        coursesRaw: coursesCount,
+                        ebooks: ebooksCount,
+                        bookings: activeBookings
+                    });
+                } catch (statsError) {
+                    console.error("⚠️ Global stats error:", statsError);
+                }
 
             } catch (error: any) {
-                console.error("Error fetching profile data FULL:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
-                // Also log to console as standard
-                console.error(error);
+                console.error("❌ PROFILE ERROR DETECTED:");
+                console.error("Type:", error?.name || "Unknown");
+                console.error("Message:", error?.message || "No message");
+                console.error("Full Error:", error);
                 setLoading(false);
             } finally {
                 setLoading(false);
@@ -256,30 +269,7 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
 
-                                    {referenceCode && (
-                                        <div className="flex flex-col w-full">
-                                            <div className="flex items-center justify-between pb-2">
-                                                <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Code de référence</p>
-                                                <span className="text-[10px] uppercase tracking-wider text-primary/40 dark:text-white/40 font-bold">Votre code unique</span>
-                                            </div>
-                                            <div className="relative group">
-                                                <input
-                                                    className="form-input flex w-full rounded-xl text-primary font-black border-2 border-primary/10 bg-primary/5 dark:bg-white/5 h-12 px-4 text-lg tracking-[0.2em] uppercase cursor-default transition-all group-hover:border-primary/20"
-                                                    readOnly
-                                                    type="text"
-                                                    value={referenceCode}
-                                                />
-                                                <button
-                                                    onClick={() => copyToClipboard(referenceCode)}
-                                                    className="absolute right-2 top-2 h-8 px-4 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-                                                >
-                                                    <span className="material-symbols-outlined text-sm">{copied ? 'check' : 'content_copy'}</span>
-                                                    <span>{copied ? 'Copié' : 'Copier'}</span>
-                                                </button>
-                                            </div>
-                                            <p className="text-[10px] text-primary/30 dark:text-white/30 mt-2 font-medium">Partagez ce code avec vos amis pour bénéficier d'avantages exclusifs.</p>
-                                        </div>
-                                    )}
+
                                     <div className="flex flex-col w-full">
                                         <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-2">Numéro de téléphone</p>
                                         <input
@@ -311,7 +301,7 @@ export default function ProfilePage() {
                             </section>
 
                             {/* Section Accès Partagé (Magic Link) */}
-                            {canGenerateTempLinks !== false && (
+                            {canGenerateTempLinks === true && (
                                 <section className="bg-primary/5 dark:bg-white/5 p-8 rounded-2xl border border-primary/10 transition-all">
                                     <div className="flex items-center gap-3 mb-4">
                                         <div className="p-2 bg-primary/10 rounded-lg">

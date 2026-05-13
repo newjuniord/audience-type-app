@@ -29,7 +29,6 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
     // Application State
     const [applicationMessage, setApplicationMessage] = useState("");
     const [userPhone, setUserPhone] = useState("");
-    const [referenceCode, setReferenceCode] = useState("");
     const [isApplying, setIsApplying] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -51,7 +50,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
         };
     }, [isOpen]);
 
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'dodo' | 'moncash' | 'lemonsqueezy'>('dodo');
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'moncash' | 'lemonsqueezy'>('lemonsqueezy');
 
     // Helper to get price in Gourdes
     const getGourdesPrice = () => {
@@ -60,7 +59,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
         return isNaN(priceNumber) ? 0 : Math.floor(priceNumber * 100); // x100 conversion
     };
 
-    const handlePaymentMethodSelect = (method: 'dodo' | 'moncash' | 'lemonsqueezy') => {
+    const handlePaymentMethodSelect = (method: 'moncash' | 'lemonsqueezy') => {
         setIsPaymentSelectorOpen(false);
         // Smooth transition: wait for selector to start closing before opening confirmation
         setTimeout(() => {
@@ -99,8 +98,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                     currency: "HTG",
                     status: "pending",
                     paymentMethod: "moncash",
-                    createdAt: Timestamp.now(),
-                    referenceCode: referenceCode || undefined,
+                    createdAt: Timestamp.now()
                 };
 
                 const orderId = await createOrder(orderData);
@@ -136,34 +134,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                     throw new Error("No redirect URL returned from payment provider");
                 }
 
-            } else if (selectedPaymentMethod === 'dodo') {
-                // Dodo Payments Flow
-                const response = await fetch("/api/dodo/checkout", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        productId: product.id,
-                        userId: user.uid,
-                        userEmail: user.email,
-                        userName: user.displayName || "Client", // Fallback name
-                        referenceCode: referenceCode || "",
-                    }),
-                });
 
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || "Failed to create checkout session");
-                }
-
-                if (data.checkoutUrl) {
-                    // Redirect user to Dodo Payments
-                    window.location.href = data.checkoutUrl;
-                } else {
-                    throw new Error("No checkout URL returned");
-                }
             } else if (selectedPaymentMethod === 'lemonsqueezy') {
                 // Lemon Squeezy Flow
                 const response = await fetch("/api/lemonsqueezy/checkout", {
@@ -175,8 +146,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                         productId: product.id,
                         userId: user.uid,
                         userEmail: user.email,
-                        userName: user.displayName || "Client", // Fallback name
-                        referenceCode: referenceCode || "",
+                        userName: user.displayName || "Client" // Fallback name
                     }),
                 });
 
@@ -412,28 +382,15 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                         <h3 className="text-xl font-black text-center mb-6">Choisir le mode de paiement</h3>
                         <div className="space-y-4">
                             <button
-                                onClick={() => handlePaymentMethodSelect('dodo')}
+                                onClick={() => handlePaymentMethodSelect('lemonsqueezy')}
                                 className="w-full h-14 rounded-2xl bg-primary text-white font-bold flex items-center justify-between px-6 hover:opacity-90 transition-all active:scale-[0.98]"
                             >
                                 <div className="flex items-center gap-3">
-                                    <span className="material-symbols-outlined">credit_card</span>
-                                    <span>Payer par carte (Dodo)</span>
-                                </div>
-                                <span className="material-symbols-outlined text-sm">arrow_forward_ios</span>
-                            </button>
-
-/* 
-                            <button
-                                onClick={() => handlePaymentMethodSelect('lemonsqueezy')}
-                                className="w-full h-14 rounded-2xl bg-yellow-500/10 text-yellow-600 border border-yellow-500/20 font-bold flex items-center justify-between px-6 hover:bg-yellow-500/20 transition-all active:scale-[0.98]"
-                            >
-                                <div className="flex items-center gap-3">
                                     <span className="material-symbols-outlined">payments</span>
-                                    <span>Payer avec LemonSqueezy</span>
+                                    <span>Payer par Carte ou PayPal</span>
                                 </div>
                                 <span className="material-symbols-outlined text-sm">arrow_forward_ios</span>
                             </button>
-*/
 
                             <div className="flex items-center gap-4 text-xs font-bold text-primary/10 dark:text-white/10 uppercase tracking-widest text-center py-2">
                                 <div className="h-px bg-primary/10 dark:bg-white/10 flex-1"></div>
@@ -477,9 +434,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                 confirmText={selectedPaymentMethod === 'moncash' ? "Payer avec Moncash" : "Confirmer l'achat"}
                 isLoading={isPurchasing}
                 showIcon={false}
-                showReferenceInput={true}
-                referenceValue={referenceCode}
-                onReferenceChange={setReferenceCode}
+                showReferenceInput={false}
             />
 
             <SuccessModal

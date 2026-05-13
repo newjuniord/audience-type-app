@@ -36,18 +36,36 @@ export const getEnrollments = async (): Promise<Enrollment[]> => {
 /**
  * Récupère les inscriptions d'un utilisateur.
  */
-export const getEnrollmentsByUser = async (userRef: DocumentReference): Promise<Enrollment[]> => {
+export const getEnrollmentsByUser = async (userRef: DocumentReference | string): Promise<Enrollment[]> => {
     try {
         const ref = collection(db, COLLECTION_NAME);
-        const q = query(ref, where("userId", "==", userRef));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        })) as Enrollment[];
+        
+        // On s'assure d'avoir les deux formats proprement
+        const uid = typeof userRef === 'string' ? userRef : userRef.id;
+        const userDocRef = typeof userRef === 'string' ? doc(db, "users", userRef) : userRef;
+
+        console.log("🔍 Fetching enrollments for UID:", uid);
+
+        // On lance les deux requêtes
+        const qString = query(ref, where("userId", "==", uid));
+        const qRef = query(ref, where("userId", "==", userDocRef));
+
+        const [snapString, snapRef] = await Promise.all([
+            getDocs(qString),
+            getDocs(qRef)
+        ]);
+
+        // Fusion des résultats par ID unique
+        const resultsMap = new Map<string, Enrollment>();
+        
+        [...snapString.docs, ...snapRef.docs].forEach(doc => {
+            resultsMap.set(doc.id, { id: doc.id, ...doc.data() } as Enrollment);
+        });
+
+        return Array.from(resultsMap.values());
     } catch (error) {
         console.error("Erreur récup enrollments par user:", error);
-        throw error;
+        return []; // On retourne un tableau vide au lieu de bloquer le chargement
     }
 };
 

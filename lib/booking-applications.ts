@@ -35,7 +35,7 @@ export const createBookingApplication = async (data: Omit<BookingApplication, "i
  */
 import { query, where, getDocs, updateDoc, deleteDoc } from "firebase/firestore";
 
-export const getBookingApplicationsByUser = async (userRef: DocumentReference): Promise<BookingApplication[]> => {
+export const getBookingApplicationsByUser = async (userRef: DocumentReference | string): Promise<BookingApplication[]> => {
     try {
         const q = query(
             collection(db, COLLECTION_NAME),

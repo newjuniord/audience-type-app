@@ -23,7 +23,6 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { generateUniqueReferenceCode } from "@/lib/utils/reference-code";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -71,16 +70,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     }
 
                     if (data) {
-                        // BACKFILL: If missing referenceCode or createdAt, generate and assign them
+                        // BACKFILL: If missing createdAt, generate and assign it
                         const updates: any = {};
-                        if (!data.referenceCode) {
-                            try {
-                                updates.referenceCode = await generateUniqueReferenceCode();
-                                console.log("AuthContext: Generating missing referenceCode for user:", authUser.uid);
-                            } catch (err) {
-                                console.error("AuthContext: Failed to generate referenceCode:", err);
-                            }
-                        }
                         if (!data.createdAt) {
                             updates.createdAt = serverTimestamp();
                             console.log("AuthContext: Backfilling missing createdAt for user:", authUser.uid);

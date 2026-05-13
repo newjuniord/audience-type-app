@@ -25,7 +25,7 @@ export default function AdminSidebar() {
                 { label: "Announcement", icon: "campaign", href: "/admin/announcement" },
                 { label: "Reviews", icon: "reviews", href: "/admin/reviews" },
                 { label: "Messages", icon: "mail", href: "/admin/messages" },
-                { label: "Parrainages", icon: "social_leaderboard", href: "/admin/referrals" },
+
             ]
         },
         {

@@ -8,7 +8,6 @@ import { useAuth } from "@/context/AuthContext";
 // Importation des fonctions Firestore pour manipuler les documents
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { generateUniqueReferenceCode } from "@/lib/utils/reference-code";
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -86,15 +85,13 @@ export default function LoginPage() {
             const userSnap = await getDoc(userRef);
 
             if (!userSnap.exists()) {
-                const refCode = await generateUniqueReferenceCode();
                 await setDoc(userRef, {
                     fullName: email.split('@')[0],
                     email: user.email,
                     photoURL: "",
                     phone: "",
-                    role: "user",
+                    role: "customer",
                     createdAt: serverTimestamp(),
-                    referenceCode: refCode,
                 });
                 window.location.href = "/dashboard";
                 return;
@@ -145,9 +142,6 @@ export default function LoginPage() {
 
             if (!userSnap.exists()) {
                 // SI L'UTILISATEUR N'EXISTE PAS : On crée son profil complet
-                // Génération d'un code de référence unique
-                const refCode = await generateUniqueReferenceCode();
-                
                 await setDoc(userRef, {
                     fullName: user.displayName || "Anonyme", // Nom récupéré de Google
                     email: user.email,                      // Email récupéré de Google
@@ -155,7 +149,6 @@ export default function LoginPage() {
                     phone: user.phoneNumber || "",          // Numéro de téléphone (si disponible)
                     role: "user",                           // Rôle par défaut
                     createdAt: serverTimestamp(),           // Date de création via le serveur Firebase
-                    referenceCode: refCode,                 // Code de référence unique
                 });
             } else {
                 // SI L'UTILISATEUR EXISTE DÉJÀ : On met à jour ses infos et on s'assure qu'il a une date de création

@@ -3,36 +3,53 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
+    // --- Fonctions Utilitaires ---
 
-    // Check if user is authenticated
+    // Vérifie si l'utilisateur est connecté
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Check if user is accessing their own document
+    // Vérifie si l'utilisateur accède à son propre document (comparaison par UID)
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Check if user has admin role (in user document)
+    // Vérifie si l'utilisateur a le rôle admin
     function isAdmin() {
       return isAuthenticated() && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin';
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Check if a field is being changed
+    // Fonction générique pour vérifier la propriété d'un document (gère String et Reference)
+    function isDataOwner(field) {
+      return isAuthenticated() && (
+        request.auth.uid == resource.data[field] || 
+        resource.data[field] == /databases/$(database)/documents/users/$(request.auth.uid)
+      );
+    }
+
+    // Vérifie si un champ reste inchangé
     function isFieldUnchanged(fieldName) {
       return !(fieldName in request.resource.data) || 
         (resource != null && request.resource.data[fieldName] == resource.data[fieldName]);
     }
 
-    // --- Collection Rules ---
+    // --- Règles des Collections ---
 
-    // Users: Users can read/write their own profile. Admins can access all.
+    // Utilisateurs : Lecture/Ecriture propre. Admin a tout accès.
     match /users/{userId} {
+      // Un utilisateur peut tout lire sur son propre document
       allow read: if isOwner(userId) || isAdmin();
+      
+      // Autorise la RECHERCHE par email (pour la connexion)
+      allow list: if isAdmin() || (
+        isAuthenticated() && 
+        request.query.limit <= 1 && 
+        request.query.filters.email == request.auth.token.email
+      );
+
       allow create: if isAuthenticated() && isOwner(userId) && 
         request.resource.data.get('role', 'customer') == 'customer' &&
         request.resource.data.get('canGenerateTempLinks', false) == false &&
@@ -48,115 +65,65 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Products, Courses, Ebooks, Services: Public read, Admin write.
-    match /products/{productId} {
-      allow read: if true;
-      allow write: if isAdmin();
+    // Produits, Cours, Ebooks, Services : Lecture publique, Écriture Admin.
+    match /products/{productId} { allow read: if true; allow write: if isAdmin(); }
+    match /courses/{courseId} { 
+      allow read: if true; allow write: if isAdmin();
+      match /modules/{moduleId} { allow read: if true; allow write: if isAdmin(); }
     }
+    match /ebooks/{ebookId} { allow read: if true; allow write: if isAdmin(); }
+    match /services/{serviceId} { allow read: if true; allow write: if isAdmin(); }
+    match /assets/{assetId} { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{settingId} { allow read: if true; allow write: if isAdmin(); }
 
-    match /courses/{courseId} {
-      allow read: if true;
-      allow write: if isAdmin();
-      match /modules/{moduleId} {
-        allow read: if true;
-        allow write: if isAdmin();
-      }
-    }
-
-    match /ebooks/{ebookId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /services/{serviceId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // Orders & Enrollments: Ownership based access.
+    // Commandes (Orders)
     match /orders/{orderId} {
       allow create: if isAuthenticated();
-      allow read: if isAuthenticated() && (
-        resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || 
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
+      allow read: if isAdmin() || isDataOwner('userId');
       allow update, delete: if isAdmin();
     }
 
+    // Inscriptions (Enrollments)
     match /enrollments/{enrollmentId} {
       allow create: if isAuthenticated();
-      allow read, update: if isAuthenticated() && (
-        resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || 
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
+      allow read, update: if isAdmin() || isDataOwner('userId');
       allow delete: if isAdmin();
     }
 
-    // Referrals: Referrer can read their own. Admin can read all.
+    // Demandes de réservation (Booking Applications)
+    match /bookingApplications/{applicationId} {
+      allow create: if isAuthenticated();
+      allow read, update: if isAdmin() || isDataOwner('usersId'); // Utilise usersId
+      allow delete: if isAdmin();
+    }
+
+    // Parrainages (Referrals)
     match /referrals/{referralId} {
-      allow read: if isAdmin() || (
-        isAuthenticated() && (
-          resource.data.referrerId == /databases/$(database)/documents/users/$(request.auth.uid) ||
-          resource.data.referrerId == request.auth.uid
-        )
-      );
-      allow write: if isAdmin(); // Referrals created by admin or backend
+      allow read: if isAdmin() || isDataOwner('referrerId') || isDataOwner('refereeId');
+      allow write: if isAdmin();
     }
 
-    // Temp Links: NO direct client access (handled via Cloud Functions/API)
-    match /temp_links/{tokenId} {
-      allow read, write: if false; 
-    }
-
-    // Admin Logs: Admin read only.
-    match /admin_logs/{logId} {
-        allow read: if isAdmin();
-        allow write: if false; // Only from server
-    }
-
-    // Other Collections
+    // Avis (Reviews)
     match /reviews/{reviewId} {
       allow read: if true;
       allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || 
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
+      allow update, delete: if isAdmin() || isDataOwner('userId');
     }
 
+    // Réservations directes (Bookings)
     match /bookings/{bookingId} {
       allow create: if isAuthenticated();
-      allow read, update: if isAuthenticated() && (
-        resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || 
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
+      allow read, update: if isAdmin() || isDataOwner('userId');
       allow delete: if isAdmin();
     }
 
-    match /bookingApplications/{applicationId} {
-      allow create: if isAuthenticated();
-      allow read, update: if isAuthenticated() && (
-        resource.data.userId == /databases/$(database)/documents/users/$(request.auth.uid) || 
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-      allow delete: if isAdmin();
-    }
+    // Liens temporaires : Accès interdit en direct (via API uniquement)
+    match /temp_links/{tokenId} { allow read, write: if false; }
 
-    match /assets/{assetId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
+    // Logs Admin
+    match /admin_logs/{logId} { allow read: if isAdmin(); allow write: if false; }
 
-    match /settings/{settingId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
+    // Support
     match /support_messages/{messageId} {
       allow read, delete: if isAdmin();
       allow create: if true;

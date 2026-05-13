@@ -17,7 +17,6 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
     // Form States
     const [title, setTitle] = useState("");
     const [price, setPrice] = useState("");
-    const [dodoProductId, setDodoProductId] = useState(""); // Add State
     const [lemonSqueezyProductId, setLemonSqueezyProductId] = useState("");
     const [description, setDescription] = useState("");
     const [coverImage, setCoverImage] = useState("");
@@ -37,7 +36,6 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                 // Edit Mode
                 setTitle(initialData.title);
                 setPrice(initialData.price.toString());
-                setDodoProductId(initialData.dodoProductId || ""); // Load ID
                 setLemonSqueezyProductId(initialData.lemonSqueezyProductId || "");
                 setDescription(initialData.description);
                 setCoverImage(initialData.coverImage);
@@ -50,7 +48,6 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                 // Create Mode (Reset)
                 setTitle("");
                 setPrice("");
-                setDodoProductId(""); // Reset
                 setLemonSqueezyProductId("");
                 setDescription("");
                 setCoverImage("");
@@ -75,7 +72,6 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
             await onSave({
                 title,
                 price: parseFloat(price) || 0,
-                dodoProductId, // Save ID
                 lemonSqueezyProductId,
                 description,
                 coverImage,
@@ -181,17 +177,7 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest">ID Dodo (Paiement)</label>
-                            <input
-                                className="w-full h-14 px-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium"
-                                placeholder="pdt_..."
-                                type="text"
-                                value={dodoProductId}
-                                onChange={(e) => setDodoProductId(e.target.value)}
-                            />
-                            <p className="text-[10px] text-black/30 dark:text-white/30 ml-1">ID du produit dans le tableau de bord Dodo Payments</p>
-                        </div>
+
 
                         <div className="space-y-2">
                             <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest">ID Lemon Squeezy</label>

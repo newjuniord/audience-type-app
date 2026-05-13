@@ -14,10 +14,6 @@ env:
     availability:
       - BUILD
       - RUNTIME
-  - variable: DODO_PAYMENTS_API_KEY
-    secret: DODO_PAYMENTS_API_KEY
-  - variable: DODO_PAYMENTS_WEBHOOK_KEY
-    secret: DODO_PAYMENTS_WEBHOOK_KEY
   - variable: BAZIK_USER_ID
     secret: BAZIK_USER_ID
   - variable: BAZIK_SECRET_KEY

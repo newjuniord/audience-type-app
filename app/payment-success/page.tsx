@@ -61,15 +61,17 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                     const res = await fetch('/api/lemonsqueezy/verify-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
+                        body: JSON.stringify({
                             orderId: internalOrderId,
                             lsOrderId: lsOrderId
                         }),
                     });
                     responseData = await res.json();
                     const lsStatus = responseData.status?.toLowerCase();
-                    
-                    if (lsStatus === 'paid' || lsStatus === 'success' || lsStatus === 'completed') {
+
+                    if (responseData?.status === 'refunded' || responseData?.order?.status === 'refunded') {
+                        statusFound = 'refunded';
+                    } else if (lsStatus === 'paid' || lsStatus === 'success' || lsStatus === 'completed') {
                         statusFound = 'success';
                     } else if (lsStatus === 'failed' || lsStatus === 'failed_api') {
                         statusFound = 'failed';
@@ -77,24 +79,6 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                         statusFound = 'pending';
                     }
                 }
-                // 2. Dodo Payments
-                else if (pId) {
-                    const res = await fetch('/api/dodo/verify-payment', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ paymentId: pId, orderId: internalOrderId }),
-                    });
-                    responseData = await res.json();
-                    const dStatus = responseData.status?.toLowerCase();
-                    
-                    if (dStatus === 'succeeded' || dStatus === 'completed' || dStatus === 'success' || dStatus === 'active') {
-                        statusFound = 'success';
-                    } else if (dStatus === 'failed' || dStatus === 'cancelled' || dStatus === 'rejected') {
-                        statusFound = 'failed';
-                    } else {
-                        statusFound = 'pending';
-                    }
-                } 
                 // 3. Bazik / Moncash
                 else if (internalOrderId || bzkOrderId || refId) {
                     const res = await fetch('/api/bazik/verify-payment', {
@@ -132,16 +116,16 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
     }, []);
 
     // Valeurs d'affichage (priorité aux données vérifiées de la DB, sinon URL)
-    const displayAmount = orderData && typeof orderData.amount === 'number' 
-        ? orderData.amount.toFixed(2) 
+    const displayAmount = orderData && typeof orderData.amount === 'number'
+        ? orderData.amount.toFixed(2)
         : (typeof params?.amount === 'string' ? params.amount : '0.00');
 
-    const displayCurrency = orderData?.currency 
-        ? orderData.currency.toUpperCase() 
+    const displayCurrency = orderData?.currency
+        ? orderData.currency.toUpperCase()
         : (typeof params?.currency === 'string' ? params.currency : 'USD');
 
     const displayTitle = orderData?.productTitle || (typeof params?.title === 'string' ? params.title : "Accès Contenu Numérique");
-    
+
     const displayOrderId = orderData?.id || (params && Array.isArray(params.orderId) ? params.orderId[0] : (params && typeof params.orderId === 'string' ? params.orderId : '#PENDING'));
 
     // Contenu dynamique selon le statut
@@ -170,6 +154,14 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
                     bg: 'bg-orange-500/10',
                     title: 'Paiement en Attente',
                     message: 'Votre paiement est en cours de traitement. Vous recevrez une confirmation dès validation.'
+                };
+            case 'refunded':
+                return {
+                    icon: 'undo',
+                    color: 'text-blue-500',
+                    bg: 'bg-blue-500/10',
+                    title: 'Commande Remboursée',
+                    message: 'Cette commande a été remboursée. L\'accès au contenu a été révoqué.'
                 };
             default: // loading
                 return {

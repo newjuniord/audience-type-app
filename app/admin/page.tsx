@@ -12,6 +12,7 @@ import { getEnrollments } from "@/lib/enrollments";
 import { auth } from "@/lib/firebase";
 import { signInWithCustomToken } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function UserManagementPage() {
     const [users, setUsers] = useState<User[]>([]);
@@ -30,6 +31,8 @@ export default function UserManagementPage() {
     // Gift & Enrollments State
     const [userToGift, setUserToGift] = useState<User | null>(null);
     const [userToViewEnrollments, setUserToViewEnrollments] = useState<User | null>(null);
+
+    const { role, loading: loadingAuth } = useAuth();
 
     const loadUsers = async () => {
         try {
@@ -58,8 +61,10 @@ export default function UserManagementPage() {
     };
 
     useEffect(() => {
-        loadUsers();
-    }, []);
+        if (!loadingAuth && role === "admin") {
+            loadUsers();
+        }
+    }, [role, loadingAuth]);
 
     const handleToggleRole = (user: User) => {
         setUserToToggle(user);
