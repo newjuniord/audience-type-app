@@ -31,6 +31,11 @@ export default function RootLayout({
             translate: no !important;
           }
         `}} />
+        {/* Lemon Squeezy Affiliate Tracking */}
+        <script dangerouslySetInnerHTML={{
+          __html: `window.lemonSqueezyAffiliateConfig = { store: "dumerviljeanronald2" };`
+        }} />
+        <script src="https://lmsqueezy.com/affiliate.js" defer></script>
       </head>
       <body
         className={`${inter.className} bg-background-light dark:bg-background-dark text-primary dark:text-white antialiased transition-colors duration-300`}
