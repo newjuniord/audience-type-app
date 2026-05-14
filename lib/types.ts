@@ -313,6 +313,7 @@ export interface Service {
     updatedAt: Timestamp;
     isInvitationOnly?: boolean;
     invitationCode?: string;
+    priceHTG?: number;
 }
 
 
