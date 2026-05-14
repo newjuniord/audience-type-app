@@ -77,7 +77,8 @@ export default function FeaturedProducts({
                         features: c.includedItems || [],
                         isOwned: c.id ? ownedIds.has(c.id) : false,
                         isInvitationOnly: c.isInvitationOnly || false,
-                        invitationCode: c.invitationCode || ""
+                        invitationCode: c.invitationCode || "",
+                        priceHTG: c.priceHTG
                     }));
 
                 const formattedEbooks: Product[] = ebooks
@@ -92,7 +93,8 @@ export default function FeaturedProducts({
                         features: e.includedItems || [],
                         isOwned: e.id ? ownedIds.has(e.id) : false,
                         isInvitationOnly: e.isInvitationOnly || false,
-                        invitationCode: e.invitationCode || ""
+                        invitationCode: e.invitationCode || "",
+                        priceHTG: e.priceHTG
                     }));
 
                 const formattedServices: Product[] = services
@@ -108,7 +110,8 @@ export default function FeaturedProducts({
                         isOwned: false,
                         isInvitationOnly: s.isInvitationOnly || false,
                         invitationCode: s.invitationCode || "",
-                        availability: s.availability
+                        availability: s.availability,
+                        priceHTG: s.priceHTG
                     }));
 
                 const allProducts = [...formattedCourses, ...formattedEbooks, ...formattedServices];

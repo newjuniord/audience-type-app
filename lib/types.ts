@@ -84,6 +84,7 @@ export interface Ebook {
     updatedAt: Timestamp;
     isInvitationOnly?: boolean;
     invitationCode?: string;
+    priceHTG?: number;
 }
 
 /**
@@ -130,6 +131,7 @@ export interface Course {
     updatedAt: Timestamp;
     isInvitationOnly?: boolean;
     invitationCode?: string;
+    priceHTG?: number;
 }
 
 /**

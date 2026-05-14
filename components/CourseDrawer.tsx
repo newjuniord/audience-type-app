@@ -17,6 +17,7 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
     // Form State
     const [title, setTitle] = useState("");
     const [price, setPrice] = useState("");
+    const [priceHTG, setPriceHTG] = useState("");
     const [lemonSqueezyProductId, setLemonSqueezyProductId] = useState("");
     const [status, setStatus] = useState("draft"); // Default to draft
     const [description, setDescription] = useState("");
@@ -34,6 +35,7 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
             if (initialData) {
                 setTitle(initialData.title || "");
                 setPrice(initialData.price?.toString() || "");
+                setPriceHTG(initialData.priceHTG?.toString() || "");
                 setLemonSqueezyProductId(initialData.lemonSqueezyProductId || "");
                 setStatus(initialData.statut || "draft");
                 setDescription(initialData.description || "");
@@ -45,6 +47,7 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
                 // Reset for new course
                 setTitle("");
                 setPrice("");
+                setPriceHTG("");
                 setLemonSqueezyProductId("");
                 setStatus("draft");
                 setDescription("");
@@ -68,6 +71,7 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
             await onSave({
                 title,
                 price: parseFloat(price) || 0,
+                priceHTG: parseFloat(priceHTG) || 0,
                 lemonSqueezyProductId,
                 statut: status,
                 description,
@@ -173,15 +177,30 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
                             />
                         </div>
                         <div className="space-y-4">
-                            <div>
-                                <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest mb-2">Prix ($)</label>
-                                <input
-                                    className="w-full px-6 py-4 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all text-sm font-medium"
-                                    placeholder="199"
-                                    type="number"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest mb-2">Prix ($)</label>
+                                    <input
+                                        className="w-full px-6 py-4 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all text-sm font-medium"
+                                        placeholder="199"
+                                        type="number"
+                                        value={price}
+                                        onChange={(e) => setPrice(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest mb-2">Prix (HTG)</label>
+                                    <div className="relative">
+                                        <input
+                                            className="w-full px-6 py-4 pr-12 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all text-sm font-medium"
+                                            placeholder="25000"
+                                            type="number"
+                                            value={priceHTG}
+                                            onChange={(e) => setPriceHTG(e.target.value)}
+                                        />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-black/20 dark:text-white/20">HTG</span>
+                                    </div>
+                                </div>
                             </div>
 
                             <div>
@@ -252,7 +271,7 @@ export default function CourseDrawer({ isOpen, onClose, initialData, onSave }: C
                                     <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">Code d'invitation</label>
                                     <input
                                         value={invitationCode}
-                                        onChange={(e) => setInvitationCode(e.target.value)}
+                                        onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
                                         className="w-full h-14 px-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium"
                                         placeholder="ex: VIP2024"
                                         type="text"

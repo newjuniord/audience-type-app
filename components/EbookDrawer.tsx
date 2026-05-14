@@ -17,6 +17,7 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
     // Form States
     const [title, setTitle] = useState("");
     const [price, setPrice] = useState("");
+    const [priceHTG, setPriceHTG] = useState("");
     const [lemonSqueezyProductId, setLemonSqueezyProductId] = useState("");
     const [description, setDescription] = useState("");
     const [coverImage, setCoverImage] = useState("");
@@ -36,6 +37,7 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                 // Edit Mode
                 setTitle(initialData.title);
                 setPrice(initialData.price.toString());
+                setPriceHTG(initialData.priceHTG?.toString() || "");
                 setLemonSqueezyProductId(initialData.lemonSqueezyProductId || "");
                 setDescription(initialData.description);
                 setCoverImage(initialData.coverImage);
@@ -48,6 +50,7 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                 // Create Mode (Reset)
                 setTitle("");
                 setPrice("");
+                setPriceHTG("");
                 setLemonSqueezyProductId("");
                 setDescription("");
                 setCoverImage("");
@@ -72,6 +75,7 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
             await onSave({
                 title,
                 price: parseFloat(price) || 0,
+                priceHTG: parseFloat(priceHTG) || 0,
                 lemonSqueezyProductId,
                 description,
                 coverImage,
@@ -163,17 +167,32 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                                 onChange={(e) => setTitle(e.target.value)}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest">Prix ($)</label>
-                            <div className="relative">
-                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40 font-bold">$</span>
-                                <input
-                                    className="w-full h-14 pl-10 pr-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium"
-                                    placeholder="29"
-                                    type="number"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest">Prix ($)</label>
+                                <div className="relative">
+                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40 font-bold">$</span>
+                                    <input
+                                        className="w-full h-14 pl-10 pr-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium"
+                                        placeholder="29"
+                                        type="number"
+                                        value={price}
+                                        onChange={(e) => setPrice(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest">Prix (HTG)</label>
+                                <div className="relative">
+                                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40 font-bold text-[10px]">HTG</span>
+                                    <input
+                                        className="w-full h-14 pl-6 pr-14 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium"
+                                        placeholder="2500"
+                                        type="number"
+                                        value={priceHTG}
+                                        onChange={(e) => setPriceHTG(e.target.value)}
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -247,7 +266,7 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                                     <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">Code d'invitation</label>
                                     <input
                                         value={invitationCode}
-                                        onChange={(e) => setInvitationCode(e.target.value)}
+                                        onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
                                         className="w-full h-14 px-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium"
                                         placeholder="ex: VIP2024"
                                         type="text"

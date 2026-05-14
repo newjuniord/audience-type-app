@@ -83,7 +83,7 @@ export default function InvitationCodeModal({
                                 type="text"
                                 value={code}
                                 onChange={(e) => {
-                                    setCode(e.target.value);
+                                    setCode(e.target.value.toUpperCase());
                                     setError(false);
                                 }}
                                 className={`w-full h-16 px-8 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-2 transition-all outline-none text-center text-lg font-black tracking-[0.2em] uppercase placeholder:tracking-normal placeholder:font-medium placeholder:text-black/20 dark:placeholder:text-white/20 ${error ? 'border-red-500/50 text-red-500' : 'border-transparent focus:border-primary/20 dark:focus:border-white/20'}`}

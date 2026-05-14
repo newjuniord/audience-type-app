@@ -9,6 +9,7 @@ export interface Product {
     isOwned?: boolean;
     isInvitationOnly?: boolean;
     invitationCode?: string;
+    priceHTG?: number;
     availability?: {
         [key: string]: {
             enabled: boolean;

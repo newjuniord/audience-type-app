@@ -54,9 +54,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
 
     // Helper to get price in Gourdes
     const getGourdesPrice = () => {
-        if (!product?.price) return 0;
-        const priceNumber = parseFloat(product.price.replace(/[^0-9.]/g, ''));
-        return isNaN(priceNumber) ? 0 : Math.floor(priceNumber * 100); // x100 conversion
+        return product?.priceHTG || 0;
     };
 
     const handlePaymentMethodSelect = (method: 'moncash' | 'lemonsqueezy') => {
@@ -400,7 +398,8 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
 
                             <button
                                 onClick={() => handlePaymentMethodSelect('moncash')}
-                                className="w-full h-14 rounded-2xl bg-red-600/10 text-red-600 border border-red-600/20 font-bold flex items-center justify-between px-6 hover:bg-red-600/20 transition-all active:scale-[0.98]"
+                                disabled={!product?.priceHTG || product.priceHTG <= 0}
+                                className="w-full h-14 rounded-2xl bg-red-600/10 text-red-600 border border-red-600/20 font-bold flex items-center justify-between px-6 hover:bg-red-600/20 transition-all active:scale-[0.98] disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
                             >
                                 <div className="flex items-center gap-3">
                                     <img src="/images/moncash-logo.png" alt="Moncash" className="h-6 w-6 object-contain" />
@@ -428,8 +427,8 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                 image={selectedPaymentMethod === 'moncash' ? "/images/moncash-logo.png" : undefined}
                 message={
                     selectedPaymentMethod === 'moncash'
-                        ? `Voulez-vous vraiment acheter "${product?.title}" pour ${getGourdesPrice()} gourdes et payer avec moncash ?`
-                        : `Voulez-vous vraiment acheter "${product?.title}" pour ${product?.price} ?`
+                        ? `Vous êtes sur le point de débloquer "${product?.title}". Confirmez votre paiement de ${getGourdesPrice()} gourdes via MonCash pour commencer l'aventure !`
+                        : `Prêt à commencer ? Confirmez l'acquisition de "${product?.title}" pour ${product?.price} et accédez à votre contenu instantanément.`
                 }
                 confirmText={selectedPaymentMethod === 'moncash' ? "Payer avec Moncash" : "Confirmer l'achat"}
                 isLoading={isPurchasing}
