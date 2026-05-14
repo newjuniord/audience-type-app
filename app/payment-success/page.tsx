@@ -13,7 +13,7 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
     const params = use(searchParams);
 
     // États locaux pour le statut et les données de commande
-    const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'failed' | 'pending'>('loading');
+    const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'failed' | 'pending' | 'refunded'>('loading');
     const [orderData, setOrderData] = useState<any>(null);
 
     // Ref pour éviter le double appel (React Strict Mode + Navigation)
@@ -50,7 +50,7 @@ export default function PaymentSuccessPage({ searchParams }: Props) {
             }
 
             try {
-                let statusFound: 'loading' | 'success' | 'failed' | 'pending' = 'loading';
+                let statusFound: 'loading' | 'success' | 'failed' | 'pending' | 'refunded' = 'loading';
                 let responseData: any = null;
 
                 const provider = getP('provider')?.toLowerCase();

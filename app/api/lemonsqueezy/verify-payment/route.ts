@@ -57,13 +57,13 @@ export async function POST(req: Request) {
                     await orderRef.update(updateData);
 
                     // CRÉATION DE L'INSCRIPTION (Enrollment) - Fallback du Webhook
-                    if (orderData.productType !== "service" && orderData.productType !== "booking") {
+                    if (orderData && orderData.productType !== "service" && orderData.productType !== "booking") {
                         const enrollmentsRef = adminDb.collection("enrollments");
 
                         // Vérifier si elle existe déjà (pour ne pas faire de doublons avec le webhook)
                         const existingEnrollment = await enrollmentsRef
-                            .where("userId", "==", orderData.userId)
-                            .where("productId", "==", orderData.productId)
+                            .where("userId", "==", orderData?.userId)
+                            .where("productId", "==", orderData?.productId)
                             .limit(1)
                             .get();
 
@@ -77,16 +77,16 @@ export async function POST(req: Request) {
                                 enrolledAt: now,
                                 lastAccessedAt: now,
                                 orderId: orderId,
-                                productId: orderData.productId,
-                                productThumbnailUrl: orderData.productThumbnailUrl,
-                                productTitle: orderData.productTitle,
-                                productType: orderData.productType,
+                                productId: orderData?.productId,
+                                productThumbnailUrl: orderData?.productThumbnailUrl,
+                                productTitle: orderData?.productTitle,
+                                productType: orderData?.productType,
                                 progress: 0,
                                 status: "active",
                                 totalLessons: 0,
-                                userEmail: orderData.userEmail,
-                                userId: orderData.userId,
-                                userName: orderData.userName || "Étudiant"
+                                userEmail: orderData?.userEmail,
+                                userId: orderData?.userId,
+                                userName: orderData?.userName || "Étudiant"
                             });
                         }
                     }

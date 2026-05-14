@@ -6,7 +6,7 @@ import FilterBar from "@/components/FilterBar";
 import { useAuth } from "@/context/AuthContext";
 import { getEnrollmentsByUser, incrementEnrollmentDownloadCount } from "@/lib/enrollments";
 import { Enrollment } from "@/lib/types";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, DocumentReference } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import ServiceDetailsDrawer from "@/components/ServiceDetailsDrawer";
 import { useRouter } from "next/navigation";
