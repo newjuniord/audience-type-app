@@ -10,6 +10,8 @@ import { doc, getDoc, DocumentReference } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import ServiceDetailsDrawer from "@/components/ServiceDetailsDrawer";
 import { useRouter } from "next/navigation";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import Link from "next/link";
 
 export default function Dashboard() {
     const { user } = useAuth();
@@ -18,7 +20,17 @@ export default function Dashboard() {
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Service Drawer State
+    // Error Modal State
+    const [errorModal, setErrorModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: React.ReactNode;
+    }>({
+        isOpen: false,
+        title: "",
+        message: ""
+    });
+
     const [selectedServiceEnrollment, setSelectedServiceEnrollment] = useState<Enrollment | null>(null);
 
     useEffect(() => {
@@ -45,12 +57,7 @@ export default function Dashboard() {
         if (enrollment.productType.toLowerCase().includes('ebook')) {
             // Ebook Logic
             try {
-                // 1. Increment Download Count
-                if (enrollment.id) {
-                    await incrementEnrollmentDownloadCount(enrollment.id);
-                }
-
-                // 2. Fetch File URL from Product Doc
+                // 1. Fetch File URL from Product Doc
                 if (enrollment.productId) {
                     let productDocRef: DocumentReference;
                     
@@ -71,15 +78,32 @@ export default function Dashboard() {
                     if (productDoc.exists()) {
                         const productData = productDoc.data();
                         if (productData.fileUrl) {
+                            // On incrémente seulement si le fichier est réellement disponible
+                            if (enrollment.id) {
+                                await incrementEnrollmentDownloadCount(enrollment.id);
+                            }
                             window.open(productData.fileUrl, '_blank');
                         } else {
-                            alert("Le fichier n'est pas disponible.");
+                            setErrorModal({
+                                isOpen: true,
+                                title: "Fichier non disponible",
+                                message: (
+                                    <>
+                                        Le fichier n'est pas disponible pour le moment. 
+                                        Veuillez <Link href="/support" className="text-primary dark:text-white font-bold underline">contacter le support</Link> si vous avez besoin d'aide.
+                                    </>
+                                )
+                            });
                         }
                     }
                 }
             } catch (error) {
                 console.error("Error handling ebook click", error);
-                alert("Erreur lors du téléchargement.");
+                setErrorModal({
+                    isOpen: true,
+                    title: "Erreur",
+                    message: "Une erreur est survenue lors du téléchargement. Veuillez réessayer plus tard."
+                });
             }
         } else if (enrollment.productType.toLowerCase().includes('course')) {
             // Course Logic
@@ -214,6 +238,14 @@ export default function Dashboard() {
                     isOpen={!!selectedServiceEnrollment}
                     onClose={() => setSelectedServiceEnrollment(null)}
                     enrollment={selectedServiceEnrollment}
+                />
+
+                <ConfirmModal
+                    isOpen={errorModal.isOpen}
+                    onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
+                    title={errorModal.title}
+                    message={errorModal.message}
+                    type="alert"
                 />
             </div>
         </div>
