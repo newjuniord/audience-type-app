@@ -43,11 +43,13 @@ export default function UserManagementPage() {
             const currentLastVisible = reset ? undefined : lastVisible;
             const { users: newUsers, lastVisible: newLastVisible } = await getUsers(20, currentLastVisible);
 
-            if (reset) {
-                setUsers(newUsers);
-            } else {
-                setUsers(prev => [...prev, ...newUsers]);
-            }
+            setUsers(prev => {
+                const combined = reset ? newUsers : [...prev, ...newUsers];
+                // Utilisation d'une Map pour garantir l'unicité par UID
+                const uniqueMap = new Map();
+                combined.forEach(u => uniqueMap.set(u.uid, u));
+                return Array.from(uniqueMap.values());
+            });
 
             setLastVisible(newLastVisible);
             setHasMore(newUsers.length === 20);
