@@ -38,11 +38,11 @@ export default function HomeVideo() {
     if (loading || !isVisible || !videoUrl) return null;
 
     return (
-        <div className="w-full max-w-4xl mx-auto mt-16 md:mt-24 relative group">
+        <div className="w-[calc(100%+2rem)] sm:w-full -mx-4 sm:mx-auto max-w-4xl mt-16 md:mt-24 relative group">
             {/* Glowing background effect */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-primary to-blue-500 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+            <div className="absolute -inset-1 sm:-inset-1 bg-gradient-to-r from-emerald-500 via-primary to-blue-500 rounded-none sm:rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
             
-            <div className="relative rounded-[2rem] overflow-hidden shadow-2xl shadow-black/20 dark:shadow-white/5 border border-black/5 dark:border-white/10 bg-black">
+            <div className="relative rounded-none sm:rounded-[2rem] overflow-hidden shadow-2xl shadow-black/20 dark:shadow-white/5 border-y sm:border border-black/5 dark:border-white/10 bg-black">
                 <VideoPlayer 
                     url={videoUrl} 
                     roundedClassName="rounded-none" 

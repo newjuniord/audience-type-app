@@ -85,8 +85,8 @@ export default function LessonDrawer({ isOpen, onClose, lesson, onSave }: Lesson
                 {/* Header */}
                 <div className={`flex items-center justify-between px-8 py-8 border-b border-black/5 dark:border-white/5 transition-all duration-700 delay-100 ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
                     <div>
-                        <h2 className="text-2xl font-black tracking-tight">{lesson ? "Edit Lesson" : "New Lesson"}</h2>
-                        <p className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mt-1">Manage lesson content and resources</p>
+                        <h2 className="text-2xl font-black tracking-tight">{lesson ? "Modifier la leçon" : "Nouvelle leçon"}</h2>
+                        <p className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mt-1">Gérer le contenu et les ressources</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -185,13 +185,13 @@ export default function LessonDrawer({ isOpen, onClose, lesson, onSave }: Lesson
                         onClick={handleSave}
                         disabled={loading}
                         className="flex-1 py-4 bg-primary dark:bg-white text-white dark:text-primary rounded-full font-black text-xs uppercase tracking-widest hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-primary/10 dark:shadow-white/5 disabled:opacity-50">
-                        {loading ? "Saving..." : "Save Lesson"}
+                        {loading ? "Enregistrement..." : "Enregistrer la leçon"}
                     </button>
                     <button
                         onClick={onClose}
                         className="flex-1 py-4 bg-black/[0.05] dark:bg-white/[0.1] text-black dark:text-white rounded-full font-black text-xs uppercase tracking-widest hover:bg-black/[0.1] dark:hover:bg-white/[0.2] transition-colors"
                     >
-                        Cancel
+                        Annuler
                     </button>
                 </div>
             </div>

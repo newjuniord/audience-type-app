@@ -177,22 +177,25 @@ export default function FeaturedProducts({
         <section className={`w-full max-w-[1200px] px-6 pb-20 pt-8 ${showBorder ? 'border-t border-primary/5 dark:border-white/5' : ''}`}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
                 <h2 className="text-2xl font-black uppercase tracking-tighter"><span>{title}</span></h2>
-                <div className="flex flex-col md:flex-row gap-4 md:gap-8">
-                    {displayCategories.map(cat => (
-                        <button
-                            key={cat.id}
-                            onClick={() => {
-                                setActiveFilter(cat.id);
-                                setVisibleCount(6); // Reset pagination on filter change
-                            }}
-                            className={`text-xs font-bold uppercase tracking-widest transition-all pb-1 border-b-2 w-fit ${activeFilter === cat.id
-                                ? "border-primary opacity-100"
-                                : "border-transparent opacity-40 hover:opacity-100"
-                                }`}
-                        >
-                            <span>{cat.label}</span>
-                        </button>
-                    ))}
+                <div className="flex flex-row gap-8">
+                    {displayCategories.map(cat => {
+                        const isAll = cat.id === "All";
+                        return (
+                            <button
+                                key={cat.id}
+                                onClick={() => {
+                                    setActiveFilter(cat.id);
+                                    setVisibleCount(6); // Reset pagination on filter change
+                                }}
+                                className={`text-xs font-bold uppercase tracking-widest transition-all pb-1 border-b-2 w-fit ${isAll ? "block" : "hidden md:block"} ${activeFilter === cat.id
+                                        ? "border-primary opacity-100"
+                                        : "border-transparent opacity-40 hover:opacity-100"
+                                    }`}
+                            >
+                                <span>{cat.label}</span>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 min-h-[400px]">

@@ -9,7 +9,7 @@ export default function Hero() {
     const { user } = useAuth();
     
     return (
-        <section className="w-full max-w-[1200px] px-6 py-16 md:py-24 flex flex-col items-center text-center">
+        <section className="w-full max-w-[1200px] px-4 md:px-6 py-16 md:py-24 flex flex-col items-center text-center">
             <h1 className="text-6xl md:text-8xl font-black tracking-tight leading-[0.9] mb-8">
                 Élève ton niveau.<br />
                 <TypingAnimation />

@@ -46,8 +46,14 @@ export default function UserManagementPage() {
             const counts: Record<string, number> = {};
             enrollmentsData.forEach(enrollment => {
                 if (enrollment.userId) {
-                    const uid = enrollment.userId.id;
-                    counts[uid] = (counts[uid] || 0) + 1;
+                    // userId can be a DocumentReference or a string ID
+                    const uid = typeof enrollment.userId === 'string' 
+                        ? enrollment.userId 
+                        : (enrollment.userId as any).id;
+                    
+                    if (uid) {
+                        counts[uid] = (counts[uid] || 0) + 1;
+                    }
                 }
             });
 
