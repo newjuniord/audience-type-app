@@ -9,7 +9,8 @@ import {
     Timestamp,
     query,
     where,
-    DocumentReference
+    DocumentReference,
+    increment
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { Enrollment } from "./types";
@@ -79,6 +80,15 @@ export const createEnrollment = async (data: Omit<Enrollment, "id">): Promise<st
             enrolledAt: data.enrolledAt || Timestamp.now(),
             lastAccessedAt: data.lastAccessedAt || Timestamp.now()
         });
+
+        // Mettre à jour le compteur global de l'utilisateur
+        if (data.userId) {
+            const userRef = typeof data.userId === 'string' ? doc(db, "users", data.userId) : data.userId;
+            await updateDoc(userRef, {
+                enrollmentCount: increment(1)
+            }).catch(err => console.error("Erreur increment enrollmentCount:", err));
+        }
+
         return ref.id;
     } catch (error) {
         console.error("Erreur ajout enrollment:", error);
@@ -135,7 +145,20 @@ export const incrementEnrollmentDownloadCount = async (id: string): Promise<void
 export const deleteEnrollment = async (id: string): Promise<void> => {
     try {
         const ref = doc(db, COLLECTION_NAME, id);
-        await deleteDoc(ref);
+        const snap = await getDoc(ref);
+        
+        if (snap.exists()) {
+            const data = snap.data();
+            await deleteDoc(ref);
+
+            // Mettre à jour le compteur global de l'utilisateur
+            if (data.userId) {
+                const userRef = typeof data.userId === 'string' ? doc(db, "users", data.userId) : data.userId;
+                await updateDoc(userRef, {
+                    enrollmentCount: increment(-1)
+                }).catch(err => console.error("Erreur decrement enrollmentCount:", err));
+            }
+        }
     } catch (error) {
         console.error("Erreur suppression enrollment:", error);
         throw error;

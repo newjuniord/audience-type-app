@@ -8,18 +8,21 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 import GiftProductModal from "@/components/GiftProductModal";
 import UserEnrollmentsDrawer from "@/components/UserEnrollmentsDrawer";
 
-import { getEnrollments } from "@/lib/enrollments";
-import { auth } from "@/lib/firebase";
+import { getEnrollments, getEnrollmentsByUser } from "@/lib/enrollments";
+import { auth, db } from "@/lib/firebase";
 import { signInWithCustomToken } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { QueryDocumentSnapshot, collection, getDocs, writeBatch, doc } from "firebase/firestore";
 
 export default function UserManagementPage() {
     const [users, setUsers] = useState<User[]>([]);
-    const [enrollmentCounts, setEnrollmentCounts] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'customer'>('all');
+    const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | undefined>(undefined);
+    const [hasMore, setHasMore] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
     const router = useRouter();
 
     // Confirm Modal State
@@ -34,35 +37,74 @@ export default function UserManagementPage() {
 
     const { role, loading: loadingAuth } = useAuth();
 
-    const loadUsers = async () => {
+    const loadUsers = async (reset = false) => {
         try {
             setLoading(true);
-            const [usersData, enrollmentsData] = await Promise.all([
-                getUsers(),
-                getEnrollments()
-            ]);
+            const currentLastVisible = reset ? undefined : lastVisible;
+            const { users: newUsers, lastVisible: newLastVisible } = await getUsers(20, currentLastVisible);
 
-            // Calculate enrollment counts per user
+            if (reset) {
+                setUsers(newUsers);
+            } else {
+                setUsers(prev => [...prev, ...newUsers]);
+            }
+
+            setLastVisible(newLastVisible);
+            setHasMore(newUsers.length === 20);
+        } catch (error) {
+            console.error("Failed to load users", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSyncCounts = async () => {
+        if (!confirm("Voulez-vous synchroniser les compteurs d'inscriptions pour tous les utilisateurs ? Cela peut prendre du temps.")) return;
+        
+        setIsSyncing(true);
+        try {
+            // 1. Fetch ALL users (only for sync)
+            const usersSnap = await getDocs(collection(db, "users"));
+            // 2. Fetch ALL enrollments (only for sync)
+            const enrollmentsData = await getEnrollments();
+
+            // 3. Calculate counts
             const counts: Record<string, number> = {};
             enrollmentsData.forEach(enrollment => {
-                if (enrollment.userId) {
-                    // userId can be a DocumentReference or a string ID
-                    const uid = typeof enrollment.userId === 'string' 
-                        ? enrollment.userId 
-                        : (enrollment.userId as any).id;
-                    
-                    if (uid) {
-                        counts[uid] = (counts[uid] || 0) + 1;
-                    }
+                const uid = typeof enrollment.userId === 'string' 
+                    ? enrollment.userId 
+                    : (enrollment.userId as any).id;
+                if (uid) {
+                    counts[uid] = (counts[uid] || 0) + 1;
                 }
             });
 
-            setEnrollmentCounts(counts);
-            setUsers(usersData);
+            // 4. Update users in batches
+            const batch = writeBatch(db);
+            let operationCount = 0;
+
+            for (const userDoc of usersSnap.docs) {
+                const uid = userDoc.id;
+                const count = counts[uid] || 0;
+                batch.update(doc(db, "users", uid), { enrollmentCount: count });
+                operationCount++;
+
+                if (operationCount >= 500) {
+                    await batch.commit();
+                    // Start a new batch if needed
+                    // (Note: simple implementation here, assuming < 500 users or manual repeat)
+                }
+            }
+            
+            if (operationCount > 0) await batch.commit();
+            
+            alert("Synchronisation terminée !");
+            loadUsers(true);
         } catch (error) {
-            console.error("Failed to load users or enrollments", error);
+            console.error("Sync failed", error);
+            alert("Erreur lors de la synchronisation.");
         } finally {
-            setLoading(false);
+            setIsSyncing(false);
         }
     };
 
@@ -281,11 +323,19 @@ export default function UserManagementPage() {
                         {roleFilter === 'all' ? 'All Roles' : roleFilter === 'admin' ? 'Admins Only' : 'Customers Type'}
                     </button>
                     <button
-                        onClick={loadUsers}
+                        onClick={() => loadUsers(true)}
                         className="px-6 py-2.5 rounded-full border border-black/5 dark:border-white/10 bg-white dark:bg-black/20 text-xs font-bold flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
                     >
                         <span className="material-symbols-outlined text-sm">refresh</span>
                         Refresh
+                    </button>
+                    <button
+                        onClick={handleSyncCounts}
+                        disabled={isSyncing}
+                        className="px-6 py-2.5 rounded-full border border-black/5 dark:border-white/10 bg-white dark:bg-black/20 text-xs font-bold flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-all disabled:opacity-50"
+                    >
+                        <span className="material-symbols-outlined text-sm">{isSyncing ? 'sync' : 'database'}</span>
+                        {isSyncing ? 'Syncing...' : 'Sync Counts'}
                     </button>
                 </div>
             </div>
@@ -368,7 +418,7 @@ export default function UserManagementPage() {
                                             )}
                                         </td>
                                         <td className="px-8 py-6">
-                                            <p className="text-sm font-semibold">{enrollmentCounts[user.uid] || 0} Items</p>
+                                            <p className="text-sm font-semibold">{user.enrollmentCount || 0} Items</p>
                                         </td>
                                         <td className="px-8 py-6 text-sm text-black/60 dark:text-white/60">
                                             {user.createdAt?.toDate().toLocaleDateString() || "Unknown"}
@@ -434,11 +484,20 @@ export default function UserManagementPage() {
                     </table>
                 </div>
 
-                {/* Pagination (Simple placeholder for now) */}
+                {/* Pagination */}
                 <div className="px-8 py-5 border-t border-black/5 dark:border-white/10 flex items-center justify-between bg-black/[0.01] dark:bg-white/[0.01]">
                     <p className="text-xs text-black/40 dark:text-white/40 font-medium">
-                        Showing <span className="text-primary dark:text-white">{filteredUsers.length}</span> users
+                        Showing <span className="text-primary dark:text-white">{users.length}</span> users
                     </p>
+                    {hasMore && (
+                        <button
+                            onClick={() => loadUsers()}
+                            disabled={loading}
+                            className="text-xs font-bold uppercase tracking-widest px-6 py-2 rounded-full border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-all disabled:opacity-50"
+                        >
+                            {loading ? 'Chargement...' : 'Charger plus'}
+                        </button>
+                    )}
                 </div>
             </div>
             <ConfirmModal

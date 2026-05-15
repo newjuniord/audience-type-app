@@ -9,34 +9,46 @@ import {
     query,
     where,
     orderBy,
-    Timestamp
+    Timestamp,
+    limit as firestoreLimit,
+    startAfter,
+    QueryDocumentSnapshot
 } from "firebase/firestore";
 import { User } from "./types";
 
 const COLLECTION_NAME = "users";
 
 /**
- * Récupère tous les utilisateurs.
- * @returns Liste des utilisateurs
+ * Récupère les utilisateurs avec pagination.
+ * @param pageSize Nombre d'utilisateurs à charger
+ * @param lastVisible Dernier document chargé (pour la pagination)
+ * @returns Liste des utilisateurs et le dernier document
  */
-export async function getUsers(): Promise<User[]> {
+export async function getUsers(pageSize: number = 20, lastVisible?: QueryDocumentSnapshot): Promise<{ users: User[], lastVisible?: QueryDocumentSnapshot }> {
     try {
-        const q = query(collection(db, COLLECTION_NAME));
+        let q = query(
+            collection(db, COLLECTION_NAME),
+            orderBy("createdAt", "desc"),
+            firestoreLimit(pageSize)
+        );
+
+        if (lastVisible) {
+            q = query(q, startAfter(lastVisible));
+        }
+
         const snapshot = await getDocs(q);
         const users = snapshot.docs.map(doc => ({
             uid: doc.id,
             ...doc.data()
         } as User));
 
-        // Sort in-memory to avoid filtering out docs missing the field
-        return users.sort((a, b) => {
-            const timeA = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
-            const timeB = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
-            return timeB - timeA;
-        });
+        return {
+            users,
+            lastVisible: snapshot.docs[snapshot.docs.length - 1]
+        };
     } catch (error) {
         console.error("Error fetching users:", error);
-        return [];
+        return { users: [] };
     }
 }
 

@@ -272,6 +272,7 @@ export interface User {
     lastActive?: Timestamp;
     canGenerateTempLinks?: boolean; // Autorisation admin pour générer des liens
     tempLinksCount?: number; // Compteur de liens générés (max 2)
+    enrollmentCount?: number; // Nombre total d'inscriptions (cours, ebooks, services)
 }
 
 /**

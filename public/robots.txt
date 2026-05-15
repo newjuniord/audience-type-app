@@ -1,11 +1,11 @@
 User-agent: *
+Allow: /
 Disallow: /dashboard/
+Disallow: /admin/
 Disallow: /api/
-Disallow: /settings/
-Disallow: /profile/
-Disallow: /
 Disallow: /login
 Disallow: /register
+Disallow: /reset-password
 Disallow: /payment-success
 
 Sitemap: https://audiencetype.com/sitemap.xml

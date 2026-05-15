@@ -30,105 +30,49 @@ export default function FeaturedProducts({
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [activeFilter, setActiveFilter] = useState("All");
-    const [visibleCount, setVisibleCount] = useState(6);
+    const [visibleCount, setVisibleCount] = useState(9);
     const [ownedProductIds, setOwnedProductIds] = useState<Set<string>>(new Set());
     const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false);
     const [invitationTarget, setInvitationTarget] = useState<Product | null>(null);
 
     useEffect(() => {
-        async function fetchData() {
+        async function syncOwnedStatus() {
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+
             try {
-                const [courses, ebooks, services] = await Promise.all([
-                    getCourses(),
-                    getEbooks(),
-                    getServices()
-                ]);
-
-                // Fetch user enrollments if logged in
-                let ownedIds = new Set<string>();
-                if (user) {
-                    try {
-                        const userRef = doc(db, "users", user.uid);
-                        const enrollments = await getEnrollmentsByUser(userRef);
-                        enrollments.forEach(enrollment => {
-                            if (enrollment.productId) {
-                                if (typeof enrollment.productId === 'string') {
-                                    ownedIds.add(enrollment.productId);
-                                } else if (enrollment.productId.id) {
-                                    ownedIds.add(enrollment.productId.id);
-                                }
-                            }
-                        });
-                        setOwnedProductIds(ownedIds);
-                    } catch (err) {
-                        console.error("Error fetching enrollments", err);
+                // Fetch user enrollments ONLY to mark products as owned
+                const userRef = doc(db, "users", user.uid);
+                const enrollments = await getEnrollmentsByUser(userRef);
+                const ownedIds = new Set<string>();
+                
+                enrollments.forEach(enrollment => {
+                    if (enrollment.productId) {
+                        const pid = typeof enrollment.productId === 'string' ? enrollment.productId : enrollment.productId.id;
+                        if (pid) ownedIds.add(pid);
                     }
-                }
+                });
 
-                const formattedCourses: Product[] = courses
-                    .filter(c => c.statut === 'published')
-                    .map(c => ({
-                        id: c.id,
-                        title: c.title,
-                        price: `$${c.price}`, // Dynamic price from Firestore
-                        type: "Course",
-                        image: c.thumbnail || "https://images.unsplash.com/photo-1542744094-24638eff58bb?q=80&w=2071&auto=format&fit=crop",
-                        description: c.description,
-                        features: c.includedItems || [],
-                        isOwned: c.id ? ownedIds.has(c.id) : false,
-                        isInvitationOnly: c.isInvitationOnly || false,
-                        invitationCode: c.invitationCode || "",
-                        priceHTG: c.priceHTG
-                    }));
-
-                const formattedEbooks: Product[] = ebooks
-                    .filter(e => e.status === 'published')
-                    .map(e => ({
-                        id: e.id,
-                        title: e.title,
-                        price: `$${e.price}`, // Dynamic price from Firestore
-                        type: "Ebook",
-                        image: e.coverImage || "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=2074&auto=format&fit=crop",
-                        description: e.description,
-                        features: e.includedItems || [],
-                        isOwned: e.id ? ownedIds.has(e.id) : false,
-                        isInvitationOnly: e.isInvitationOnly || false,
-                        invitationCode: e.invitationCode || "",
-                        priceHTG: e.priceHTG
-                    }));
-
-                const formattedServices: Product[] = services
-                    .filter(s => s.status === 'published' || (s.status === undefined && s.active === true))
-                    .map(s => ({
-                        id: s.id,
-                        title: s.title,
-                        price: s.price.includes('$') || s.price.includes('€') ? s.price : `$${s.price}`, // Dynamic price
-                        type: "Service",
-                        image: s.imageUrl || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=2074&auto=format&fit=crop",
-                        description: s.description,
-                        features: s.includedItems || [],
-                        isOwned: false,
-                        isInvitationOnly: s.isInvitationOnly || false,
-                        invitationCode: s.invitationCode || "",
-                        availability: s.availability,
-                        priceHTG: s.priceHTG
-                    }));
-
-                const allProducts = [...formattedCourses, ...formattedEbooks, ...formattedServices];
-
-                // If we have initial data, we try to preserve the order/mix if possible, 
-                // but usually a fresh fetch is better for the full state.
-                // We shuffle to keep the "featured" feel.
-                const shuffled = allProducts.sort(() => 0.5 - Math.random());
-                setProducts(shuffled);
+                setOwnedProductIds(ownedIds);
+                
+                // Update the products list with owned status
+                setProducts(prev => prev.map(p => ({
+                    ...p,
+                    isOwned: p.id ? ownedIds.has(p.id) : false
+                })));
             } catch (error) {
-                console.error("Failed to fetch featured products", error);
+                console.error("Failed to sync owned status", error);
             } finally {
                 setLoading(false);
             }
         }
-        fetchData();
-    }, [user]);
+
+        if (initialProducts.length > 0) {
+            syncOwnedStatus();
+        }
+    }, [user, initialProducts]);
 
     const handleProductClick = (product: Product) => {
         if (product.isOwned) {
@@ -168,7 +112,7 @@ export default function FeaturedProducts({
     const visibleProducts = filteredProducts.slice(0, visibleCount);
 
     const handleLoadMore = () => {
-        setVisibleCount(prev => prev + 6);
+        setVisibleCount(prev => prev + 9);
     };
 
     if (loading) return null; // Or a skeleton
@@ -185,7 +129,7 @@ export default function FeaturedProducts({
                                 key={cat.id}
                                 onClick={() => {
                                     setActiveFilter(cat.id);
-                                    setVisibleCount(6); // Reset pagination on filter change
+                                    setVisibleCount(9); // Reset pagination on filter change
                                 }}
                                 className={`text-xs font-bold uppercase tracking-widest transition-all pb-1 border-b-2 w-fit ${isAll ? "block" : "hidden md:block"} ${activeFilter === cat.id
                                         ? "border-primary opacity-100"
