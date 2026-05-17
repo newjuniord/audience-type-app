@@ -23,6 +23,7 @@ export default function LoginPage() {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [verificationCode, setVerificationCode] = useState("");
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+    const [isRecaptchaSolved, setIsRecaptchaSolved] = useState(false);
     const router = useRouter();
     const { user, role, loading: authLoading } = useAuth();
 
@@ -45,6 +46,13 @@ export default function LoginPage() {
                         if (document.getElementById('recaptcha-container')) {
                             (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
                                 'size': 'normal',
+                                'callback': (response: any) => {
+                                    setIsRecaptchaSolved(true);
+                                    setError(null);
+                                },
+                                'expired-callback': () => {
+                                    setIsRecaptchaSolved(false);
+                                }
                             });
                             (window as any).recaptchaVerifier.render();
                         }
@@ -60,6 +68,7 @@ export default function LoginPage() {
                 try {
                     (window as any).recaptchaVerifier.clear();
                     (window as any).recaptchaVerifier = null;
+                    setIsRecaptchaSolved(false);
                 } catch (e) {}
             }
         };
@@ -175,8 +184,8 @@ export default function LoginPage() {
 
         try {
             const appVerifier = (window as any).recaptchaVerifier;
-            if (!appVerifier) {
-                setError("Veuillez cocher la case 'Je ne suis pas un robot'.");
+            if (!isRecaptchaSolved || !appVerifier) {
+                setError("Veuillez cocher la case 'Je ne suis pas un robot' avant de continuer.");
                 setIsLoading(false);
                 return;
             }
@@ -195,7 +204,19 @@ export default function LoginPage() {
             if ((window as any).recaptchaVerifier) {
                 try {
                     (window as any).recaptchaVerifier.clear();
-                    (window as any).recaptchaVerifier = null;
+                    // Réinitialiser immédiatement pour que l'utilisateur puisse réessayer
+                    (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                        'size': 'normal',
+                        'callback': (response: any) => {
+                            setIsRecaptchaSolved(true);
+                            setError(null);
+                        },
+                        'expired-callback': () => {
+                            setIsRecaptchaSolved(false);
+                        }
+                    });
+                    (window as any).recaptchaVerifier.render();
+                    setIsRecaptchaSolved(false);
                 } catch (e) {}
             }
         }
@@ -446,7 +467,11 @@ export default function LoginPage() {
                                         <button 
                                             type="submit"
                                             disabled={isLoading}
-                                            className="w-full py-3 mt-2 bg-black dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+                                            className={`w-full py-3 mt-2 rounded-xl font-bold text-sm transition-all ${
+                                                isRecaptchaSolved 
+                                                ? "bg-black dark:bg-white text-white dark:text-black hover:opacity-90" 
+                                                : "bg-black/20 dark:bg-white/20 text-black/50 dark:text-white/50"
+                                            } ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
                                         >
                                             {isLoading ? (
                                                 <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>

@@ -389,7 +389,7 @@ export default function UserManagementPage() {
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <p className="text-sm font-bold">{user.displayName || (user as any).fullName || "Unknown User"}</p>
+                                                        <p className="text-sm font-bold">{user.displayName || (user as any).fullName || "Anonyme"}</p>
                                                         {isUserOnline(user) ? (
                                                             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -402,8 +402,12 @@ export default function UserManagementPage() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <p className="text-xs text-black/40 dark:text-white/40">{user.email}</p>
-                                                    {user.phoneNumber && (
+                                                    {user.email ? (
+                                                        <p className="text-xs text-black/40 dark:text-white/40">{user.email}</p>
+                                                    ) : (
+                                                        <p className="text-xs text-black/40 dark:text-white/40">{user.phoneNumber || "Aucun contact"}</p>
+                                                    )}
+                                                    {user.email && user.phoneNumber && (
                                                         <p className="text-[10px] text-black/40 dark:text-white/40 font-medium mt-0.5 flex items-center gap-1">
                                                             <span className="material-symbols-outlined text-[10px]">call</span>
                                                             {user.phoneNumber}
@@ -516,8 +520,8 @@ export default function UserManagementPage() {
                 message={userToDelete
                     ? "ATTENTION: Cette action est irréversible. L'utilisateur sera supprimé de la base de données (Note: cela ne supprime pas le compte Auth Firebase)."
                     : (userToToggle 
-                        ? `Voulez-vous vraiment ${userToToggle?.role === 'admin' ? "rétrograder" : "promouvoir"} l'utilisateur ${userToToggle?.displayName || userToToggle?.email} ?`
-                        : `Voulez-vous vraiment réinitialiser le compteur de liens pour l'utilisateur ${userToResetCount?.displayName || userToResetCount?.email} ?`
+                        ? `Voulez-vous vraiment ${userToToggle?.role === 'admin' ? "rétrograder" : "promouvoir"} l'utilisateur ${userToToggle?.displayName || userToToggle?.email || userToToggle?.phoneNumber || "Anonyme"} ?`
+                        : `Voulez-vous vraiment réinitialiser le compteur de liens pour l'utilisateur ${userToResetCount?.displayName || userToResetCount?.email || userToResetCount?.phoneNumber || "Anonyme"} ?`
                     )
                 }
                 confirmText={userToDelete ? "Supprimer" : "Confirmer"}

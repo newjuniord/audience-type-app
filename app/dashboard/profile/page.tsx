@@ -126,7 +126,8 @@ export default function ProfilePage() {
             // 1. Update Firestore
             await updateUser(user.uid, {
                 displayName,
-                phoneNumber
+                phoneNumber,
+                email
                 // Photo URL is now read-only, so we don't update it from here
             });
 
@@ -253,33 +254,63 @@ export default function ProfilePage() {
                                             onChange={(e) => setDisplayName(e.target.value)}
                                         />
                                     </div>
-                                    <div className="flex flex-col w-full">
-                                        <div className="flex items-center justify-between pb-2">
-                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Adresse e-mail</p>
-                                            <span className="text-[10px] uppercase tracking-wider text-primary/40 dark:text-white/40 font-bold">Lecture seule</span>
+                                    {user.email ? (
+                                        <div className="flex flex-col w-full">
+                                            <div className="flex items-center justify-between pb-2">
+                                                <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Adresse e-mail</p>
+                                                <span className="text-[10px] uppercase tracking-wider text-primary/40 dark:text-white/40 font-bold">Lecture seule</span>
+                                            </div>
+                                            <div className="relative">
+                                                <input
+                                                    className="form-input flex w-full rounded-xl text-primary/50 dark:text-white/50 border border-primary/5 bg-primary/5 dark:bg-white/5 h-12 px-4 text-base font-normal cursor-not-allowed"
+                                                    readOnly
+                                                    type="email"
+                                                    value={user.email}
+                                                />
+                                                <span className="material-symbols-outlined absolute right-4 top-3 text-sm text-primary/30">lock</span>
+                                            </div>
                                         </div>
-                                        <div className="relative">
+                                    ) : (
+                                        <div className="flex flex-col w-full">
+                                            <div className="flex items-center justify-between pb-2">
+                                                <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Numéro de téléphone</p>
+                                                <span className="text-[10px] uppercase tracking-wider text-primary/40 dark:text-white/40 font-bold">Lecture seule</span>
+                                            </div>
+                                            <div className="relative">
+                                                <input
+                                                    className="form-input flex w-full rounded-xl text-primary/50 dark:text-white/50 border border-primary/5 bg-primary/5 dark:bg-white/5 h-12 px-4 text-base font-normal cursor-not-allowed"
+                                                    readOnly
+                                                    type="tel"
+                                                    value={user.phoneNumber || ""}
+                                                />
+                                                <span className="material-symbols-outlined absolute right-4 top-3 text-sm text-primary/30">lock</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {user.email ? (
+                                        <div className="flex flex-col w-full">
+                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-2">Numéro de téléphone (Contact)</p>
                                             <input
-                                                className="form-input flex w-full rounded-xl text-primary/50 dark:text-white/50 border border-primary/5 bg-primary/5 dark:bg-white/5 h-12 px-4 text-base font-normal cursor-not-allowed"
-                                                readOnly
+                                                className="form-input flex w-full rounded-xl text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-primary/10 bg-white dark:bg-background-dark/50 h-12 px-4 text-base font-normal"
+                                                type="tel"
+                                                value={phoneNumber}
+                                                onChange={(e) => setPhoneNumber(e.target.value)}
+                                                placeholder="+1 (555) 000-0000"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col w-full">
+                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-2">Adresse e-mail (Contact)</p>
+                                            <input
+                                                className="form-input flex w-full rounded-xl text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-primary/10 bg-white dark:bg-background-dark/50 h-12 px-4 text-base font-normal"
                                                 type="email"
                                                 value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                placeholder="votre@email.com"
                                             />
-                                            <span className="material-symbols-outlined absolute right-4 top-3 text-sm text-primary/30">lock</span>
                                         </div>
-                                    </div>
-
-
-                                    <div className="flex flex-col w-full">
-                                        <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-2">Numéro de téléphone</p>
-                                        <input
-                                            className="form-input flex w-full rounded-xl text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-primary/10 bg-white dark:bg-background-dark/50 h-12 px-4 text-base font-normal"
-                                            type="tel"
-                                            value={phoneNumber}
-                                            onChange={(e) => setPhoneNumber(e.target.value)}
-                                            placeholder="+1 (555) 000-0000"
-                                        />
-                                    </div>
+                                    )}
                                     <div className="flex flex-col w-full">
                                         <div className="flex items-center justify-between pb-2">
                                             <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Photo URL</p>
