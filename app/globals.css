@@ -34,3 +34,33 @@ input[type="button"] {
   user-select: none;
   /* Prevent text selection on icons */
 }
+
+.PhoneInput-custom {
+  display: flex;
+  align-items: center;
+}
+
+.PhoneInput-custom .PhoneInputInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: inherit;
+  font-size: inherit;
+  width: 100%;
+}
+
+.PhoneInput-custom .PhoneInputInput:focus {
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
+.PhoneInputCountry {
+  margin-right: 0.5rem;
+}
+.PhoneInputCountrySelect {
+  display: none;
+}
+.PhoneInputCountrySelectArrow {
+  opacity: 0.5;
+  margin-left: 0.25rem;
+}
