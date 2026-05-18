@@ -22,3 +22,17 @@ env:
     secret: FIREBASE_PRIVATE_KEY
   - variable: CRON_SECRET
     secret: CRON_SECRET
+  - variable: LEMON_SQUEEZY_ENVIRONMENT
+    value: production
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: LEMON_SQUEEZY_STORE_ID
+    value: "362700"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: LEMON_SQUEEZY_API_KEY
+    secret: LEMON_SQUEEZY_API_KEY
+  - variable: LEMON_SQUEEZY_WEBHOOK_SECRET
+    secret: LEMON_SQUEEZY_WEBHOOK_SECRET
