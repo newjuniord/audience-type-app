@@ -163,7 +163,7 @@ export interface Review {
     productId: DocumentReference; // Référence au produit concerné
     productTitle: string; // Titre du produit
     rating: number; // Note (ex: 1 à 5)
-    userId: DocumentReference; // Référence à l'utilisateur
+    userId: DocumentReference | string; // Référence à l'utilisateur ou ID string
     userName: string; // Nom de l'utilisateur
     userEmail: string; // Email de l'utilisateur
 }
@@ -262,6 +262,7 @@ export interface User {
     uid: string; // Auth ID (aussi l'ID du document)
     email: string;
     displayName?: string;
+    fullName?: string;
     photoURL?: string;
     role?: 'admin' | 'customer'; // Rôle simple pour l'accès dashboard
     createdAt: Timestamp;
@@ -319,3 +320,44 @@ export interface Service {
 }
 
 
+/**
+ * Interface représentant une Page de Vente Dynamique (Funnel).
+ * Correspond à la collection `funnels` dans Firestore.
+ */
+export interface FunnelData {
+    id?: string;
+    
+    // Liaison avec un produit existant (Course ou Ebook)
+    linkedProductId?: DocumentReference | string;
+    linkedProductType?: 'course' | 'ebook';
+
+    // Textes principaux
+    badge: string;
+    headline: string;
+    subheadline: string;
+    videoUrl: string;
+    videoPoster: string;
+    ctaText: string;
+    ctaSubtext: string;
+    urgencyText: string;
+    
+    // Prix & Paiement (surchargés ou issus du produit)
+    originalPrice: number;
+    currentPrice: number;
+    priceGourdes: number; // Prix spécifique pour MonCash (HTG)
+    lemonSqueezyId: string; // ID de variant/produit pour carte bancaire
+    currency: string;
+    
+    // Urgence & Disponibilité
+    spotsLeft: number;
+    expirationDate: Timestamp | string | null;
+    
+    // Éléments dynamiques (Tableaux)
+    benefits: Array<{ icon: string; text: string }>;
+    testimonials: Array<{ name: string; role: string; text: string; avatar: string; stars: number }>;
+    
+    // Metadonnées
+    createdAt?: Timestamp;
+    updatedAt?: Timestamp;
+    isActive: boolean;
+}

@@ -25,7 +25,7 @@ export default function PrivacyPolicyPage() {
                     {/* Content Container */}
                     <article className="max-w-none text-primary/80 dark:text-white/80 text-lg leading-relaxed space-y-12">
                         <p className="text-primary dark:text-white text-xl font-medium italic">
-                            La protection de vos données est notre priorité. Cette politique détaille notre rigueur et explique comment nous gérons vos informations personnelles sur notre boutique de cours, d'ebooks et nos services de réservation.
+                            La protection de vos données est notre priorité. Cette politique détaille notre rigueur et explique comment nous gérons vos informations personnelles sur notre boutique de cours, d'ebooks et nos consultations de réservation.
                         </p>
 
                         <section id="collection" className="space-y-6">
@@ -41,11 +41,11 @@ export default function PrivacyPolicyPage() {
 
                         <section id="usage" className="space-y-6">
                             <h2 className="text-primary dark:text-white text-3xl font-bold tracking-tight">2. Utilisation des données</h2>
-                            <p>Les informations recueillies sont utilisées exclusivement pour assurer et améliorer nos services. Plus précisément, nous traitons vos données pour : valider vos achats de contenus, gérer vos réservations de prestations et assurer notre support client. Nous utilisons aussi des données agrégées et anonymes pour analyser la performance technique et les tendances de navigation.</p>
+                            <p>Les informations recueillies sont utilisées exclusivement pour assurer et améliorer nos consultations. Plus précisément, nous traitons vos données pour : valider vos achats de contenus, gérer vos réservations de prestations et assurer notre support client. Nous utilisons aussi des données agrégées et anonymes pour analyser la performance technique et les tendances de navigation.</p>
 
                             <div className="bg-primary/5 dark:bg-white/5 p-8 rounded-xl border border-primary/10 dark:border-white/10 my-8">
                                 <p className="text-sm font-bold text-primary dark:text-white mb-2 uppercase tracking-widest">Principe clé</p>
-                                <p className="m-0">Nous ne cédons jamais vos données personnelles à des tiers à des fins commerciales. Vos informations sont exclusivement traitées pour assurer le fonctionnement opérationnel de notre plateforme et de nos services.</p>
+                                <p className="m-0">Nous ne cédons jamais vos données personnelles à des tiers à des fins commerciales. Vos informations sont exclusivement traitées pour assurer le fonctionnement opérationnel de notre plateforme et de nos consultations.</p>
                             </div>
                         </section>
 
@@ -56,7 +56,7 @@ export default function PrivacyPolicyPage() {
 
                         <section id="cookies" className="space-y-6">
                             <h2 className="text-primary dark:text-white text-3xl font-bold tracking-tight">4. Cookies</h2>
-                            <p>Nous utilisons des cookies pour optimiser votre expérience sur Audience Type. Ces traceurs nous permettent de maintenir votre session active, de sécuriser vos transactions et d'analyser l'audience de notre plateforme. Vous pouvez configurer votre navigateur pour bloquer ces cookies, toutefois, certaines fonctionnalités de nos services et l'accès à vos contenus pourraient en être affectés.</p>
+                            <p>Nous utilisons des cookies pour optimiser votre expérience sur Audience Type. Ces traceurs nous permettent de maintenir votre session active, de sécuriser vos transactions et d'analyser l'audience de notre plateforme. Vous pouvez configurer votre navigateur pour bloquer ces cookies, toutefois, certaines fonctionnalités de nos consultations et l'accès à vos contenus pourraient en être affectés.</p>
                         </section>
 
                         <section className="mt-16 pt-16 border-t border-primary/10 dark:border-white/10" id="security">

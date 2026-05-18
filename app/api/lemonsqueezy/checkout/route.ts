@@ -62,6 +62,20 @@ export async function POST(req: Request) {
         const newOrderRef = ordersRef.doc();
         const orderId = newOrderRef.id;
 
+        // Fetch user document to check for existing customer ID
+        let lemonSqueezyCustomerId = "";
+        try {
+            const userDocSnap = await adminDb.collection("users").doc(userId).get();
+            if (userDocSnap.exists) {
+                lemonSqueezyCustomerId = userDocSnap.data()?.lemonSqueezyCustomerId || "";
+                if (lemonSqueezyCustomerId) {
+                    console.log(`🔗 [CHECKOUT] Found existing lemonSqueezyCustomerId: ${lemonSqueezyCustomerId}`);
+                }
+            }
+        } catch (e: any) {
+            console.warn("⚠️ [CHECKOUT] Could not fetch user profile for customer ID:", e.message);
+        }
+
         const orderData = {
             userId,
             productId,
@@ -86,38 +100,59 @@ export async function POST(req: Request) {
         const returnUrl = `${baseUrl}/payment-success?orderId=${orderId}&amount=${productData.price}&currency=USD&provider=lemonsqueezy&ls_order_id=[order_id]`;
         const isSandbox = process.env.LEMON_SQUEEZY_ENVIRONMENT === "sandbox";
 
+        const relationships: any = {
+            store: {
+                data: {
+                    type: "stores",
+                    id: storeId.toString()
+                }
+            },
+            variant: {
+                data: {
+                    type: "variants",
+                    id: variantId.toString()
+                }
+            }
+        };
+
+        if (lemonSqueezyCustomerId) {
+            console.log(`🔗 [CHECKOUT] Linking checkout to existing customer ID: ${lemonSqueezyCustomerId}`);
+            relationships.customer = {
+                data: {
+                    type: "customers",
+                    id: lemonSqueezyCustomerId.toString()
+                }
+            };
+        }
+
+        const checkoutData: any = {
+            name: userName || "Client",
+            custom: {
+                orderId: orderId,
+                userId: userId,
+                productId: productId
+            }
+        };
+
+        // Only pre-fill the email if it is a real email (not ending with @audiencetype.com)
+        if (userEmail && !userEmail.endsWith("@audiencetype.com")) {
+            checkoutData.email = userEmail;
+            console.log(`📧 [CHECKOUT] Pre-filling checkout with real email: ${userEmail}`);
+        } else {
+            console.log(`📧 [CHECKOUT] Virtual email detected or missing. Leaving Lemon Squeezy email field empty for user manual input.`);
+        }
+
         const payload = {
             data: {
                 type: "checkouts",
                 attributes: {
                     test_mode: isSandbox,
-                    checkout_data: {
-                        email: userEmail || "client@example.com",
-                        name: userName || "Client",
-                        custom: {
-                            orderId: orderId,
-                            userId: userId,
-                            productId: productId
-                        }
-                    },
+                    checkout_data: checkoutData,
                     product_options: {
                         redirect_url: returnUrl
                     }
                 },
-                relationships: {
-                    store: {
-                        data: {
-                            type: "stores",
-                            id: storeId.toString()
-                        }
-                    },
-                    variant: {
-                        data: {
-                            type: "variants",
-                            id: variantId.toString()
-                        }
-                    }
-                }
+                relationships
             }
         };
 

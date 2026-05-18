@@ -1,18 +1,25 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 import * as crypto from "crypto";
 
 // Initialize Firebase Admin
 initializeApp();
 const db = getFirestore();
+const auth = getAuth();
 
 /**
  * Cloud Function: lemonsqueezyWebhook
  * Listen for Lemon Squeezy events (e.g., order_created).
  */
 export const lemonsqueezywebhook = onRequest({ 
-    secrets: ["LEMON_SQUEEZY_WEBHOOK_SECRET"],
+    secrets: [
+        "LEMON_SQUEEZY_WEBHOOK_SECRET",
+        "TWILIO_ACCOUNT_SID",
+        "TWILIO_AUTH_TOKEN",
+        "TWILIO_WHATSAPP_NUMBER"
+    ],
     region: "us-central1" 
 }, async (req, res) => {
     // Only allow POST requests
@@ -68,12 +75,63 @@ export const lemonsqueezywebhook = onRequest({
                     const orderData = orderSnap.data();
                     
                     if (orderData && orderData.status !== "paid") {
-                        await orderRef.update({
+                        const userId = orderData.userId;
+                        const customerEmail = attributes.user_email || "";
+                        const lemonSqueezyCustomerId = attributes.customer_id?.toString() || "";
+
+                        console.log(`🔍 [WEBHOOK] Customer Email: ${customerEmail}, Customer ID: ${lemonSqueezyCustomerId}`);
+
+                        // Self-healing: promote virtual email to real email & link customer ID
+                        let finalUserEmail = orderData.userEmail || customerEmail;
+
+                        if (userId) {
+                            try {
+                                const userRef = db.collection("users").doc(userId);
+                                const userSnap = await userRef.get();
+                                if (userSnap.exists) {
+                                    const userData = userSnap.data();
+                                    const currentEmail = userData?.email || "";
+                                    const isFakeEmail = !currentEmail || currentEmail.endsWith("@audiencetype.com");
+
+                                    const userUpdates: any = {};
+                                    if (lemonSqueezyCustomerId) {
+                                        userUpdates.lemonSqueezyCustomerId = lemonSqueezyCustomerId;
+                                    }
+
+                                    if (isFakeEmail && customerEmail && !customerEmail.endsWith("@audiencetype.com")) {
+                                        console.log(`🌟 [WEBHOOK] Promoting virtual email "${currentEmail}" to real email "${customerEmail}" for user ${userId}`);
+                                        userUpdates.email = customerEmail;
+                                        finalUserEmail = customerEmail;
+
+                                        try {
+                                            await auth.updateUser(userId, { email: customerEmail });
+                                            console.log(`✅ [WEBHOOK] Firebase Auth email updated successfully to ${customerEmail}`);
+                                        } catch (authErr: any) {
+                                            console.warn(`⚠️ [WEBHOOK] Failed to update email in Firebase Auth:`, authErr.message);
+                                        }
+                                    }
+
+                                    if (Object.keys(userUpdates).length > 0) {
+                                        await userRef.update(userUpdates);
+                                        console.log(`✅ [WEBHOOK] Firestore user profile updated with:`, userUpdates);
+                                    }
+                                }
+                            } catch (userErr: any) {
+                                console.error(`❌ [WEBHOOK] Error updating user profile:`, userErr.message);
+                            }
+                        }
+
+                        // Update the order doc
+                        const orderUpdates: any = {
                             status: "paid",
                             amount: finalAmount, // Mise à jour avec le vrai montant payé
                             transactionId: payload.data.id,
                             updatedAt: now
-                        });
+                        };
+                        if (finalUserEmail && finalUserEmail !== orderData.userEmail) {
+                            orderUpdates.userEmail = finalUserEmail;
+                        }
+                        await orderRef.update(orderUpdates);
 
                         // 2. Create enrollment if not a service
                         if (orderData.productType !== "service" && orderData.productType !== "booking") {
@@ -87,7 +145,7 @@ export const lemonsqueezywebhook = onRequest({
                                 .get();
 
                             if (existingEnrollment.empty) {
-                                console.log(`📚 [WEBHOOK] Creating enrollment for user ${orderData.userEmail}`);
+                                console.log(`📚 [WEBHOOK] Creating enrollment for user ${finalUserEmail}`);
                                 
                                 await enrollmentsRef.add({
                                     accessGranted: true,
@@ -104,10 +162,55 @@ export const lemonsqueezywebhook = onRequest({
                                     progress: 0,
                                     status: "active",
                                     totalLessons: 0,
-                                    userEmail: orderData.userEmail,
+                                    userEmail: finalUserEmail,
                                     userId: orderData.userId, // String ID as requested
                                     userName: orderData.userName || "Étudiant"
                                 });
+                            }
+                        }
+
+                        // 3. Automated WhatsApp magic link & verification code dispatch
+                        if (userId) {
+                            try {
+                                const userRef = db.collection("users").doc(userId);
+                                const userSnap = await userRef.get();
+                                const userData = userSnap.exists ? userSnap.data() : null;
+                                const whatsappNumber = userData?.whatsappNumber || orderData.whatsappNumber || "";
+
+                                if (whatsappNumber) {
+                                    console.log(`🔍 [WEBHOOK] Checking existing temp links to prevent duplicate WhatsApp dispatch for user: ${userId}`);
+                                    const existingLinks = await db.collection("temp_links")
+                                        .where("userId", "==", userId)
+                                        .where("used", "==", false)
+                                        .limit(1)
+                                        .get();
+
+                                    if (existingLinks.empty) {
+                                        const token = crypto.randomUUID();
+                                        const code = Math.floor(100000 + Math.random() * 900000).toString();
+                                        
+                                        const expiresAt = new Date();
+                                        expiresAt.setFullYear(expiresAt.getFullYear() + 100);
+
+                                        console.log(`🌟 [WEBHOOK] Creating new temp link and code ${code} for user ${userId}`);
+                                        await db.collection("temp_links").doc(token).set({
+                                            userId: userId,
+                                            code: code,
+                                            expiresAt: expiresAt,
+                                            used: false,
+                                            createdAt: new Date()
+                                        });
+
+                                        const link = `https://audiencetype.com/login/temp?token=${token}`;
+                                        const message = `🎉 *ACCÈS DÉBLOQUÉ !* 📚\n\nMerci pour ton achat ! Ton cours *${orderData.productTitle || "Premium"}* est maintenant disponible dans ton espace membre.\n\nVoici ton code secret de connexion : *${code}*\n\nTu peux également cliquer sur ce lien magique pour te connecter instantanément d'un seul clic :\n${link}\n\nNe partage jamais ce code. Bon apprentissage !`;
+
+                                        await sendWhatsAppMessageViaFetch(whatsappNumber, message);
+                                    } else {
+                                        console.log(`⚠️ [WEBHOOK] Active temp link already exists for user ${userId}. Skipping WhatsApp dispatch.`);
+                                    }
+                                }
+                            } catch (whatsappErr: any) {
+                                console.error(`❌ [WEBHOOK] Error handling automated WhatsApp dispatch:`, whatsappErr.message);
                             }
                         }
                     } else {
@@ -216,3 +319,58 @@ export const lemonsqueezyrefund = onRequest({
         res.status(500).json({ error: "Internal error" });
     }
 });
+
+/**
+ * Helper to send a Twilio WhatsApp message using global fetch.
+ * Avoids any external Twilio SDK dependencies in Cloud Functions.
+ */
+async function sendWhatsAppMessageViaFetch(toPhone: string, message: string) {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
+    const authToken = process.env.TWILIO_AUTH_TOKEN || "";
+    const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+14155238886";
+
+    if (!accountSid || !authToken) {
+        console.error("❌ [WHATSAPP] Twilio credentials missing in Cloud Function environment.");
+        return { success: false };
+    }
+
+    const cleanPhone = toPhone.replace(/\s+/g, '');
+    const toWhatsAppNumber = cleanPhone.startsWith('whatsapp:') 
+        ? cleanPhone 
+        : cleanPhone.startsWith('+') 
+            ? `whatsapp:${cleanPhone}`
+            : `whatsapp:+${cleanPhone}`;
+
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const authString = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
+
+    const params = new URLSearchParams();
+    params.append("To", toWhatsAppNumber);
+    params.append("From", twilioWhatsAppNumber);
+    params.append("Body", message);
+
+    try {
+        console.log(`📩 [WHATSAPP] Sending Twilio API request to ${toWhatsAppNumber}...`);
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Authorization": `Basic ${authString}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: params.toString()
+        });
+
+        if (response.ok) {
+            const data: any = await response.json();
+            console.log(`✅ [WHATSAPP] WhatsApp sent successfully. SID: ${data.sid}`);
+            return { success: true, sid: data.sid };
+        } else {
+            const errText = await response.text();
+            console.error("❌ [WHATSAPP] Twilio API error response:", errText);
+            return { success: false };
+        }
+    } catch (e: any) {
+        console.error("❌ [WHATSAPP] Exception sending Twilio WhatsApp message:", e.message);
+        return { success: false };
+    }
+}

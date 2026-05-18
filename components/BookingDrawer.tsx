@@ -84,7 +84,7 @@ export default function BookingDrawer({ isOpen, onClose, booking }: BookingDrawe
                                     <p className="font-black text-sm">PAID {booking.price}</p>
                                 </div>
                                 <div className="bg-black/[0.03] dark:bg-white/[0.03] p-6 rounded-[2rem] flex flex-col justify-between">
-                                    <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-2">Service Status</p>
+                                    <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-2">Statut de la consultation</p>
                                     <div className="flex items-center justify-between">
                                         <p className="font-black text-sm text-green-500 uppercase">{booking.status}</p>
                                         <span className="material-symbols-outlined text-black/20 dark:text-white/20">expand_more</span>
@@ -124,9 +124,9 @@ export default function BookingDrawer({ isOpen, onClose, booking }: BookingDrawe
                                 </div>
                             </div>
 
-                            {/* Service & Timing */}
+                            {/* Consultation & Timing */}
                             <div className="space-y-6">
-                                <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest ml-4">Service & Timing</p>
+                                <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest ml-4">Consultation & Horaire</p>
                                 <div className="flex items-start gap-4">
                                     <div className="size-10 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] flex items-center justify-center">
                                         <span className="material-symbols-outlined text-black/30 dark:text-white/30">calendar_month</span>

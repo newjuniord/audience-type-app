@@ -235,7 +235,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                                             ? "bg-blue-600 text-white border-blue-500/20"
                                             : "bg-emerald-600 text-white border-emerald-500/20"
                                 }`}>
-                                    {product.type === "Course" ? "Cours" : product.type === "Ebook" ? "Ebook" : "Service"}
+                                    {product.type === "Course" ? "Cours" : product.type === "Ebook" ? "Ebook" : "Consultation"}
                                 </span>
                             </div>
                             <button
@@ -305,10 +305,10 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                                 </div>
                             )}
 
-                            {/* Service Application Form */}
+                            {/* Consultation Application Form */}
                             {isService && (
                                 <div className="mt-4 p-6 bg-primary/5 dark:bg-white/5 rounded-xl border border-primary/5 dark:border-white/5">
-                                    <h3 className="text-lg font-bold mb-4">Postuler pour ce service</h3>
+                                    <h3 className="text-lg font-bold mb-4">Postuler pour cette consultation</h3>
 
                                     <div className="space-y-4">
                                         <div>

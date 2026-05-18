@@ -222,7 +222,7 @@ export default function Dashboard() {
                             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                                 <div className="text-center md:text-left">
                                     <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic mb-3"><span>Envie d'aller plus loin ?</span></h2>
-                                    <p className="text-sm md:text-base opacity-80 max-w-md"><span>Découvrez notre catalogue complet. De nouveaux cours, ebooks et services sont disponibles pour vous.</span></p>
+                                    <p className="text-sm md:text-base opacity-80 max-w-md"><span>Découvrez notre catalogue complet. De nouveaux cours, ebooks et consultations sont disponibles pour vous.</span></p>
                                 </div>
                                 <button
                                     onClick={() => router.push('/products')}

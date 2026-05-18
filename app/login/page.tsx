@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
+import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 // Importation des fonctions Firestore pour manipuler les documents
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import PhoneInput from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -19,11 +17,6 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [isLoginView, setIsLoginView] = useState(true);
-    const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
-    const [phoneNumber, setPhoneNumber] = useState("");
-    const [verificationCode, setVerificationCode] = useState("");
-    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-    const [isRecaptchaSolved, setIsRecaptchaSolved] = useState(false);
     const router = useRouter();
     const { user, role, loading: authLoading } = useAuth();
 
@@ -36,43 +29,6 @@ export default function LoginPage() {
             }
         }
     }, [user, role, authLoading, router]);
-
-    useEffect(() => {
-        if (authMethod === 'phone' && !confirmationResult && typeof window !== 'undefined') {
-            if (!(window as any).recaptchaVerifier) {
-                try {
-                    // Small delay to ensure the DOM element is ready
-                    setTimeout(() => {
-                        if (document.getElementById('recaptcha-container')) {
-                            (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                                'size': 'normal',
-                                'callback': (response: any) => {
-                                    setIsRecaptchaSolved(true);
-                                    setError(null);
-                                },
-                                'expired-callback': () => {
-                                    setIsRecaptchaSolved(false);
-                                }
-                            });
-                            (window as any).recaptchaVerifier.render();
-                        }
-                    }, 100);
-                } catch (e) {
-                    console.error("Recaptcha init error:", e);
-                }
-            }
-        }
-        
-        return () => {
-            if (authMethod !== 'phone' && typeof window !== 'undefined' && (window as any).recaptchaVerifier) {
-                try {
-                    (window as any).recaptchaVerifier.clear();
-                    (window as any).recaptchaVerifier = null;
-                    setIsRecaptchaSolved(false);
-                } catch (e) {}
-            }
-        };
-    }, [authMethod, confirmationResult]);
 
     const handleResetPassword = async () => {
         if (!email) {
@@ -169,106 +125,6 @@ export default function LoginPage() {
         }
     };
 
-
-
-    const handleSendOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!phoneNumber) {
-            setError("Veuillez entrer votre numéro de téléphone.");
-            return;
-        }
-
-        setIsLoading(true);
-        setError(null);
-        setMessage(null);
-
-        try {
-            const appVerifier = (window as any).recaptchaVerifier;
-            if (!isRecaptchaSolved || !appVerifier) {
-                setError("Veuillez cocher la case 'Je ne suis pas un robot' avant de continuer.");
-                setIsLoading(false);
-                return;
-            }
-            const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-            setConfirmationResult(result);
-            setMessage("Code SMS envoyé !");
-        } catch (err: any) {
-            console.error("SMS error:", err);
-            if (err.code === 'auth/invalid-app-credential') {
-                setError("Erreur de sécurité : le domaine n'est pas autorisé dans Firebase ou le reCAPTCHA a échoué. Assurez-vous que localhost est autorisé dans la console Firebase.");
-            } else if (err.code === 'auth/invalid-phone-number') {
-                setError("Le format du numéro de téléphone est invalide.");
-            } else {
-                setError("Erreur lors de l'envoi du SMS. Veuillez réessayer.");
-            }
-            if ((window as any).recaptchaVerifier) {
-                try {
-                    (window as any).recaptchaVerifier.clear();
-                    // Réinitialiser immédiatement pour que l'utilisateur puisse réessayer
-                    (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                        'size': 'normal',
-                        'callback': (response: any) => {
-                            setIsRecaptchaSolved(true);
-                            setError(null);
-                        },
-                        'expired-callback': () => {
-                            setIsRecaptchaSolved(false);
-                        }
-                    });
-                    (window as any).recaptchaVerifier.render();
-                    setIsRecaptchaSolved(false);
-                } catch (e) {}
-            }
-        }
-        setIsLoading(false);
-    };
-
-    const handleVerifyOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!verificationCode || !confirmationResult) return;
-
-        setIsLoading(true);
-        setError(null);
-        setMessage(null);
-
-        try {
-            const result = await confirmationResult.confirm(verificationCode);
-            const user = result.user;
-
-            const userRef = doc(db, "users", user.uid);
-            const userSnap = await getDoc(userRef);
-
-            if (!userSnap.exists()) {
-                await setDoc(userRef, {
-                    fullName: "Anonyme",
-                    email: "",
-                    photoURL: "",
-                    phone: user.phoneNumber,
-                    role: "customer",
-                    createdAt: serverTimestamp(),
-                });
-                window.location.href = "/dashboard";
-                return;
-            }
-
-            if (userSnap.exists()) {
-                if (!userSnap.data().createdAt) {
-                    await setDoc(userRef, { createdAt: serverTimestamp() }, { merge: true });
-                }
-                if (userSnap.data().role?.trim().toLowerCase() === "admin") {
-                    window.location.href = "/admin";
-                } else {
-                    window.location.href = "/dashboard";
-                }
-                return;
-            }
-        } catch (err: any) {
-            console.error("OTP verification error:", err);
-            setError("Code de vérification incorrect.");
-        }
-        setIsLoading(false);
-    };
-
     const handleGoogleLogin = async () => {
         setIsLoading(true);
         setError(null);
@@ -287,10 +143,10 @@ export default function LoginPage() {
             if (!userSnap.exists()) {
                 // SI L'UTILISATEUR N'EXISTE PAS : On crée son profil complet
                 await setDoc(userRef, {
-                    fullName: user.displayName || "Anonyme", // Nom récupéré de Google
+                    displayName: user.displayName || "Anonyme", // Nom récupéré de Google
                     email: user.email,                      // Email récupéré de Google
                     photoURL: user.photoURL,                // Photo de profil récupérée de Google
-                    phone: user.phoneNumber || "",          // Numéro de téléphone (si disponible)
+                    phoneNumber: user.phoneNumber || "",          // Numéro de téléphone (si disponible)
                     role: "user",                           // Rôle par défaut
                     createdAt: serverTimestamp(),           // Date de création via le serveur Firebase
                 });
@@ -298,7 +154,7 @@ export default function LoginPage() {
                 // SI L'UTILISATEUR EXISTE DÉJÀ : On met à jour ses infos et on s'assure qu'il a une date de création
                 const existingData = userSnap.data();
                 const updates: any = {
-                    fullName: user.displayName || existingData.fullName,
+                    displayName: user.displayName || existingData.displayName || existingData.fullName,
                     photoURL: user.photoURL || existingData.photoURL,
                 };
                 
@@ -355,25 +211,7 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <div className="flex p-1 bg-primary/5 dark:bg-white/5 rounded-xl">
-                            <button
-                                type="button"
-                                onClick={() => { setAuthMethod('email'); setError(null); setMessage(null); }}
-                                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${authMethod === 'email' ? 'bg-white dark:bg-black/50 shadow-sm text-primary dark:text-white' : 'text-primary/60 dark:text-white/60 hover:text-primary dark:hover:text-white'}`}
-                            >
-                                Email
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => { setAuthMethod('phone'); setError(null); setMessage(null); }}
-                                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${authMethod === 'phone' ? 'bg-white dark:bg-black/50 shadow-sm text-primary dark:text-white' : 'text-primary/60 dark:text-white/60 hover:text-primary dark:hover:text-white'}`}
-                            >
-                                Téléphone
-                            </button>
-                        </div>
-
-                        {authMethod === 'email' ? (
-                            <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 p-[20px] border border-primary/10 dark:border-white/10 rounded-2xl bg-white/50 dark:bg-white/5 backdrop-blur-sm">
+                        <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 p-[20px] border border-primary/10 dark:border-white/10 rounded-2xl bg-white/50 dark:bg-white/5 backdrop-blur-sm">
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Adresse e-mail</label>
                                     <input 
@@ -448,74 +286,6 @@ export default function LoginPage() {
                                     </button>
                                 </div>
                             </form>
-                        ) : (
-                            <div className="flex flex-col gap-4 p-[20px] border border-primary/10 dark:border-white/10 rounded-2xl bg-white/50 dark:bg-white/5 backdrop-blur-sm">
-                                {!confirmationResult ? (
-                                    <form onSubmit={handleSendOtp} className="flex flex-col gap-4">
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Numéro de téléphone</label>
-                                            <PhoneInput
-                                                international
-                                                defaultCountry="HT"
-                                                value={phoneNumber}
-                                                onChange={(val: any) => setPhoneNumber(val || "")}
-                                                className="w-full px-4 py-2 rounded-xl bg-white dark:bg-black/50 border border-primary/10 dark:border-white/10 focus-within:ring-2 focus-within:ring-primary/20 dark:focus-within:ring-white/20 transition-all text-sm PhoneInput-custom"
-                                            />
-                                            <p className="text-xs text-primary/40 dark:text-white/40 mt-1">Sélectionnez votre pays et entrez votre numéro.</p>
-                                        </div>
-                                        <div id="recaptcha-container" className="flex justify-center w-full overflow-hidden min-h-[78px]"></div>
-                                        <button 
-                                            type="submit"
-                                            disabled={isLoading}
-                                            className={`w-full py-3 mt-2 rounded-xl font-bold text-sm transition-all ${
-                                                isRecaptchaSolved 
-                                                ? "bg-black dark:bg-white text-white dark:text-black hover:opacity-90" 
-                                                : "bg-black/20 dark:bg-white/20 text-black/50 dark:text-white/50"
-                                            } ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
-                                        >
-                                            {isLoading ? (
-                                                <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                            ) : (
-                                                "Recevoir le code par SMS"
-                                            )}
-                                        </button>
-                                    </form>
-                                ) : (
-                                    <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Code de vérification</label>
-                                            <input 
-                                                type="text" 
-                                                value={verificationCode}
-                                                onChange={(e) => setVerificationCode(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl bg-white dark:bg-black/50 border border-primary/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:focus:ring-white/20 transition-all text-sm text-center tracking-widest font-mono text-lg"
-                                                placeholder="123456"
-                                                required
-                                                maxLength={6}
-                                            />
-                                        </div>
-                                        <button 
-                                            type="submit"
-                                            disabled={isLoading}
-                                            className="w-full py-3 mt-2 bg-black dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
-                                        >
-                                            {isLoading ? (
-                                                <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                            ) : (
-                                                "Vérifier le code"
-                                            )}
-                                        </button>
-                                        <button 
-                                            type="button"
-                                            onClick={() => setConfirmationResult(null)}
-                                            className="text-xs text-primary/60 dark:text-white/60 hover:text-primary dark:hover:text-white transition-colors text-center mt-2"
-                                        >
-                                            Changer de numéro
-                                        </button>
-                                    </form>
-                                )}
-                            </div>
-                        )}
 
                         <div className="relative flex items-center justify-center">
                             <div className="absolute inset-0 flex items-center">

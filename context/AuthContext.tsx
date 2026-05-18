@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         }
                     }
 
-                    if (!foundByUid) {
+                    if (!foundByUid && authUser.email) {
                         // FALLBACK: Search by email if UID fails or if UID doc is empty
                         console.log("AuthContext: Searching by email for:", authUser.email);
                         const q = query(collection(db, "users"), where("email", "==", authUser.email), limit(1));

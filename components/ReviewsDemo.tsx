@@ -39,7 +39,7 @@ export default function ReviewsDemo() {
             productId: fakeProductRef,
             productTitle: "Mon Ebook Test",
             rating: 5,
-            userId: fakeUserRef,
+            userId: "some-user-id",
             userName: "Sophie Martin",
             userEmail: "sophie.martin@example.com"
         };

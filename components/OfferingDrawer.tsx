@@ -177,7 +177,7 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                 <header className={`flex items-center justify-between px-8 py-8 border-b border-black/5 dark:border-white/5 transition-all duration-700 delay-100 ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
                     <div>
                         <h2 className="text-2xl font-black tracking-tight uppercase">{initialData ? 'Modifier l\'offre' : 'Créer une nouvelle offre'}</h2>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-black/40 dark:text-white/40 mt-1">Configurez les détails et le calendrier de votre service</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-black/40 dark:text-white/40 mt-1">Configurez les détails et le calendrier de votre consultation</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -194,7 +194,7 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">Informations générales</h3>
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">Titre du service</label>
+                                <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">Titre de la consultation</label>
                                 <input
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
@@ -279,7 +279,7 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     className="w-full p-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium resize-none shadow-inner"
-                                    placeholder="Décrivez la valeur de ce service..."
+                                    placeholder="Décrivez la valeur de cette consultation..."
                                     rows={4}
                                 ></textarea>
                             </div>

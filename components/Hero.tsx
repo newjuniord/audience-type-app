@@ -15,7 +15,7 @@ export default function Hero() {
                 <TypingAnimation />
             </h1>
             <p className="text-lg md:text-xl font-normal max-w-2xl mb-12 text-primary/60 dark:text-white/60">
-                Apprends facilement, gagne du temps et progresse vite avec nos cours, ebooks et services faits pour toi.
+                Apprends facilement, gagne du temps et progresse vite avec nos cours, ebooks et consultations faits pour toi.
             </p>
 
             {!user && (

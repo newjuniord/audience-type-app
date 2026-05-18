@@ -44,7 +44,7 @@ export default function ReviewsSection() {
                         Ce que disent nos clients
                     </h2>
                     <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                        Ils ont testé, ils ont adoré, et ils recommandent nos services, cours et ebooks pour apprendre plus vite et réussir plus vite ce mois-ci là.
+                        Ils ont testé, ils ont adoré, et ils recommandent nos consultations, cours et ebooks pour apprendre plus vite et réussir plus vite ce mois-ci là.
                     </p>
                 </div>
 

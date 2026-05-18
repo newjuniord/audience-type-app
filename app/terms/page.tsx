@@ -110,8 +110,8 @@ export default function TermsOfServicePage() {
                                     <span className="text-primary/20 dark:text-white/20">01.</span> Introduction
                                 </h2>
                                 <div className="space-y-4">
-                                    <p>Bienvenue sur Audience Type, votre plateforme dédiée à la vente de produits numériques et à la réservation de services. Ces conditions d'utilisation (« Conditions ») régissent votre accès et votre utilisation de notre site Web, de nos outils numériques et des services connexes (collectivement, les « Services »).</p>
-                                    <p>En accédant à nos Services ou en les utilisant, vous acceptez d'être lié par ces Conditions ainsi que par notre Politique de confidentialité. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser les Services. Nous nous réservons le droit de mettre à jour ces conditions à tout moment ; votre utilisation continue de la plateforme après publication des modifications constitue une acceptation pleine et entière de ces changements.</p>
+                                    <p>Bienvenue sur Audience Type, votre plateforme dédiée à la vente de produits numériques et à la réservation de consultations. Ces conditions d'utilisation (« Conditions ») régissent votre accès et votre utilisation de notre site Web, de nos outils numériques et des consultations connexes (collectivement, les « Consultations »).</p>
+                                    <p>En accédant à nos Consultations ou en les utilisant, vous acceptez d'être lié par ces Conditions ainsi que par notre Politique de confidentialité. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser les Consultations. Nous nous réservons le droit de mettre à jour ces conditions à tout moment ; votre utilisation continue de la plateforme après publication des modifications constitue une acceptation pleine et entière de ces changements.</p>
                                 </div>
                             </section>
 
@@ -120,7 +120,7 @@ export default function TermsOfServicePage() {
                                     <span className="text-primary/20 dark:text-white/20">02.</span> Comptes utilisateurs
                                 </h2>
                                 <div className="space-y-4">
-                                    <p>L'accès à nos cours, ebooks et services de réservation nécessite la création d'un compte client via le système d'authentification Google. En utilisant ce service, vous acceptez les conditions suivantes :</p>
+                                    <p>L'accès à nos cours, ebooks et consultations de réservation nécessite la création d'un compte client via le système d'authentification Google. En utilisant cette plateforme, vous acceptez les conditions suivantes :</p>
                                     <ul className="list-disc pl-5 space-y-4">
                                         <li>
                                             <strong>Exactitude des informations :</strong> Vous vous engagez à fournir des informations de profil exactes et à les maintenir à jour.
@@ -164,11 +164,11 @@ export default function TermsOfServicePage() {
 
                             <section id="bookings">
                                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-primary dark:text-white">
-                                    <span className="text-primary/20 dark:text-white/20">04.</span> Réservations de services
+                                    <span className="text-primary/20 dark:text-white/20">04.</span> Réservations de consultations
                                 </h2>
                                 <div className="space-y-4">
-                                    <p>Notre plateforme facilite les réservations entre les utilisateurs et les prestataires de services. Bien que nous nous efforcions de garantir des interactions de haute qualité, nous ne garantissons pas la performance d'un prestataire de services. Les confirmations de réservation sont soumises à la disponibilité et à la politique d'annulation spécifique du prestataire.</p>
-                                    <p>Les utilisateurs sont encouragés à examiner attentivement les évaluations et les descriptions des prestataires de services avant de finaliser une réservation.</p>
+                                    <p>Notre plateforme facilite les réservations entre les utilisateurs et les consultants. Bien que nous nous efforcions de garantir des interactions de haute qualité, nous ne garantissons pas la performance d'un consultant. Les confirmations de réservation sont soumises à la disponibilité et à la politique d'annulation spécifique.</p>
+                                    <p>Les utilisateurs sont encouragés à examiner attentivement les détails avant de finaliser une réservation.</p>
                                 </div>
                             </section>
 
@@ -186,10 +186,10 @@ export default function TermsOfServicePage() {
                                     <span className="text-primary/20 dark:text-white/20">06.</span> Résiliation
                                 </h2>
                                 <div className="space-y-4">
-                                    <p>Cette section définit les conditions de fermeture de votre compte et de fin d'accès à nos Services.</p>
+                                    <p>Cette section définit les conditions de fermeture de votre compte et de fin d'accès à nos Consultations.</p>
                                     <ul className="list-disc pl-5 space-y-4">
                                         <li>
-                                            <strong>Résiliation par l’Utilisateur :</strong> Vous pouvez cesser d’utiliser nos Services à tout moment. Si vous souhaitez supprimer votre compte, vous pouvez le faire via les paramètres de votre espace client ou en envoyant une demande à contact@audiencetype.com.
+                                            <strong>Résiliation par l’Utilisateur :</strong> Vous pouvez cesser d’utiliser nos Consultations à tout moment. Si vous souhaitez supprimer votre compte, vous pouvez le faire via les paramètres de votre espace client ou en envoyant une demande à contact@audiencetype.com.
                                         </li>
                                         <li>
                                             <p className="font-medium italic">Note importante : La suppression de votre compte entraîne la suppression immédiate et définitive de vos droits d'accès aux produits numériques achetés (cours, ebooks), sans possibilité de remboursement ou de récupération ultérieure des données.</p>
@@ -203,7 +203,7 @@ export default function TermsOfServicePage() {
                                             </ul>
                                         </li>
                                         <li>
-                                            <strong>Effets de la résiliation :</strong> À la date de prise d’effet de la résiliation, votre droit d'utiliser les Services et d'accéder aux contenus numériques cesse immédiatement. Toutes les dispositions des présentes Conditions qui, par leur nature, devraient survivre à la résiliation (notamment les droits de propriété intellectuelle et les limitations de responsabilité) resteront en vigueur.
+                                            <strong>Effets de la résiliation :</strong> À la date de prise d’effet de la résiliation, votre droit d'utiliser les Consultations et d'accéder aux contenus numériques cesse immédiatement. Toutes les dispositions des présentes Conditions qui, par leur nature, devraient survivre à la résiliation (notamment les droits de propriété intellectuelle et les limitations de responsabilité) resteront en vigueur.
                                         </li>
                                     </ul>
                                 </div>
@@ -214,11 +214,11 @@ export default function TermsOfServicePage() {
                                     <span className="text-primary/20 dark:text-white/20">07.</span> Conduite et Respect : Protection du Personnel et du Fondateur
                                 </h2>
                                 <div className="space-y-4">
-                                    <p>Audience Type s'engage à fournir un environnement sain et respectueux pour tous ses utilisateurs, ainsi que pour ses collaborateurs et son fondateur. En utilisant nos Services, vous vous engagez à :</p>
+                                    <p>Audience Type s'engage à fournir un environnement sain et respectueux pour tous ses utilisateurs, ainsi que pour ses collaborateurs et son fondateur. En utilisant nos Consultations, vous vous engagez à :</p>
                                     <ul className="list-disc pl-5 space-y-3">
                                         <li>Faire preuve de courtoisie et de respect dans tous vos échanges avec notre équipe de support, nos prestataires et le fondateur.</li>
                                         <li>Ne proférer aucune insulte, menace, propos haineux, harcelant ou diffamatoire.</li>
-                                        <li>Respecter le travail et l'expertise fournis à travers nos produits et services.</li>
+                                        <li>Respecter le travail et l'expertise fournis à travers nos produits et consultations.</li>
                                     </ul>
                                     <p className="pt-2">Tout manquement à cette règle de conduite, qu'il s'agisse de comportements abusifs par email, sur les réseaux sociaux ou tout autre canal de communication lié à la marque, pourra entraîner la suspension immédiate de votre compte et de vos accès aux produits, ainsi que d'éventuels signalements aux autorités compétentes.</p>
                                 </div>

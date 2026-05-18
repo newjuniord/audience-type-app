@@ -102,7 +102,7 @@ export default function FeaturedProducts({
         { id: "All", label: "Tout" },
         { id: "Course", label: "Cours" },
         { id: "Ebook", label: "Ebooks" },
-        { id: "Service", label: "Services" }
+        { id: "Service", label: "Consultations" }
     ];
 
     const filteredProducts = activeFilter === "All"
@@ -155,7 +155,7 @@ export default function FeaturedProducts({
                                             ? "bg-blue-600/80 text-white border-blue-400/20"
                                             : "bg-emerald-600/80 text-white border-emerald-400/20"
                                 } shadow-xl`}>
-                                    {product.type === "Course" ? "Cours" : product.type === "Ebook" ? "Ebook" : "Service"}
+                                    {product.type === "Course" ? "Cours" : product.type === "Ebook" ? "Ebook" : "Consultation"}
                                 </span>
                             </div>
                         </div>

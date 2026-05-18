@@ -84,8 +84,8 @@ export default function BookingsPage() {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
                 <div>
-                    <h1 className="text-primary dark:text-white text-4xl font-black leading-tight tracking-tighter mb-2">Service Offerings</h1>
-                    <p className="text-black/50 dark:text-white/50 text-sm font-medium">Create and manage your available services.</p>
+                    <h1 className="text-primary dark:text-white text-4xl font-black leading-tight tracking-tighter mb-2">Consultations</h1>
+                    <p className="text-black/50 dark:text-white/50 text-sm font-medium">Create and manage your available consultations.</p>
                 </div>
                 <div className="flex gap-4">
                     <button
@@ -93,7 +93,7 @@ export default function BookingsPage() {
                         className="bg-primary hover:opacity-90 text-white px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-primary/20 flex items-center gap-2"
                     >
                         <span className="material-symbols-outlined text-lg">add_circle</span>
-                        New Service
+                        Nouvelle consultation
                     </button>
                     <div className="size-14 rounded-full bg-white dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-center shadow-lg shadow-black/5">
                         <span className="material-symbols-outlined text-black dark:text-white">settings</span>
@@ -107,7 +107,7 @@ export default function BookingsPage() {
                     <span className="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30">search</span>
                     <input
                         type="text"
-                        placeholder="Search services..."
+                        placeholder="Rechercher des consultations..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full h-14 pl-14 pr-6 rounded-full bg-white dark:bg-white/5 border border-black/5 dark:border-white/10 focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium placeholder:text-black/30 dark:placeholder:text-white/30"
@@ -127,7 +127,7 @@ export default function BookingsPage() {
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="border-b border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02]">
-                            <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">Service Name</th>
+                            <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">Nom de la consultation</th>
                             <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">Price</th>
                             <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">Included Items</th>
                             <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-text-right">Actions</th>
@@ -135,11 +135,11 @@ export default function BookingsPage() {
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan={4} className="px-8 py-10 text-center text-black/40">Loading services...</td></tr>
+                            <tr><td colSpan={4} className="px-8 py-10 text-center text-black/40">Chargement des consultations...</td></tr>
                         ) : error ? (
                             <tr><td colSpan={4} className="px-8 py-10 text-center text-red-500 font-bold">Error: {error}</td></tr>
                         ) : filteredServices.length === 0 ? (
-                            <tr><td colSpan={4} className="px-8 py-10 text-center text-black/40">No services found.</td></tr>
+                            <tr><td colSpan={4} className="px-8 py-10 text-center text-black/40">Aucune consultation trouvée.</td></tr>
                         ) : (
                             filteredServices.map((service) => (
                                 <tr key={service.id} className="border-b border-black/5 dark:border-white/5 last:border-0 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors group">
@@ -169,14 +169,14 @@ export default function BookingsPage() {
                                             <button
                                                 onClick={() => openEditDrawer(service)}
                                                 className="size-8 rounded-full bg-black/5 dark:bg-white/10 hover:bg-primary hover:text-white flex items-center justify-center transition-all"
-                                                title="Edit Service"
+                                                title="Modifier la consultation"
                                             >
                                                 <span className="material-symbols-outlined text-sm">edit</span>
                                             </button>
                                             <button
                                                 onClick={() => service.id && setDeleteId(service.id)}
                                                 className="size-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all"
-                                                title="Delete Service"
+                                                title="Supprimer la consultation"
                                             >
                                                 <span className="material-symbols-outlined text-sm">delete</span>
                                             </button>
@@ -200,7 +200,7 @@ export default function BookingsPage() {
                 isOpen={!!deleteId}
                 onClose={() => !isDeleting && setDeleteId(null)}
                 onConfirm={confirmDelete}
-                title="Supprimer le service ?"
+                title="Supprimer la consultation ?"
                 message="Cette action est irréversible. Le service sera définitivement supprimé de vos offres."
                 confirmText="Supprimer"
                 isDanger={true}

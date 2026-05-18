@@ -75,6 +75,7 @@ service cloud.firestore {
     match /services/{serviceId} { allow read: if true; allow write: if isAdmin(); }
     match /assets/{assetId} { allow read: if true; allow write: if isAdmin(); }
     match /settings/{settingId} { allow read: if true; allow write: if isAdmin(); }
+    match /funnels/{funnelId} { allow read: if true; allow write: if isAdmin(); }
 
     // Commandes (Orders)
     match /orders/{orderId} {

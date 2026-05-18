@@ -15,7 +15,7 @@ interface ReviewModalProps {
 }
 
 export default function ReviewModal({ isOpen, onClose, courseId, courseTitle }: ReviewModalProps) {
-    const { user } = useAuth();
+    const { user, userData } = useAuth();
     const [rating, setRating] = useState(5);
     const [comment, setComment] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,8 +35,8 @@ export default function ReviewModal({ isOpen, onClose, courseId, courseTitle }: 
                 productId: doc(db, "courses", courseId),
                 productTitle: courseTitle,
                 rating: rating,
-                userId: doc(db, "users", user.uid),
-                userName: user.displayName || "Utilisateur",
+                userId: user.uid,
+                userName: userData?.fullName || userData?.displayName || user.displayName || "Utilisateur",
                 userEmail: user.email || "",
             });
             onClose();

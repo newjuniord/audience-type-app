@@ -16,16 +16,16 @@ export default function AdminSidebar() {
                 { label: "Courses", icon: "school", href: "/admin/courses" },
                 { label: "Ebooks", icon: "menu_book", href: "/admin/ebooks" },
                 { label: "Booking App", icon: "calendar_today", href: "/admin/booking-application" },
-                { label: "Bookings", icon: "calendar_month", href: "/admin/bookings" },
+                { label: "Consultations", icon: "calendar_month", href: "/admin/bookings" },
             ]
         },
         {
             title: "Marketing & Com",
             items: [
+                { label: "Funnels", icon: "filter_alt", href: "/admin/funnels" },
                 { label: "Announcement", icon: "campaign", href: "/admin/announcement" },
                 { label: "Reviews", icon: "reviews", href: "/admin/reviews" },
                 { label: "Messages", icon: "mail", href: "/admin/messages" },
-
             ]
         },
         {
