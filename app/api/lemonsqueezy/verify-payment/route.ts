@@ -87,50 +87,6 @@ export async function POST(req: Request) {
                                     await userRef.update(userUpdates);
                                     console.log(`✅ [VERIFY] Firestore user profile updated with:`, userUpdates);
                                 }
-
-                                // WhatsApp magic link and secret code dispatch
-                                const whatsappNumber = userData?.whatsappNumber || orderData?.whatsappNumber || "";
-                                if (whatsappNumber) {
-                                    console.log(`🔍 [VERIFY] Checking existing temp links to prevent duplicate WhatsApp dispatch for user: ${orderData.userId}`);
-                                    const existingLinks = await adminDb.collection("temp_links")
-                                        .where("userId", "==", orderData.userId)
-                                        .where("used", "==", false)
-                                        .limit(1)
-                                        .get();
-
-                                    if (existingLinks.empty) {
-                                        const { v4: uuidv4 } = await import("uuid");
-                                        const { Timestamp } = await import("firebase-admin/firestore");
-                                        const { sendWhatsAppMessage } = await import("@/lib/whatsapp");
-
-                                        const token = uuidv4();
-                                        const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-                                        const expiresAt = new Date();
-                                        expiresAt.setFullYear(expiresAt.getFullYear() + 100);
-
-                                        console.log(`🌟 [VERIFY] Creating new temp link and code ${code} for user ${orderData.userId}`);
-                                        await adminDb.collection("temp_links").doc(token).set({
-                                            userId: orderData.userId,
-                                            code: code,
-                                            expiresAt: Timestamp.fromDate(expiresAt),
-                                            used: false,
-                                            createdAt: Timestamp.now()
-                                        });
-
-                                        const link = `https://audiencetype.com/login/temp?token=${token}`;
-                                        const message = `🎉 *ACCÈS DÉBLOQUÉ !* 📚\n\nMerci pour ton achat ! Ton cours *${orderData.productTitle || "Premium"}* est maintenant disponible dans ton espace membre.\n\nVoici ton code secret de connexion : *${code}*\n\nTu peux également cliquer sur ce lien magique pour te connecter instantanément d'un seul clic :\n${link}\n\nNe partage jamais ce code. Bon apprentissage !`;
-
-                                        try {
-                                            await sendWhatsAppMessage(whatsappNumber, message);
-                                            console.log(`📩 [VERIFY] WhatsApp access link sent successfully to ${whatsappNumber}`);
-                                        } catch (waErr: any) {
-                                            console.error("❌ [VERIFY] Failed to send WhatsApp message via Twilio:", waErr.message);
-                                        }
-                                    } else {
-                                        console.log(`⚠️ [VERIFY] Active temp link already exists for user ${orderData.userId}. Skipping duplicate WhatsApp dispatch.`);
-                                    }
-                                }
                             }
                         } catch (userErr: any) {
                             console.error(`❌ [VERIFY] Error updating user profile:`, userErr.message);

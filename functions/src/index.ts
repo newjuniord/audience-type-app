@@ -1,4 +1,5 @@
 import { onRequest } from "firebase-functions/v2/https";
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
@@ -169,50 +170,6 @@ export const lemonsqueezywebhook = onRequest({
                             }
                         }
 
-                        // 3. Automated WhatsApp magic link & verification code dispatch
-                        if (userId) {
-                            try {
-                                const userRef = db.collection("users").doc(userId);
-                                const userSnap = await userRef.get();
-                                const userData = userSnap.exists ? userSnap.data() : null;
-                                const whatsappNumber = userData?.whatsappNumber || orderData.whatsappNumber || "";
-
-                                if (whatsappNumber) {
-                                    console.log(`🔍 [WEBHOOK] Checking existing temp links to prevent duplicate WhatsApp dispatch for user: ${userId}`);
-                                    const existingLinks = await db.collection("temp_links")
-                                        .where("userId", "==", userId)
-                                        .where("used", "==", false)
-                                        .limit(1)
-                                        .get();
-
-                                    if (existingLinks.empty) {
-                                        const token = crypto.randomUUID();
-                                        const code = Math.floor(100000 + Math.random() * 900000).toString();
-                                        
-                                        const expiresAt = new Date();
-                                        expiresAt.setFullYear(expiresAt.getFullYear() + 100);
-
-                                        console.log(`🌟 [WEBHOOK] Creating new temp link and code ${code} for user ${userId}`);
-                                        await db.collection("temp_links").doc(token).set({
-                                            userId: userId,
-                                            code: code,
-                                            expiresAt: expiresAt,
-                                            used: false,
-                                            createdAt: new Date()
-                                        });
-
-                                        const link = `https://audiencetype.com/login/temp?token=${token}`;
-                                        const message = `🎉 *ACCÈS DÉBLOQUÉ !* 📚\n\nMerci pour ton achat ! Ton cours *${orderData.productTitle || "Premium"}* est maintenant disponible dans ton espace membre.\n\nVoici ton code secret de connexion : *${code}*\n\nTu peux également cliquer sur ce lien magique pour te connecter instantanément d'un seul clic :\n${link}\n\nNe partage jamais ce code. Bon apprentissage !`;
-
-                                        await sendWhatsAppMessageViaFetch(whatsappNumber, message);
-                                    } else {
-                                        console.log(`⚠️ [WEBHOOK] Active temp link already exists for user ${userId}. Skipping WhatsApp dispatch.`);
-                                    }
-                                }
-                            } catch (whatsappErr: any) {
-                                console.error(`❌ [WEBHOOK] Error handling automated WhatsApp dispatch:`, whatsappErr.message);
-                            }
-                        }
                     } else {
                         console.log(`⚠️ [WEBHOOK] Order ${custom.orderId} is already 'paid'`);
                     }
@@ -374,3 +331,136 @@ async function sendWhatsAppMessageViaFetch(toPhone: string, message: string) {
         return { success: false };
     }
 }
+
+/**
+ * Cloud Function (Firestore Trigger): onenrollmentcreated
+ * Triggers automatically whenever a new enrollment is created in Firestore.
+ * If the user has a `whatsappNumber` in their profile, it creates an access code & magic link and sends it via WhatsApp.
+ */
+export const onenrollmentcreated = onDocumentCreated({
+    document: "enrollments/{enrollmentId}",
+    secrets: [
+        "TWILIO_ACCOUNT_SID",
+        "TWILIO_AUTH_TOKEN",
+        "TWILIO_WHATSAPP_NUMBER"
+    ],
+    region: "us-central1"
+}, async (event) => {
+    const snap = event.data;
+    if (!snap) {
+        console.log("No data associated with the event");
+        return;
+    }
+    const enrollmentData = snap.data();
+    const userIdData = enrollmentData.userId;
+
+    if (!userIdData) {
+        console.warn("⚠️ [TRIGGER] Missing userId in enrollment.");
+        return;
+    }
+
+    // Resolve userId to string
+    let userId = "";
+    if (typeof userIdData === "string") {
+        userId = userIdData;
+    } else if (userIdData && typeof userIdData.id === "string") {
+        userId = userIdData.id;
+    } else if (userIdData && typeof userIdData.path === "string") {
+        userId = userIdData.path.split("/").pop() || "";
+    }
+
+    if (!userId) {
+        console.warn("⚠️ [TRIGGER] Could not parse userId from enrollment.");
+        return;
+    }
+
+    try {
+        const userRef = db.collection("users").doc(userId);
+        const userSnap = await userRef.get();
+        if (!userSnap.exists) {
+            console.warn(`⚠️ [TRIGGER] User ${userId} not found in Firestore.`);
+            return;
+        }
+
+        const userData = userSnap.data();
+        const whatsappNumber = userData?.whatsappNumber || "";
+
+        if (!whatsappNumber) {
+            console.log(`ℹ️ [TRIGGER] User ${userId} has no whatsappNumber. Skipping WhatsApp delivery.`);
+            return;
+        }
+
+        console.log(`🔍 [TRIGGER] Checking existing temp links to prevent duplicate WhatsApp dispatch for user: ${userId}`);
+        const existingLinks = await db.collection("temp_links")
+            .where("userId", "==", userId)
+            .where("used", "==", false)
+            .limit(1)
+            .get();
+
+        if (existingLinks.empty) {
+            const token = crypto.randomUUID();
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            
+            const expiresAt = new Date();
+            expiresAt.setFullYear(expiresAt.getFullYear() + 100);
+
+            console.log(`🌟 [TRIGGER] Creating new temp link and code ${code} for user ${userId}`);
+            await db.collection("temp_links").doc(token).set({
+                userId: userId,
+                code: code,
+                expiresAt: expiresAt,
+                used: false,
+                createdAt: new Date()
+            });
+
+            const link = `https://audiencetype.com/login/temp?token=${token}`;
+            const message = `🎉 *ACCÈS DÉBLOQUÉ !* 📚\n\nMerci pour ton achat ! Ton cours *${enrollmentData.productTitle || "Premium"}* est maintenant disponible dans ton espace membre.\n\nVoici ton code secret de connexion : *${code}*\n\nTu peux également cliquer sur ce lien magique pour te connecter instantanément d'un seul clic :\n${link}\n\nNe partage jamais ce code. Bon apprentissage !`;
+
+            await sendWhatsAppMessageViaFetch(whatsappNumber, message);
+        } else {
+            console.log(`⚠️ [TRIGGER] Active temp link already exists for user ${userId}. Skipping duplicate dispatch.`);
+        }
+    } catch (err: any) {
+        console.error("❌ [TRIGGER] Error in onenrollmentcreated trigger:", err.message);
+    }
+});
+
+/**
+ * Cloud Function (HTTPS API): sendwhatsappmessage
+ * Generic HTTPS endpoint that accepts a phone number and a custom message and dispatches it via Twilio.
+ */
+export const sendwhatsappmessage = onRequest({
+    secrets: [
+        "TWILIO_ACCOUNT_SID",
+        "TWILIO_AUTH_TOKEN",
+        "TWILIO_WHATSAPP_NUMBER"
+    ],
+    region: "us-central1"
+}, async (req, res) => {
+    // Only allow POST requests
+    if (req.method !== "POST") {
+        res.status(405).send("Method Not Allowed");
+        return;
+    }
+
+    try {
+        const { phone, message } = req.body;
+
+        if (!phone || !message) {
+            res.status(400).json({ error: "Missing phone or message in payload." });
+            return;
+        }
+
+        console.log(`📩 [HTTPS API] Request to send WhatsApp message to ${phone}`);
+        const result = await sendWhatsAppMessageViaFetch(phone, message);
+
+        if (result && result.success) {
+            res.status(200).json({ success: true, sid: result.sid });
+        } else {
+            res.status(500).json({ error: "Failed to send WhatsApp message via Twilio." });
+        }
+    } catch (err: any) {
+        console.error("❌ [HTTPS API] Error sending WhatsApp message:", err.message);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
