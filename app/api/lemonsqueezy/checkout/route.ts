@@ -134,12 +134,13 @@ export async function POST(req: Request) {
             }
         };
 
-        // Only pre-fill the email if it is a real email (not ending with @audiencetype.com)
-        if (userEmail && !userEmail.endsWith("@audiencetype.com")) {
+        // Rétablissement de l'e-mail pré-rempli systématique avec repli robuste
+        if (userEmail && userEmail.includes("@")) {
             checkoutData.email = userEmail;
-            console.log(`📧 [CHECKOUT] Pre-filling checkout with real email: ${userEmail}`);
+            console.log(`📧 [CHECKOUT] Pré-remplissage avec l'e-mail : ${userEmail}`);
         } else {
-            console.log(`📧 [CHECKOUT] Virtual email detected or missing. Leaving Lemon Squeezy email field empty for user manual input.`);
+            checkoutData.email = "client@example.com";
+            console.log(`📧 [CHECKOUT] Aucun e-mail valide trouvé, utilisation du repli par défaut.`);
         }
 
         const payload = {
