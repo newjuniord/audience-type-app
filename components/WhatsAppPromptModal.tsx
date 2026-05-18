@@ -7,13 +7,13 @@ import { updateUser } from "@/lib/users";
 export default function WhatsAppPromptModal() {
     const { user, userData, loading } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
-    const [phoneNumber, setPhoneNumber] = useState("");
+    const [whatsappNumber, setWhatsappNumber] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [hasBeenDismissed, setHasBeenDismissed] = useState(false);
 
     useEffect(() => {
-        // Check if user is logged in, not loading, has no phone number, and hasn't dismissed the modal
-        if (!loading && user && userData && !userData.phoneNumber && !hasBeenDismissed) {
+        // Check if user is logged in, not loading, has no whatsapp number, and hasn't dismissed the modal
+        if (!loading && user && userData && !userData.whatsappNumber && !hasBeenDismissed) {
              // Only show after a short delay for better UX
             const timer = setTimeout(() => {
                 setIsOpen(true);
@@ -26,11 +26,11 @@ export default function WhatsAppPromptModal() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user || !phoneNumber.trim()) return;
+        if (!user || !whatsappNumber.trim()) return;
 
         setIsSubmitting(true);
         try {
-            await updateUser(user.uid, { phoneNumber: phoneNumber.trim() });
+            await updateUser(user.uid, { whatsappNumber: whatsappNumber.trim() });
             setIsOpen(false);
         } catch (error) {
             console.error("Failed to update WhatsApp number", error);
@@ -95,15 +95,15 @@ export default function WhatsAppPromptModal() {
                                     type="tel"
                                     placeholder="Votre numéro (ex: +221 77...)"
                                     className="w-full bg-black/5 dark:bg-white/5 border border-transparent focus:border-green-500/50 focus:ring-4 focus:ring-green-500/10 rounded-2xl py-4 pl-14 pr-6 text-sm outline-none transition-all placeholder:opacity-50"
-                                    value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                    value={whatsappNumber}
+                                    onChange={(e) => setWhatsappNumber(e.target.value)}
                                     required
                                 />
                             </div>
 
                             <button
                                 type="submit"
-                                disabled={isSubmitting || !phoneNumber.trim()}
+                                disabled={isSubmitting || !whatsappNumber.trim()}
                                 className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-green-500/20 active:scale-95 flex items-center justify-center gap-2"
                             >
                                 {isSubmitting ? (
