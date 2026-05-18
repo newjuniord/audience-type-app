@@ -267,6 +267,7 @@ export interface User {
     createdAt: Timestamp;
     lastLogin?: Timestamp;
     phoneNumber?: string;
+    whatsappNumber?: string;
     purchases?: string[]; // Liste des IDs produits achetés (optionnel)
     isOnline?: boolean;
     lastActive?: Timestamp;

@@ -19,6 +19,7 @@ export default function ProfilePage() {
     // Form State
     const [displayName, setDisplayName] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
+    const [whatsappNumber, setWhatsappNumber] = useState("");
     const [photoURL, setPhotoURL] = useState("");
     const [memberSince, setMemberSince] = useState("");
     const [email, setEmail] = useState("");
@@ -53,6 +54,7 @@ export default function ProfilePage() {
                 if (userDoc) {
                     setDisplayName(userDoc.displayName || user.displayName || "");
                     setPhoneNumber(userDoc.phoneNumber || "");
+                    setWhatsappNumber(userDoc.whatsappNumber || "");
                     setPhotoURL(userDoc.photoURL || user.photoURL || "");
                     setEmail(userDoc.email || user.email || "");
                     setCanGenerateTempLinks(userDoc.canGenerateTempLinks || false);
@@ -127,6 +129,7 @@ export default function ProfilePage() {
             await updateUser(user.uid, {
                 displayName,
                 phoneNumber,
+                whatsappNumber,
                 email
                 // Photo URL is now read-only, so we don't update it from here
             });
@@ -311,6 +314,20 @@ export default function ProfilePage() {
                                             />
                                         </div>
                                     )}
+
+                                    <div className="flex flex-col w-full">
+                                        <div className="flex items-center gap-2 pb-2">
+                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Numéro WhatsApp</p>
+                                            <span className="material-symbols-outlined text-emerald-500 text-sm">forum</span>
+                                        </div>
+                                        <input
+                                            className="form-input flex w-full rounded-xl text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-emerald-500/20 border border-emerald-500/10 bg-emerald-500/5 h-12 px-4 text-base font-normal"
+                                            type="tel"
+                                            value={whatsappNumber}
+                                            onChange={(e) => setWhatsappNumber(e.target.value)}
+                                            placeholder="+1 (555) 000-0000"
+                                        />
+                                    </div>
                                     <div className="flex flex-col w-full">
                                         <div className="flex items-center justify-between pb-2">
                                             <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Photo URL</p>

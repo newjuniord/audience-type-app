@@ -405,12 +405,20 @@ export default function UserManagementPage() {
                                                     {user.email ? (
                                                         <p className="text-xs text-black/40 dark:text-white/40">{user.email}</p>
                                                     ) : (
-                                                        <p className="text-xs text-black/40 dark:text-white/40">{user.phoneNumber || "Aucun contact"}</p>
+                                                        <p className="text-xs text-black/40 dark:text-white/40">
+                                                            {user.phoneNumber ? `Connexion avec phone: ${user.phoneNumber}` : "Aucun contact"}
+                                                        </p>
                                                     )}
                                                     {user.email && user.phoneNumber && (
                                                         <p className="text-[10px] text-black/40 dark:text-white/40 font-medium mt-0.5 flex items-center gap-1">
                                                             <span className="material-symbols-outlined text-[10px]">call</span>
                                                             {user.phoneNumber}
+                                                        </p>
+                                                    )}
+                                                    {user.whatsappNumber && (
+                                                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 flex items-center gap-1">
+                                                            <span className="material-symbols-outlined text-[10px]">forum</span>
+                                                            WhatsApp: {user.whatsappNumber}
                                                         </p>
                                                     )}
                                                 </div>
