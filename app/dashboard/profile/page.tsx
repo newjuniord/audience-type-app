@@ -317,23 +317,6 @@ export default function ProfilePage() {
                                             placeholder="+1 (555) 000-0000"
                                         />
                                     </div>
-                                    <div className="flex flex-col w-full">
-                                        <div className="flex items-center justify-between pb-2">
-                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Photo URL</p>
-                                            <span className="text-[10px] uppercase tracking-wider text-primary/40 dark:text-white/40 font-bold">Lecture seule</span>
-                                        </div>
-                                        <div className="relative">
-                                            <input
-                                                className="form-input flex w-full rounded-xl text-primary/50 dark:text-white/50 border border-primary/5 bg-primary/5 dark:bg-white/5 h-12 px-4 text-base font-normal cursor-not-allowed"
-                                                type="text"
-                                                value={photoURL}
-                                                readOnly
-                                                // onChange={(e) => setPhotoURL(e.target.value)} // Disabled
-                                                placeholder="https://..."
-                                            />
-                                            <span className="material-symbols-outlined absolute right-4 top-3 text-sm text-primary/30">lock</span>
-                                        </div>
-                                    </div>
                                 </div>
                             </section>
 
