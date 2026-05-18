@@ -390,16 +390,19 @@ export const onenrollmentcreated = onDocumentCreated({
             return;
         }
 
-        console.log(`🔍 [TRIGGER] Checking existing temp links to prevent duplicate WhatsApp dispatch for user: ${userId}`);
+        console.log(`🔍 [TRIGGER] Checking existing temp links for user: ${userId}`);
         const existingLinks = await db.collection("temp_links")
             .where("userId", "==", userId)
             .where("used", "==", false)
             .limit(1)
             .get();
 
+        let token = "";
+        let code = "";
+
         if (existingLinks.empty) {
-            const token = crypto.randomUUID();
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            token = crypto.randomUUID();
+            code = Math.floor(100000 + Math.random() * 900000).toString();
             
             const expiresAt = new Date();
             expiresAt.setFullYear(expiresAt.getFullYear() + 100);
@@ -412,14 +415,17 @@ export const onenrollmentcreated = onDocumentCreated({
                 used: false,
                 createdAt: new Date()
             });
-
-            const link = `https://audiencetype.com/login/temp?token=${token}`;
-            const message = `🎉 *ACCÈS DÉBLOQUÉ !* 📚\n\nMerci pour ton achat ! Ton cours *${enrollmentData.productTitle || "Premium"}* est maintenant disponible dans ton espace membre.\n\nVoici ton code secret de connexion : *${code}*\n\nTu peux également cliquer sur ce lien magique pour te connecter instantanément d'un seul clic :\n${link}\n\nNe partage jamais ce code. Bon apprentissage !`;
-
-            await sendWhatsAppMessageViaFetch(whatsappNumber, message);
         } else {
-            console.log(`⚠️ [TRIGGER] Active temp link already exists for user ${userId}. Skipping duplicate dispatch.`);
+            const existingDoc = existingLinks.docs[0];
+            token = existingDoc.id;
+            code = existingDoc.data().code;
+            console.log(`🌟 [TRIGGER] Reusing existing active temp link and code ${code} for user ${userId}`);
         }
+
+        const link = `https://audiencetype.com/login/temp?token=${token}`;
+        const message = `🎉 *ACCÈS DÉBLOQUÉ !* 📚\n\nMerci pour ton achat ! Ton cours *${enrollmentData.productTitle || "Premium"}* est maintenant disponible dans ton espace membre.\n\nVoici ton code secret de connexion : *${code}*\n\nTu peux également cliquer sur ce lien magique pour te connecter instantanément d'un seul clic :\n${link}\n\nNe partage jamais ce code. Bon apprentissage !`;
+
+        await sendWhatsAppMessageViaFetch(whatsappNumber, message);
     } catch (err: any) {
         console.error("❌ [TRIGGER] Error in onenrollmentcreated trigger:", err.message);
     }
