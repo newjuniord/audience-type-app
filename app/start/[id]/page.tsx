@@ -1506,7 +1506,7 @@ export default function StartPage() {
               {modalStep === 'payment' && (
                 <div>
                   <div className="flex items-center justify-between mb-5">
-                    <button onClick={() => setModalStep('contact')} className="flex items-center gap-1 text-white/40 hover:text-white text-xs font-bold transition-colors">
+                    <button onClick={() => { setModalStep('contact'); setError(null); }} className="flex items-center gap-1 text-white/40 hover:text-white text-xs font-bold transition-colors">
                       <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/></svg>
                       Retour
                     </button>
@@ -1523,6 +1523,12 @@ export default function StartPage() {
                       <span className="text-xl font-black text-white">{courseData.currency}{courseData.currentPrice}</span>
                     </div>
                   </div>
+
+                  {error && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium px-4 py-3 rounded-xl mb-4 text-center">
+                      {error}
+                    </div>
+                  )}
 
                   <p className="text-xs text-white/40 text-center mb-4 font-semibold uppercase tracking-widest">Comment veux-tu payer ?</p>
 
