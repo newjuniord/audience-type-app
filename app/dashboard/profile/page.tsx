@@ -291,7 +291,7 @@ export default function ProfilePage() {
                                         </div>
                                     )}
 
-                                    {user.email ? (
+                                    {user.email && (
                                         <div className="flex flex-col w-full">
                                             <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-2">Numéro de téléphone (Contact)</p>
                                             <input
@@ -300,17 +300,6 @@ export default function ProfilePage() {
                                                 value={phoneNumber}
                                                 onChange={(e) => setPhoneNumber(e.target.value)}
                                                 placeholder="+1 (555) 000-0000"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col w-full">
-                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-2">Adresse e-mail (Contact)</p>
-                                            <input
-                                                className="form-input flex w-full rounded-xl text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-primary/10 bg-white dark:bg-background-dark/50 h-12 px-4 text-base font-normal"
-                                                type="email"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                placeholder="votre@email.com"
                                             />
                                         </div>
                                     )}
