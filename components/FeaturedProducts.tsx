@@ -224,11 +224,11 @@ export default function FeaturedProducts({
     if (loading) return null;
 
     return (
-        <section className={`w-full max-w-[1200px] px-6 pb-20 pt-8 ${showBorder ? 'border-t border-primary/5 dark:border-white/5' : ''}`}>
+        <section className={`w-full max-w-[1200px] px-6 pb-20 pt-8 ${showBorder ? 'border-t border-white/5' : ''}`}>
             {mainProducts.length > 0 && (
                 <>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
-                        <h2 className="text-2xl font-black uppercase tracking-tighter"><span>{title}</span></h2>
+                        <h2 className="text-2xl font-black uppercase tracking-tighter text-white"><span>{title}</span></h2>
                         <div className="flex flex-row gap-8">
                             {displayCategories.map(cat => {
                                 const isAll = cat.id === "All";
@@ -250,33 +250,41 @@ export default function FeaturedProducts({
                             })}
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 min-h-[400px]">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
                         {visibleProducts.map((product, index) => (
-                            <div key={index} className="group flex flex-col bg-white dark:bg-transparent overflow-hidden border border-primary/10 dark:border-white/10 hover:border-primary dark:hover:border-white transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="aspect-[4/3] bg-primary/5 dark:bg-white/5 overflow-hidden relative">
-                                    <img alt={product.title} className="w-full h-full object-cover grayscale transition-transform duration-500 group-hover:scale-105 group-hover:grayscale-0" src={product.image} />
-                                    <div className="absolute top-4 left-4 z-10">
-                                        <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 backdrop-blur-md rounded-full border ${
-                                            product.type === "Course" 
-                                                ? "bg-black/80 text-white border-white/20" 
-                                                : "bg-blue-600/80 text-white border-blue-400/20"
-                                        } shadow-xl`}>
-                                            {product.type === "Course" ? "Cours" : "Ebook"}
+                            <div key={index} className="group flex flex-col bg-white/[0.03] overflow-hidden border border-white/10 hover:border-primary/50 hover:bg-white/[0.06] transition-all duration-300 rounded-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="aspect-[4/3] overflow-hidden relative">
+                                    <img alt={product.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src={product.image} />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                    <div className="absolute top-3 left-3 z-10">
+                                        <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border ${
+                                            product.type === "Course"
+                                                ? "bg-primary/90 text-white border-primary/20"
+                                                : "bg-secondary/90 text-white border-secondary/20"
+                                        } shadow-xl backdrop-blur-sm`}>
+                                            {product.type === "Course" ? "Kou" : "Ebook"}
                                         </span>
                                     </div>
+                                    {product.isOwned && (
+                                        <div className="absolute top-3 right-3 z-10">
+                                            <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full bg-green-500/80 text-white border border-green-400/20 backdrop-blur-sm">
+                                                Possédé
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="p-6 flex flex-col flex-grow">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="text-xl font-black leading-tight"><span>{product.title}</span></h3>
-                                        <span className="text-lg font-bold"><span>{product.price}</span></span>
+                                <div className="p-5 flex flex-col flex-grow">
+                                    <div className="flex justify-between items-start mb-2 gap-3">
+                                        <h3 className="text-base font-black leading-tight text-white"><span>{product.title}</span></h3>
+                                        <span className="text-primary font-bold text-sm shrink-0"><span>{product.price}</span></span>
                                     </div>
-                                    <p className="text-sm text-primary/60 dark:text-white/60 mb-8 line-clamp-2"><span>{product.description}</span></p>
+                                    <p className="text-xs text-white/50 mb-6 line-clamp-2 leading-relaxed"><span>{product.description}</span></p>
                                     <div className="mt-auto">
                                         <BubbleButton
                                             onClick={() => handleProductClick(product)}
                                         >
                                             <span>
-                                                {product.isOwned ? "Possédé" : "Acheter"}
+                                                {product.isOwned ? "Accéder" : "Acheter"}
                                             </span>
                                         </BubbleButton>
                                     </div>
@@ -285,18 +293,18 @@ export default function FeaturedProducts({
                         ))}
                         {filteredProducts.length === 0 && (
                             <div className="col-span-full flex items-center justify-center py-20">
-                                <p className="text-primary/40 uppercase font-bold tracking-widest"><span>Aucun produit trouvé dans cette catégorie</span></p>
+                                <p className="text-white/30 uppercase font-bold tracking-widest"><span>Aucun produit trouvé dans cette catégorie</span></p>
                             </div>
                         )}
                     </div>
                     {visibleCount < filteredProducts.length && (
-                        <div className="mt-16 flex justify-center">
+                        <div className="mt-12 flex justify-center">
                             <button
                                 onClick={handleLoadMore}
-                                className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest border border-primary/20 dark:border-white/20 px-10 py-4 hover:border-primary dark:hover:border-white transition-colors"
+                                className="group flex items-center gap-2 text-sm font-bold uppercase tracking-widest border border-white/20 px-10 py-4 rounded-full hover:border-primary/60 hover:bg-primary/10 hover:text-white transition-all text-white/60"
                             >
                                 <span>Voir plus</span>
-                                <span className="material-symbols-outlined text-sm notranslate" translate="no">trending_flat</span>
+                                <span className="material-symbols-outlined text-sm notranslate transition-transform group-hover:translate-x-1" translate="no">trending_flat</span>
                             </button>
                         </div>
                     )}
@@ -309,10 +317,10 @@ export default function FeaturedProducts({
 
             {consultationProduct && (
                 <div className="animate-in fade-in slide-in-from-bottom-6 duration-700">
-                    <h2 className="text-2xl font-black uppercase tracking-tighter mb-8">
-                        <span>Consultation Privée</span>
+                    <h2 className="text-2xl font-black uppercase tracking-tighter mb-8 text-white">
+                        <span>Konsiltasyon Prive</span>
                     </h2>
-                    <div className="flex flex-col lg:flex-row bg-white dark:bg-white/2 border border-primary/10 dark:border-white/10 rounded-2xl overflow-hidden hover:border-primary/30 dark:hover:border-white/20 transition-all duration-300 shadow-xl dark:shadow-black/20">
+                    <div className="flex flex-col lg:flex-row bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden hover:border-primary/40 hover:bg-white/[0.05] transition-all duration-300">
                         <div className="w-full lg:w-[45%] aspect-[16/10] lg:aspect-auto min-h-[300px] relative bg-primary/5 dark:bg-white/5 overflow-hidden">
                             <img 
                                 src={consultationProduct.image} 
@@ -329,24 +337,24 @@ export default function FeaturedProducts({
                         <div className="flex-1 p-8 md:p-12 flex flex-col justify-between">
                             <div>
                                 <div className="flex flex-wrap items-baseline justify-between gap-4 mb-4">
-                                    <h3 className="text-3xl font-black tracking-tight text-primary dark:text-white">
+                                    <h3 className="text-3xl font-black tracking-tight text-white">
                                         <span>{consultationProduct.title}</span>
                                     </h3>
-                                    <span className="text-2xl font-extrabold text-primary dark:text-white">
+                                    <span className="text-2xl font-extrabold text-primary">
                                         <span>{consultationProduct.price}</span>
                                     </span>
                                 </div>
-                                <p className="text-base text-primary/70 dark:text-white/70 mb-8 max-w-2xl leading-relaxed">
+                                <p className="text-base text-white/60 mb-8 max-w-2xl leading-relaxed">
                                     <span>{consultationProduct.description}</span>
                                 </p>
 
                                 {consultationProduct.features && consultationProduct.features.length > 0 && (
                                     <div className="mb-10">
-                                        <p className="text-xs font-bold uppercase tracking-widest text-primary/50 dark:text-white/50 mb-4">Ce qui est inclus :</p>
+                                        <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">Sa ki enkli :</p>
                                         <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {consultationProduct.features.map((feature, fIdx) => (
-                                                <li key={fIdx} className="flex items-center gap-3 text-sm text-primary/80 dark:text-white/80">
-                                                    <span className="material-symbols-outlined text-emerald-500 text-lg notranslate" translate="no">check_circle</span>
+                                                <li key={fIdx} className="flex items-center gap-3 text-sm text-white/70">
+                                                    <span className="material-symbols-outlined text-primary text-lg notranslate" translate="no">check_circle</span>
                                                     <span>{feature}</span>
                                                 </li>
                                             ))}

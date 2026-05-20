@@ -16,7 +16,7 @@ export default function VideoPlayer({ url, className = "", roundedClassName = "r
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
 
-    // Auto-hide controls when playing
+    // Auto-hide controls when playing — MUST be before any conditional return
     useEffect(() => {
         let timeoutId: NodeJS.Timeout;
         if (isPlaying) {
@@ -29,6 +29,16 @@ export default function VideoPlayer({ url, className = "", roundedClassName = "r
         return () => clearTimeout(timeoutId);
     }, [isPlaying, showControls]);
 
+    // Synchronize fullscreen state from document — MUST be before any conditional return
+    useEffect(() => {
+        const onFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+    }, []);
+
+    // ---- Early return AFTER all hooks ----
     if (!url) {
         return (
             <div className={`w-full aspect-video bg-black/10 dark:bg-white/10 flex items-center justify-center text-black/20 dark:text-white/20 select-none ${roundedClassName} ${className}`}>
@@ -131,15 +141,6 @@ export default function VideoPlayer({ url, className = "", roundedClassName = "r
             setIsFullscreen(false);
         }
     };
-
-    // Synchronize fullscreen state from document
-    useEffect(() => {
-        const onFullscreenChange = () => {
-            setIsFullscreen(!!document.fullscreenElement);
-        };
-        document.addEventListener('fullscreenchange', onFullscreenChange);
-        return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
-    }, []);
 
     // Build Src Urls with API enabled and controls disabled
     let embedSrc = "";

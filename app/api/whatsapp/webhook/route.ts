@@ -127,7 +127,7 @@ export async function POST(req: Request) {
       });
     } else {
       const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
-          "🔑 *VÉRIFICATION DRJ AKADEMI*\n\nVoici ton code de vérification pour accéder à ton cours : {{code}}\n\nTu peux également te connecter directement en cliquant sur ce lien sécurisé : {{link}}\n\nNe partage jamais ce code.";
+          "🔑 *VÉRIFICATION DJR AKADEMI*\n\nVoici ton code de vérification pour accéder à ton cours : {{code}}\n\nTu peux également te connecter directement en cliquant sur ce lien sécurisé : {{link}}\n\nNe partage jamais ce code.";
 
       const formattedMessage = formatMessageTemplate(authTemplate, { code: `*${code}*`, link: magicLink, userName });
       const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${formattedMessage}</Message></Response>`;

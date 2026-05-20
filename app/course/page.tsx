@@ -81,14 +81,14 @@ export default function CoursePlayerPage() {
                         <div className="size-6 bg-primary dark:bg-white rounded flex items-center justify-center">
                             <span className="material-symbols-outlined !text-sm text-white dark:text-black">school</span>
                         </div>
-                        <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">DRJ Akademi</p>
+                        <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">DJR Akademi</p>
                     </div>
                     <div className="flex items-center gap-8">
                         <Link className="text-xs font-bold text-zinc-500 hover:text-primary dark:hover:text-white transition-colors" href="#">Support</Link>
                         <Link className="text-xs font-bold text-zinc-500 hover:text-primary dark:hover:text-white transition-colors" href="#">Conditions</Link>
                         <Link className="text-xs font-bold text-zinc-500 hover:text-primary dark:hover:text-white transition-colors" href="#">Paramètres du compte</Link>
                     </div>
-                    <p className="text-[10px] text-zinc-400 font-medium">© 2026 DRJ Akademi.</p>
+                    <p className="text-[10px] text-zinc-400 font-medium">© 2026 DJR Akademi.</p>
                 </footer>
             </main>
         </div>

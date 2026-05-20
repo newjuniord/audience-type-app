@@ -3,6 +3,7 @@ import FeaturedProducts from "../components/FeaturedProducts";
 import DashboardFooter from "../components/DashboardFooter";
 import DashboardHeader from "../components/DashboardHeader";
 import Hero from "../components/Hero";
+import AcademyOverview from "../components/AcademyOverview";
 import ReviewsSection from "../components/ReviewsSection";
 import { getCourses } from "@/lib/courses";
 import { getEbooks } from "@/lib/ebooks";
@@ -66,6 +67,7 @@ export default async function Home() {
       <DashboardHeader />
       <main className="flex-grow flex flex-col items-center pt-24">
         <Hero />
+        <AcademyOverview />
         <FeaturedProducts initialProducts={initialProducts} />
         <ReviewsSection />
         <CallToAction />

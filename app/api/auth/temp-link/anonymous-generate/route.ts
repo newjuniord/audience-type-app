@@ -130,7 +130,7 @@ export async function POST(req: Request) {
         const rawFormattedCode = `${code}`;
 
         const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
-            "🔑 *VÉRIFICATION DRJ AKADEMI*\n\nVoici ton code de vérification pour accéder à ton cours : {{code}}\n\nTu peux également te connecter directement en cliquant sur ce lien sécurisé : {{link}}\n\nNe partage jamais ce code.";
+            "🔑 *VÉRIFICATION DJR AKADEMI*\n\nVoici ton code de vérification pour accéder à ton cours : {{code}}\n\nTu peux également te connecter directement en cliquant sur ce lien sécurisé : {{link}}\n\nNe partage jamais ce code.";
 
         // 5. Envoyer le code
         if (contactMethod === 'phone' && finalPhone) {

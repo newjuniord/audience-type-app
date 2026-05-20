@@ -9,8 +9,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "DRJ Akademi | Élève ton niveau",
-  description: "Apprends facilement, gagne du temps et progresse vite avec nos cours, ebooks et services faits pour toi.",
+  title: "DJR Akademi | Aprann sèvi ak IA pou w ka sispann razè",
+  description: "DJR Akademi fèt pou kreyatè kontni, antreprenè, pwofesyonèl ak lidè ki vle aprann pale pi byen, kreye pi byen, vann pi byen epi bati yon lavi ki gen plis opòtinite.",
 };
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="light" suppressHydrationWarning>
+    <html lang="fr" className="dark" suppressHydrationWarning>
       <head>
         <link
           rel="stylesheet"
@@ -38,7 +38,7 @@ export default function RootLayout({
         <script src="https://lmsqueezy.com/affiliate.js" defer></script>
       </head>
       <body
-        className={`${inter.className} bg-background-light dark:bg-background-dark text-primary dark:text-white antialiased transition-colors duration-300`}
+        className={`${inter.className} bg-background-dark text-text-main antialiased transition-colors duration-300`}
         suppressHydrationWarning
       >
         <AuthProvider>

@@ -41,7 +41,7 @@ export default function AdminSidebar() {
     return (
         <aside className="w-64 border-r border-black/5 dark:border-white/10 bg-white dark:bg-background-dark flex flex-col fixed h-full z-50">
             <div className="p-8 flex items-center gap-3">
-                <Link href="/" className="text-xl font-black tracking-tighter uppercase transition-opacity hover:opacity-80">DRJ Akademi</Link>
+                <Link href="/" className="text-xl font-black tracking-tighter uppercase transition-opacity hover:opacity-80">DJR Akademi</Link>
             </div>
 
             <nav className="flex-1 px-4 space-y-8 overflow-y-auto custom-scrollbar pb-10">

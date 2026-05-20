@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-const words = ['Apprendre.', 'Progresser.', 'Grandir.'];
+const words = ['Kou.', 'Ebook.', 'Konsiltasyon.', 'Sèvis.', 'Coaching.'];
 
 export default function TypingAnimation() {
     const [index, setIndex] = useState(0);

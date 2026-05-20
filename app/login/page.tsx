@@ -199,69 +199,68 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex h-screen w-full bg-white dark:bg-background-dark text-primary dark:text-white overflow-hidden">
+        <div className="flex h-screen w-full bg-background-dark text-white overflow-hidden">
             {/* Left Side: Auth Form */}
-            <div className="w-full lg:w-[45%] flex flex-col px-8 md:px-16 lg:px-24 py-12 overflow-y-auto">
+            <div className="w-full lg:w-[45%] flex flex-col px-8 md:px-16 lg:px-24 py-12 overflow-y-auto bg-[#0d0d0d]">
                 {/* Logo Area */}
                 <Link href="/" className="flex items-center gap-3 mb-20 group">
-                    <div className="size-10 bg-black dark:bg-white rounded-xl flex items-center justify-center transition-transform group-hover:rotate-12">
-                        <span className="material-symbols-outlined text-white dark:text-black">bolt</span>
-                    </div>
-                    <span className="text-xl font-black tracking-tighter uppercase italic">DRJ Akademi</span>
+                    <img src="/logo.png" alt="DJR Akademi" className="size-10 rounded-xl object-cover" />
+                    <span className="text-white text-xl font-black tracking-tighter uppercase">DJR Akademi</span>
                 </Link>
 
                 <div className="max-w-md w-full mx-auto lg:mx-0 flex-1 flex flex-col justify-center">
                     <div className="mb-10">
-                        <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4 uppercase leading-[0.9]">
-                            Élève ton <br /> niveau.
+                        <p className="text-primary text-xs font-black uppercase tracking-[0.25em] mb-3">Bienvenu</p>
+                        <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4 uppercase leading-[0.9] text-white">
+                            Aprann sèvi <br /> ak IA.
                         </h1>
-                        <p className="text-primary/60 dark:text-white/60 text-lg">
+                        <p className="text-white/50 text-base">
                             Accède à tes cours, ebooks et réservations en un clic.
                         </p>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                         {error && (
-                            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium text-center">
+                            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium text-center">
                                 {error}
                             </div>
                         )}
                         {message && (
-                            <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-500 text-sm font-medium text-center">
+                            <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium text-center">
                                 {message}
                             </div>
                         )}
 
-                        <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 p-[20px] border border-primary/10 dark:border-white/10 rounded-2xl bg-white/50 dark:bg-white/5 backdrop-blur-sm">
+                        <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Adresse e-mail</label>
-                                    <input 
-                                        type="email" 
+                                    <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Adresse e-mail</label>
+                                    <input
+                                        type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl bg-white dark:bg-black/50 border border-primary/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:focus:ring-white/20 transition-all text-sm"
+                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
                                         placeholder="nom@exemple.com"
                                         required
                                     />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <div className="flex justify-between items-center">
-                                        <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Mot de passe</label>
+                                        <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Mot de passe</label>
                                         {isLoginView && (
-                                            <button 
-                                                type="button" 
+                                            <button
+                                                type="button"
                                                 onClick={handleResetPassword}
-                                                className="text-xs text-primary/60 dark:text-white/60 hover:text-primary dark:hover:text-white transition-colors"
+                                                className="text-xs text-white/40 hover:text-primary transition-colors"
                                             >
                                                 Mot de passe oublié ?
                                             </button>
                                         )}
                                     </div>
-                                    <input 
-                                        type="password" 
+                                    <input
+                                        type="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl bg-white dark:bg-black/50 border border-primary/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:focus:ring-white/20 transition-all text-sm"
+                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
                                         placeholder="••••••••"
                                         required
                                         minLength={isLoginView ? undefined : 6}
@@ -269,22 +268,22 @@ export default function LoginPage() {
                                 </div>
                                 {!isLoginView && (
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Confirmer le mot de passe</label>
-                                        <input 
-                                            type="password" 
+                                        <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Confirmer le mot de passe</label>
+                                        <input
+                                            type="password"
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl bg-white dark:bg-black/50 border border-primary/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:focus:ring-white/20 transition-all text-sm"
+                                            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
                                             placeholder="••••••••"
                                             required
                                             minLength={6}
                                         />
                                     </div>
                                 )}
-                                <button 
+                                <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full py-3 mt-2 bg-black dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+                                    className="w-full py-3 mt-1 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:pointer-events-none"
                                 >
                                     {isLoading ? (
                                         <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>
@@ -293,15 +292,15 @@ export default function LoginPage() {
                                     )}
                                 </button>
 
-                                <div className="text-center mt-2">
-                                    <button 
+                                <div className="text-center">
+                                    <button
                                         type="button"
                                         onClick={() => {
                                             setIsLoginView(!isLoginView);
                                             setError(null);
                                             setMessage(null);
                                         }}
-                                        className="text-sm text-primary/60 dark:text-white/60 hover:text-primary dark:hover:text-white transition-colors"
+                                        className="text-sm text-white/40 hover:text-white transition-colors"
                                     >
                                         {isLoginView ? "Pas encore de compte ? S'inscrire" : "Déjà un compte ? Se connecter"}
                                     </button>
@@ -310,9 +309,9 @@ export default function LoginPage() {
 
                         <div className="relative flex items-center justify-center">
                             <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-primary/10 dark:border-white/10"></div>
+                                <div className="w-full border-t border-white/10"></div>
                             </div>
-                            <div className="relative bg-white dark:bg-background-dark px-4 text-xs font-medium text-primary/40 dark:text-white/40 uppercase tracking-wider">
+                            <div className="relative bg-[#0d0d0d] px-4 text-xs font-medium text-white/30 uppercase tracking-wider">
                                 Ou continuer avec
                             </div>
                         </div>
@@ -321,42 +320,30 @@ export default function LoginPage() {
                             type="button"
                             onClick={handleGoogleLogin}
                             disabled={isLoading}
-                            className="group relative w-full h-16 flex items-center justify-center gap-4 bg-white dark:bg-white/5 border-2 border-primary/10 dark:border-white/10 rounded-2xl text-lg font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 shadow-xl shadow-black/5 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none"
+                            className="group relative w-full h-14 flex items-center justify-center gap-3 bg-white/5 border border-white/10 rounded-2xl font-bold text-sm text-white hover:bg-white hover:text-black transition-all duration-300 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none"
                         >
                             {isLoading ? (
-                                <div className="h-6 w-6 border-3 border-current border-t-transparent rounded-full animate-spin"></div>
+                                <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                             ) : (
                                 <>
-                                    <svg className="w-6 h-6" viewBox="0 0 24 24">
-                                        <path
-                                            fill="currentColor"
-                                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                                        />
-                                        <path
-                                            fill="currentColor"
-                                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                        />
-                                        <path
-                                            fill="currentColor"
-                                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-                                        />
-                                        <path
-                                            fill="currentColor"
-                                            d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                                        />
+                                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                        <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                        <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                        <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
+                                        <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                                     </svg>
                                     Continuer avec Google
                                 </>
                             )}
                         </button>
 
-                        <p className="text-center text-sm text-primary/40 dark:text-white/40">
+                        <p className="text-center text-xs text-white/30">
                             En continuant, vous acceptez nos{" "}
-                            <Link href="/terms" className="underline hover:text-primary dark:hover:text-white transition-colors">
+                            <Link href="/terms" className="underline hover:text-primary transition-colors">
                                 Conditions d'utilisation
                             </Link>{" "}
                             et notre{" "}
-                            <Link href="/privacy" className="underline hover:text-primary dark:hover:text-white transition-colors">
+                            <Link href="/privacy" className="underline hover:text-primary transition-colors">
                                 Politique de confidentialité
                             </Link>.
                         </p>
@@ -365,32 +352,34 @@ export default function LoginPage() {
 
                 {/* Footer Quote */}
                 <div className="mt-auto pt-12">
-                    <p className="text-sm font-medium italic opacity-40">
-                        "L'avenir appartient à ceux qui se lèvent tôt pour construire leur audience."
+                    <p className="text-xs font-medium italic text-white/20">
+                        "Mond lan Gen ase richès pou tout moun jwenn epi viv byen."
                     </p>
                 </div>
             </div>
 
             {/* Right Side: Hero Image */}
-            <div className="hidden lg:block flex-1 relative bg-black">
+            <div className="hidden lg:block flex-1 relative bg-black overflow-hidden">
                 <img
                     src="https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop"
-                    alt="Futuristic Landscape"
-                    className="absolute inset-0 w-full h-full object-cover opacity-80"
+                    alt="DJR Akademi"
+                    className="absolute inset-0 w-full h-full object-cover opacity-50"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                {/* Overlay gradients */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-[#0d0d0d] via-transparent to-transparent"></div>
 
-                {/* Floating Content over Image */}
-                <div className="absolute bottom-20 left-20 right-20">
+                {/* Floating Content */}
+                <div className="absolute bottom-16 left-12 right-12">
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full mb-6">
                         <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                         </span>
-                        <span className="text-xs font-bold text-white uppercase tracking-wider">Plateforme Live</span>
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">Plateforme Active</span>
                     </div>
-                    <h2 className="text-white text-4xl font-black uppercase tracking-tighter leading-tight max-w-lg mb-4">
-                        Rejoins +100 <br /> membres actifs.
+                    <h2 className="text-white text-4xl font-black uppercase tracking-tighter leading-tight max-w-md mb-6">
+                        Yon kominote ki ap grandi chak jou.
                     </h2>
                     <div className="flex -space-x-3">
                         {[1, 2, 3, 4].map((i) => (
@@ -398,7 +387,7 @@ export default function LoginPage() {
                                 <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" />
                             </div>
                         ))}
-                        <div className="size-10 rounded-full border-2 border-black bg-white dark:bg-background-dark flex items-center justify-center text-[10px] font-bold">
+                        <div className="size-10 rounded-full border-2 border-black bg-primary flex items-center justify-center text-[10px] font-black text-white">
                             +100
                         </div>
                     </div>

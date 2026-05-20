@@ -149,7 +149,7 @@ export default function ResetPasswordPage() {
                     <div className="size-10 bg-black dark:bg-white rounded-xl flex items-center justify-center transition-transform group-hover:rotate-12">
                         <span className="material-symbols-outlined text-white dark:text-black">bolt</span>
                     </div>
-                    <span className="text-xl font-black tracking-tighter uppercase italic">DRJ Akademi</span>
+                    <span className="text-xl font-black tracking-tighter uppercase italic">DJR Akademi</span>
                 </Link>
 
                 <div className="mb-8 text-center">

@@ -259,7 +259,7 @@ export default function CoursePlayerPage() {
                         <div className="size-6 bg-primary dark:bg-white rounded flex items-center justify-center">
                             <span className="material-symbols-outlined !text-sm text-white dark:text-black">school</span>
                         </div>
-                        <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">DRJ Akademi</p>
+                        <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">DJR Akademi</p>
                     </div>
                     {/* Footer links */}
                 </footer>
