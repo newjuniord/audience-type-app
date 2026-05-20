@@ -65,13 +65,9 @@ export async function POST(req: Request) {
         console.log(`✨ [WHATSAPP WEBHOOK] Nouvel utilisateur créé : ${userName} (${cleanPhone})`);
       } else {
         // Send a guide message if they sent something else
-        const twiml = `
-          <Response>
-            <Message>Bonjour ! Envoyez le mot *metem* pour créer votre compte et recevoir votre code de connexion.</Message>
-          </Response>
-        `.trim();
+        const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>Bonjour ! Envoyez le mot *metem* pour créer votre compte et recevoir votre code de connexion.</Message></Response>`;
         return new Response(twiml, {
-          headers: { "Content-Type": "text/xml" },
+          headers: { "Content-Type": "application/xml" },
         });
       }
     } else {
@@ -106,20 +102,16 @@ export async function POST(req: Request) {
     const baseUrl = `${protocol}://${host}`;
     const link = `${baseUrl}/login/temp?token=${token}`;
 
-    const twiml = `
-      <Response>
-        <Message>Bonjour ${userName} ! Votre code de connexion DRJ Akademi est : *${code}*. Pour vous connecter d'un clic, utilisez ce lien : ${link}</Message>
-      </Response>
-    `.trim();
+    const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>Bonjour ${userName} ! Votre code de connexion DRJ Akademi est : *${code}*. Pour vous connecter d'un clic, utilisez ce lien : ${link}</Message></Response>`;
 
     return new Response(twiml, {
-      headers: { "Content-Type": "text/xml" },
+      headers: { "Content-Type": "application/xml" },
     });
 
   } catch (error: any) {
     console.error("Error in WhatsApp webhook:", error);
-    return new Response("<Response></Response>", {
-      headers: { "Content-Type": "text/xml" },
+    return new Response(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`, {
+      headers: { "Content-Type": "application/xml" },
     });
   }
 }
