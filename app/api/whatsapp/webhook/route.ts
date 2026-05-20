@@ -2,6 +2,7 @@ import { getAdminDb } from "@/lib/firebase-admin";
 import { v4 as uuidv4 } from "uuid";
 import { Timestamp } from "firebase-admin/firestore";
 import { upstashSession } from "@/lib/upstashAuth";
+import { formatMessageTemplate } from "@/lib/whatsapp";
 
 export async function POST(req: Request) {
   try {
@@ -102,7 +103,11 @@ export async function POST(req: Request) {
     const baseUrl = `${protocol}://${host}`;
     const link = `${baseUrl}/login/temp?token=${token}`;
 
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>Bonjour ${userName} ! Votre code de connexion DRJ Akademi est : *${code}*. Pour vous connecter d'un clic, utilisez ce lien : ${link}</Message></Response>`;
+    const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
+        "🔑 *VÉRIFICATION DRJ AKADEMI*\n\nVoici ton code de vérification pour accéder à ton cours : {{code}}\n\nTu peux également te connecter directement en cliquant sur ce lien sécurisé : {{link}}\n\nNe partage jamais ce code.";
+
+    const formattedMessage = formatMessageTemplate(authTemplate, { code: `*${code}*`, link, userName });
+    const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${formattedMessage}</Message></Response>`;
 
     return new Response(twiml, {
       headers: { "Content-Type": "application/xml" },

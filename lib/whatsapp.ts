@@ -96,3 +96,18 @@ export async function sendSmsMessage(toPhone: string, message: string) {
     throw new Error(error.message || "Échec de l'envoi du SMS");
   }
 }
+
+/**
+ * Formate un template de message en remplaçant les placeholders par leurs valeurs.
+ */
+export function formatMessageTemplate(
+  template: string,
+  variables: { code?: string; link?: string; userName?: string; productName?: string }
+): string {
+  let msg = template.replace(/\\n/g, '\n');
+  if (variables.code) msg = msg.replace(/{{code}}/g, variables.code);
+  if (variables.link) msg = msg.replace(/{{link}}/g, variables.link);
+  if (variables.userName) msg = msg.replace(/{{userName}}/g, variables.userName);
+  if (variables.productName) msg = msg.replace(/{{productName}}/g, variables.productName);
+  return msg;
+}

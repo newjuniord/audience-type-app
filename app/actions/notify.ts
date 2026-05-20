@@ -1,6 +1,6 @@
 "use server";
 
-import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { sendWhatsAppMessage, formatMessageTemplate } from "@/lib/whatsapp";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { v4 as uuidv4 } from "uuid";
 import { Timestamp } from "firebase-admin/firestore";
@@ -51,10 +51,10 @@ export async function sendGiftNotification(
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://audiencetype.com";
         const link = `${baseUrl}/login/temp?token=${token}`;
 
-        // Format code (e.g. *12 34*)
-        const formattedCode = `*${code.substring(0, 2)} ${code.substring(2, 4)}*`;
+        const productTemplate = process.env.TWILIO_TEMPLATE_PRODUCT || 
+            "Bonjour, votre commande est prête. Utilisez ce code *{{code}}* pour avoir accès. - Connecte-toi ici : {{link}}";
 
-        const message = `Bonjour, votre commande est prête. Utilisez ce code *${code}* pour avoir accès. - Connecte-toi ici : ${link}`;
+        const message = formatMessageTemplate(productTemplate, { code, link, userName, productName });
         
         const contentSid = process.env.TWILIO_GIFT_CONTENT_SID;
         if (contentSid) {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { v4 as uuidv4 } from "uuid";
 import { Timestamp } from "firebase-admin/firestore";
-import { sendWhatsAppMessage, sendSmsMessage } from "@/lib/whatsapp";
+import { sendWhatsAppMessage, sendSmsMessage, formatMessageTemplate } from "@/lib/whatsapp";
 import { upstashSession, upstashSpamShield } from "@/lib/upstashAuth";
 
 export async function POST(req: Request) {
@@ -74,10 +74,13 @@ export async function POST(req: Request) {
         const formattedCode = `*${code}*`;
         const rawFormattedCode = `${code}`;
 
+        const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
+            "🔑 *VÉRIFICATION DRJ AKADEMI*\n\nVoici ton code de vérification pour accéder à ton cours : {{code}}\n\nTu peux également te connecter directement en cliquant sur ce lien sécurisé : {{link}}\n\nNe partage jamais ce code.";
+
         // 5. Envoyer le code
         if (contactMethod === 'phone' && finalPhone) {
             if (type === 'whatsapp') {
-                const message = `🔑 *VÉRIFICATION DRJ AKADEMI*\n\nVoici ton code de vérification pour accéder à ton cours : ${formattedCode}\n\nTu peux également te connecter directement en cliquant sur ce lien sécurisé : ${link}\n\nNe partage jamais ce code.`;
+                const message = formatMessageTemplate(authTemplate, { code: formattedCode, link });
                 try {
                     await sendWhatsAppMessage(finalPhone, message);
                     console.log(`📩 [WHATSAPP] Code de vérification envoyé à ${finalPhone}`);
@@ -86,7 +89,7 @@ export async function POST(req: Request) {
                 }
             } else {
                 // SMS
-                const message = `🔑 VERIFICATION DRJ AKADEMI\n\nVoici ton code de verification : ${rawFormattedCode}\n\nLien de connexion direct : ${link}`;
+                const message = formatMessageTemplate(authTemplate, { code: rawFormattedCode, link });
                 try {
                     await sendSmsMessage(finalPhone, message);
                     console.log(`📩 [SMS] Code de vérification envoyé à ${finalPhone}`);
