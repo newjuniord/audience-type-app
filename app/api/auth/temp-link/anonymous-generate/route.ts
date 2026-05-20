@@ -89,7 +89,7 @@ export async function POST(req: Request) {
                         await sendWhatsAppMessage(finalPhone, "", authTemplateSid, {
                             "1": code,
                             "2": token,
-                            "3": link,
+                            "3": link.replace(/^https?:\/\//, ''),
                             "4": userName
                         });
                         console.log(`📩 [WHATSAPP TEMPLATE] Envoyé avec succès à ${finalPhone}`);

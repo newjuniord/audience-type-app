@@ -110,7 +110,7 @@ export async function POST(req: Request) {
       await sendWhatsAppMessage(phone, "", authTemplateSid, {
         "1": code,
         "2": token,
-        "3": link,
+        "3": link.replace(/^https?:\/\//, ''),
         "4": userName
       });
       

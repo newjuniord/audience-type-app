@@ -62,7 +62,7 @@ export async function sendGiftNotification(
             await sendWhatsAppMessage(phone, "", productTemplateSid, {
                 "1": code,
                 "2": token,
-                "3": link,
+                "3": link.replace(/^https?:\/\//, ''),
                 "4": productName,
                 "5": userName
             });
