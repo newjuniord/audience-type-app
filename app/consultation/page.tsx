@@ -4,7 +4,8 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { getServices } from "@/lib/services";
 import { Service } from "@/lib/types";
 import { ActionModal } from "@/components/ui/ActionModal";
-
+import DashboardHeader from "@/components/DashboardHeader";
+import DashboardFooter from "@/components/DashboardFooter";
 
 const SLOTS_KST = [
   { h: 10, m: 0 }, { h: 11, m: 30 }, { h: 13, m: 0 }, { h: 14, m: 30 },
@@ -56,7 +57,6 @@ function fmt(h: number, m: number) {
 }
 
 function fmtUX(raw: string) {
-  // Transforms "10 AM" → "10h du matin (AM)", "8:30 PM" → "8h30 du soir (PM)", etc.
   const match = raw.match(/^(\d+)(?::(\d+))?\s*(AM|PM)$/);
   if (!match) return raw;
   const h = match[1];
@@ -79,11 +79,11 @@ const DAYS_MAP = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi",
 
 function CalendarPicker({ value, onChange, isDateAvailable }: { value: string; onChange: (v: string) => void; isDateAvailable?: (y: number, m: number, d: number) => boolean }) {
   const minDate = new Date();
-  minDate.setDate(minDate.getDate() + 1); // Enforce 24 hours in advance (minimum is tomorrow)
+  minDate.setDate(minDate.getDate() + 1);
   minDate.setHours(0, 0, 0, 0);
 
   const maxDate = new Date();
-  maxDate.setDate(maxDate.getDate() + 60); // Max 60 days in advance
+  maxDate.setDate(maxDate.getDate() + 60);
   maxDate.setHours(23, 59, 59, 999);
 
   const [open, setOpen] = useState(false);
@@ -91,7 +91,7 @@ function CalendarPicker({ value, onChange, isDateAvailable }: { value: string; o
   const [viewMonth, setViewMonth] = useState(minDate.getMonth());
 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const firstDayOfWeek = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7; // Mon=0
+  const firstDayOfWeek = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
 
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstDayOfWeek; i++) cells.push(null);
@@ -126,7 +126,6 @@ function CalendarPicker({ value, onChange, isDateAvailable }: { value: string; o
     else setViewMonth(viewMonth - 1);
   }
 
-  // Prevent navigating to a month completely in the past relative to minDate
   const isPrevDisabled = new Date(viewYear, viewMonth, 1) <= new Date(minDate.getFullYear(), minDate.getMonth(), 1);
 
   function next() {
@@ -134,7 +133,6 @@ function CalendarPicker({ value, onChange, isDateAvailable }: { value: string; o
     else setViewMonth(viewMonth + 1);
   }
 
-  // Prevent navigating beyond 60 days
   const isNextDisabled = new Date(viewYear, viewMonth, 1) >= new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
 
   const displayValue = value
@@ -144,62 +142,53 @@ function CalendarPicker({ value, onChange, isDateAvailable }: { value: string; o
   return (
     <div className="relative">
       <button type="button" onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between text-sm rounded px-3 py-2.5 outline-none transition-colors border text-left"
-        style={{ background: open ? "#fff" : "#FAF7F2", borderColor: open ? "#C9A84C" : "#DDD8CF", color: value ? "#111" : "#9E9082" }}>
+        className={`w-full flex items-center justify-between text-sm rounded-xl px-4 py-3 outline-none transition-colors border text-left ${open ? 'bg-white/10 border-primary text-white' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
         <span>{displayValue || "Sélectionnez une date"}</span>
-        <span className="material-symbols-outlined text-lg" style={{ color: "#9E9082" }}>calendar_month</span>
+        <span className="material-symbols-outlined text-lg opacity-50">calendar_month</span>
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 left-0 right-0 rounded-lg shadow-xl border p-4 animate-in fade-in zoom-in-95 duration-150"
-          style={{ background: "#fff", borderColor: "rgba(201,168,76,.3)" }}>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3">
+        <div className="absolute z-50 mt-2 left-0 right-0 rounded-2xl shadow-xl border border-white/10 bg-[#141414] p-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center justify-between mb-4">
             <button type="button" onClick={prev} disabled={isPrevDisabled}
-              className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white">
               <span className="material-symbols-outlined text-base">chevron_left</span>
             </button>
-            <span className="text-sm font-semibold text-black">{MONTHS_FR[viewMonth]} {viewYear}</span>
-            <button type="button" onClick={next} disabled={isNextDisabled} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+            <span className="text-sm font-bold text-white">{MONTHS_FR[viewMonth]} {viewYear}</span>
+            <button type="button" onClick={next} disabled={isNextDisabled} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white">
               <span className="material-symbols-outlined text-base">chevron_right</span>
             </button>
           </div>
-          {/* Day names */}
-          <div className="grid grid-cols-7 gap-0.5 mb-1">
+          <div className="grid grid-cols-7 gap-1 mb-2">
             {DAYS_FR.map((d) => (
-              <div key={d} className="text-center text-[10px] font-medium uppercase py-1" style={{ color: "#9E9082" }}>{d}</div>
+              <div key={d} className="text-center text-[10px] font-black uppercase tracking-widest text-white/30 py-1">{d}</div>
             ))}
           </div>
-          {/* Day cells */}
-          <div className="grid grid-cols-7 gap-0.5">
+          <div className="grid grid-cols-7 gap-1">
             {cells.map((day, i) => (
               <div key={i} className="flex items-center justify-center">
                 {day ? (
                   <button type="button" disabled={isDisabledDay(day)}
                     onClick={() => { onChange(toStr(viewYear, viewMonth, day)); setOpen(false); }}
-                    className="w-9 h-9 rounded-full text-sm flex items-center justify-center transition-all"
-                    style={{
-                      background: isSelected(day) ? "#C9A84C" : "transparent",
-                      color: isSelected(day) ? "#fff" : isDisabledDay(day) ? "#DDD8CF" : "#111",
-                      fontWeight: isTomorrow(day) || isSelected(day) ? 600 : 400,
-                      border: isTomorrow(day) && !isSelected(day) ? "1px solid #C9A84C" : "1px solid transparent",
-                      cursor: isDisabledDay(day) ? "not-allowed" : "pointer",
-                    }}>
+                    className={`w-9 h-9 rounded-full text-sm font-bold flex items-center justify-center transition-all ${
+                        isSelected(day) ? "bg-primary text-white shadow-lg shadow-primary/30" : 
+                        isDisabledDay(day) ? "text-white/10 cursor-not-allowed" : 
+                        "text-white hover:bg-white/10"
+                    } ${isTomorrow(day) && !isSelected(day) ? "border border-primary/50 text-primary" : ""}`}>
                     {day}
                   </button>
                 ) : <div className="w-9 h-9" />}
               </div>
             ))}
           </div>
-          {/* Tomorrow button */}
-          <div className="mt-3 pt-3 flex justify-between items-center" style={{ borderTop: "1px solid rgba(201,168,76,.15)" }}>
+          <div className="mt-4 pt-4 flex justify-between items-center border-t border-white/10">
             <button type="button"
               onClick={() => { setViewYear(minDate.getFullYear()); setViewMonth(minDate.getMonth()); onChange(toStr(minDate.getFullYear(), minDate.getMonth(), minDate.getDate())); setOpen(false); }}
-              className="text-xs font-semibold px-3 py-1.5 rounded-md transition-colors hover:bg-black/5" style={{ color: "#C9A84C" }}>
+              className="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors hover:bg-primary/10 text-primary">
               Demain
             </button>
             <button type="button" onClick={() => setOpen(false)}
-              className="text-xs font-medium px-3 py-1.5 rounded-md transition-colors hover:bg-black/5" style={{ color: "#9E9082" }}>
+              className="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors hover:bg-white/10 text-white/50">
               Fermer
             </button>
           </div>
@@ -212,7 +201,6 @@ function CalendarPicker({ value, onChange, isDateAvailable }: { value: string; o
 export default function ConsultationPage() {
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
-  const baseOffset = service?.availabilityTimezoneOffset ?? 9;
 
   useEffect(() => {
     getServices().then(services => {
@@ -224,7 +212,7 @@ export default function ConsultationPage() {
 
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [formData, setFormData] = useState({
-    nomPrenom: "", pays: "", whatsapp: "", date: "", sujet: "",
+    nomPrenom: "", pays: "", whatsapp: "", date: "", sujet: "", kategori: ""
   });
   const [submitted, setSubmitted] = useState(false);
   const [reviewing, setReviewing] = useState(false);
@@ -233,7 +221,6 @@ export default function ConsultationPage() {
 
   const effectivePays = formData.pays === "usa" && usZone ? usZone : formData.pays;
   const selectedCountry = COUNTRY_OFFSETS[effectivePays];
-
 
   const checkDateAvailability = useCallback((y: number, m: number, d: number) => {
     if (!service || !service.availability) return false;
@@ -289,7 +276,7 @@ export default function ConsultationPage() {
         const [endH] = dayAvail.endTime.split(':').map(Number);
         if (adminH >= startH && adminH < endH) {
           slots.push({
-            local: fmt(localH, startM), // format to string like "10 AM"
+            local: fmt(localH, startM),
             baseStr: `${adminH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`
           });
         }
@@ -300,13 +287,11 @@ export default function ConsultationPage() {
 
   const countryTimes = useMemo(() =>
     COUNTRIES.map((c) => {
-      const start = convertTime(10, 0, 9, c.offset); // Legacy mapping display
-      const end = convertTime(0, 30, 9, c.offset); // Legacy mapping display
+      const start = convertTime(10, 0, 9, c.offset);
+      const end = convertTime(0, 30, 9, c.offset);
       const sFmt = fmt(start.h, start.m);
       const eFmt = fmt(end.h, end.m);
 
-      // Si le début est PM (soirée) et la fin est AM (matinée du lendemain)
-      // on inverse l'ordre d'affichage pour que l'heure AM (matin) soit affichée en premier (meilleure UX)
       const isStartPm = sFmt.includes("PM");
       const isEndAm = eFmt.includes("AM");
 
@@ -319,7 +304,7 @@ export default function ConsultationPage() {
 
   const isFormValid =
     formData.nomPrenom && formData.pays &&
-    formData.whatsapp && formData.date && formData.sujet &&
+    formData.whatsapp && formData.date && formData.sujet && formData.kategori &&
     selectedSlot !== null;
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
@@ -343,7 +328,7 @@ export default function ConsultationPage() {
     const slot = localSlots[selectedSlot!];
     const waNum = service?.whatsappNumber || "821012345678";
     const paymentMethodName = method === "moncash" ? `MonCash (${service?.priceHTG || 20000} HTG)` : `Carte bancaire / PayPal (${service?.price} USD)`;
-    const msg = `📋 *DEMANDE DE CONSULTATION*\n\nNom et prénom: ${formData.nomPrenom}\nPays: ${formData.pays}\nWhatsApp: ${formData.whatsapp}\nDate: ${formData.date}\nCréneau: ${slot.baseStr} (Heure admin) / ${fmtUX(slot.local)} heure locale\n\nMéthode de paiement choisie: ${paymentMethodName}\n\nSujet: ${formData.sujet}\n\n💰 Montant: ${service?.price} USD (1h)`;
+    const msg = `📋 *DEMANDE DE CONSULTATION*\n\nNom et prénom: ${formData.nomPrenom}\nPays: ${formData.pays}\nWhatsApp: ${formData.whatsapp}\nDate: ${formData.date}\nCréneau: ${slot.baseStr} (Heure admin) / ${fmtUX(slot.local)} heure locale\n\nCatégorie: ${formData.kategori}\nSujet: ${formData.sujet}\n\nMéthode de paiement choisie: ${paymentMethodName}\n\n💰 Montant: ${service?.price} USD (1h)`;
     setShowPaymentModal(false);
     setReviewing(false);
     setSubmitted(true);
@@ -353,319 +338,349 @@ export default function ConsultationPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0a0a0a" }}>
-        <div className="text-white opacity-50">Chargement...</div>
+      <div className="min-h-screen flex items-center justify-center bg-background-dark">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (!service) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center px-5" style={{ background: "#0a0a0a" }}>
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-5 bg-background-dark">
         <span className="material-symbols-outlined text-6xl text-white/20 mb-4 block">event_busy</span>
-        <h1 className="text-white text-2xl font-semibold mb-2">Aucune consultation disponible</h1>
+        <h1 className="text-white text-2xl font-bold mb-2">Aucune consultation disponible</h1>
         <p className="text-white/50">Les réservations sont temporairement fermées. Veuillez revenir plus tard.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ fontFamily: "'DM Sans', Inter, sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap');
-        .font-playfair { font-family: 'Playfair Display', serif; }
-      `}</style>
+    <div className="min-h-screen bg-background-dark text-white font-display flex flex-col">
+      <DashboardHeader />
 
-      {/* HERO */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-5 py-16 overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #0a0a0a 0%, #1a1610 50%, #0d0b08 100%)" }}>
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(201,168,76,.1), transparent 70%)" }} />
-        <p className="text-[11px] tracking-[.4em] uppercase mb-8" style={{ color: "#C9A84C", opacity: 0.85 }}>
-          ★ Consultation Privée ★
-        </p>
-        <h1 className="font-playfair text-white font-semibold leading-tight max-w-[700px] mb-6"
-          style={{ fontSize: "clamp(2rem, 5.5vw, 3.8rem)" }}>
-          {service.title}
-        </h1>
-        <p className="text-base font-light max-w-[460px] leading-relaxed mb-10" style={{ color: "rgba(255,255,255,.55)" }}>
-          {service.description}
-        </p>
-        <div className="flex gap-2 flex-wrap justify-center mb-10">
-          {["🇭🇹 Haïti", "🇩🇴 Rép. Dom.", "🇫🇷 France", "🇺🇸 États-Unis", "🇨🇦 Canada", "🇲🇽 Mexique", "🇧🇷 Brésil", "🇨🇱 Chili"].map((f) => (
-            <span key={f} className="flex items-center gap-1 px-3 py-1 rounded-full text-[11px]"
-              style={{ border: "1px solid rgba(201,168,76,.25)", color: "rgba(255,255,255,.6)" }}>{f}</span>
-          ))}
-        </div>
-        <a href="#reserver" className="inline-block font-semibold text-sm tracking-wide px-10 py-3.5 rounded-lg transition-all hover:-translate-y-0.5"
-          style={{ background: "#C9A84C", color: "#111" }}>
-          Réserver ma consultation →
-        </a>
-      </section>
-
-      {/* STEPS */}
-      <section className="py-16 px-5 bg-white dark:bg-[#1a1a1a] border-t border-b" style={{ borderColor: "rgba(201,168,76,.25)" }}>
-        <div className="max-w-[900px] mx-auto">
-          <p className="text-[11px] font-medium tracking-[.35em] uppercase" style={{ color: "#8A6A1F" }}>Comment ça marche</p>
-          <h2 className="font-playfair font-semibold leading-tight mt-2 mb-3 text-black dark:text-white" style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>3 étapes simples</h2>
-          <div className="w-12 h-0.5 mb-8" style={{ background: "#C9A84C" }} />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-            {[
-              { n: "1", t: "Choisissez votre créneau", d: "Sélectionnez la date et l'heure qui vous conviennent dans votre fuseau horaire." },
-              { n: "2", t: "Confirmez par WhatsApp", d: "Recevez la confirmation et les instructions de paiement directement sur WhatsApp." },
-              { n: "3", t: "Connectez-vous", d: "Rejoignez votre session privée en ligne à l'heure convenue. 1h de coaching intensif." },
-            ].map((s) => (
-              <div key={s.n} className="text-center p-5">
-                <div className="w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-3 font-semibold text-lg" style={{ background: "#C9A84C", color: "#111" }}>{s.n}</div>
-                <h3 className="font-semibold text-sm mb-1 text-black dark:text-white">{s.t}</h3>
-                <p className="text-xs leading-relaxed" style={{ color: "#5C5546" }}>{s.d}</p>
-              </div>
-            ))}
+      <main className="flex-1">
+        {/* HERO */}
+        <section className="relative flex flex-col items-center justify-center text-center px-5 pt-32 pb-24 overflow-hidden border-b border-white/5">
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_center,rgba(242,140,40,0.1),transparent_50%)]" />
+          
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full mb-8 relative z-10">
+            <span className="material-symbols-outlined text-[14px] text-primary">star</span>
+            <span className="text-primary text-[10px] font-black uppercase tracking-widest">Consultation Privée</span>
           </div>
-        </div>
-      </section>
-
-      {/* TIMEZONE GRID */}
-      <section className="py-16 px-5" style={{ background: "#FAF7F2" }}>
-        <div className="max-w-[900px] mx-auto">
-          <p className="text-[11px] font-medium tracking-[.35em] uppercase" style={{ color: "#8A6A1F" }}>Disponibilités</p>
-          <h2 className="font-playfair font-semibold leading-tight mt-2 mb-3 text-black" style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>Horaires par pays</h2>
-          <div className="w-12 h-0.5 mb-4" style={{ background: "#C9A84C" }} />
-          <p className="text-sm leading-relaxed max-w-[560px] mb-8" style={{ color: "#5C5546" }}>
-            Les horaires ci-dessous sont traduits dans votre heure locale pour simplifier la réservation :
+          
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.85] text-white max-w-[900px] mb-6 relative z-10">
+            {service.title}
+          </h1>
+          
+          <p className="text-lg text-white/50 leading-relaxed max-w-[600px] mb-10 relative z-10">
+            {service.description}
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {countryTimes.map((c) => (
-              <div key={c.name} className="relative p-4 rounded-lg bg-white transition-all hover:-translate-y-0.5 hover:shadow-lg"
-                style={{ border: c.ref ? "1px solid #C9A84C" : "1px solid rgba(201,168,76,.25)", background: c.ref ? "linear-gradient(135deg,#fffdf8,#fff)" : "#fff" }}>
-                {c.ref && <span className="absolute top-2 right-2 px-2 py-0.5 rounded-sm text-[8px] font-semibold tracking-widest uppercase" style={{ background: "#C9A84C", color: "#111" }}>Réf.</span>}
-                <span className="text-2xl block mb-1">{c.flag}</span>
-                <h3 className="text-[10px] font-medium tracking-wider uppercase mb-1" style={{ color: "#5C5546" }}>{c.name}</h3>
-                <div className="font-playfair font-semibold text-lg text-black">
-                  {c.displayRange}
-                </div>
-                <p className="text-[10px] mt-0.5" style={{ color: "#9E9082" }}>Plage de disponibilité</p>
-              </div>
+          
+          <div className="flex gap-2 flex-wrap justify-center mb-10 relative z-10">
+            {["🇭🇹 Haïti", "🇩🇴 Rép. Dom.", "🇫🇷 France", "🇺🇸 États-Unis", "🇨🇦 Canada", "🇲🇽 Mexique", "🇧🇷 Brésil", "🇨🇱 Chili"].map((f) => (
+              <span key={f} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-white/5 border border-white/10 text-white/60">
+                {f}
+              </span>
             ))}
           </div>
-          <p className="mt-4 text-xs italic" style={{ color: "#9E9082" }}>* Les horaires peuvent varier selon l&apos;heure d&apos;été. Confirmez via WhatsApp.</p>
-        </div>
-      </section>
+          
+          <a href="#reserver" className="relative z-10 inline-block px-8 py-4 bg-primary text-white rounded-full font-black uppercase tracking-wide text-sm hover:bg-primary/90 transition-all active:scale-95 shadow-xl shadow-primary/30">
+            Réserver ma consultation
+          </a>
+        </section>
 
-      {/* PRICING */}
-      <section className="py-16 px-5 text-center" style={{ background: "#111", color: "#fff" }}>
-        <div className="max-w-[620px] mx-auto">
-          <p className="text-[11px] font-medium tracking-[.35em] uppercase" style={{ color: "#E8D5A3" }}>Tarif</p>
-          <h2 className="font-playfair font-semibold leading-tight mt-2 mb-3 text-white" style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>Investissez en vous</h2>
-          <div className="w-12 h-0.5 mx-auto mb-8" style={{ background: "#C9A84C" }} />
-          <div className="relative border rounded-xl p-8 max-w-[400px] mx-auto overflow-hidden" style={{ borderColor: "rgba(201,168,76,.3)" }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(201,168,76,.08), transparent 70%)" }} />
-            <div className="font-playfair font-semibold leading-none relative" style={{ fontSize: "3.5rem", color: "#C9A84C" }}>
-              <sup className="text-2xl align-super" style={{ color: "#E8D5A3" }}>$</sup>{service.price}
-            </div>
-            <p className="text-sm mt-1 tracking-wide" style={{ color: "rgba(255,255,255,.45)" }}>USD · 1 heure de consultation</p>
-            <ul className="mt-5 mb-5 text-left flex flex-col gap-2 relative">
-              {(service.includedItems || []).map((f, i) => (
-                <li key={i} className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,.65)" }}>
-                  <span className="font-semibold text-xs" style={{ color: "#C9A84C" }}>✓</span> {f}
-                </li>
+        {/* STEPS */}
+        <section className="py-24 px-5 border-b border-white/5 bg-white/[0.02]">
+          <div className="max-w-[1000px] mx-auto text-center">
+            <p className="text-[10px] font-black tracking-[0.3em] uppercase text-primary mb-4">Comment ça marche</p>
+            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-16 text-white">3 étapes simples</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+              {[
+                { n: "1", t: "Choisissez votre créneau", d: "Sélectionnez la date et l'heure qui vous conviennent dans votre fuseau horaire.", icon: "calendar_month" },
+                { n: "2", t: "Confirmez par WhatsApp", d: "Recevez la confirmation et les instructions de paiement directement sur WhatsApp.", icon: "chat" },
+                { n: "3", t: "Connectez-vous", d: "Rejoignez votre session privée en ligne à l'heure convenue. 1h de coaching intensif.", icon: "video_camera_front" },
+              ].map((s) => (
+                <div key={s.n} className="flex flex-col items-center text-center group">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 relative group-hover:border-primary/50 transition-colors">
+                    <span className="material-symbols-outlined text-3xl text-primary">{s.icon}</span>
+                    <div className="absolute -top-3 -right-3 w-6 h-6 rounded-full bg-primary text-white text-xs font-black flex items-center justify-center border-2 border-background-dark">
+                        {s.n}
+                    </div>
+                  </div>
+                  <h3 className="font-bold text-lg mb-2 text-white">{s.t}</h3>
+                  <p className="text-sm leading-relaxed text-white/50">{s.d}</p>
+                </div>
               ))}
-            </ul>
-            <a href="#reserver" className="block text-center font-semibold text-sm tracking-wide px-8 py-3.5 rounded-lg transition-all hover:-translate-y-0.5 relative"
-              style={{ background: "#C9A84C", color: "#111" }}>
-              Réserver maintenant
-            </a>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* BOOKING FORM */}
-      <section id="reserver" className="py-16 px-5" style={{ background: "#FAF7F2" }}>
-        <div className="max-w-[620px] mx-auto">
-          <p className="text-[11px] font-medium tracking-[.35em] uppercase" style={{ color: "#8A6A1F" }}>Réservation</p>
-          <h2 className="font-playfair font-semibold leading-tight mt-2 mb-3 text-black" style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>Réservez votre séance</h2>
-          <div className="w-12 h-0.5 mb-4" style={{ background: "#C9A84C" }} />
-          <p className="text-sm leading-relaxed mb-8" style={{ color: "#5C5546" }}>
-            Remplissez le formulaire. Vous recevrez une confirmation par WhatsApp avec les instructions de paiement.
-          </p>
-
-          <div className="bg-white rounded-lg p-6 sm:p-8" style={{ border: "1px solid rgba(201,168,76,.25)" }}>
-            {submitted ? (
-              /* ── SUCCÈS ── */
-              <div className="text-center py-4">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "linear-gradient(135deg,#d4f0e4,#a8dfcc)" }}>
-                  <span className="text-3xl">✅</span>
-                </div>
-                <h3 className="font-playfair text-xl font-semibold mb-2" style={{ color: "#1A6B42" }}>Demande envoyée !</h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#2D8A59" }}>
-                  Merci ! Vous recevrez une confirmation sur WhatsApp.<br /><strong>{service.price} USD · 1 heure</strong>
+        {/* TIMEZONE GRID */}
+        <section className="py-24 px-5 border-b border-white/5">
+          <div className="max-w-[1000px] mx-auto">
+            <div className="text-center mb-16">
+                <p className="text-[10px] font-black tracking-[0.3em] uppercase text-primary mb-4">Disponibilités</p>
+                <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-4 text-white">Horaires par pays</h2>
+                <p className="text-sm leading-relaxed text-white/50 max-w-[600px] mx-auto">
+                Les horaires ci-dessous sont traduits dans votre heure locale pour simplifier la réservation :
                 </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {countryTimes.map((c) => (
+                <div key={c.name} className={`relative p-5 rounded-2xl transition-all ${c.ref ? 'bg-primary/10 border-primary/30' : 'bg-white/5 border-white/10'} border hover:bg-white/10`}>
+                  {c.ref && <span className="absolute top-3 right-3 px-2 py-0.5 rounded text-[8px] font-black tracking-widest uppercase bg-primary text-white">Réf.</span>}
+                  <span className="text-3xl block mb-3">{c.flag}</span>
+                  <h3 className="text-[10px] font-bold tracking-wider uppercase mb-1 text-white/50">{c.name}</h3>
+                  <div className="font-black text-xl text-white">
+                    {c.displayRange}
+                  </div>
+                  <p className="text-[10px] mt-1 text-white/30">Plage de disponibilité</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-6 text-xs text-center text-white/30 font-medium">* Les horaires peuvent varier selon l'heure d'été. Confirmez via WhatsApp.</p>
+          </div>
+        </section>
+
+        {/* PRICING */}
+        <section className="py-24 px-5 bg-[url('/bg-pattern.svg')] bg-fixed bg-center relative border-b border-white/5">
+          <div className="absolute inset-0 bg-background-dark/95 backdrop-blur-sm z-0"></div>
+          <div className="max-w-[620px] mx-auto text-center relative z-10">
+            <p className="text-[10px] font-black tracking-[0.3em] uppercase text-primary mb-4">Tarif</p>
+            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-12 text-white">Investissez en vous</h2>
+            
+            <div className="relative border border-primary/30 rounded-3xl p-10 max-w-[420px] mx-auto overflow-hidden bg-white/[0.02]">
+              <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,rgba(242,140,40,0.15),transparent_70%)]" />
+              
+              <div className="font-black leading-none relative text-white" style={{ fontSize: "4.5rem" }}>
+                <sup className="text-2xl align-super text-primary mr-1">$</sup>{service.price}
               </div>
-            ) : reviewing ? (
-              /* ── RÉVISION ── */
-              <div>
-                <p className="text-[11px] font-semibold tracking-[.3em] uppercase mb-1" style={{ color: "#8A6A1F" }}>Révision</p>
-                <h3 className="font-playfair text-xl font-semibold mb-1 text-black">Vérifiez vos informations</h3>
-                <p className="text-xs mb-5" style={{ color: "#9E9082" }}>Confirmez les détails ci-dessous avant d&apos;envoyer votre demande.</p>
-                <div className="w-full h-px mb-5" style={{ background: "rgba(201,168,76,.2)" }} />
+              <p className="text-sm mt-3 font-bold text-white/50 uppercase tracking-widest">USD · 1 heure de consultation</p>
+              
+              <div className="w-full h-px bg-white/10 my-8"></div>
+              
+              <ul className="text-left flex flex-col gap-4 mb-10">
+                {(service.includedItems || []).map((f, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm font-medium text-white/80">
+                    <span className="material-symbols-outlined text-primary text-[20px] shrink-0">check_circle</span>
+                    <span className="leading-snug">{f}</span>
+                  </li>
+                ))}
+              </ul>
+              
+              <a href="#reserver" className="block w-full text-center font-black uppercase text-sm tracking-wide px-8 py-4 rounded-xl transition-all hover:scale-105 active:scale-95 bg-primary text-white shadow-xl shadow-primary/20 relative z-10">
+                Réserver maintenant
+              </a>
+            </div>
+          </div>
+        </section>
 
-                <ul className="flex flex-col gap-4 mb-6">
-                  {[
-                    { label: "Nom et prénom", value: formData.nomPrenom, icon: "👤" },
-                    { label: "Pays", value: selectedCountry ? `${selectedCountry.flag} ${effectivePays}` : formData.pays, icon: "🌍" },
-                    { label: "WhatsApp", value: formData.whatsapp, icon: "📱" },
-                    { label: "Date souhaitée", value: (() => { const [y, m, d] = formData.date.split("-").map(Number); const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]; return `${d} ${MONTHS[m - 1]} ${y}`; })(), icon: "📅" },
-                    { label: "Créneau horaire", value: selectedSlot !== null ? (<span>{fmtUX(localSlots[selectedSlot].local)}<span className="opacity-50 text-[10px] ml-2">· 1 heure</span></span>) : "", icon: "🕐" },
-                    { label: "Sujet", value: formData.sujet, icon: "💬" },
-                  ].map((row) => (
-                    <li key={row.label} className="flex items-start gap-3">
-                      <span className="text-base mt-0.5">{row.icon}</span>
-                      <div>
-                        <p className="text-[10px] font-semibold tracking-wider uppercase mb-0.5" style={{ color: "#9E9082" }}>{row.label}</p>
-                        <p className="text-sm font-medium text-black leading-snug">{row.value}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+        {/* BOOKING FORM */}
+        <section id="reserver" className="py-24 px-5">
+          <div className="max-w-[620px] mx-auto">
+            <div className="text-center mb-12">
+                <p className="text-[10px] font-black tracking-[0.3em] uppercase text-primary mb-4">Réservation</p>
+                <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-4 text-white">Réservez votre séance</h2>
+                <p className="text-sm leading-relaxed text-white/50">
+                Remplissez le formulaire. Vous recevrez une confirmation par WhatsApp avec les instructions de paiement.
+                </p>
+            </div>
 
-                <div className="rounded-lg p-4 mb-5" style={{ background: "#FFFBF0", border: "1px solid rgba(201,168,76,.3)" }}>
-                  <p className="text-xs font-semibold" style={{ color: "#8A6A1F" }}>💰 Montant : <span className="font-bold text-sm">{service.price} USD</span> · 1 heure de consultation</p>
-                  <p className="text-[11px] mt-1" style={{ color: "#9E9082" }}>Le paiement s&apos;effectue après confirmation par WhatsApp.</p>
+            <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 sm:p-10 relative overflow-hidden">
+                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+
+              {submitted ? (
+                /* ── SUCCÈS ── */
+                <div className="text-center py-10">
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-green-500/10 border border-green-500/20">
+                    <span className="material-symbols-outlined text-4xl text-green-500">check_circle</span>
+                  </div>
+                  <h3 className="text-3xl font-black uppercase tracking-tight mb-3 text-white">Demande envoyée !</h3>
+                  <p className="text-base text-white/60 leading-relaxed max-w-sm mx-auto">
+                    Merci ! Vous recevrez une confirmation sur WhatsApp.<br /><strong className="text-white block mt-2">{service.price} USD · 1 heure</strong>
+                  </p>
                 </div>
+              ) : reviewing ? (
+                /* ── RÉVISION ── */
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <h3 className="text-2xl font-black uppercase tracking-tight mb-2 text-white">Vérifiez vos informations</h3>
+                  <p className="text-sm mb-8 text-white/50">Confirmez les détails ci-dessous avant d'envoyer votre demande.</p>
+                  
+                  <div className="bg-white/5 rounded-2xl p-6 mb-8 border border-white/10">
+                    <ul className="flex flex-col gap-6">
+                        {[
+                        { label: "Nom et prénom", value: formData.nomPrenom, icon: "person" },
+                        { label: "Pays", value: selectedCountry ? `${selectedCountry.flag} ${effectivePays}` : formData.pays, icon: "public" },
+                        { label: "WhatsApp", value: formData.whatsapp, icon: "chat" },
+                        { label: "Date souhaitée", value: (() => { const [y, m, d] = formData.date.split("-").map(Number); const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]; return `${d} ${MONTHS[m - 1]} ${y}`; })(), icon: "event" },
+                        { label: "Créneau horaire", value: selectedSlot !== null ? (<span className="flex items-center gap-2">{fmtUX(localSlots[selectedSlot].local)}<span className="px-2 py-0.5 rounded bg-white/10 text-[10px] font-bold">1 heure</span></span>) : "", icon: "schedule" },
+                        { label: "Catégorie", value: formData.kategori, icon: "category" },
+                        { label: "Sujet détaillé", value: formData.sujet, icon: "subject" },
+                        ].map((row) => (
+                        <li key={row.label} className="flex items-start gap-4">
+                            <div className="mt-0.5 size-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-[18px] text-white/70">{row.icon}</span>
+                            </div>
+                            <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">{row.label}</p>
+                            <div className="text-sm font-bold text-white leading-snug">{row.value}</div>
+                            </div>
+                        </li>
+                        ))}
+                    </ul>
+                  </div>
 
-                <button onClick={() => setShowPaymentModal(true)}
-                  className="w-full py-3.5 rounded-lg font-semibold text-sm tracking-wide transition-all hover:-translate-y-0.5 mb-3"
-                  style={{ background: "#C9A84C", color: "#111" }}>
-                  ✅ Confirmer et payer
-                </button>
-                <button onClick={() => setReviewing(false)}
-                  className="w-full py-2 text-xs font-medium rounded-lg transition-colors"
-                  style={{ color: "#9E9082", background: "#FAF7F2" }}>
-                  ← Modifier mes informations
-                </button>
-              </div>
-            ) : (
-              /* ── FORMULAIRE ── */
-              <form onSubmit={handleSubmit}>
-                <div className="flex flex-col gap-1 mb-3">
-                  <label className="text-[11px] font-medium tracking-wider uppercase" style={{ color: "#5C5546" }}>Nom et prénom *</label>
-                  <input name="nomPrenom" value={formData.nomPrenom} onChange={handleChange} placeholder="Marie Dupont" required
-                    className="text-sm rounded px-3 py-2.5 outline-none transition-colors border text-black"
-                    style={{ background: "#FAF7F2", borderColor: "#DDD8CF" }}
-                    onFocus={(e) => { e.target.style.borderColor = "#C9A84C"; e.target.style.background = "#fff"; }}
-                    onBlur={(e) => { e.target.style.borderColor = "#DDD8CF"; e.target.style.background = "#FAF7F2"; }} />
+                  <div className="rounded-2xl p-5 mb-8 bg-primary/10 border border-primary/20 flex items-center justify-between">
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Montant à régler</p>
+                        <p className="text-xs text-white/60">Payable après confirmation par WhatsApp</p>
+                    </div>
+                    <div className="text-2xl font-black text-white">${service.price}</div>
+                  </div>
+
+                  <button onClick={() => setShowPaymentModal(true)}
+                    className="w-full py-4 rounded-xl font-black uppercase text-sm tracking-wide transition-all hover:scale-[1.02] active:scale-[0.98] mb-4 bg-primary text-white shadow-lg shadow-primary/20">
+                    Confirmer et payer
+                  </button>
+                  <button onClick={() => setReviewing(false)}
+                    className="w-full py-3 text-xs font-bold uppercase tracking-widest rounded-xl transition-colors text-white/50 hover:text-white hover:bg-white/5">
+                    ← Modifier mes informations
+                  </button>
                 </div>
+              ) : (
+                /* ── FORMULAIRE ── */
+                <form onSubmit={handleSubmit} className="animate-in fade-in duration-300">
+                  <div className="flex flex-col gap-2 mb-5">
+                    <label className="text-[10px] font-black tracking-widest uppercase text-white/50">Nom et prénom *</label>
+                    <input name="nomPrenom" value={formData.nomPrenom} onChange={handleChange} placeholder="Jean Ronald" required
+                      className="text-sm rounded-xl px-4 py-3 outline-none transition-all border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-primary placeholder:text-white/20" />
+                  </div>
 
-                <div className="flex flex-col gap-1 mb-3">
-                  <label className="text-[11px] font-medium tracking-wider uppercase" style={{ color: "#5C5546" }}>Pays / Fuseau Horaire *</label>
-                  <select name="pays" value={formData.pays} onChange={handleChange} required
-                    className="text-sm rounded px-3 py-2.5 outline-none transition-colors border text-black"
-                    style={{ background: "#FAF7F2", borderColor: "#DDD8CF" }}>
-                    <option value="">— Sélectionnez —</option>
-                    <option value="haiti">🇭🇹 Haïti</option>
-                    <option value="rd">🇩🇴 Rép. Dominicaine</option>
-                    <option value="france">🇫🇷 France</option>
-                    <option value="usa">🇺🇸 États-Unis</option>
-                    <option value="canada">🇨🇦 Canada</option>
-                    <option value="mexique">🇲🇽 Mexique</option>
-                    <option value="bresil">🇧🇷 Brésil</option>
-                    <option value="chili">🇨🇱 Chili</option>
-                  </select>
-                </div>
-
-                {formData.pays === "usa" && (
-                  <div className="flex flex-col gap-1 mb-3">
-                    <label className="text-[11px] font-medium tracking-wider uppercase" style={{ color: "#5C5546" }}>Fuseau horaire *</label>
-                    <select value={usZone} onChange={(e) => { setUsZone(e.target.value); setSelectedSlot(null); }} required
-                      className="text-sm rounded px-3 py-2.5 outline-none transition-colors border text-black"
-                      style={{ background: "#FAF7F2", borderColor: "#DDD8CF" }}>
-                      <option value="">— Sélectionnez votre fuseau —</option>
-                      <option value="usa_east">🕔 Eastern (New York, Miami, Atlanta)</option>
-                      <option value="usa_central">🕔 Central (Chicago, Houston, Dallas)</option>
-                      <option value="usa_mountain">🕔 Mountain (Denver, Phoenix)</option>
-                      <option value="usa_pacific">🕔 Pacific (Los Angeles, San Francisco)</option>
+                  <div className="flex flex-col gap-2 mb-5">
+                    <label className="text-[10px] font-black tracking-widest uppercase text-white/50">Pays / Fuseau Horaire *</label>
+                    <select name="pays" value={formData.pays} onChange={handleChange} required
+                      className="text-sm rounded-xl px-4 py-3 outline-none transition-all border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-primary appearance-none">
+                      <option value="" className="text-black">— Sélectionnez —</option>
+                      <option value="haiti" className="text-black">🇭🇹 Haïti</option>
+                      <option value="rd" className="text-black">🇩🇴 Rép. Dominicaine</option>
+                      <option value="france" className="text-black">🇫🇷 France</option>
+                      <option value="usa" className="text-black">🇺🇸 États-Unis</option>
+                      <option value="canada" className="text-black">🇨🇦 Canada</option>
+                      <option value="mexique" className="text-black">🇲🇽 Mexique</option>
+                      <option value="bresil" className="text-black">🇧🇷 Brésil</option>
+                      <option value="chili" className="text-black">🇨🇱 Chili</option>
                     </select>
                   </div>
-                )}
 
-                <div className="flex flex-col gap-1 mb-3">
-                  <label className="text-[11px] font-medium tracking-wider uppercase" style={{ color: "#5C5546" }}>WhatsApp *</label>
-                  <div className="grid" style={{ gridTemplateColumns: "auto 1fr" }}>
-                    <div className="flex items-center gap-1 px-3 py-2.5 text-xs font-medium rounded-l border border-r-0 whitespace-nowrap"
-                      style={{ background: "#EEE9E1", borderColor: "#DDD8CF", color: "#5C5546" }}>
-                      {selectedCountry ? `${selectedCountry.flag} ${selectedCountry.code}` : "📱 WhatsApp"}
-                    </div>
-                    <input name="whatsapp" value={formData.whatsapp} onChange={handleChange}
-                      placeholder={selectedCountry?.placeholder || "+XXX XXXX XXXX"} required type="tel"
-                      className="text-sm rounded-r px-3 py-2.5 outline-none transition-colors border text-black"
-                      style={{ background: "#FAF7F2", borderColor: "#DDD8CF" }} />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1 mb-3">
-                  <label className="text-[11px] font-medium tracking-wider uppercase" style={{ color: "#5C5546" }}>Date souhaitée *</label>
-                  <CalendarPicker value={formData.date} onChange={(d) => setFormData({ ...formData, date: d })} isDateAvailable={checkDateAvailability} />
-                </div>
-
-                <div className="flex flex-col gap-1 mb-3">
-                  <label className="text-[11px] font-medium tracking-wider uppercase" style={{ color: "#5C5546" }}>Créneau horaire * {(!formData.pays || (formData.pays === "usa" && !usZone)) && <span className="normal-case tracking-normal font-normal italic" style={{ color: "#C9A84C" }}>(sélectionnez d&apos;abord votre pays{formData.pays === "usa" ? " et fuseau" : ""})</span>}</label>
-                  {(formData.pays && (formData.pays !== "usa" || usZone)) ? (
-                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                      {localSlots.map((s, i) => (
-                        <button key={i} type="button" onClick={() => setSelectedSlot(i)}
-                          className="p-2.5 rounded-md text-center transition-all border cursor-pointer"
-                          style={{
-                            background: selectedSlot === i ? "linear-gradient(135deg,#FFFBF0,#FFF8E7)" : "#FAF7F2",
-                            borderColor: selectedSlot === i ? "#C9A84C" : "#DDD8CF",
-                            boxShadow: selectedSlot === i ? "0 0 0 1px #C9A84C" : "none",
-                          }}>
-                          <div className="font-semibold text-xs text-black leading-tight">{fmtUX(s.local)}</div>
-                          <div className="text-[10px] mt-1" style={{ color: "#9E9082" }}>⏳ 1 heure</div>
-                        </button>
-                      ))}
-                    </div>
-                  ) : !formData.date ? (
-                    <div className="p-6 rounded-md text-center text-xs" style={{ background: "#FAF7F2", border: "1px dashed #DDD8CF", color: "#9E9082" }}>
-                      Veuillez sélectionner une date ci-dessus.
-                    </div>
-                  ) : !hasAnySlotsForThisDay ? (
-                    <div className="p-6 rounded-md text-center text-xs" style={{ background: "#FAF7F2", border: "1px dashed #DDD8CF", color: "#9E9082" }}>
-                      Aucun créneau disponible pour ce jour. Veuillez sélectionner une autre date.
-                    </div>
-                  ) : (
-                    <div className="p-6 rounded-md text-center text-xs" style={{ background: "#FAF7F2", border: "1px dashed #DDD8CF", color: "#9E9082" }}>
-                      Veuillez sélectionner votre pays ci-dessus pour voir les créneaux dans votre fuseau horaire.
+                  {formData.pays === "usa" && (
+                    <div className="flex flex-col gap-2 mb-5 animate-in slide-in-from-top-2">
+                      <label className="text-[10px] font-black tracking-widest uppercase text-white/50">Fuseau horaire (USA) *</label>
+                      <select value={usZone} onChange={(e) => { setUsZone(e.target.value); setSelectedSlot(null); }} required
+                        className="text-sm rounded-xl px-4 py-3 outline-none transition-all border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-primary appearance-none">
+                        <option value="" className="text-black">— Sélectionnez votre fuseau —</option>
+                        <option value="usa_east" className="text-black">🕔 Eastern (New York, Miami, Atlanta)</option>
+                        <option value="usa_central" className="text-black">🕔 Central (Chicago, Houston, Dallas)</option>
+                        <option value="usa_mountain" className="text-black">🕔 Mountain (Denver, Phoenix)</option>
+                        <option value="usa_pacific" className="text-black">🕔 Pacific (Los Angeles, San Francisco)</option>
+                      </select>
                     </div>
                   )}
-                </div>
 
-                <div className="flex flex-col gap-1 mb-3">
-                  <label className="text-[11px] font-medium tracking-wider uppercase" style={{ color: "#5C5546" }}>Sujet *</label>
-                  <textarea name="sujet" value={formData.sujet} onChange={handleChange} rows={3}
-                    placeholder="Décrivez brièvement votre objectif ou problématique..." required
-                    className="text-sm rounded px-3 py-2.5 outline-none transition-colors border text-black resize-y min-h-[80px]"
-                    style={{ background: "#FAF7F2", borderColor: "#DDD8CF" }} />
-                </div>
+                  <div className="flex flex-col gap-2 mb-5">
+                    <label className="text-[10px] font-black tracking-widest uppercase text-white/50">WhatsApp *</label>
+                    <div className="flex">
+                      <div className="flex items-center gap-2 px-4 py-3 text-sm font-bold rounded-l-xl border border-r-0 border-white/10 bg-white/10 text-white shrink-0">
+                        {selectedCountry ? `${selectedCountry.flag} ${selectedCountry.code}` : "📱"}
+                      </div>
+                      <input name="whatsapp" value={formData.whatsapp} onChange={handleChange}
+                        placeholder={selectedCountry?.placeholder || "+XXX XXXX XXXX"} required type="tel"
+                        className="w-full text-sm rounded-r-xl px-4 py-3 outline-none transition-all border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-primary placeholder:text-white/20" />
+                    </div>
+                  </div>
 
-                <button type="submit" disabled={!isFormValid}
-                  className="w-full py-3.5 rounded-lg font-semibold text-sm tracking-wide transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 mt-1"
-                  style={{ background: "#C9A84C", color: "#111" }}>
-                  Vérifier ma demande →
-                </button>
-                <p className="text-[10px] text-center mt-3 leading-relaxed" style={{ color: "#9E9082" }}>
-                  Vos informations sont strictement confidentielles. La confirmation sera envoyée via WhatsApp.
-                </p>
-              </form>
-            )}
+                  <div className="flex flex-col gap-2 mb-5">
+                    <label className="text-[10px] font-black tracking-widest uppercase text-white/50">Date souhaitée *</label>
+                    <CalendarPicker value={formData.date} onChange={(d) => setFormData({ ...formData, date: d })} isDateAvailable={checkDateAvailability} />
+                  </div>
+
+                  <div className="flex flex-col gap-2 mb-6">
+                    <label className="text-[10px] font-black tracking-widest uppercase text-white/50">
+                        Créneau horaire * 
+                        {(!formData.pays || (formData.pays === "usa" && !usZone)) && 
+                        <span className="normal-case tracking-normal font-medium text-primary ml-2 lowercase">
+                            (sélectionnez d'abord votre pays)
+                        </span>}
+                    </label>
+                    {(formData.pays && (formData.pays !== "usa" || usZone)) ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {localSlots.map((s, i) => (
+                          <button key={i} type="button" onClick={() => setSelectedSlot(i)}
+                            className={`p-3 rounded-xl text-center transition-all border ${
+                                selectedSlot === i ? 'bg-primary/20 border-primary text-white shadow-md shadow-primary/10' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20'
+                            }`}>
+                            <div className="font-bold text-sm leading-tight">{fmtUX(s.local)}</div>
+                            <div className="text-[10px] mt-1 opacity-50 uppercase tracking-widest">1 heure</div>
+                          </button>
+                        ))}
+                      </div>
+                    ) : !formData.date ? (
+                      <div className="p-6 rounded-xl text-center text-xs font-medium border border-dashed border-white/20 bg-white/5 text-white/40">
+                        Veuillez sélectionner une date ci-dessus.
+                      </div>
+                    ) : !hasAnySlotsForThisDay ? (
+                      <div className="p-6 rounded-xl text-center text-xs font-medium border border-dashed border-white/20 bg-white/5 text-white/40">
+                        Aucun créneau disponible pour ce jour. Veuillez sélectionner une autre date.
+                      </div>
+                    ) : (
+                      <div className="p-6 rounded-xl text-center text-xs font-medium border border-dashed border-white/20 bg-white/5 text-white/40">
+                        Veuillez sélectionner votre pays ci-dessus pour voir les créneaux dans votre fuseau horaire.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-2 mb-5">
+                    <label className="text-[10px] font-black tracking-widest uppercase text-white/50">Kategori / Motif *</label>
+                    <div className="relative">
+                        <select name="kategori" value={formData.kategori} onChange={handleChange} required
+                            className="w-full text-sm rounded-xl px-4 py-3 outline-none transition-all border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-primary appearance-none">
+                            <option value="" className="text-black">— Sélectionnez —</option>
+                            <option value="Coaching Privé (Kategori 5)" className="text-black">✔ Coaching Privé (Kategori 5)</option>
+                            <option value="Brand Pèsonèl" className="text-black">✔ Brand Pèsonèl</option>
+                            <option value="Kreyasyon Kontni" className="text-black">✔ Kreyasyon Kontni</option>
+                            <option value="Biznis Dijital" className="text-black">✔ Biznis Dijital</option>
+                            <option value="Ekriti Liv/Ebook" className="text-black">✔ Ekriti Liv/Ebook</option>
+                            <option value="Storytelling ak Kominikasyon" className="text-black">✔ Storytelling ak Kominikasyon</option>
+                            <option value="Estrateji AI pou travay oswa biznis" className="text-black">✔ Estrateji AI pou travay oswa biznis</option>
+                        </select>
+                        <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">expand_more</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 mb-8">
+                    <label className="text-[10px] font-black tracking-widest uppercase text-white/50">Sujet détaillé *</label>
+                    <textarea name="sujet" value={formData.sujet} onChange={handleChange} rows={3}
+                      placeholder="Décrivez brièvement votre objectif ou problématique..." required
+                      className="text-sm rounded-xl px-4 py-3 outline-none transition-all border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-primary placeholder:text-white/20 resize-y min-h-[100px]" />
+                  </div>
+
+                  <button type="submit" disabled={!isFormValid}
+                    className="w-full py-4 rounded-xl font-black uppercase text-sm tracking-wide transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 bg-primary text-white shadow-xl shadow-primary/20">
+                    Vérifier ma demande
+                  </button>
+                  <p className="text-[10px] text-center mt-4 text-white/30 uppercase tracking-widest font-bold">
+                    La confirmation sera envoyée via WhatsApp.
+                  </p>
+                </form>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FOOTER */}
-      <footer className="py-8 px-5 text-center" style={{ background: "#111", borderTop: "1px solid rgba(201,168,76,.15)" }}>
-        <p className="text-[11px] tracking-wide" style={{ color: "#C9A84C", opacity: 0.7 }}>★ Consultation Privée ★</p>
-        <p className="text-[11px] tracking-wide mt-1" style={{ color: "rgba(255,255,255,.3)" }}>Consultations en ligne privées et personnalisées</p>
-      </footer>
+      </main>
+
+      <DashboardFooter />
 
       {/* ── PAYMENT ACTION MODAL ── */}
       <ActionModal
@@ -676,14 +691,14 @@ export default function ConsultationPage() {
         subtitle="Consultation privée · 1h"
       >
         <div className="text-white space-y-4">
-          <div className="bg-white/[0.03] border border-white/8 rounded-xl px-4 py-3 flex items-center justify-between">
-            <span className="text-xs text-white/50">Total</span>
+          <div className="bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 flex items-center justify-between">
+            <span className="text-xs font-black uppercase tracking-widest text-white/50">Total</span>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-black text-white">${service.price} USD</span>
+              <span className="text-2xl font-black text-white">${service?.price} USD</span>
             </div>
           </div>
 
-          <p className="text-xs text-white/40 text-center font-semibold uppercase tracking-widest">Comment veux-tu payer ?</p>
+          <p className="text-[10px] text-white/40 text-center font-black uppercase tracking-widest my-6">Comment veux-tu payer ?</p>
 
           <div className="space-y-3">
             {formData.pays === "haiti" && (
@@ -691,23 +706,23 @@ export default function ConsultationPage() {
                 className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-[#e30713]/20 to-[#e30713]/5 border-2 border-[#e30713]/50 hover:border-[#e30713] rounded-2xl transition-all active:scale-95 group text-left">
                 <img src="/images/moncash-logo.png" alt="MonCash" className="size-12 object-contain rounded-xl shadow-lg shrink-0" onError={(e) => { e.currentTarget.src = "https://play-lh.googleusercontent.com/4g8lT5G0lO3Hwtm5X5wIhpWl4uS45j6m6jN6k9XJ2Y" }} />
                 <div className="flex-1">
-                  <p className="font-black text-white text-sm">MonCash ({service.priceHTG || 20000} HTG)</p>
-                  <p className="text-xs text-white/50">Paiement mobile haïtien · Rapide</p>
+                  <p className="font-black text-white text-sm">MonCash ({service?.priceHTG || 20000} HTG)</p>
+                  <p className="text-xs font-medium text-white/50 mt-0.5">Paiement mobile haïtien · Rapide</p>
                 </div>
-                <svg className="size-5 text-white/50 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                <span className="material-symbols-outlined text-white/50 group-hover:text-white transition-colors">arrow_forward_ios</span>
               </button>
             )}
 
             <button onClick={() => handlePaymentSelection("card")}
               className="w-full flex items-center gap-4 p-4 bg-white/[0.03] border border-white/10 hover:border-white/30 hover:bg-white/[0.06] rounded-2xl transition-all active:scale-95 group text-left">
-              <div className="size-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shrink-0">
-                <span className="text-xl">💳</span>
+              <div className="size-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shrink-0 border border-white/10">
+                <span className="material-symbols-outlined text-white text-[24px]">credit_card</span>
               </div>
               <div className="flex-1">
                 <p className="font-black text-white text-sm">Carte bancaire · PayPal</p>
-                <p className="text-xs text-white/50">Visa, Mastercard, American Express, PayPal</p>
+                <p className="text-xs font-medium text-white/50 mt-0.5">Visa, Mastercard, Amex, PayPal</p>
               </div>
-              <svg className="size-5 text-white/50 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+              <span className="material-symbols-outlined text-white/50 group-hover:text-white transition-colors">arrow_forward_ios</span>
             </button>
           </div>
         </div>

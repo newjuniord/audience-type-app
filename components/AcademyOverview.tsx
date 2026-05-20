@@ -1,6 +1,7 @@
 "use client";
 
 import TypingAnimation from "./TypingAnimation";
+import Link from "next/link";
 
 export default function AcademyOverview() {
     return (
@@ -61,6 +62,9 @@ export default function AcademyOverview() {
                                 <li className="flex items-center gap-2">✔ Storytelling ak Kominikasyon</li>
                                 <li className="flex items-center gap-2">✔ Estrateji AI pou travay oswa biznis</li>
                             </ul>
+                            <Link href="/consultation" className="mt-4 block text-center bg-white/5 hover:bg-white/10 text-white text-xs font-bold uppercase tracking-widest py-3 rounded-xl transition-colors border border-white/10">
+                                Rezève Yon Sesyon
+                            </Link>
                         </div>
                     </div>
 
@@ -86,6 +90,9 @@ export default function AcademyOverview() {
                                     <li className="flex items-center gap-2">⚡ Kreye prompt AI pou biznis</li>
                                 </ul>
                             </div>
+                            <Link href="/services" className="mt-4 block text-center bg-white/5 hover:bg-white/10 text-white text-xs font-bold uppercase tracking-widest py-3 rounded-xl transition-colors border border-white/10">
+                                Gade Tout Sèvis Yo
+                            </Link>
                         </div>
                     </div>
 
@@ -100,6 +107,9 @@ export default function AcademyOverview() {
                             <p className="text-white/60 text-sm leading-relaxed">
                                 Yon pwogram pèsonalize pou pastè, pè, paran, lidè, politisyen, vandè, CEO ak enfliyansè ki vle aprann pale ak plis klète, otorite, emosyon ak konviksyon, pou yo ka enfliyanse, konvenk, dirije epi touche moun yo ap adrese yo.
                             </p>
+                            <Link href="/coaching" className="mt-4 block text-center bg-white/5 hover:bg-white/10 text-white text-xs font-bold uppercase tracking-widest py-3 rounded-xl transition-colors border border-white/10">
+                                Dekouvri Pwogram Nan
+                            </Link>
                         </div>
                     </div>
 

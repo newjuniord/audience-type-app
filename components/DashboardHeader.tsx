@@ -42,6 +42,15 @@ export default function DashboardHeader() {
                         <Link href="/dashboard" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
                             Mon contenu
                         </Link>
+                        <Link href="/consultation" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                            Konsiltasyon
+                        </Link>
+                        <Link href="/coaching" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                            Coaching
+                        </Link>
+                        <Link href="/services" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                            Sèvis
+                        </Link>
                         <Link href="/dashboard/transactions" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
                             Transactions
                         </Link>
@@ -115,6 +124,30 @@ export default function DashboardHeader() {
                                     >
                                         <span className="material-symbols-outlined text-lg notranslate">grid_view</span>
                                         Mon contenu
+                                    </Link>
+                                    <Link
+                                        href="/consultation"
+                                        onClick={() => setIsDropdownOpen(false)}
+                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
+                                    >
+                                        <span className="material-symbols-outlined text-lg notranslate">support_agent</span>
+                                        Konsiltasyon
+                                    </Link>
+                                    <Link
+                                        href="/coaching"
+                                        onClick={() => setIsDropdownOpen(false)}
+                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
+                                    >
+                                        <span className="material-symbols-outlined text-lg notranslate">psychology</span>
+                                        Coaching
+                                    </Link>
+                                    <Link
+                                        href="/services"
+                                        onClick={() => setIsDropdownOpen(false)}
+                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
+                                    >
+                                        <span className="material-symbols-outlined text-lg notranslate">design_services</span>
+                                        Sèvis
                                     </Link>
                                     <Link
                                         href="/dashboard/transactions"

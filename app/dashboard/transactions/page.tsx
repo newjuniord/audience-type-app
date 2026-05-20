@@ -4,8 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from "@/context/AuthContext";
 import { getOrdersByUser } from "@/lib/orders";
 import { Order } from "@/lib/types";
-import { doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 export default function TransactionsPage() {
     const { user } = useAuth();
@@ -18,16 +16,10 @@ export default function TransactionsPage() {
 
     useEffect(() => {
         const fetchOrders = async () => {
-            if (!user) {
-                console.log("📡 [TRANSACTIONS] No user found in AuthContext");
-                return;
-            }
-            console.log("📡 [TRANSACTIONS] Fetching orders for UID:", user.uid);
+            if (!user) return;
             try {
-                const userOrders = await getOrdersByUser(user.uid);
-                console.log(`✅ [TRANSACTIONS] Fetched ${userOrders.length} orders.`);
-
-                // Sort by date desc
+                // Limite à 7 pour réduire les lectures Firebase
+                const userOrders = await getOrdersByUser(user.uid, 7);
                 userOrders.sort((a, b) => {
                     const dateA = a.createdAt?.toDate().getTime() || 0;
                     const dateB = b.createdAt?.toDate().getTime() || 0;
@@ -35,28 +27,21 @@ export default function TransactionsPage() {
                 });
                 setOrders(userOrders);
             } catch (error) {
-                console.error("❌ [TRANSACTIONS] Error fetching transactions:", error);
+                console.error("Error fetching transactions:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        if (user) {
-            fetchOrders();
-        } else {
-            console.log("📡 [TRANSACTIONS] Waiting for user or loading...");
-            // Non-loading state without user means we've checked and it's empty
-            if (!loading) setLoading(false);
-        }
-    }, [user, loading]);
+        if (user) fetchOrders();
+        else setLoading(false);
+    }, [user]);
 
-    // Filtering
     const filteredOrders = orders.filter(order =>
         (order.productTitle || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         (order.transactionId || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Pagination
     const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
     const paginatedOrders = filteredOrders.slice(
         (currentPage - 1) * itemsPerPage,
@@ -64,199 +49,235 @@ export default function TransactionsPage() {
     );
 
     const formatDate = (timestamp: any) => {
-        if (!timestamp) return "N/A";
+        if (!timestamp) return "—";
         return timestamp.toDate().toLocaleDateString("fr-FR", {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
+            year: 'numeric', month: 'short', day: 'numeric'
         });
     };
 
-    const formatCurrency = (amount: number, currency: string) => {
-        return new Intl.NumberFormat('fr-FR', {
-            style: 'currency',
-            currency: currency || 'USD'
-        }).format(amount);
-    };
+    const formatCurrency = (amount: number, currency: string) =>
+        new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency || 'USD' }).format(amount);
 
     const getIconForType = (type: string) => {
         const t = type.toLowerCase();
         if (t.includes('course')) return 'school';
-        if (t.includes('ebook')) return 'book';
-        if (t.includes('service')) return 'build';
+        if (t.includes('ebook')) return 'menu_book';
+        if (t.includes('service')) return 'design_services';
         return 'shopping_bag';
     };
 
     const getTypeLabel = (type: string) => {
         const t = type.toLowerCase();
-        if (t.includes('course')) return 'Cours';
+        if (t.includes('course')) return 'Kou';
         if (t.includes('ebook')) return 'Ebook';
-        if (t.includes('service')) return 'Service';
-        return 'Produit';
+        if (t.includes('service')) return 'Sèvis';
+        return 'Produi';
     };
 
+    const getStatusConfig = (status: string, createdAt?: any) => {
+        if (['paid', 'completed'].includes(status))
+            return { label: 'Peye', dot: 'bg-green-400', text: 'text-green-400', bg: 'bg-green-400/10 border-green-400/20' };
+        if (status === 'failed')
+            return { label: 'Echwe', dot: 'bg-red-400', text: 'text-red-400', bg: 'bg-red-400/10 border-red-400/20' };
+            
+        if (createdAt) {
+            const orderDate = createdAt.toDate().getTime();
+            const now = new Date().getTime();
+            const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
+            if ((now - orderDate) > threeDaysInMs) {
+                return { label: 'Ekspire', dot: 'bg-gray-500', text: 'text-gray-500', bg: 'bg-gray-500/10 border-gray-500/20' };
+            }
+        }
+
+        return { label: 'An atant', dot: 'bg-yellow-400', text: 'text-yellow-400', bg: 'bg-yellow-400/10 border-yellow-400/20' };
+    };
+
+    // Quick stats
+    const totalSpent = orders.filter(o => ['paid', 'completed'].includes(o.status))
+        .reduce((sum, o) => sum + (o.amount || 0), 0);
+    const paidCount = orders.filter(o => ['paid', 'completed'].includes(o.status)).length;
+
     return (
-        <div className="relative flex h-auto min-h-screen w-full flex-col bg-white dark:bg-background-dark group/design-root overflow-x-hidden font-display">
-            <div className="layout-container flex h-full grow flex-col">
-                <main className="flex-1 flex flex-col lg:px-40 py-8">
-                    {/* Transaction Summary */}
-                    <div className="flex flex-wrap justify-between items-end gap-6 px-6 mb-10">
-                        <div className="flex flex-col gap-1">
-                            <h2 className="text-primary dark:text-white text-4xl font-black tracking-tighter">Historique des transactions</h2>
-                            <p className="text-primary/60 dark:text-white/60 text-base">Gérez et suivez tous vos achats numériques passés.</p>
-                        </div>
+        <div className="pt-24 pb-24 max-w-[1200px] mx-auto px-6">
+
+                {/* Page Header */}
+                <div className="py-12 border-b border-white/5 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div className="space-y-2">
+                        <span className="text-primary text-xs font-black uppercase tracking-[0.3em]">Mon compte</span>
+                        <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-white">
+                            Transactions
+                        </h1>
+                        <p className="text-white/40 text-sm">Istwa achète ak peman ou yo.</p>
                     </div>
 
-                    {/* Filters and Search */}
-                    <div className="px-6 mb-6 flex flex-col md:flex-row gap-4 items-center">
-                        <div className="relative w-full md:max-w-md">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <span className="material-symbols-outlined text-primary/40 dark:text-white/40">search</span>
+                    {/* Quick stats */}
+                    {!loading && orders.length > 0 && (
+                        <div className="flex items-stretch gap-4">
+                            <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 text-center min-w-[100px]">
+                                <p className="text-2xl font-black text-white">{paidCount}</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mt-1">Acha fèt</p>
                             </div>
-                            <input
-                                className="block w-full rounded-full border-none bg-primary/5 dark:bg-white/5 py-3 pl-11 pr-4 text-sm text-primary dark:text-white placeholder-primary/40 dark:placeholder-white/40 focus:ring-2 focus:ring-primary/20 dark:focus:ring-white/20 transition-all"
-                                placeholder="Rechercher par titre ou ID..."
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Data Table */}
-                    <div className="px-6 overflow-x-auto min-h-[400px]">
-                        <table className="w-full text-left border-separate border-spacing-0">
-                            <thead>
-                                <tr className="border-b border-primary/10 dark:border-white/10">
-                                    <th className="py-4 px-4 text-xs font-bold uppercase tracking-widest text-primary/40 dark:text-white/40 border-b border-primary/10 dark:border-white/10">ID de Transaction</th>
-                                    <th className="py-4 px-4 text-xs font-bold uppercase tracking-widest text-primary/40 dark:text-white/40 border-b border-primary/10 dark:border-white/10">Date</th>
-                                    <th className="py-4 px-4 text-xs font-bold uppercase tracking-widest text-primary/40 dark:text-white/40 border-b border-primary/10 dark:border-white/10">Nom de l'article</th>
-                                    <th className="py-4 px-4 text-xs font-bold uppercase tracking-widest text-primary/40 dark:text-white/40 border-b border-primary/10 dark:border-white/10">Type</th>
-                                    <th className="py-4 px-4 text-xs font-bold uppercase tracking-widest text-primary/40 dark:text-white/40 border-b border-primary/10 dark:border-white/10">Méthode</th>
-                                    <th className="py-4 px-4 text-xs font-bold uppercase tracking-widest text-primary/40 dark:text-white/40 border-b border-primary/10 dark:border-white/10 text-right">Montant</th>
-                                    <th className="py-4 px-4 text-xs font-bold uppercase tracking-widest text-primary/40 dark:text-white/40 border-b border-primary/10 dark:border-white/10 text-center">Statut</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-primary/5 dark:divide-white/5">
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan={7} className="text-center py-10">
-                                            <div className="flex justify-center">
-                                                <span className="material-symbols-outlined animate-spin text-4xl opacity-20">progress_activity</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : paginatedOrders.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={7} className="text-center py-10 text-primary/40 dark:text-white/40 font-medium">
-                                            Aucune transaction trouvée.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    paginatedOrders.map((order) => (
-                                        <tr key={order.id} className="group hover:bg-primary/5 dark:hover:bg-white/5 transition-colors cursor-pointer">
-                                            <td
-                                                onClick={() => {
-                                                    if (!order.transactionId) return;
-                                                    navigator.clipboard.writeText(order.transactionId);
-                                                    setCopiedId(order.transactionId);
-                                                    setTimeout(() => setCopiedId(null), 2000);
-                                                }}
-                                                className="py-5 px-4 text-sm font-bold text-primary dark:text-white cursor-pointer hover:text-primary/70 dark:hover:text-white/70 transition-colors relative group/copy"
-                                                title="Cliquez pour copier l'ID complet"
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    #{order.transactionId?.substring(0, 8)}...
-                                                    <span className="material-symbols-outlined text-[14px] opacity-0 group-hover/copy:opacity-100 transition-opacity">content_copy</span>
-
-                                                </div>
-                                                {copiedId === order.transactionId && (
-                                                    <span className="absolute top-1 right-2 bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded animate-in fade-in zoom-in">
-                                                        Copié !
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="py-5 px-4 text-sm text-primary/70 dark:text-white/70">{formatDate(order.createdAt)}</td>
-                                            <td className="py-5 px-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="size-8 rounded-lg bg-primary/5 dark:bg-white/5 flex items-center justify-center">
-                                                        <span className="material-symbols-outlined text-[18px] text-primary dark:text-white">
-                                                            {getIconForType(order.productType || "")}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-bold text-primary dark:text-white line-clamp-1 max-w-[200px]">{order.productTitle}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-5 px-4">
-                                                <span className="text-xs font-medium px-2 py-1 rounded bg-primary/10 dark:bg-white/10 text-primary dark:text-white uppercase tracking-wider">
-                                                    {getTypeLabel(order.productType || "")}
-                                                </span>
-                                            </td>
-                                            <td className="py-5 px-4 text-sm text-primary/70 dark:text-white/70">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="material-symbols-outlined text-[16px]">credit_card</span>
-                                                    <span className="capitalize">{order.paymentMethod || 'Carte'}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-5 px-4 text-sm font-bold text-right text-primary dark:text-white">
-                                                {formatCurrency(order.amount, order.currency)}
-                                            </td>
-                                            <td className="py-5 px-4 text-center">
-                                                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${['paid', 'completed'].includes(order.status)
-                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                    : order.status === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                                    }`}>
-                                                    {['paid', 'completed'].includes(order.status) ? 'Payé' :
-                                                        order.status === 'pending' ? 'En attente' :
-                                                            order.status === 'failed' ? 'Échoué' :
-                                                                order.status}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="px-6 py-12 flex justify-center items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="size-10 flex items-center justify-center rounded-full border border-primary/10 dark:border-white/10 hover:bg-primary/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30 text-primary dark:text-white"
-                            >
-                                <span className="material-symbols-outlined text-[20px]">chevron_left</span>
-                            </button>
-
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                <button
-                                    key={page}
-                                    onClick={() => setCurrentPage(page)}
-                                    className={`size-10 flex items-center justify-center rounded-full transition-colors text-sm font-bold ${currentPage === page
-                                        ? 'bg-primary dark:bg-white text-white dark:text-primary'
-                                        : 'border border-primary/10 dark:border-white/10 hover:bg-primary/5 dark:hover:bg-white/5 text-primary dark:text-white'
-                                        }`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
-
-                            <button
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                                className="size-10 flex items-center justify-center rounded-full border border-primary/10 dark:border-white/10 hover:bg-primary/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30 text-primary dark:text-white"
-                            >
-                                <span className="material-symbols-outlined text-[20px]">chevron_right</span>
-                            </button>
+                            <div className="p-5 rounded-2xl bg-primary/10 border border-primary/20 text-center min-w-[120px]">
+                                <p className="text-2xl font-black text-primary">
+                                    {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalSpent)}
+                                </p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mt-1">Total depanse</p>
+                            </div>
                         </div>
                     )}
-                </main>
-            </div>
+                </div>
+
+                {/* Search bar */}
+                <div className="py-6">
+                    <div className="relative max-w-md">
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-[20px]">search</span>
+                        <input
+                            className="w-full h-12 bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 text-sm text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 focus:outline-none transition-all"
+                            placeholder="Chèche pa tit oswa ID..."
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                        />
+                    </div>
+                </div>
+
+                {/* Table */}
+                <div className="rounded-2xl border border-white/10 overflow-hidden">
+                    {/* Table header */}
+                    <div className="hidden md:grid grid-cols-[2fr_1.2fr_1fr_1fr_1fr_1fr] gap-4 px-6 py-4 bg-white/[0.02] border-b border-white/5">
+                        {["Pwodui", "ID Tranzaksyon", "Dat", "Tip", "Metòd", "Montan / Estati"].map((h) => (
+                            <p key={h} className="text-[10px] font-black uppercase tracking-widest text-white/30">{h}</p>
+                        ))}
+                    </div>
+
+                    {/* Rows */}
+                    <div className="divide-y divide-white/5">
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center py-24 gap-4">
+                                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                <p className="text-white/30 text-sm font-medium">Chajman...</p>
+                            </div>
+                        ) : paginatedOrders.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-24 gap-4">
+                                <div className="size-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-3xl text-white/20">receipt_long</span>
+                                </div>
+                                <div className="text-center">
+                                    <p className="font-bold text-white">Okenn tranzaksyon</p>
+                                    <p className="text-white/40 text-sm mt-1">
+                                        {searchTerm ? "Okenn rezilta pou rechèch sa a." : "Ou poko fè okenn acha."}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            paginatedOrders.map((order) => {
+                                const status = getStatusConfig(order.status, order.createdAt);
+                                return (
+                                    <div
+                                        key={order.id}
+                                        className="grid grid-cols-1 md:grid-cols-[2fr_1.2fr_1fr_1fr_1fr_1fr] gap-4 px-6 py-5 hover:bg-white/[0.02] transition-colors items-center"
+                                    >
+                                        {/* Product */}
+                                        <div className="flex items-center gap-3">
+                                            <div className="size-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                                                <span className="material-symbols-outlined text-primary text-[18px]">
+                                                    {getIconForType(order.productType || "")}
+                                                </span>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-bold text-white truncate max-w-[180px]">{order.productTitle}</p>
+                                                <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-0.5 md:hidden">
+                                                    {formatDate(order.createdAt)}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Transaction ID */}
+                                        <button
+                                            onClick={() => {
+                                                if (!order.transactionId) return;
+                                                navigator.clipboard.writeText(order.transactionId);
+                                                setCopiedId(order.transactionId);
+                                                setTimeout(() => setCopiedId(null), 2000);
+                                            }}
+                                            className="relative flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors group/copy w-fit"
+                                            title="Klike pou kopye ID a"
+                                        >
+                                            <span className="font-mono text-xs">#{order.transactionId?.substring(0, 10)}…</span>
+                                            <span className="material-symbols-outlined text-[14px] opacity-0 group-hover/copy:opacity-100 transition-opacity">content_copy</span>
+                                            {copiedId === order.transactionId && (
+                                                <span className="absolute -top-7 left-0 bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap animate-in fade-in zoom-in">
+                                                    Kopye ✓
+                                                </span>
+                                            )}
+                                        </button>
+
+                                        {/* Date */}
+                                        <p className="text-sm text-white/50 hidden md:block">{formatDate(order.createdAt)}</p>
+
+                                        {/* Type */}
+                                        <div className="hidden md:block">
+                                            <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/60">
+                                                {getTypeLabel(order.productType || "")}
+                                            </span>
+                                        </div>
+
+                                        {/* Payment method */}
+                                        <p className="text-sm text-white/50 hidden md:flex items-center gap-1.5">
+                                            <span className="material-symbols-outlined text-[14px] text-white/30">credit_card</span>
+                                            <span className="capitalize">{order.paymentMethod || 'Kat'}</span>
+                                        </p>
+
+                                        {/* Amount + Status */}
+                                        <div className="flex flex-col gap-1.5 items-start md:items-end">
+                                            <p className="text-base font-black text-white">
+                                                {formatCurrency(order.amount, order.currency)}
+                                            </p>
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${status.bg} ${status.text}`}>
+                                                <span className={`size-1.5 rounded-full ${status.dot}`}></span>
+                                                {status.label}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="py-10 flex justify-center items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="size-10 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/5 transition-colors disabled:opacity-30 text-white"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                        </button>
+
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`size-10 flex items-center justify-center rounded-full transition-all text-sm font-bold ${currentPage === page
+                                    ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                                    : 'border border-white/10 hover:bg-white/5 text-white/50 hover:text-white'
+                                    }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="size-10 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/5 transition-colors disabled:opacity-30 text-white"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                        </button>
+                    </div>
+                )}
         </div>
     );
 }
