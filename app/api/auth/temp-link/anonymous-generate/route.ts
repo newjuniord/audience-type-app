@@ -26,28 +26,26 @@ export async function POST(req: Request) {
 
         // 2. Si c'est par téléphone, valider Turnstile et appliquer les limites de taux via Firestore
         if (contactMethod === 'phone' && finalPhone) {
-            // A. Validation Cloudflare Turnstile
-            const turnstileSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY || "1x00000000000000000000000000000000";
-            if (!turnstileToken) {
-                return NextResponse.json({ error: "Validation de sécurité Turnstile manquante." }, { status: 400 });
-            }
-            
-            try {
-                const ip = req.headers.get("x-forwarded-for") || "";
-                const turnstileRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: `secret=${encodeURIComponent(turnstileSecret)}&response=${encodeURIComponent(turnstileToken)}&remoteip=${encodeURIComponent(ip)}`
-                });
-                
-                const turnstileData = await turnstileRes.json();
-                if (!turnstileData.success) {
-                    return NextResponse.json({ error: "Échec de la validation de sécurité Turnstile. Veuillez réessayer." }, { status: 400 });
-                }
-            } catch (err) {
-                console.error("Turnstile verification error:", err);
-                return NextResponse.json({ error: "Erreur de validation de sécurité." }, { status: 500 });
-            }
+            // A. Validation Cloudflare Turnstile — DÉSACTIVÉ TEMPORAIREMENT
+            // const turnstileSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY || "1x00000000000000000000000000000000";
+            // if (!turnstileToken) {
+            //     return NextResponse.json({ error: "Validation de sécurité Turnstile manquante." }, { status: 400 });
+            // }
+            // try {
+            //     const ip = req.headers.get("x-forwarded-for") || "";
+            //     const turnstileRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+            //         method: "POST",
+            //         headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            //         body: `secret=${encodeURIComponent(turnstileSecret)}&response=${encodeURIComponent(turnstileToken)}&remoteip=${encodeURIComponent(ip)}`
+            //     });
+            //     const turnstileData = await turnstileRes.json();
+            //     if (!turnstileData.success) {
+            //         return NextResponse.json({ error: "Échec de la validation de sécurité Turnstile. Veuillez réessayer." }, { status: 400 });
+            //     }
+            // } catch (err) {
+            //     console.error("Turnstile verification error:", err);
+            //     return NextResponse.json({ error: "Erreur de validation de sécurité." }, { status: 500 });
+            // }
 
             // B. Limite de taux Firestore (Spam Shield et Cooldown)
             const now = new Date();

@@ -685,8 +685,8 @@ export default function WhatsAppLoginModal({
                             />
                         </div>
 
-                        {/* Turnstile Container */}
-                        <div ref={turnstileWidgetRef} className="my-4 flex justify-center min-h-[65px]"></div>
+                        {/* Turnstile Container — DÉSACTIVÉ TEMPORAIREMENT */}
+                        {/* <div ref={turnstileWidgetRef} className="my-4 flex justify-center min-h-[65px]"></div> */
 
                         {error && (
                             <p className="text-[10px] font-black uppercase text-red-500 tracking-widest text-center mt-2">
@@ -702,7 +702,7 @@ export default function WhatsAppLoginModal({
 
                         <button
                             type="submit"
-                            disabled={isLoading || !phone || !turnstileToken || cooldownSeconds > 0}
+                            disabled={isLoading || !phone || cooldownSeconds > 0}
                             className="w-full h-16 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:opacity-90 active:scale-[0.98] transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {isLoading ? (
