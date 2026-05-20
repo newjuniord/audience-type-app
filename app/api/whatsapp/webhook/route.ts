@@ -2,7 +2,7 @@ import { getAdminDb } from "@/lib/firebase-admin";
 import { v4 as uuidv4 } from "uuid";
 import { Timestamp } from "firebase-admin/firestore";
 import { upstashSession } from "@/lib/upstashAuth";
-import { formatMessageTemplate } from "@/lib/whatsapp";
+import { formatMessageTemplate, sendWhatsAppMessage } from "@/lib/whatsapp";
 
 export async function POST(req: Request) {
   try {
@@ -103,15 +103,32 @@ export async function POST(req: Request) {
     const baseUrl = `${protocol}://${host}`;
     const link = `${baseUrl}/login/temp?token=${token}`;
 
-    const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
-        "🔑 *VÉRIFICATION DRJ AKADEMI*\n\nVoici ton code de vérification pour accéder à ton cours : {{code}}\n\nTu peux également te connecter directement en cliquant sur ce lien sécurisé : {{link}}\n\nNe partage jamais ce code.";
+    const authTemplateSid = process.env.TWILIO_TEMPLATE_AUTH_SID;
 
-    const formattedMessage = formatMessageTemplate(authTemplate, { code: `*${code}*`, link, userName });
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${formattedMessage}</Message></Response>`;
+    if (authTemplateSid) {
+      // Send Twilio Content Template asynchronously
+      await sendWhatsAppMessage(phone, "", authTemplateSid, {
+        "1": code,
+        "2": token,
+        "3": link,
+        "4": userName
+      });
+      
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`;
+      return new Response(twiml, {
+        headers: { "Content-Type": "application/xml" },
+      });
+    } else {
+      const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
+          "🔑 *VÉRIFICATION DRJ AKADEMI*\n\nVoici ton code de vérification pour accéder à ton cours : {{code}}\n\nTu peux également te connecter directement en cliquant sur ce lien sécurisé : {{link}}\n\nNe partage jamais ce code.";
 
-    return new Response(twiml, {
-      headers: { "Content-Type": "application/xml" },
-    });
+      const formattedMessage = formatMessageTemplate(authTemplate, { code: `*${code}*`, link, userName });
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${formattedMessage}</Message></Response>`;
+
+      return new Response(twiml, {
+        headers: { "Content-Type": "application/xml" },
+      });
+    }
 
   } catch (error: any) {
     console.error("Error in WhatsApp webhook:", error);

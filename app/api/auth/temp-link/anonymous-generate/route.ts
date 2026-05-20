@@ -79,17 +79,32 @@ export async function POST(req: Request) {
 
         // 5. Envoyer le code
         if (contactMethod === 'phone' && finalPhone) {
+            const userName = userDoc.data()?.name || "Client";
+            const authTemplateSid = process.env.TWILIO_TEMPLATE_AUTH_SID;
+
             if (type === 'whatsapp') {
-                const message = formatMessageTemplate(authTemplate, { code: formattedCode, link });
                 try {
-                    await sendWhatsAppMessage(finalPhone, message);
-                    console.log(`📩 [WHATSAPP] Code de vérification envoyé à ${finalPhone}`);
+                    if (authTemplateSid) {
+                        // Utiliser le template Twilio Content
+                        await sendWhatsAppMessage(finalPhone, "", authTemplateSid, {
+                            "1": code,
+                            "2": token,
+                            "3": link,
+                            "4": userName
+                        });
+                        console.log(`📩 [WHATSAPP TEMPLATE] Envoyé avec succès à ${finalPhone}`);
+                    } else {
+                        // Fallback text
+                        const message = formatMessageTemplate(authTemplate, { code: formattedCode, link, userName });
+                        await sendWhatsAppMessage(finalPhone, message);
+                        console.log(`📩 [WHATSAPP TEXT] Code de vérification envoyé à ${finalPhone}`);
+                    }
                 } catch (err) {
                     console.error("Erreur lors de l'envoi du message WhatsApp Twilio:", err);
                 }
             } else {
                 // SMS
-                const message = formatMessageTemplate(authTemplate, { code: rawFormattedCode, link });
+                const message = formatMessageTemplate(authTemplate, { code: rawFormattedCode, link, userName });
                 try {
                     await sendSmsMessage(finalPhone, message);
                     console.log(`📩 [SMS] Code de vérification envoyé à ${finalPhone}`);

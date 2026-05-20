@@ -56,13 +56,15 @@ export async function sendGiftNotification(
 
         const message = formatMessageTemplate(productTemplate, { code, link, userName, productName });
         
-        const contentSid = process.env.TWILIO_GIFT_CONTENT_SID;
-        if (contentSid) {
+        const productTemplateSid = process.env.TWILIO_TEMPLATE_PRODUCT_SID || process.env.TWILIO_GIFT_CONTENT_SID;
+        if (productTemplateSid) {
             // Send using Content API (Buttons)
-            // Variables: 1 = Code, 2 = Token
-            await sendWhatsAppMessage(phone, "", contentSid, {
+            await sendWhatsAppMessage(phone, "", productTemplateSid, {
                 "1": code,
-                "2": token
+                "2": token,
+                "3": link,
+                "4": productName,
+                "5": userName
             });
         } else {
             // Send standard text fallback
