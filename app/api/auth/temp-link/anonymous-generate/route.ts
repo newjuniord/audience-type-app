@@ -70,9 +70,9 @@ export async function POST(req: Request) {
         const baseUrl = `${protocol}://${host}`;
         const link = `${baseUrl}/login/temp?token=${token}`;
 
-        // Formater le code avec un espace au milieu pour WhatsApp (ex: *21 02*)
-        const formattedCode = `*${code.substring(0, 2)} ${code.substring(2, 4)}*`;
-        const rawFormattedCode = `${code.substring(0, 2)} ${code.substring(2, 4)}`;
+        // Formater le code sans espace
+        const formattedCode = `*${code}*`;
+        const rawFormattedCode = `${code}`;
 
         // 5. Envoyer le code
         if (contactMethod === 'phone' && finalPhone) {
