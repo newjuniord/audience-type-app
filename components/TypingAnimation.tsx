@@ -34,9 +34,9 @@ export default function TypingAnimation() {
     }, [subIndex, index, reverse]);
 
     return (
-        <span className="text-primary/20 dark:text-white/20 notranslate" translate="no">
+        <span className="text-gold-shimmer notranslate" translate="no">
             {words[index].substring(0, subIndex)}
-            <span className="animate-pulse">|</span>
+            <span className="cursor-gold" style={{ WebkitTextFillColor: '#FFD97D' }}>|</span>
         </span>
     );
 }

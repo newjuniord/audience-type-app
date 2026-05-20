@@ -5,6 +5,7 @@ import DashboardHeader from "../components/DashboardHeader";
 import Hero from "../components/Hero";
 import AcademyOverview from "../components/AcademyOverview";
 import ReviewsSection from "../components/ReviewsSection";
+import ScrollReveal from "../components/ScrollReveal";
 import { getCourses } from "@/lib/courses";
 import { getEbooks } from "@/lib/ebooks";
 import { getServices } from "@/lib/services";
@@ -65,12 +66,26 @@ export default async function Home() {
   return (
     <div className="relative flex min-h-screen flex-col">
       <DashboardHeader />
-      <main className="flex-grow flex flex-col items-center pt-24">
-        <Hero />
-        <AcademyOverview />
-        <FeaturedProducts initialProducts={initialProducts} />
-        <ReviewsSection />
-        <CallToAction />
+      <main className="flex-grow flex flex-col items-center pt-24 overflow-hidden">
+        <ScrollReveal delay={0.1}>
+          <Hero />
+        </ScrollReveal>
+        
+        <ScrollReveal delay={0.2}>
+          <AcademyOverview />
+        </ScrollReveal>
+        
+        <ScrollReveal delay={0.2} className="w-full max-w-7xl">
+          <FeaturedProducts initialProducts={initialProducts} />
+        </ScrollReveal>
+        
+        <ScrollReveal delay={0.2} className="w-full">
+          <ReviewsSection />
+        </ScrollReveal>
+        
+        <ScrollReveal delay={0.2} className="w-full">
+          <CallToAction />
+        </ScrollReveal>
       </main>
       <DashboardFooter />
     </div>

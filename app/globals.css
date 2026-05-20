@@ -13,6 +13,62 @@
   --radius-xl: 1.5rem;
 }
 
+/* Golden Shimmer Animation for TypingAnimation */
+@keyframes gold-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes gold-glow-pulse {
+  0%, 100% {
+    filter:
+      drop-shadow(0 0 4px  rgba(255, 200,  60, 0.5))
+      drop-shadow(0 0 12px rgba(242, 140,  40, 0.4))
+      drop-shadow(0 0 28px rgba(200,  90,   0, 0.3));
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 10px rgba(255, 220,  80, 1.0))
+      drop-shadow(0 0 28px rgba(242, 140,  40, 0.85))
+      drop-shadow(0 0 55px rgba(200,  90,   0, 0.6))
+      drop-shadow(0 0 80px rgba(255, 180,   0, 0.3));
+  }
+}
+
+.text-gold-shimmer {
+  background: linear-gradient(
+    90deg,
+    #a05c00 0%,
+    #F28C28 20%,
+    #FFE082 42%,
+    #fff5c0 50%,
+    #FFE082 58%,
+    #F28C28 80%,
+    #a05c00 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation:
+    gold-shimmer     2.5s linear       infinite,
+    gold-glow-pulse  2.0s ease-in-out  infinite;
+}
+
+.cursor-gold {
+  -webkit-text-fill-color: #FFE082;
+  color: #FFE082;
+  animation: cursor-blink 0.85s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 6px  rgba(255, 220, 80, 1.0))
+    drop-shadow(0 0 16px rgba(242, 140, 40, 0.8));
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
 /* Global interactive states */
 button,
 a,
