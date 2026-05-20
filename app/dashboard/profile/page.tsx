@@ -1,15 +1,87 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from "@/context/AuthContext";
 import { getUserById, updateUser } from "@/lib/users";
 import { getEnrollmentsByUser } from "@/lib/enrollments";
 import { getBookingApplicationsByUser } from "@/lib/booking-applications";
 import { updateProfile } from "firebase/auth";
-import { doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase'; // Ensure db is imported to create DocumentReference if needed, though get functions use it internally
-// Note: We need to pass a DocumentReference to getEnrollmentsByUser/getBookingApplicationsByUser
+import { db } from '@/lib/firebase';
 import { doc as firestoreDoc } from "firebase/firestore";
+
+const COUNTRIES = [
+    // Caraïbes & Haïti
+    { code: 'HT', name: 'Haïti',              dial: '+509', flag: '🇭🇹' },
+    { code: 'DO', name: 'Rép. Dominicaine',    dial: '+1',   flag: '🇩🇴' },
+    { code: 'CU', name: 'Cuba',               dial: '+53',  flag: '🇨🇺' },
+    { code: 'JM', name: 'Jamaïque',           dial: '+1',   flag: '🇯🇲' },
+    { code: 'PR', name: 'Porto Rico',          dial: '+1',   flag: '🇵🇷' },
+    { code: 'TT', name: 'Trinidad & Tobago',   dial: '+1',   flag: '🇹🇹' },
+    { code: 'BB', name: 'Barbade',             dial: '+1',   flag: '🇧🇧' },
+    // Amérique du Nord
+    { code: 'US', name: 'États-Unis',          dial: '+1',   flag: '🇺🇸' },
+    { code: 'CA', name: 'Canada',              dial: '+1',   flag: '🇨🇦' },
+    { code: 'MX', name: 'Mexique',             dial: '+52',  flag: '🇲🇽' },
+    // Amérique Centrale
+    { code: 'GT', name: 'Guatemala',           dial: '+502', flag: '🇬🇹' },
+    { code: 'HN', name: 'Honduras',            dial: '+504', flag: '🇲🇳' },
+    { code: 'SV', name: 'El Salvador',         dial: '+503', flag: '🇸🇻' },
+    { code: 'NI', name: 'Nicaragua',           dial: '+505', flag: '🇳🇮' },
+    { code: 'CR', name: 'Costa Rica',          dial: '+506', flag: '🇨🇷' },
+    { code: 'PA', name: 'Panama',              dial: '+507', flag: '🇵🇦' },
+    // Amérique du Sud
+    { code: 'CO', name: 'Colombie',            dial: '+57',  flag: '🇨🇴' },
+    { code: 'VE', name: 'Venezuela',           dial: '+58',  flag: '🇻🇪' },
+    { code: 'EC', name: 'Équateur',            dial: '+593', flag: '🇪🇨' },
+    { code: 'PE', name: 'Pérou',              dial: '+51',  flag: '🇵🇪' },
+    { code: 'BO', name: 'Bolivie',             dial: '+591', flag: '🇧🇴' },
+    { code: 'CL', name: 'Chili',              dial: '+56',  flag: '🇨🇱' },
+    { code: 'AR', name: 'Argentine',           dial: '+54',  flag: '🇦🇷' },
+    { code: 'UY', name: 'Uruguay',             dial: '+598', flag: '🇺🇾' },
+    { code: 'PY', name: 'Paraguay',            dial: '+595', flag: '🇵🇾' },
+    { code: 'BR', name: 'Brésil',             dial: '+55',  flag: '🇧🇷' },
+    // Europe francophone
+    { code: 'FR', name: 'France',              dial: '+33',  flag: '🇫🇷' },
+    { code: 'BE', name: 'Belgique',            dial: '+32',  flag: '🇧🇪' },
+    { code: 'CH', name: 'Suisse',              dial: '+41',  flag: '🇨🇭' },
+    { code: 'GP', name: 'Guadeloupe',          dial: '+590', flag: '🇬🇵' },
+    { code: 'MQ', name: 'Martinique',          dial: '+596', flag: '🇲🇶' },
+    { code: 'GF', name: 'Guyane',             dial: '+594', flag: '🇬🇫' },
+    { code: 'RE', name: 'La Réunion',         dial: '+262', flag: '🇷🇪' },
+    // Europe
+    { code: 'GB', name: 'Royaume-Uni',         dial: '+44',  flag: '🇬🇧' },
+    { code: 'DE', name: 'Allemagne',           dial: '+49',  flag: '🇩🇪' },
+    { code: 'ES', name: 'Espagne',             dial: '+34',  flag: '🇪🇸' },
+    { code: 'PT', name: 'Portugal',            dial: '+351', flag: '🇵🇹' },
+    { code: 'IT', name: 'Italie',              dial: '+39',  flag: '🇮🇹' },
+    { code: 'NL', name: 'Pays-Bas',           dial: '+31',  flag: '🇳🇱' },
+    // Asie
+    { code: 'CN', name: 'Chine',              dial: '+86',  flag: '🇨🇳' },
+    { code: 'KR', name: 'Corée du Sud',        dial: '+82',  flag: '🇰🇷' },
+    { code: 'JP', name: 'Japon',              dial: '+81',  flag: '🇯🇵' },
+];
+
+function formatPhone(digits: string, countryCode: string): string {
+    if (!digits) return '';
+    if (countryCode === 'HT') {
+        const d = digits;
+        if (d.length <= 2) return d;
+        if (d.length <= 4) return `${d.slice(0, 2)} ${d.slice(2)}`;
+        return `${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4)}`;
+    }
+    const plusOne = ['US','CA','DO','JM','PR','TT','BB'];
+    if (plusOne.includes(countryCode)) {
+        const d = digits;
+        if (d.length <= 3) return d;
+        if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
+        return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
+    }
+    const d = digits;
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
+    if (d.length <= 9) return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
+    return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 9)} ${d.slice(9)}`;
+}
 
 export default function ProfilePage() {
     const { user, loading: authLoading, signOutUser } = useAuth();
@@ -24,6 +96,15 @@ export default function ProfilePage() {
     const [memberSince, setMemberSince] = useState("");
     const [email, setEmail] = useState("");
     const [copied, setCopied] = useState(false);
+
+    // Phone Country selector state
+    const [phone, setPhone] = useState("");
+    const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
+    const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+    const [countrySearch, setCountrySearch] = useState('');
+    const [phoneError, setPhoneError] = useState<string | null>(null);
+
+    const countryDropdownRef = useRef<HTMLDivElement>(null);
 
     // Temp Link states
     const [canGenerateTempLinks, setCanGenerateTempLinks] = useState(false);
@@ -42,6 +123,16 @@ export default function ProfilePage() {
     const [showSuccess, setShowSuccess] = useState(false);
 
     useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
+                setShowCountryDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    useEffect(() => {
         async function fetchProfileData() {
             if (!user) return;
 
@@ -54,11 +145,23 @@ export default function ProfilePage() {
                 if (userDoc) {
                     setDisplayName(userDoc.displayName || user.displayName || "");
                     setPhoneNumber(userDoc.phoneNumber || "");
-                    setWhatsappNumber(userDoc.whatsappNumber || "");
+                    const fullWhatsapp = userDoc.whatsappNumber || "";
+                    setWhatsappNumber(fullWhatsapp);
                     setPhotoURL(userDoc.photoURL || user.photoURL || "");
                     setEmail(userDoc.email || user.email || "");
                     setCanGenerateTempLinks(userDoc.canGenerateTempLinks || false);
                     setTempLinksCount(userDoc.tempLinksCount || 0);
+
+                    // Parse country dial code and phone digits from whatsappNumber
+                    if (fullWhatsapp) {
+                        const matchingCountry = COUNTRIES.find(c => fullWhatsapp.startsWith(c.dial));
+                        if (matchingCountry) {
+                            setSelectedCountry(matchingCountry);
+                            setPhone(fullWhatsapp.substring(matchingCountry.dial.length));
+                        } else {
+                            setPhone(fullWhatsapp.replace(/\D/g, ''));
+                        }
+                    }
 
                     if (userDoc.createdAt) {
                         setMemberSince(userDoc.createdAt.toDate().toLocaleDateString('fr-FR', {
@@ -123,16 +226,55 @@ export default function ProfilePage() {
 
     const handleSave = async () => {
         if (!user) return;
+        setPhoneError(null);
+
+        // Validation of WhatsApp Phone
+        let cleanNumber = phone.replace(/\D/g, "");
+        const dialDigits = selectedCountry.dial.replace(/\D/g, "");
+        if (cleanNumber.startsWith(dialDigits)) {
+            cleanNumber = cleanNumber.substring(dialDigits.length);
+        }
+        if (cleanNumber.startsWith("0")) {
+            cleanNumber = cleanNumber.substring(1);
+        }
+
+        const getExpectedLength = (code: string): number => {
+            if (code === 'HT') return 8;
+            if (['FR','BE','CH','GP','MQ','GF','RE'].includes(code)) return 9;
+            if (['US','CA','DO','PR','JM','TT','BB','MX','CO'].includes(code)) return 10;
+            return 0;
+        };
+
+        const expectedLength = getExpectedLength(selectedCountry.code);
+        if (phone.trim()) {
+            if (expectedLength > 0 && cleanNumber.length !== expectedLength) {
+                const errorMsg = selectedCountry.code === 'HT'
+                    ? "Le numéro pour Haïti doit comporter 8 chiffres (ex: 34567890)."
+                    : `Le numéro doit comporter exactement ${expectedLength} chiffres.`;
+                setPhoneError(errorMsg);
+                alert(errorMsg);
+                return;
+            } else if (expectedLength === 0 && (cleanNumber.length < 7 || cleanNumber.length > 15)) {
+                const errorMsg = "Le numéro de téléphone doit comporter entre 7 et 15 chiffres.";
+                setPhoneError(errorMsg);
+                alert(errorMsg);
+                return;
+            }
+        }
+
+        const finalWhatsapp = phone.trim() ? `${selectedCountry.dial}${cleanNumber}` : "";
+
         setSaving(true);
         try {
             // 1. Update Firestore
             await updateUser(user.uid, {
                 displayName,
                 phoneNumber,
-                whatsappNumber,
+                whatsappNumber: finalWhatsapp,
                 email
-                // Photo URL is now read-only, so we don't update it from here
             });
+
+            setWhatsappNumber(finalWhatsapp);
 
             // 2. Update Auth Profile (optional but good for consistency)
             await updateProfile(user, {
@@ -205,6 +347,12 @@ export default function ProfilePage() {
         return <div className="min-h-screen flex items-center justify-center">Veuillez vous connecter.</div>;
     }
 
+    const getPlaceholder = () => {
+        if (selectedCountry.code === 'HT') return '34 56 7890';
+        if (['US','CA','DO','PR','JM','TT','BB'].includes(selectedCountry.code)) return '809 484 2020';
+        return '6 12 34 56';
+    };
+
     return (
         <div className="relative flex h-auto flex-col w-full bg-background-light dark:bg-background-dark text-primary min-h-screen group/design-root overflow-x-hidden font-display">
             <div className="layout-container flex h-full grow flex-col">
@@ -228,10 +376,6 @@ export default function ProfilePage() {
                                     style={{ backgroundImage: `url("${photoURL || 'https://lh3.googleusercontent.com/a/default-user'}")` }}
                                 >
                                 </div>
-                                {/* Photo Edit Button (disabled or maybe opens valid update modal later) */}
-                                {/* <button className="absolute bottom-4 right-0 bg-primary text-white p-2 rounded-full shadow-lg flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-sm">edit</span>
-                                </button> */}
                             </div>
                             <div className="flex flex-col items-center justify-center">
                                 <h1 className="text-primary dark:text-white text-3xl font-bold leading-tight tracking-[-0.015em] text-center">{displayName || "Utilisateur"}</h1>
@@ -307,13 +451,73 @@ export default function ProfilePage() {
                                             <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Numéro WhatsApp</p>
                                             <span className="material-symbols-outlined text-emerald-500 text-sm">forum</span>
                                         </div>
-                                        <input
-                                            className="form-input flex w-full rounded-xl text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-emerald-500/20 border border-emerald-500/10 bg-emerald-500/5 h-12 px-4 text-base font-normal"
-                                            type="tel"
-                                            value={whatsappNumber}
-                                            onChange={(e) => setWhatsappNumber(e.target.value)}
-                                            placeholder="+1 (555) 000-0000"
-                                        />
+
+                                        <div className="flex gap-2 relative w-full text-left" ref={countryDropdownRef}>
+                                            {/* Country selector */}
+                                            <div className="relative shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                                                    className="h-12 px-4 bg-white/5 border border-primary/10 dark:border-white/10 rounded-xl flex items-center gap-1.5 hover:bg-white/10 text-primary dark:text-white transition-all text-sm font-bold whitespace-nowrap"
+                                                >
+                                                    <span className="text-base">{selectedCountry.flag}</span>
+                                                    <span className="text-primary/70 dark:text-white/70">{selectedCountry.dial}</span>
+                                                    <svg className={`size-3 text-primary/40 dark:text-white/40 transition-transform ${showCountryDropdown ? '-rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                                                </button>
+
+                                                {showCountryDropdown && (
+                                                    <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-[#18181b] border border-primary/10 dark:border-white/10 rounded-2xl shadow-xl z-50 py-2 max-h-60 overflow-y-auto">
+                                                        <div className="px-3 pb-2 pt-1 border-b border-black/5 dark:border-white/5 sticky top-0 bg-white dark:bg-[#18181b] z-10">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Rechercher..."
+                                                                value={countrySearch}
+                                                                onChange={(e) => setCountrySearch(e.target.value)}
+                                                                className="w-full h-10 px-3 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-xl text-xs font-bold text-zinc-900 dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30 focus:outline-none"
+                                                            />
+                                                        </div>
+                                                        {COUNTRIES.filter(c => 
+                                                            c.name.toLowerCase().includes(countrySearch.toLowerCase()) || 
+                                                            c.dial.includes(countrySearch)
+                                                        ).map((c) => (
+                                                            <button
+                                                                key={c.code}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedCountry(c);
+                                                                    setShowCountryDropdown(false);
+                                                                    setCountrySearch('');
+                                                                }}
+                                                                className={`w-full px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-3 text-left transition-colors ${
+                                                                    selectedCountry.code === c.code ? 'bg-green-500/10 text-green-500' : 'text-zinc-700 dark:text-white/80'
+                                                                }`}
+                                                            >
+                                                                <span className="text-xl">{c.flag}</span>
+                                                                <span className="flex-1 font-bold text-xs">{c.name}</span>
+                                                                <span className="text-xs text-black/40 dark:text-white/40">{c.dial}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Phone input */}
+                                            <input
+                                                className="flex-1 min-w-0 w-full h-12 px-4 bg-white dark:bg-background-dark/50 border border-primary/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-primary dark:text-white placeholder:text-primary/30 dark:placeholder:text-white/30 rounded-xl text-base font-normal transition-all"
+                                                type="tel"
+                                                value={formatPhone(phone, selectedCountry.code)}
+                                                onChange={(e) => {
+                                                    setPhone(e.target.value.replace(/\D/g, ''));
+                                                    setPhoneError(null);
+                                                }}
+                                                placeholder={getPlaceholder()}
+                                            />
+                                        </div>
+                                        {phoneError && (
+                                            <p className="text-[10px] font-black uppercase text-red-500 tracking-widest mt-2">
+                                                {phoneError}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </section>
