@@ -527,6 +527,70 @@ export default function WhatsAppLoginModal({
         }
     };
 
+    const handleAlreadyHasCode = async () => {
+        setError(null);
+        let cleanNumber = phone.replace(/\D/g, "");
+        if (!phone || !cleanNumber) {
+            setError("Veuillez d'abord saisir votre numéro de téléphone.");
+            return;
+        }
+        
+        // Valider la longueur
+        const dialDigits = selectedCountry.dial.replace(/\D/g, "");
+        if (cleanNumber.startsWith(dialDigits)) {
+            cleanNumber = cleanNumber.substring(dialDigits.length);
+        }
+        if (cleanNumber.startsWith("0")) {
+            cleanNumber = cleanNumber.substring(1);
+        }
+        
+        const getExpectedLength = (code: string): number => {
+            if (code === 'HT') return 8;
+            if (['FR','BE','CH','GP','MQ','GF','RE'].includes(code)) return 9;
+            if (['US','CA','DO','PR','JM','TT','BB','MX','CO'].includes(code)) return 10;
+            return 0;
+        };
+
+        const expectedLength = getExpectedLength(selectedCountry.code);
+        if (expectedLength > 0 && cleanNumber.length !== expectedLength) {
+            setError(
+                selectedCountry.code === 'HT'
+                    ? "Le numéro pour Haïti doit comporter 8 chiffres (ex: 34567890)."
+                    : `Le numéro doit comporter exactement ${expectedLength} chiffres.`
+            );
+            return;
+        } else if (expectedLength === 0 && (cleanNumber.length < 7 || cleanNumber.length > 15)) {
+            setError("Le numéro de téléphone doit comporter entre 7 et 15 chiffres.");
+            return;
+        }
+
+        const cleanPhone = `${selectedCountry.dial}${cleanNumber}`;
+        setIsLoading(true);
+        
+        try {
+            const checkRes = await fetch("/api/auth/check-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ whatsappNumber: cleanPhone })
+            });
+            
+            if (!checkRes.ok) throw new Error("Erreur de vérification.");
+            const checkData = await checkRes.json();
+            
+            if (checkData.exists) {
+                setTempUserId(checkData.userId);
+                setStep('code');
+            } else {
+                setError("Aucun compte trouvé avec ce numéro. Veuillez d'abord valider votre numéro pour recevoir un code.");
+            }
+        } catch (err: any) {
+            console.error("Error checking user for existing code:", err);
+            setError("Une erreur est survenue lors de la vérification du numéro.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const getPlaceholder = () => {
         if (selectedCountry.code === 'HT') return '34 56 7890';
         if (['US','CA','DO','PR','JM','TT','BB'].includes(selectedCountry.code)) return '809 484 2020';
@@ -650,7 +714,7 @@ export default function WhatsAppLoginModal({
                     </form>
 
                     <button
-                        onClick={() => setStep('code')}
+                        onClick={handleAlreadyHasCode}
                         className="w-full text-xs font-bold text-white/40 hover:text-white transition-colors text-center"
                     >
                         J'ai déjà reçu un code
