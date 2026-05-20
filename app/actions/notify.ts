@@ -4,6 +4,7 @@ import { sendWhatsAppMessage, formatMessageTemplate } from "@/lib/whatsapp";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { v4 as uuidv4 } from "uuid";
 import { Timestamp } from "firebase-admin/firestore";
+import { getOrCreateUserMagicToken } from "@/lib/magicLink";
 
 export async function sendGiftNotification(
     userId: string,
@@ -51,10 +52,13 @@ export async function sendGiftNotification(
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://audiencetype.com";
         const link = `${baseUrl}/login/temp?token=${token}`;
 
+        const magicToken = await getOrCreateUserMagicToken(userId);
+        const magicLink = `${baseUrl}/login/magic?token=${magicToken}`;
+
         const productTemplate = process.env.TWILIO_TEMPLATE_PRODUCT || 
             "Bonjour, votre commande est prête. Utilisez ce code *{{code}}* pour avoir accès. - Connecte-toi ici : {{link}}";
 
-        const message = formatMessageTemplate(productTemplate, { code, link, userName, productName });
+        const message = formatMessageTemplate(productTemplate, { code, link: magicLink, userName, productName });
         
         const productTemplateSid = process.env.TWILIO_TEMPLATE_PRODUCT_SID || process.env.TWILIO_GIFT_CONTENT_SID;
         if (productTemplateSid) {
@@ -62,7 +66,7 @@ export async function sendGiftNotification(
             await sendWhatsAppMessage(phone, "", productTemplateSid, {
                 "1": code,
                 "2": token,
-                "3": link.replace(/^https?:\/\//, ''),
+                "3": magicLink.replace(/^https?:\/\//, ''),
                 "4": productName,
                 "5": userName
             });

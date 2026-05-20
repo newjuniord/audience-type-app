@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Timestamp } from "firebase-admin/firestore";
 import { sendWhatsAppMessage, sendSmsMessage, formatMessageTemplate } from "@/lib/whatsapp";
 import { upstashSession, upstashSpamShield } from "@/lib/upstashAuth";
+import { getOrCreateUserMagicToken } from "@/lib/magicLink";
 
 export async function POST(req: Request) {
     try {
@@ -84,18 +85,21 @@ export async function POST(req: Request) {
 
             if (type === 'whatsapp') {
                 try {
+                    const magicToken = await getOrCreateUserMagicToken(userId);
+                    const magicLink = `${baseUrl}/login/magic?token=${magicToken}`;
+
                     if (authTemplateSid) {
                         // Utiliser le template Twilio Content
                         await sendWhatsAppMessage(finalPhone, "", authTemplateSid, {
                             "1": code,
                             "2": token,
-                            "3": link.replace(/^https?:\/\//, ''),
+                            "3": magicLink.replace(/^https?:\/\//, ''),
                             "4": userName
                         });
                         console.log(`📩 [WHATSAPP TEMPLATE] Envoyé avec succès à ${finalPhone}`);
                     } else {
                         // Fallback text
-                        const message = formatMessageTemplate(authTemplate, { code: formattedCode, link, userName });
+                        const message = formatMessageTemplate(authTemplate, { code: formattedCode, link: magicLink, userName });
                         await sendWhatsAppMessage(finalPhone, message);
                         console.log(`📩 [WHATSAPP TEXT] Code de vérification envoyé à ${finalPhone}`);
                     }

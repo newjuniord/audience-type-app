@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { v4 as uuidv4 } from "uuid";
 
 export async function POST(req: Request) {
     try {
@@ -83,6 +84,7 @@ export async function POST(req: Request) {
                 smsNumber: isSms ? (whatsappNumber || "") : "",
                 name: userName,
                 role: "customer",
+                MAGIC_LINK_CLICK: uuidv4().replace(/-/g, ''),
                 createdAt: FieldValue.serverTimestamp(),
                 status: "active",
                 enrollmentCount: 0,

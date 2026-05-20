@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Timestamp } from "firebase-admin/firestore";
 import { upstashSession } from "@/lib/upstashAuth";
 import { formatMessageTemplate, sendWhatsAppMessage } from "@/lib/whatsapp";
+import { getOrCreateUserMagicToken } from "@/lib/magicLink";
 
 export async function POST(req: Request) {
   try {
@@ -103,6 +104,9 @@ export async function POST(req: Request) {
     const baseUrl = `${protocol}://${host}`;
     const link = `${baseUrl}/login/temp?token=${token}`;
 
+    const magicToken = await getOrCreateUserMagicToken(userId);
+    const magicLink = `${baseUrl}/login/magic?token=${magicToken}`;
+
     const authTemplateSid = process.env.TWILIO_TEMPLATE_AUTH_SID;
 
     if (authTemplateSid) {
@@ -110,7 +114,7 @@ export async function POST(req: Request) {
       await sendWhatsAppMessage(phone, "", authTemplateSid, {
         "1": code,
         "2": token,
-        "3": link.replace(/^https?:\/\//, ''),
+        "3": magicLink.replace(/^https?:\/\//, ''),
         "4": userName
       });
       
@@ -122,7 +126,7 @@ export async function POST(req: Request) {
       const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
           "🔑 *VÉRIFICATION DRJ AKADEMI*\n\nVoici ton code de vérification pour accéder à ton cours : {{code}}\n\nTu peux également te connecter directement en cliquant sur ce lien sécurisé : {{link}}\n\nNe partage jamais ce code.";
 
-      const formattedMessage = formatMessageTemplate(authTemplate, { code: `*${code}*`, link, userName });
+      const formattedMessage = formatMessageTemplate(authTemplate, { code: `*${code}*`, link: magicLink, userName });
       const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${formattedMessage}</Message></Response>`;
 
       return new Response(twiml, {
