@@ -686,7 +686,7 @@ export default function WhatsAppLoginModal({
                         </div>
 
                         {/* Turnstile Container — DÉSACTIVÉ TEMPORAIREMENT */}
-                        {/* <div ref={turnstileWidgetRef} className="my-4 flex justify-center min-h-[65px]"></div> */
+                        {/* <div ref={turnstileWidgetRef} className="my-4 flex justify-center min-h-[65px]"></div> */}
 
                         {error && (
                             <p className="text-[10px] font-black uppercase text-red-500 tracking-widest text-center mt-2">
