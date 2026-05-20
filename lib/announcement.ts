@@ -15,7 +15,7 @@ const SETTINGS_COLLECTION = "settings";
 const ANNOUNCEMENT_DOC = "announcement-bar";
 
 export const defaultSettings: AnnouncementBarSettings = {
-    text: "Bienvenue sur Audience Type ! Profitez de nos promotions.",
+    text: "Bienvenue sur DRJ Akademi ! Profitez de nos promotions.",
     isActive: false,
     backgroundColor: "#000000",
     textColor: "#ffffff",

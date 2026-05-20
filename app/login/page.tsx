@@ -93,6 +93,13 @@ export default function LoginPage() {
                     role: "customer",
                     createdAt: serverTimestamp(),
                 });
+                
+                await fetch("/api/auth/trusted-device-register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ userId: user.uid })
+                }).catch(e => console.error("Trusted device register error:", e));
+
                 window.location.href = "/dashboard";
                 return;
             }
@@ -101,6 +108,13 @@ export default function LoginPage() {
                 if (!userSnap.data().createdAt) {
                     await setDoc(userRef, { createdAt: serverTimestamp() }, { merge: true });
                 }
+
+                await fetch("/api/auth/trusted-device-register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ userId: user.uid })
+                }).catch(e => console.error("Trusted device register error:", e));
+
                 if (userSnap.data().role?.trim().toLowerCase() === "admin") {
                     window.location.href = "/admin";
                 } else {
@@ -164,6 +178,13 @@ export default function LoginPage() {
 
                 await setDoc(userRef, updates, { merge: true });
             }
+            // Enregistrer l'appareil de confiance
+            await fetch("/api/auth/trusted-device-register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: user.uid })
+            }).catch(e => console.error("Trusted device register error:", e));
+
             // 4. Redirection vers le tableau approprié
             if (userSnap.exists() && userSnap.data().role?.trim().toLowerCase() === "admin") {
                 window.location.href = "/admin";
@@ -186,7 +207,7 @@ export default function LoginPage() {
                     <div className="size-10 bg-black dark:bg-white rounded-xl flex items-center justify-center transition-transform group-hover:rotate-12">
                         <span className="material-symbols-outlined text-white dark:text-black">bolt</span>
                     </div>
-                    <span className="text-xl font-black tracking-tighter uppercase italic">Audience Type</span>
+                    <span className="text-xl font-black tracking-tighter uppercase italic">DRJ Akademi</span>
                 </Link>
 
                 <div className="max-w-md w-full mx-auto lg:mx-0 flex-1 flex flex-col justify-center">

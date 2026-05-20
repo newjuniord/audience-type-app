@@ -8,6 +8,7 @@ import { createEnrollment } from "@/lib/enrollments";
 import { Timestamp, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import ConfirmModal from "./ui/ConfirmModal";
+import { sendGiftNotification } from "@/app/actions/notify";
 
 interface GiftProductModalProps {
     isOpen: boolean;
@@ -76,6 +77,25 @@ export default function GiftProductModal({ isOpen, onClose, user }: GiftProductM
             const productCollection = product.type === 'course' ? 'courses' : 'ebooks';
             const productRef = doc(db, productCollection, product.id);
 
+            // Send direct WhatsApp notification if they have a WhatsApp number
+            const targetPhone = user.whatsappNumber || user.phoneNumber;
+            let notificationSent = false;
+            if (targetPhone) {
+                try {
+                    const res = await sendGiftNotification(
+                        user.uid,
+                        targetPhone,
+                        user.displayName || user.fullName || "Cher(e) membre",
+                        product.title
+                    );
+                    if (res?.success) {
+                        notificationSent = true;
+                    }
+                } catch (notifyErr) {
+                    console.error("Failed to send WhatsApp gift notification directly:", notifyErr);
+                }
+            }
+
             await createEnrollment({
                 userId: userRef,
                 productId: productRef,
@@ -92,8 +112,11 @@ export default function GiftProductModal({ isOpen, onClose, user }: GiftProductM
                 totalLessons: 0, // Default or fetch if needed
                 userEmail: user.email || "",
                 userName: user.displayName || "",
-                downloadCount: "0"
-            });
+                downloadCount: "0",
+                isGift: true,
+                orderId: "admin_gift",
+                notificationSent: notificationSent
+            } as any);
 
             setSuccessModal({
                 isOpen: true,

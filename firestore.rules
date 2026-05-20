@@ -50,10 +50,10 @@ service cloud.firestore {
         request.query.filters.email == request.auth.token.email
       );
 
-      allow create: if isAuthenticated() && isOwner(userId) && 
+      allow create: if isAdmin() || (isAuthenticated() && isOwner(userId) && 
         request.resource.data.get('role', 'customer') == 'customer' &&
         request.resource.data.get('canGenerateTempLinks', false) == false &&
-        request.resource.data.get('tempLinksCount', 0) == 0;
+        request.resource.data.get('tempLinksCount', 0) == 0);
       
       allow update: if isAdmin() || (
         isOwner(userId) && 

@@ -168,6 +168,19 @@ export const lemonsqueezywebhook = onRequest({
                                     userName: orderData.userName || "Étudiant"
                                 });
                             }
+                        } else {
+                            // Pour les consultations, on n'a pas d'inscription (enrollment), 
+                            // donc on envoie manuellement la notification de confirmation ici !
+                            console.log(`📞 [WEBHOOK] Sending consultation confirmation WhatsApp to user ${userId}`);
+                            if (userId) {
+                                await generateAndSendNotification(
+                                    userId,
+                                    orderData.userName || "",
+                                    orderData.productTitle || "Consultation",
+                                    orderData.productType,
+                                    false
+                                );
+                            }
                         }
 
                     } else {
@@ -333,6 +346,85 @@ async function sendWhatsAppMessageViaFetch(toPhone: string, message: string) {
 }
 
 /**
+ * Helper to generate a temp link and send a unified WhatsApp notification
+ */
+async function generateAndSendNotification(
+    userId: string, 
+    userName: string, 
+    productTitle: string, 
+    productType: string, 
+    isGift: boolean
+) {
+    try {
+        const userRef = db.collection("users").doc(userId);
+        const userSnap = await userRef.get();
+        if (!userSnap.exists) {
+            console.warn(`⚠️ [NOTIFY] User ${userId} not found in Firestore.`);
+            return;
+        }
+
+        const userData = userSnap.data();
+        const whatsappNumber = userData?.whatsappNumber || "";
+
+        if (!whatsappNumber) {
+            console.log(`ℹ️ [NOTIFY] User ${userId} has no whatsappNumber. Skipping WhatsApp delivery.`);
+            return;
+        }
+
+        console.log(`🔍 [NOTIFY] Checking existing temp links for user: ${userId}`);
+        const existingLinks = await db.collection("temp_links")
+            .where("userId", "==", userId)
+            .where("used", "==", false)
+            .limit(1)
+            .get();
+
+        let token = "";
+        let code = "";
+
+        if (existingLinks.empty) {
+            token = crypto.randomUUID();
+            code = Math.floor(100000 + Math.random() * 900000).toString();
+            
+            const expiresAt = new Date();
+            expiresAt.setFullYear(expiresAt.getFullYear() + 100);
+
+            console.log(`🌟 [NOTIFY] Creating new temp link and code ${code} for user ${userId}`);
+            await db.collection("temp_links").doc(token).set({
+                userId: userId,
+                code: code,
+                expiresAt: expiresAt,
+                used: false,
+                createdAt: new Date()
+            });
+        } else {
+            const existingDoc = existingLinks.docs[0];
+            token = existingDoc.id;
+            code = existingDoc.data().code;
+            console.log(`🌟 [NOTIFY] Reusing existing active temp link and code ${code} for user ${userId}`);
+        }
+
+        const link = `https://audiencetype.com/login/temp?token=${token}`;
+        
+        let message = "";
+        if (isGift) {
+            message = `Bonjour, votre commande est prête. Utilisez ce code *${code}* pour avoir accès. - Connecte-toi ici : ${link}`;
+        } else {
+            let introText = "";
+            if (productType === "service" || productType === "booking") {
+                introText = `🗓️ *CONSULTATION CONFIRMÉE !*\n\nMerci ${userName || "Cher(e) membre"} !\n\nTa réservation pour la consultation *${productTitle || "Premium"}* a été validée avec succès.`;
+            } else {
+                introText = `🎉 *ACCÈS DÉBLOQUÉ !* 📚\n\nMerci pour ton achat ${userName || ""} !\n\nTon produit *${productTitle || "Premium"}* est maintenant disponible dans ton espace membre.`;
+            }
+            message = `${introText}\n\nVoici ton code secret de connexion : *${code}*\n\nTu peux également cliquer sur ce lien magique pour te connecter instantanément d'un seul clic :\n${link}\n\nNe partage jamais ce code.`;
+        }
+
+        await sendWhatsAppMessageViaFetch(whatsappNumber, message);
+    } catch (err: any) {
+        console.error("❌ [NOTIFY] Error in generateAndSendNotification:", err.message);
+    }
+}
+
+/**
  * Cloud Function (Firestore Trigger): onenrollmentcreated
  * Triggers automatically whenever a new enrollment is created in Firestore.
  * If the user has a `whatsappNumber` in their profile, it creates an access code & magic link and sends it via WhatsApp.
@@ -374,61 +466,17 @@ export const onenrollmentcreated = onDocumentCreated({
         return;
     }
 
-    try {
-        const userRef = db.collection("users").doc(userId);
-        const userSnap = await userRef.get();
-        if (!userSnap.exists) {
-            console.warn(`⚠️ [TRIGGER] User ${userId} not found in Firestore.`);
-            return;
-        }
+    const isGift = enrollmentData.isGift || enrollmentData.orderId === "admin_gift";
+    const userName = enrollmentData.userName || "";
+    const productTitle = enrollmentData.productTitle || "";
+    const productType = enrollmentData.productType || "Course";
 
-        const userData = userSnap.data();
-        const whatsappNumber = userData?.whatsappNumber || "";
-
-        if (!whatsappNumber) {
-            console.log(`ℹ️ [TRIGGER] User ${userId} has no whatsappNumber. Skipping WhatsApp delivery.`);
-            return;
-        }
-
-        console.log(`🔍 [TRIGGER] Checking existing temp links for user: ${userId}`);
-        const existingLinks = await db.collection("temp_links")
-            .where("userId", "==", userId)
-            .where("used", "==", false)
-            .limit(1)
-            .get();
-
-        let token = "";
-        let code = "";
-
-        if (existingLinks.empty) {
-            token = crypto.randomUUID();
-            code = Math.floor(100000 + Math.random() * 900000).toString();
-            
-            const expiresAt = new Date();
-            expiresAt.setFullYear(expiresAt.getFullYear() + 100);
-
-            console.log(`🌟 [TRIGGER] Creating new temp link and code ${code} for user ${userId}`);
-            await db.collection("temp_links").doc(token).set({
-                userId: userId,
-                code: code,
-                expiresAt: expiresAt,
-                used: false,
-                createdAt: new Date()
-            });
-        } else {
-            const existingDoc = existingLinks.docs[0];
-            token = existingDoc.id;
-            code = existingDoc.data().code;
-            console.log(`🌟 [TRIGGER] Reusing existing active temp link and code ${code} for user ${userId}`);
-        }
-
-        const link = `https://audiencetype.com/login/temp?token=${token}`;
-        const message = `🎉 *ACCÈS DÉBLOQUÉ !* 📚\n\nMerci pour ton achat ! Ton cours *${enrollmentData.productTitle || "Premium"}* est maintenant disponible dans ton espace membre.\n\nVoici ton code secret de connexion : *${code}*\n\nTu peux également cliquer sur ce lien magique pour te connecter instantanément d'un seul clic :\n${link}\n\nNe partage jamais ce code. Bon apprentissage !`;
-
-        await sendWhatsAppMessageViaFetch(whatsappNumber, message);
-    } catch (err: any) {
-        console.error("❌ [TRIGGER] Error in onenrollmentcreated trigger:", err.message);
+    if (enrollmentData.notificationSent === true) {
+        console.log("ℹ️ [TRIGGER] Notification already sent by Next.js server action. Skipping duplicate.");
+        return;
     }
+
+    await generateAndSendNotification(userId, userName, productTitle, productType, isGift);
 });
 
 /**

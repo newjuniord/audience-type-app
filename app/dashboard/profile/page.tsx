@@ -12,7 +12,7 @@ import { db } from '@/lib/firebase'; // Ensure db is imported to create Document
 import { doc as firestoreDoc } from "firebase/firestore";
 
 export default function ProfilePage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading: authLoading, signOutUser } = useAuth();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -152,9 +152,7 @@ export default function ProfilePage() {
     };
 
     const handleLogout = async () => {
-        const { signOut } = await import("firebase/auth");
-        const { auth } = await import("@/lib/firebase");
-        await signOut(auth);
+        await signOutUser();
         window.location.href = "/login";
     };
 

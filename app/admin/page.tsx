@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { getUsers, updateUserRole, deleteUserDocument, updateUser } from "@/lib/users";
 import { User } from "@/lib/types";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-
 import GiftProductModal from "@/components/GiftProductModal";
 import UserEnrollmentsDrawer from "@/components/UserEnrollmentsDrawer";
+import CreateUserDrawer from "@/components/CreateUserDrawer";
 
 import { getEnrollments, getEnrollmentsByUser } from "@/lib/enrollments";
 import { auth, db } from "@/lib/firebase";
@@ -34,6 +34,9 @@ export default function UserManagementPage() {
     // Gift & Enrollments State
     const [userToGift, setUserToGift] = useState<User | null>(null);
     const [userToViewEnrollments, setUserToViewEnrollments] = useState<User | null>(null);
+
+    // Create User State
+    const [isCreateUserDrawerOpen, setIsCreateUserDrawerOpen] = useState(false);
 
     const { role, loading: loadingAuth } = useAuth();
 
@@ -278,7 +281,13 @@ export default function UserManagementPage() {
                     <h2 className="text-4xl font-black tracking-tight mb-2">User Management</h2>
                     <p className="text-black/50 dark:text-white/50 text-sm">Oversee your platform members and their activity.</p>
                 </div>
-                {/* Add User button removed as it's usually done via Auth Sign Up, or we can implement a manual create later */}
+                <button 
+                    onClick={() => setIsCreateUserDrawerOpen(true)}
+                    className="h-12 px-6 rounded-full bg-primary text-white font-bold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 shadow-xl shadow-primary/20"
+                >
+                    <span className="material-symbols-outlined text-lg">person_add</span>
+                    Ajouter un utilisateur
+                </button>
             </div>
 
             {/* Stats Overview */}
@@ -545,6 +554,11 @@ export default function UserManagementPage() {
                 isOpen={!!userToViewEnrollments}
                 onClose={() => setUserToViewEnrollments(null)}
                 user={userToViewEnrollments}
+            />
+            <CreateUserDrawer
+                isOpen={isCreateUserDrawerOpen}
+                onClose={() => setIsCreateUserDrawerOpen(false)}
+                onUserCreated={() => loadUsers(true)}
             />
         </div>
     );

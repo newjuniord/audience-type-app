@@ -17,11 +17,16 @@ export async function POST(req: Request) {
         if (email) {
             querySnapshot = await usersRef.where("email", "==", email.trim().toLowerCase()).get();
         } else {
-            querySnapshot = await usersRef.where("whatsappNumber", "==", whatsappNumber.trim()).get();
-        }
-
-        if (querySnapshot.empty) {
-            return NextResponse.json({ exists: false });
+            const cleanNum = whatsappNumber.trim();
+            const [snapWhatsapp, snapSms] = await Promise.all([
+                usersRef.where("whatsappNumber", "==", cleanNum).get(),
+                usersRef.where("smsNumber", "==", cleanNum).get()
+            ]);
+            const docs = [...snapWhatsapp.docs, ...snapSms.docs];
+            if (docs.length === 0) {
+                return NextResponse.json({ exists: false });
+            }
+            querySnapshot = { empty: false, docs };
         }
 
         const userDoc = querySnapshot.docs[0];

@@ -110,7 +110,7 @@ export default function TermsOfServicePage() {
                                     <span className="text-primary/20 dark:text-white/20">01.</span> Introduction
                                 </h2>
                                 <div className="space-y-4">
-                                    <p>Bienvenue sur Audience Type, votre plateforme dédiée à la vente de produits numériques et à la réservation de consultations. Ces conditions d'utilisation (« Conditions ») régissent votre accès et votre utilisation de notre site Web, de nos outils numériques et des consultations connexes (collectivement, les « Consultations »).</p>
+                                    <p>Bienvenue sur DRJ Akademi, votre plateforme dédiée à la vente de produits numériques et à la réservation de consultations. Ces conditions d'utilisation (« Conditions ») régissent votre accès et votre utilisation de notre site Web, de nos outils numériques et des consultations connexes (collectivement, les « Consultations »).</p>
                                     <p>En accédant à nos Consultations ou en les utilisant, vous acceptez d'être lié par ces Conditions ainsi que par notre Politique de confidentialité. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser les Consultations. Nous nous réservons le droit de mettre à jour ces conditions à tout moment ; votre utilisation continue de la plateforme après publication des modifications constitue une acceptation pleine et entière de ces changements.</p>
                                 </div>
                             </section>
@@ -126,13 +126,13 @@ export default function TermsOfServicePage() {
                                             <strong>Exactitude des informations :</strong> Vous vous engagez à fournir des informations de profil exactes et à les maintenir à jour.
                                         </li>
                                         <li>
-                                            <strong>Sécurité de l'accès tiers :</strong> Vous êtes seul responsable de la protection et de la confidentialité de votre compte Google. Toute activité réalisée sur Audience Type via votre authentification Google est présumée être effectuée par vous-même.
+                                            <strong>Sécurité de l'accès tiers :</strong> Vous êtes seul responsable de la protection et de la confidentialité de votre compte Google. Toute activité réalisée sur DRJ Akademi via votre authentification Google est présumée être effectuée par vous-même.
                                         </li>
                                         <li>
                                             <strong>Usage strictement personnel :</strong> Votre compte est personnel et non transférable. Il est formellement interdit de partager vos accès, de prêter votre session ou de permettre à un tiers de consulter vos produits numériques (cours, ebooks) via votre compte.
                                         </li>
                                         <li>
-                                            <strong>Responsabilité :</strong> Vous assumez la pleine responsabilité de toutes les actions effectuées sous votre compte. Audience Type ne saurait être tenue responsable des dommages résultant d'une utilisation non autorisée de votre accès Google ou d'une négligence dans la gestion de votre sécurité personnelle.
+                                            <strong>Responsabilité :</strong> Vous assumez la pleine responsabilité de toutes les actions effectuées sous votre compte. DRJ Akademi ne saurait être tenue responsable des dommages résultant d'une utilisation non autorisée de votre accès Google ou d'une négligence dans la gestion de votre sécurité personnelle.
                                         </li>
                                     </ul>
                                     <p className="pt-2 font-medium">En cas d'utilisation suspecte ou non autorisée de votre compte, veuillez nous contacter immédiatement à l'adresse : contact@audiencetype.com.</p>
@@ -144,7 +144,7 @@ export default function TermsOfServicePage() {
                                     <span className="text-primary/20 dark:text-white/20">03.</span> Achats et Paiements
                                 </h2>
                                 <div className="space-y-4">
-                                    <p>Le règlement de vos commandes sur Audience Type est sécurisé et délégué à des prestataires de services de paiement reconnus.</p>
+                                    <p>Le règlement de vos commandes sur DRJ Akademi est sécurisé et délégué à des prestataires de services de paiement reconnus.</p>
                                     <ul className="list-disc pl-5 space-y-4">
                                         <li>
                                             <strong>Traitement par des tiers :</strong> Vous reconnaissez que vos transactions sont traitées par des services tiers spécialisés ou d'autres plateformes de paiement sécurisées. En effectuant un achat, vous acceptez de vous conformer également à leurs propres conditions générales et politiques de confidentialité.
@@ -156,7 +156,7 @@ export default function TermsOfServicePage() {
                                             <strong>Accès immédiat et Rétractation :</strong> Pour tout achat de produit numérique (cours, ebooks), vous demandez l'exécution immédiate du contrat. Vous reconnaissez ainsi expressément que l'accès au contenu ou le début du téléchargement entraîne la perte de votre droit de rétractation de 14 jours. En conséquence, aucun remboursement ne sera effectué une fois le produit accessible dans votre espace client.
                                         </li>
                                         <li>
-                                            <strong>Sécurité des données :</strong> Audience Type ne collecte ni ne stocke vos informations bancaires (numéros de carte, codes de sécurité). Ces données sont traitées exclusivement par nos partenaires financiers certifiés.
+                                            <strong>Sécurité des données :</strong> DRJ Akademi ne collecte ni ne stocke vos informations bancaires (numéros de carte, codes de sécurité). Ces données sont traitées exclusivement par nos partenaires financiers certifiés.
                                         </li>
                                     </ul>
                                 </div>
@@ -177,7 +177,7 @@ export default function TermsOfServicePage() {
                                     <span className="text-primary/20 dark:text-white/20">05.</span> Propriété du contenu
                                 </h2>
                                 <div className="space-y-4">
-                                    <p>Tous les contenus présents sur la plateforme (textes, vidéos, ebooks, designs) sont la propriété exclusive d'Audience Type. Toute reproduction, distribution ou exploitation non autorisée de nos cours ou produits numériques est strictement interdite et peut donner lieu à des poursuites judiciaires. L'achat d'un produit vous octroie un droit d'usage personnel et non transférable.</p>
+                                    <p>Tous les contenus présents sur la plateforme (textes, vidéos, ebooks, designs) sont la propriété exclusive de DRJ Akademi. Toute reproduction, distribution ou exploitation non autorisée de nos cours ou produits numériques est strictement interdite et peut donner lieu à des poursuites judiciaires. L'achat d'un produit vous octroie un droit d'usage personnel et non transférable.</p>
                                 </div>
                             </section>
 
@@ -195,7 +195,7 @@ export default function TermsOfServicePage() {
                                             <p className="font-medium italic">Note importante : La suppression de votre compte entraîne la suppression immédiate et définitive de vos droits d'accès aux produits numériques achetés (cours, ebooks), sans possibilité de remboursement ou de récupération ultérieure des données.</p>
                                         </li>
                                         <li>
-                                            <strong>Résiliation par Audience Type :</strong> Nous nous réservons le droit de suspendre, de limiter ou de résilier votre compte à notre seule discrétion, de plein droit et sans préavis, en cas de manquement grave à nos Conditions Générales, notamment :
+                                            <strong>Résiliation par DRJ Akademi :</strong> Nous nous réservons le droit de suspendre, de limiter ou de résilier votre compte à notre seule discrétion, de plein droit et sans préavis, en cas de manquement grave à nos Conditions Générales, notamment :
                                             <ul className="list-circle pl-5 mt-2 space-y-2">
                                                 <li>Violation de nos droits de propriété intellectuelle (copie, revente).</li>
                                                 <li>Partage d'accès ou de compte avec des tiers.</li>
@@ -214,7 +214,7 @@ export default function TermsOfServicePage() {
                                     <span className="text-primary/20 dark:text-white/20">07.</span> Conduite et Respect : Protection du Personnel et du Fondateur
                                 </h2>
                                 <div className="space-y-4">
-                                    <p>Audience Type s'engage à fournir un environnement sain et respectueux pour tous ses utilisateurs, ainsi que pour ses collaborateurs et son fondateur. En utilisant nos Consultations, vous vous engagez à :</p>
+                                    <p>DRJ Akademi s'engage à fournir un environnement sain et respectueux pour tous ses utilisateurs, ainsi que pour ses collaborateurs et son fondateur. En utilisant nos Consultations, vous vous engagez à :</p>
                                     <ul className="list-disc pl-5 space-y-3">
                                         <li>Faire preuve de courtoisie et de respect dans tous vos échanges avec notre équipe de support, nos prestataires et le fondateur.</li>
                                         <li>Ne proférer aucune insulte, menace, propos haineux, harcelant ou diffamatoire.</li>

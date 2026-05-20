@@ -317,6 +317,8 @@ export interface Service {
     isInvitationOnly?: boolean;
     invitationCode?: string;
     priceHTG?: number;
+    whatsappNumber?: string; // Numéro WhatsApp de destination pour les réservations (ex: "821012345678")
+    availabilityTimezoneOffset?: number; // Offset UTC du fuseau horaire de l'admin (ex: 9 pour KST, 1 pour France)
 }
 
 

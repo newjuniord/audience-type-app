@@ -32,10 +32,12 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
     const [price, setPrice] = useState("");
     const [priceHTG, setPriceHTG] = useState("");
     const [lemonSqueezyProductId, setLemonSqueezyProductId] = useState("");
+    const [whatsappNumber, setWhatsappNumber] = useState("");
     const [imageUrl, setImageUrl] = useState("");
     const [description, setDescription] = useState("");
     const [includedItems, setIncludedItems] = useState<string[]>([]);
     const [availability, setAvailability] = useState<Availability>(initialAvailability);
+    const [availabilityTimezoneOffset, setAvailabilityTimezoneOffset] = useState<number>(9); // 9 for KST
     const [status, setStatus] = useState<'published' | 'draft' | 'archived'>('published');
     const [isInvitationOnly, setIsInvitationOnly] = useState(false);
     const [invitationCode, setInvitationCode] = useState("");
@@ -58,10 +60,12 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                 setPrice(initialData.price.replace('$', ''));
                 setPriceHTG(initialData.priceHTG?.toString() || "");
                 setLemonSqueezyProductId(initialData.lemonSqueezyProductId || "");
+                setWhatsappNumber(initialData.whatsappNumber || "");
                 setImageUrl(initialData.imageUrl || "");
                 setDescription(initialData.description);
                 setIncludedItems(initialData.includedItems || []);
                 setAvailability(initialData.availability || initialAvailability);
+                setAvailabilityTimezoneOffset(initialData.availabilityTimezoneOffset ?? 9);
                 setStatus((initialData.status as 'published' | 'draft' | 'archived') || (initialData.active ? 'published' : 'draft'));
                 setIsInvitationOnly(initialData.isInvitationOnly || false);
                 setInvitationCode(initialData.invitationCode || "");
@@ -71,6 +75,7 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                 setPrice("");
                 setPriceHTG("");
                 setLemonSqueezyProductId("");
+                setWhatsappNumber("");
                 setImageUrl("");
                 setDescription("");
                 setIncludedItems([
@@ -79,6 +84,7 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                     "Follow-up email support"
                 ]);
                 setAvailability(initialAvailability);
+                setAvailabilityTimezoneOffset(9);
                 setIsInvitationOnly(false);
                 setInvitationCode("");
             }
@@ -110,10 +116,12 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                 price: `${price}`, // Ensure format if needed
                 priceHTG: parseFloat(priceHTG) || 0,
                 lemonSqueezyProductId,
+                whatsappNumber,
                 imageUrl,
                 description,
                 includedItems: includedItems.filter(item => item.trim() !== ""),
                 availability,
+                availabilityTimezoneOffset,
                 active: status === 'published',
                 status,
                 isInvitationOnly,
@@ -264,6 +272,20 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                                 <p className="text-[10px] text-black/30 dark:text-white/30 mt-1 ml-1">ID de la variante (Lemon Squeezy)</p>
                             </div>
                             <div className="space-y-2">
+                                <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">WhatsApp de destination</label>
+                                <div className="relative">
+                                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-lg">📱</span>
+                                    <input
+                                        value={whatsappNumber}
+                                        onChange={(e) => setWhatsappNumber(e.target.value.replace(/\D/g, ''))}
+                                        className="w-full h-14 pl-12 pr-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium"
+                                        placeholder="ex: 821012345678"
+                                        type="text"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-black/30 dark:text-white/30 mt-1 ml-1">Numéro sans espaces ni + (ex: 821012345678 pour la Corée)</p>
+                            </div>
+                            <div className="space-y-2">
                                 <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">Image URL</label>
                                 <input
                                     value={imageUrl}
@@ -352,7 +374,28 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
 
                     {/* Availability System */}
                     <section className={`space-y-6 pb-12 transition-all duration-700 delay-[400ms] ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">Disponibilité hebdomadaire</h3>
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">Disponibilité hebdomadaire</h3>
+                        </div>
+
+                        <div className="space-y-2 mb-6">
+                            <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">Mon fuseau horaire de base</label>
+                            <select
+                                value={availabilityTimezoneOffset}
+                                onChange={(e) => setAvailabilityTimezoneOffset(Number(e.target.value))}
+                                className="w-full h-14 px-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium"
+                            >
+                                <option value={9}>🇰🇷 Heure de Corée (KST / UTC+9)</option>
+                                <option value={1}>🇫🇷 Heure d'Europe Centrale (CET / UTC+1)</option>
+                                <option value={0}>🇬🇧 Temps Universel Coordonné (UTC / GMT)</option>
+                                <option value={-4}>🇩🇴 Heure de l'Atlantique (AST / UTC-4)</option>
+                                <option value={-5}>🇺🇸 Heure de l'Est / Haïti (EST / UTC-5)</option>
+                                <option value={-6}>🇺🇸 Heure du Centre (CST / UTC-6)</option>
+                                <option value={-8}>🇺🇸 Heure du Pacifique (PST / UTC-8)</option>
+                            </select>
+                            <p className="text-[10px] text-black/30 dark:text-white/30 mt-1 ml-1">Les heures ci-dessous seront interprétées dans ce fuseau horaire.</p>
+                        </div>
+
                         <div className="space-y-3">
                             {Object.entries(availability).map(([day, data]) => (
                                 <div

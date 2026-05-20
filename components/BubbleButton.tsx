@@ -34,8 +34,8 @@ export default function BubbleButton({ children, onClick, className = "", varian
     };
 
     const baseClasses = variant === "rounded"
-        ? "w-full h-14 bg-primary text-white dark:bg-white dark:text-black rounded-full font-bold text-lg shadow-xl shadow-primary/10 active:scale-95 transition-transform duration-100"
-        : "w-full bg-primary text-white dark:bg-white dark:text-black h-12 rounded-none font-bold text-sm uppercase tracking-widest active:scale-95 transition-transform duration-100";
+        ? "w-full min-h-[3.5rem] flex items-center justify-center bg-primary text-white dark:bg-white dark:text-black rounded-full font-bold text-lg shadow-xl shadow-primary/10 active:scale-95 transition-transform duration-100"
+        : "w-full min-h-[3rem] flex items-center justify-center bg-primary text-white dark:bg-white dark:text-black rounded-none font-bold text-sm uppercase tracking-widest active:scale-95 transition-transform duration-100";
 
     const disabledClasses = "opacity-50 cursor-not-allowed active:scale-100";
 
@@ -70,7 +70,7 @@ export default function BubbleButton({ children, onClick, className = "", varian
             )}
 
             {/* Button content */}
-            <span className="relative z-10">{children}</span>
+            <span className="relative z-10 w-full flex items-center justify-center">{children}</span>
         </button>
     );
 }

@@ -21,7 +21,7 @@ export default async function ProductCatalog() {
             title: c.title,
             price: `$${c.price}`,
             type: "Course" as const,
-            image: c.thumbnail || "https://images.unsplash.com/photo-1542744094-24638eff58bb?q=80&w=2071&auto=format&fit=crop",
+            image: c.thumbnail || "/logo1.png",
             description: c.description,
             features: c.includedItems || [],
             isOwned: false
@@ -31,7 +31,7 @@ export default async function ProductCatalog() {
             title: e.title,
             price: `$${e.price}`,
             type: "Ebook" as const,
-            image: e.coverImage || "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=2074&auto=format&fit=crop",
+            image: e.coverImage || "/logo1.png",
             description: e.description,
             features: e.includedItems || [],
             isOwned: false
@@ -41,7 +41,7 @@ export default async function ProductCatalog() {
             title: s.title,
             price: s.price.includes('$') || s.price.includes('€') ? s.price : `$${s.price}`,
             type: "Service" as const,
-            image: s.imageUrl || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=2074&auto=format&fit=crop",
+            image: s.imageUrl || "/logo1.png",
             description: s.description,
             features: s.includedItems || [],
             isOwned: false

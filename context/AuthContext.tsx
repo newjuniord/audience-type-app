@@ -164,6 +164,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 console.error("Error setting offline status on logout:", error);
             }
         }
+        // Supprimer le cookie de session logged_in
+        document.cookie = "logged_in=; path=/; max-age=0; SameSite=Strict; Secure";
         await signOut(auth);
     };
 

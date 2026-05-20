@@ -27,8 +27,9 @@ export default function DashboardHeader() {
     return (
         <header className="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-solid border-primary/10 px-6 md:px-10 lg:px-40 py-4 flex items-center justify-between whitespace-nowrap">
             <div className="flex items-center gap-4 text-primary dark:text-white">
-                <Link href="/" className="flex items-center gap-4">
-                    <h2 className="text-xl font-bold leading-tight tracking-tight">Audience Type</h2>
+                <Link href="/" className="flex items-center gap-2 md:gap-3 group">
+                    <img src="/logo.png" alt="DRJ Akademi Logo" className="size-8 md:size-9 rounded-lg object-cover transition-transform group-hover:scale-105" />
+                    <h2 className="text-xl font-bold leading-tight tracking-tight">DRJ Akademi</h2>
                 </Link>
             </div>
             <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">

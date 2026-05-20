@@ -652,53 +652,71 @@ export default function StartPage() {
 
       const checkData = await checkRes.json();
 
-      if (checkData.exists && checkData.ownsCourse) {
-        // L'utilisateur existe et possède déjà le cours !
+      if (checkData.exists) {
+        // L'UTILISATEUR EXISTE DÉJÀ : Bypasser complètement la vérification de code !
         setTempUserId(checkData.userId);
 
-        try {
-          const res = await fetch("/api/auth/temp-link/anonymous-generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: checkData.userId,
-              contactMethod: contactMethod,
-              whatsappNumber: contactMethod === 'phone' ? cleanPhone : "",
-              email: contactMethod === 'email' ? email : ""
-            })
-          });
-          if (res.ok) {
-            setVerificationError(null);
-            setVerificationCode("");
-            setTempLink(null); // Pour la sécurité, on ne connaît pas le lien avant d'avoir validé le code !
-          }
-        } catch (genErr) {
-          console.error("Erreur lors de la génération du code de vérification:", genErr);
-        }
-
-        if (contactMethod === 'email') {
-          const actionCodeSettings = { url: `${window.location.origin}/dashboard`, handleCodeInApp: true };
-          await sendSignInLinkToEmail(auth, email.trim().toLowerCase(), actionCodeSettings);
-          localStorage.setItem('emailForSignIn', email.trim().toLowerCase());
+        if (checkData.ownsCourse) {
+          // Possède déjà le cours : redirection vers l'accès direct sans code
+          setTempLink(`${window.location.origin}/login`);
           setAlreadyOwnedMessage(
-            "Tu possèdes déjà ce cours ! 🎉 Nous venons de t'envoyer un e-mail de connexion sécurisé, ainsi qu'un code à 6 chiffres. Saisis-le ci-dessous pour confirmer ton identité."
+            "Tu possèdes déjà ce cours ! 🎉 Ton compte existe déjà. Clique ci-dessous pour y accéder directement."
           );
+          setModalStep('success');
         } else {
-          setAlreadyOwnedMessage(
-            "Tu possèdes déjà ce cours ! 🎉 Pas besoin de payer à nouveau. Nous venons de t'envoyer un code de vérification à 6 chiffres sur WhatsApp. Saisis-le ci-dessous pour accéder directement à ton cours."
-          );
+          // Ne possède pas le cours : redirection vers le paiement direct sans code
+          setAlreadyOwnedMessage(null);
+          setModalStep('payment');
         }
-        setModalStep('verify_code');
         setIsLoading(false);
         return;
       }
 
-      // Si pas d'accès existant, on passe normalement à l'étape paiement
-      setModalStep('payment');
+      // ─── NOUVEAU COMPTE (N'EXISTE PAS ENCORE) ───
+      // On l'enregistre d'abord pour obtenir son userId sécurisé
+      const registerRes = await fetch("/api/auth/register-or-find", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: contactMethod === 'email' ? email : "",
+          whatsappNumber: contactMethod === 'phone' ? cleanPhone : "",
+          contactMethod
+        })
+      });
+
+      if (!registerRes.ok) {
+        throw new Error("Erreur d'enregistrement de l'utilisateur");
+      }
+
+      const registerData = await registerRes.json();
+      setTempUserId(registerData.userId);
+
+      // On lui envoie le code de vérification à 4 chiffres par WhatsApp
+      try {
+        const res = await fetch("/api/auth/temp-link/anonymous-generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: registerData.userId,
+            contactMethod: contactMethod,
+            whatsappNumber: contactMethod === 'phone' ? cleanPhone : "",
+            email: contactMethod === 'email' ? email : ""
+          })
+        });
+        if (res.ok) {
+          setVerificationError(null);
+          setVerificationCode("");
+          setTempLink(null);
+        }
+      } catch (genErr) {
+        console.error("Erreur lors de la génération du code de vérification:", genErr);
+      }
+
+      setAlreadyOwnedMessage(null); // Nouveau client, il devra passer au paiement après vérification du code
+      setModalStep('verify_code');
     } catch (err: any) {
-      console.error("Erreur lors de la vérification de propriété de compte existant:", err);
-      // En cas d'erreur de vérification, on laisse passer au paiement pour ne pas bloquer l'utilisateur
-      setModalStep('payment');
+      console.error("Erreur lors de la vérification/enregistrement:", err);
+      setError(err.message || "Une erreur est survenue. Veuillez réessayer.");
     } finally {
       setIsLoading(false);
     }
@@ -706,8 +724,8 @@ export default function StartPage() {
 
   // ─── VALIDATION DU CODE DE VÉRIFICATION ───
   const handleVerifyCodeSubmit = async () => {
-    if (!verificationCode || verificationCode.length !== 6) {
-      setVerificationError("Le code doit comporter exactement 6 chiffres.");
+    if (!verificationCode || verificationCode.length !== 4) {
+      setVerificationError("Le code doit comporter exactement 4 chiffres.");
       return;
     }
 
@@ -732,7 +750,12 @@ export default function StartPage() {
 
       // Succès ! Le serveur nous renvoie le lien d'accès déverrouillé
       setTempLink(data.link);
-      setModalStep('success');
+      
+      if (alreadyOwnedMessage) {
+        setModalStep('success');
+      } else {
+        setModalStep('payment');
+      }
 
     } catch (err: any) {
       console.error("Erreur lors de la validation du code:", err);
@@ -1590,21 +1613,21 @@ export default function StartPage() {
                     </h2>
                     <p className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm mx-auto">
                       {contactMethod === 'email'
-                        ? "Un e-mail de connexion sécurisé ainsi qu'un code de vérification ont été générés. Renseigne le code à 6 chiffres ci-dessous pour confirmer ton identité :"
-                        : "Nous venons de t'envoyer un code de vérification à 6 chiffres par WhatsApp. Renseigne-le ci-dessous pour confirmer ton identité et obtenir ton lien d'accès :"}
+                        ? "Un e-mail de connexion sécurisé ainsi qu'un code de vérification ont été générés. Renseigne le code à 4 chiffres ci-dessous pour confirmer ton identité :"
+                        : "Nous venons de t'envoyer un code de vérification à 4 chiffres par WhatsApp. Renseigne-le ci-dessous pour confirmer ton identité et obtenir ton lien d'accès :"}
                     </p>
 
                     <div className="mb-6 text-left">
                       <label className="block text-[10px] font-bold text-white/40 mb-1.5 uppercase tracking-wider">
-                        Saisis ton code à 6 chiffres :
+                        Saisis ton code à 4 chiffres :
                       </label>
                       <input
                         type="text"
-                        maxLength={6}
-                        placeholder="123456"
+                        maxLength={4}
+                        placeholder="2102"
                         value={verificationCode}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '').substring(0, 6);
+                          const val = e.target.value.replace(/\D/g, '').substring(0, 4);
                           setVerificationCode(val);
                         }}
                         className="w-full h-14 bg-white/5 border-2 border-white/10 rounded-2xl px-6 text-center text-xl font-mono text-white placeholder-white/20 tracking-[0.5em] focus:outline-none focus:border-primary transition-colors"
@@ -1618,7 +1641,7 @@ export default function StartPage() {
 
                     <button
                       onClick={handleVerifyCodeSubmit}
-                      disabled={isVerifyingCode || verificationCode.length !== 6}
+                      disabled={isVerifyingCode || verificationCode.length !== 4}
                       className="w-full h-14 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {isVerifyingCode ? (
@@ -1652,30 +1675,6 @@ export default function StartPage() {
                         {alreadyOwnedMessage}
                       </p>
 
-                      {tempLink && (
-                        <div className="mb-6 text-left">
-                          <label className="block text-[10px] font-bold text-white/40 mb-1.5 uppercase tracking-wider">Ton lien d'accès unique :</label>
-                          <div className="relative">
-                            <input
-                              readOnly
-                              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs font-mono text-white/70 pr-20 focus:outline-none"
-                              value={tempLink}
-                            />
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(tempLink);
-                                alert("Lien copié dans le presse-papiers !");
-                              }}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[9px] font-bold rounded-lg transition-colors"
-                            >
-                              Copier
-                            </button>
-                          </div>
-                          <p className="text-[10px] text-white/30 mt-1.5">
-                            *Ce lien est à usage unique et n'expirera jamais tant que tu ne l'auras pas utilisé.
-                          </p>
-                        </div>
-                      )}
 
                       <button
                         onClick={() => {

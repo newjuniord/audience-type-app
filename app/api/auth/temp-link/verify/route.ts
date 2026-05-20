@@ -43,7 +43,11 @@ export async function GET(req: Request) {
         // 4. Générer le Custom Auth Token pour le userId
         const customToken = await adminAuth.createCustomToken(linkData.userId);
 
-        return NextResponse.json({ customToken });
+        const response = NextResponse.json({ customToken });
+        const { registerTrustedDevice } = await import("@/lib/trusted-device");
+        await registerTrustedDevice(linkData.userId, req, response);
+
+        return response;
     } catch (error: any) {
         console.error("Error verifying temp link:", error);
         return NextResponse.json({ error: "Erreur de vérification" }, { status: 500 });

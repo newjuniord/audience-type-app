@@ -9,7 +9,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Audience Type | Élève ton niveau",
+  title: "DRJ Akademi | Élève ton niveau",
   description: "Apprends facilement, gagne du temps et progresse vite avec nos cours, ebooks et services faits pour toi.",
 };
 

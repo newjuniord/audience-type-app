@@ -56,7 +56,7 @@ export default function PrivacyPolicyPage() {
 
                         <section id="cookies" className="space-y-6">
                             <h2 className="text-primary dark:text-white text-3xl font-bold tracking-tight">4. Cookies</h2>
-                            <p>Nous utilisons des cookies pour optimiser votre expérience sur Audience Type. Ces traceurs nous permettent de maintenir votre session active, de sécuriser vos transactions et d'analyser l'audience de notre plateforme. Vous pouvez configurer votre navigateur pour bloquer ces cookies, toutefois, certaines fonctionnalités de nos consultations et l'accès à vos contenus pourraient en être affectés.</p>
+                            <p>Nous utilisons des cookies pour optimiser votre expérience sur DRJ Akademi. Ces traceurs nous permettent de maintenir votre session active, de sécuriser vos transactions et d'analyser l'audience de notre plateforme. Vous pouvez configurer votre navigateur pour bloquer ces cookies, toutefois, certaines fonctionnalités de nos consultations et l'accès à vos contenus pourraient en être affectés.</p>
                         </section>
 
                         <section className="mt-16 pt-16 border-t border-primary/10 dark:border-white/10" id="security">
