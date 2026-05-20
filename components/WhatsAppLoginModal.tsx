@@ -5,6 +5,12 @@ import { signInWithCustomToken } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { ActionModal } from "@/components/ui/ActionModal";
 
+declare global {
+    interface Window {
+        turnstile?: any;
+    }
+}
+
 interface WhatsAppLoginModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -27,7 +33,7 @@ const COUNTRIES = [
     { code: 'MX', name: 'Mexique',             dial: '+52',  flag: '🇲🇽' },
     // Amérique Centrale
     { code: 'GT', name: 'Guatemala',           dial: '+502', flag: '🇬🇹' },
-    { code: 'HN', name: 'Honduras',            dial: '+504', flag: '🇭🇳' },
+    { code: 'HN', name: 'Honduras',            dial: '+504', flag: '🇲🇳' },
     { code: 'SV', name: 'El Salvador',         dial: '+503', flag: '🇸🇻' },
     { code: 'NI', name: 'Nicaragua',           dial: '+505', flag: '🇳🇮' },
     { code: 'CR', name: 'Costa Rica',          dial: '+506', flag: '🇨🇷' },
@@ -103,6 +109,13 @@ export default function WhatsAppLoginModal({
     const [tempUserId, setTempUserId] = useState<string | null>(null);
     const [isSessionInactive, setIsSessionInactive] = useState(false);
 
+    // Cooldown state
+    const [cooldownSeconds, setCooldownSeconds] = useState(0);
+
+    // Cloudflare Turnstile states
+    const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+    const turnstileWidgetRef = useRef<HTMLDivElement>(null);
+
     const countryDropdownRef = useRef<HTMLDivElement>(null);
     const countryBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -114,19 +127,70 @@ export default function WhatsAppLoginModal({
             setVerificationCode('');
             setError(null);
             setIsSessionInactive(false);
+            setTurnstileToken(null);
         }
     }, [isOpen]);
 
-    // Handle outside click for country dropdown
+    // Cooldown timer effect
     useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
-                setShowCountryDropdown(false);
+        if (cooldownSeconds > 0) {
+            const timer = setTimeout(() => setCooldownSeconds(prev => prev - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [cooldownSeconds]);
+
+    // Load Cloudflare Turnstile script dynamically
+    useEffect(() => {
+        if (isOpen) {
+            if (!document.getElementById('cloudflare-turnstile-script')) {
+                const script = document.createElement('script');
+                script.id = 'cloudflare-turnstile-script';
+                script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                script.async = true;
+                script.defer = true;
+                document.body.appendChild(script);
+            }
+        }
+    }, [isOpen]);
+
+    // Render / Reset Cloudflare Turnstile widget
+    useEffect(() => {
+        if (isOpen && step === 'phone' && window.turnstile && turnstileWidgetRef.current) {
+            try {
+                window.turnstile.render(turnstileWidgetRef.current, {
+                    sitekey: process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA",
+                    callback: (token: string) => {
+                        setTurnstileToken(token);
+                    },
+                    "expired-callback": () => {
+                        setTurnstileToken(null);
+                    },
+                    "error-callback": () => {
+                        setTurnstileToken(null);
+                    }
+                });
+            } catch (e) {
+                console.error("Turnstile render error:", e);
+            }
+        }
+
+        return () => {
+            if (window.turnstile && turnstileWidgetRef.current) {
+                try {
+                    window.turnstile.remove(turnstileWidgetRef.current);
+                } catch (e) {}
             }
         };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, []);
+    }, [isOpen, step]);
+
+    const resetTurnstile = () => {
+        setTurnstileToken(null);
+        if (window.turnstile && turnstileWidgetRef.current) {
+            try {
+                window.turnstile.reset(turnstileWidgetRef.current);
+            } catch (e) {}
+        }
+    };
 
     const getCleanPhone = () => {
         let cleanNumber = phone.replace(/\D/g, "");
@@ -139,6 +203,96 @@ export default function WhatsAppLoginModal({
         }
         return `${selectedCountry.dial}${cleanNumber}`;
     };
+
+    // Cooldown checking on load
+    useEffect(() => {
+        if (isOpen && phone) {
+            const cleanPhone = getCleanPhone();
+            const lastSentKey = `otp_last_sent_whatsapp_${cleanPhone}`;
+            const lastSentTime = localStorage.getItem(lastSentKey);
+            if (lastSentTime) {
+                const diff = Date.now() - parseInt(lastSentTime);
+                if (diff < 60 * 1000) {
+                    setCooldownSeconds(Math.ceil((60 * 1000 - diff) / 1000));
+                } else {
+                    setCooldownSeconds(0);
+                }
+            }
+        }
+    }, [isOpen, phone, selectedCountry, step]);
+
+    // LocalStorage spam limits
+    const checkLocalLimits = (phoneStr: string, channelType: 'whatsapp' | 'sms'): { allowed: boolean; reason?: string } => {
+        const now = Date.now();
+        
+        // 1. Check cooldown (60s)
+        const lastSentKey = `otp_last_sent_${channelType}_${phoneStr}`;
+        const lastSentTime = localStorage.getItem(lastSentKey);
+        if (lastSentTime) {
+            const diff = now - parseInt(lastSentTime);
+            if (diff < 60 * 1000) {
+                const waitSec = Math.ceil((60 * 1000 - diff) / 1000);
+                return { allowed: false, reason: `Veuillez patienter ${waitSec} secondes avant de demander un nouveau code.` };
+            }
+        }
+        
+        // 2. Check 24h count limit
+        const limitKey = `otp_count_24h_${channelType}_${phoneStr}`;
+        const limitVal = localStorage.getItem(limitKey);
+        const maxLimit = channelType === 'whatsapp' ? 5 : 3;
+        
+        if (limitVal) {
+            try {
+                const { count, firstSent } = JSON.parse(limitVal);
+                if (now - firstSent < 24 * 60 * 60 * 1000) {
+                    if (count >= maxLimit) {
+                        return { allowed: false, reason: `Limite de tentative quotidienne atteinte pour ce numéro (max ${maxLimit}/24h).` };
+                    }
+                } else {
+                    localStorage.removeItem(limitKey);
+                }
+            } catch (e) {
+                localStorage.removeItem(limitKey);
+            }
+        }
+        
+        return { allowed: true };
+    };
+
+    const incrementLocalCount = (phoneStr: string, channelType: 'whatsapp' | 'sms') => {
+        const now = Date.now();
+        const lastSentKey = `otp_last_sent_${channelType}_${phoneStr}`;
+        localStorage.setItem(lastSentKey, now.toString());
+        
+        const limitKey = `otp_count_24h_${channelType}_${phoneStr}`;
+        const limitVal = localStorage.getItem(limitKey);
+        
+        if (limitVal) {
+            try {
+                const { count, firstSent } = JSON.parse(limitVal);
+                if (now - firstSent < 24 * 60 * 60 * 1000) {
+                    localStorage.setItem(limitKey, JSON.stringify({ count: count + 1, firstSent }));
+                } else {
+                    localStorage.setItem(limitKey, JSON.stringify({ count: 1, firstSent: now }));
+                }
+            } catch (e) {
+                localStorage.setItem(limitKey, JSON.stringify({ count: 1, firstSent: now }));
+            }
+        } else {
+            localStorage.setItem(limitKey, JSON.stringify({ count: 1, firstSent: now }));
+        }
+    };
+
+    // Handle outside click for country dropdown
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
+                setShowCountryDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
 
     const handleWhatsAppRedirect = () => {
         const whatsappNumber = "17157507852";
@@ -183,6 +337,14 @@ export default function WhatsAppLoginModal({
         }
 
         const cleanPhone = `${selectedCountry.dial}${cleanNumber}`;
+
+        // Local limits check
+        const localLimit = checkLocalLimits(cleanPhone, 'whatsapp');
+        if (!localLimit.allowed) {
+            setError(localLimit.reason || "Trop de demandes.");
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -196,9 +358,8 @@ export default function WhatsAppLoginModal({
             if (checkTrustedRes.ok) {
                 const trustedData = await checkTrustedRes.json();
                 if (trustedData.valid && trustedData.customToken) {
-                    // Appareil valide et non obsolète : Connexion instantanée sans code ni rechargement
-                    await signInWithCustomToken(auth, trustedData.customToken);
                     document.cookie = "logged_in=true; path=/; max-age=315360000; SameSite=Strict; Secure";
+                    await signInWithCustomToken(auth, trustedData.customToken);
                     onSuccess();
                     onClose();
                     return;
@@ -228,12 +389,14 @@ export default function WhatsAppLoginModal({
                         userId: checkData.userId,
                         contactMethod: "phone",
                         whatsappNumber: cleanPhone,
-                        channel: "whatsapp"
+                        channel: "whatsapp",
+                        turnstileToken
                     })
                 });
 
                 if (!genRes.ok) {
                     const genData = await genRes.json();
+                    resetTurnstile();
                     if (genData.isSessionInactive) {
                         setIsSessionInactive(true);
                         setStep('no_account');
@@ -245,23 +408,34 @@ export default function WhatsAppLoginModal({
                     }
                     throw new Error(genData.error || "Échec d'envoi du code WhatsApp.");
                 }
+                
+                incrementLocalCount(cleanPhone, 'whatsapp');
+                setCooldownSeconds(60);
                 setStep('code');
             } else {
-                // User does not exist: branch to options screen (WhatsApp / SMS)
                 setStep('no_account');
             }
         } catch (err: any) {
             console.error("Phone submit error:", err);
             setError(err.message || "Erreur de connexion. Veuillez réessayer.");
+            resetTurnstile();
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleSmsRegistration = async () => {
-        setIsLoading(true);
         setError(null);
         const cleanPhone = getCleanPhone();
+
+        // Local limits check
+        const localLimit = checkLocalLimits(cleanPhone, 'sms');
+        if (!localLimit.allowed) {
+            setError(localLimit.reason || "Trop de demandes.");
+            return;
+        }
+
+        setIsLoading(true);
 
         try {
             // 1. Register user
@@ -287,21 +461,27 @@ export default function WhatsAppLoginModal({
                     userId: regData.userId,
                     contactMethod: "phone",
                     whatsappNumber: cleanPhone,
-                    channel: "sms"
+                    channel: "sms",
+                    turnstileToken
                 })
             });
 
             if (!genRes.ok) {
                 const genData = await genRes.json().catch(() => ({}));
+                resetTurnstile();
                 if (genData.isBlocked) {
                     throw new Error("Trop de tentatives de connexion par SMS (limite de 3/24h dépassée).");
                 }
                 throw new Error(genData.error || "Échec d'envoi du code SMS.");
             }
+
+            incrementLocalCount(cleanPhone, 'sms');
+            setCooldownSeconds(60);
             setStep('code');
         } catch (err: any) {
             console.error("SMS Registration error:", err);
             setError(err.message || "Erreur lors de la création de compte.");
+            resetTurnstile();
         } finally {
             setIsLoading(false);
         }
@@ -441,15 +621,24 @@ export default function WhatsAppLoginModal({
                             />
                         </div>
 
+                        {/* Turnstile Container */}
+                        <div ref={turnstileWidgetRef} className="my-4 flex justify-center min-h-[65px]"></div>
+
                         {error && (
                             <p className="text-[10px] font-black uppercase text-red-500 tracking-widest text-center mt-2">
                                 {error}
                             </p>
                         )}
 
+                        {cooldownSeconds > 0 && (
+                            <p className="text-[11px] font-bold text-white/50 text-center mt-2">
+                                Veuillez patienter {cooldownSeconds}s avant de pouvoir demander un nouveau code.
+                            </p>
+                        )}
+
                         <button
                             type="submit"
-                            disabled={isLoading || !phone}
+                            disabled={isLoading || !phone || !turnstileToken || cooldownSeconds > 0}
                             className="w-full h-16 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:opacity-90 active:scale-[0.98] transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {isLoading ? (
@@ -490,7 +679,7 @@ export default function WhatsAppLoginModal({
                         {/* SMS Button */}
                         <button
                             onClick={handleSmsRegistration}
-                            disabled={isLoading}
+                            disabled={isLoading || cooldownSeconds > 0}
                             className="w-full h-16 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-2xl font-black text-sm uppercase tracking-widest active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                         >
                             {isLoading ? (

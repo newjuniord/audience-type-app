@@ -1,7 +1,6 @@
 import { getAdminDb } from "@/lib/firebase-admin";
 import { v4 as uuidv4 } from "uuid";
 import { Timestamp } from "firebase-admin/firestore";
-import { upstashSession } from "@/lib/upstashAuth";
 import { formatMessageTemplate, sendWhatsAppMessage } from "@/lib/whatsapp";
 import { getOrCreateUserMagicToken } from "@/lib/magicLink";
 
@@ -34,10 +33,6 @@ export async function POST(req: Request) {
     const cleanPhone = phone.replace("whatsapp:", "").trim();
     const cleanBody = bodyText.trim().toLowerCase();
 
-    if (cleanBody === "metem") {
-      await upstashSession.open(cleanPhone, 'whatsapp');
-    }
-
     const adminDb = getAdminDb();
     const usersRef = adminDb.collection("users");
     
@@ -62,6 +57,7 @@ export async function POST(req: Request) {
           name: userName,
           email: `${cleanPhone.replace("+", "")}@audiencetype.com`,
           role: "user",
+          whatsappSessionLastOpen: Timestamp.now(), // Open WhatsApp 20h session
           createdAt: Timestamp.now()
         });
         console.log(`✨ [WHATSAPP WEBHOOK] Nouvel utilisateur créé : ${userName} (${cleanPhone})`);
@@ -78,6 +74,13 @@ export async function POST(req: Request) {
       userId = userDoc.id;
       userName = userDoc.data().name || profileName || "Client";
       console.log(`🔍 [WHATSAPP WEBHOOK] Utilisateur existant trouvé : ${userName} (${cleanPhone})`);
+      
+      if (cleanBody === "metem") {
+        await usersRef.doc(userId).update({
+          whatsappSessionLastOpen: Timestamp.now() // Update session timestamp
+        });
+        console.log(`✨ [WHATSAPP WEBHOOK] Session WhatsApp mise à jour pour : ${userName}`);
+      }
     }
 
     // Generate token and a 4-digit code
