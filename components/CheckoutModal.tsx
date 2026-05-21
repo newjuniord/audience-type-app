@@ -267,12 +267,12 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
       if (cleanNumber.length !== expectedLength) {
         setError(
           selectedCountry.code === 'HT'
-            ? \`Le numéro pour Haïti doit comporter exactement 8 chiffres (ex: 34567890). Tu as saisi \${cleanNumber.length} chiffre(s).\`
-            : \`Le numéro pour \${selectedCountry.name} doit comporter exactement \${expectedLength} chiffres. Tu as saisi \${cleanNumber.length} chiffre(s).\`
+            ? `Le numéro pour Haïti doit comporter exactement 8 chiffres (ex: 34567890). Tu as saisi ${cleanNumber.length} chiffre(s).`
+            : `Le numéro pour ${selectedCountry.name} doit comporter exactement ${expectedLength} chiffres. Tu as saisi ${cleanNumber.length} chiffre(s).`
         );
         return;
       }
-      cleanPhone = \`\${selectedCountry.dial}\${cleanNumber}\`;
+      cleanPhone = `${selectedCountry.dial}${cleanNumber}`;
       setVerifiedPhone(cleanPhone);
     }
 
@@ -437,9 +437,9 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
   return (
     <>
       <div
-        className={\`fixed inset-0 z-[150] flex items-end lg:items-center justify-center p-0 lg:p-6 transition-colors duration-300 \${
+        className={`fixed inset-0 z-[150] flex items-end lg:items-center justify-center p-0 lg:p-6 transition-colors duration-300 ${
           isClosing ? 'bg-black/0 backdrop-blur-none' : 'bg-black/70 backdrop-blur-sm'
-        }\`}
+        }`}
         onClick={(e) => e.target === e.currentTarget && handleClose()}
       >
         <div
@@ -448,7 +448,7 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
             transform: isClosing
               ? 'translateY(100%)'
               : dragY > 0
-              ? \`translateY(\${dragY}px)\`
+              ? `translateY(${dragY}px)`
               : 'translateY(0)',
             opacity: isClosing ? 0 : dragY > 0 ? Math.max(0.3, 1 - dragY / 300) : 1,
             transition: isDragging.current ? 'none' : 'transform 0.35s cubic-bezier(0.32,0.72,0,1), opacity 0.35s ease',
@@ -494,10 +494,10 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
                 </div>
 
                 <div className="flex p-1 bg-white/5 rounded-xl mb-5">
-                  <button type="button" onClick={() => { setContactMethod('phone'); setError(null); }} className={\`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all \${contactMethod === 'phone' ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-black shadow-md' : 'text-white/50 hover:text-white'}\`}>
+                  <button type="button" onClick={() => { setContactMethod('phone'); setError(null); }} className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${contactMethod === 'phone' ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-black shadow-md' : 'text-white/50 hover:text-white'}`}>
                     <span>📱</span> Téléphone
                   </button>
-                  <button type="button" onClick={() => { setContactMethod('email'); setError(null); }} className={\`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all \${contactMethod === 'email' ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-black shadow-md' : 'text-white/50 hover:text-white'}\`}>
+                  <button type="button" onClick={() => { setContactMethod('email'); setError(null); }} className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${contactMethod === 'email' ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-black shadow-md' : 'text-white/50 hover:text-white'}`}>
                     <span>✉️</span> Email
                   </button>
                 </div>
@@ -514,14 +514,14 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
                           <button ref={countryBtnRef} type="button" onClick={() => showCountryDropdown ? setShowCountryDropdown(false) : openCountryDropdown()} className="h-full min-w-[90px] px-3 py-3.5 bg-white/5 border border-white/10 rounded-xl flex items-center gap-1.5 hover:bg-white/10 transition-colors text-sm font-bold whitespace-nowrap">
                             <span className="text-base">{selectedCountry.flag}</span>
                             <span className="text-white/70">{selectedCountry.dial}</span>
-                            <svg className={\`size-3 text-white/40 transition-transform \${showCountryDropdown ? '-rotate-180' : ''}\`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                            <svg className={`size-3 text-white/40 transition-transform ${showCountryDropdown ? '-rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
                           </button>
                           {showCountryDropdown && typeof window !== 'undefined' && createPortal(
                             <div ref={countryDropdownRef} className="fixed w-64 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-[9999] overflow-hidden" style={{ left: dropdownPos.left, ...(dropdownPos.above ? { bottom: window.innerHeight - dropdownPos.top, top: 'auto' } : { top: dropdownPos.top }) }}>
                               <div className="p-2 border-b border-white/5"><input type="text" value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)} placeholder="Pays ou indicatif (+509, 33...)" autoFocus className="w-full px-3 py-2 bg-white/5 rounded-lg text-xs placeholder:text-white/30 focus:outline-none bg-transparent text-white" /></div>
                               <div className="max-h-56 overflow-y-auto">
                                 {COUNTRIES.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.dial.includes(countrySearch)).map((country) => (
-                                  <button key={country.code} type="button" onClick={() => { setSelectedCountry(country); setShowCountryDropdown(false); setCountrySearch(''); }} className={\`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-white/5 transition-colors text-left \${selectedCountry.code === country.code ? 'bg-orange-500/10 text-orange-400' : 'text-white/80'}\`}>
+                                  <button key={country.code} type="button" onClick={() => { setSelectedCountry(country); setShowCountryDropdown(false); setCountrySearch(''); }} className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-white/5 transition-colors text-left ${selectedCountry.code === country.code ? 'bg-orange-500/10 text-orange-400' : 'text-white/80'}`}>
                                     <span className="text-base shrink-0">{country.flag}</span><span className="flex-1 truncate">{country.name}</span><span className="text-white/40 text-xs shrink-0">{country.dial}</span>
                                   </button>
                                 ))}
