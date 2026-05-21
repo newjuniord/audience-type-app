@@ -7,10 +7,8 @@ import { auth, db } from "@/lib/firebase";
 import VideoPlayer from "@/components/VideoPlayer";
 import {
   checkUserAction,
-  registerOrFindUserAction,
-  generateTempLinkAction,
-  verifyTempLinkCodeAction,
-  verifyTempLinkTokenAction
+  generateOtpAction,
+  verifyOtpAndLoginAction
 } from "@/app/actions/auth";
 
 import { doc, getDoc, collection, query, where, getDocs, setDoc, Timestamp } from "firebase/firestore";
@@ -644,46 +642,17 @@ export default function StartPage() {
         throw new Error(checkData.error);
       }
 
-      if (checkData.exists) {
-        // L'UTILISATEUR EXISTE DÉJÀ : Bypasser complètement la vérification de code !
-        setTempUserId(checkData.userId || null);
-
-        if (checkData.ownsCourse) {
-          // Possède déjà le cours : redirection vers l'accès direct sans code
-          setTempLink(`${window.location.origin}/login`);
-          setAlreadyOwnedMessage(
-            "Tu possèdes déjà ce cours ! 🎉 Ton compte existe déjà. Clique ci-dessous pour y accéder directement."
-          );
-          setModalStep('success');
-        } else {
-          // Ne possède pas le cours : redirection vers le paiement direct sans code
-          setAlreadyOwnedMessage(null);
-          setModalStep('payment');
-        }
-        setIsLoading(false);
-        return;
+      if (checkData.exists && checkData.ownsCourse) {
+        setAlreadyOwnedMessage(
+          "Tu possèdes déjà ce cours ! 🎉 Saisis le code reçu pour accéder directement à ton tableau de bord."
+        );
+      } else {
+        setAlreadyOwnedMessage(null);
       }
 
-      // ─── NOUVEAU COMPTE (N'EXISTE PAS ENCORE) ───
-      // On l'enregistre et on envoie le code auto par SMS ou Email
-      const registerData = await registerOrFindUserAction(
-        contactMethod === 'phone' ? cleanPhone : "",
-        contactMethod === 'email' ? email : ""
-      );
-
-      if (registerData.error) {
-        throw new Error(registerData.error);
-      }
-
-      setTempUserId(registerData.userId || null);
-
-      // On lui envoie le code de vérification
-      const genData = await generateTempLinkAction(
-        registerData.userId!,
-        contactMethod === 'phone' ? cleanPhone : "",
-        contactMethod === 'email' ? email : "",
-        contactMethod
-      );
+      // Dans TOUS LES CAS, on génère et on envoie un code OTP (nouvelle logique sécurisée)
+      const contactToUse = contactMethod === 'phone' ? cleanPhone : email;
+      const genData = await generateOtpAction(contactToUse, contactMethod);
 
       if (genData.error) {
         throw new Error(genData.error);
@@ -694,7 +663,6 @@ export default function StartPage() {
       setTempLink(null);
       setCooldownSeconds(60);
 
-      setAlreadyOwnedMessage(null);
       setModalStep('verify_code');
     } catch (err: any) {
       console.error("Erreur lors de la vérification/enregistrement:", err);
@@ -725,14 +693,17 @@ export default function StartPage() {
     setVerificationError(null);
 
     try {
-      const data = await verifyTempLinkCodeAction(tempUserId || "", verificationCode.trim());
+      const contactToUse = contactMethod === 'phone' ? verifiedPhone : email;
+      const data = await verifyOtpAndLoginAction(contactToUse, verificationCode.trim(), contactMethod);
 
       if (data.error) {
         throw new Error(data.error);
       }
 
-      // Succès ! Le serveur nous renvoie le lien d'accès déverrouillé
-      setTempLink(data.link || null);
+      // Connexion silencieuse immédiate avec Firebase
+      if (data.customToken) {
+        await signInWithCustomToken(auth, data.customToken);
+      }
       
       if (alreadyOwnedMessage) {
         setModalStep('success');

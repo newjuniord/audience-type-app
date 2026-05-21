@@ -6,10 +6,8 @@ import { auth } from "@/lib/firebase";
 import { ActionModal } from "@/components/ui/ActionModal";
 import {
     checkUserAction,
-    registerOrFindUserAction,
-    generateTempLinkAction,
-    verifyTempLinkCodeAction,
-    verifyTempLinkTokenAction
+    generateOtpAction,
+    verifyOtpAndLoginAction
 } from "@/app/actions/auth";
 
 declare global {
@@ -347,29 +345,20 @@ export default function LoginModal({
         setIsLoading(true);
 
         try {
-            // Vérifier si l'utilisateur existe
-            const checkData = await checkUserAction(cleanPhone);
-            if (checkData.error) throw new Error(checkData.error);
-
-            if (checkData.exists) {
-                setTempUserId(checkData.userId || null);
-
-                const genRes = await generateTempLinkAction(checkData.userId!, cleanPhone);
-                if (genRes.error) {
-                    resetTurnstile();
-                    if (genRes.isBlocked) {
-                        setError("Trop de tentatives de connexion (limite dépassée).");
-                        return;
-                    }
-                    throw new Error(genRes.error);
+            // 1. Envoyer le code OTP directement (création différée)
+            const genRes = await generateOtpAction(cleanPhone, 'phone');
+            if (genRes.error) {
+                resetTurnstile();
+                if (genRes.isBlocked) {
+                    setError(genRes.error);
+                    return;
                 }
-
-                incrementLocalCount(cleanPhone, 'sms');
-                setCooldownSeconds(60);
-                setStep('code');
-            } else {
-                setStep('no_account');
+                throw new Error(genRes.error);
             }
+
+            incrementLocalCount(cleanPhone, 'sms');
+            setCooldownSeconds(60);
+            setStep('code');
         } catch (err: any) {
             console.error("Phone submit error:", err);
             setError(err.message || "Erreur de connexion. Veuillez réessayer.");
@@ -393,17 +382,12 @@ export default function LoginModal({
         setIsLoading(true);
 
         try {
-            // 1. Register user
-            const regData = await registerOrFindUserAction(cleanPhone);
-            if (regData.error) throw new Error(regData.error);
-            setTempUserId(regData.userId || null);
-
-            // 2. Send SMS verification code
-            const genRes = await generateTempLinkAction(regData.userId!, cleanPhone);
+            // Envoyer le code de vérification SMS (Création sera faite à la validation)
+            const genRes = await generateOtpAction(cleanPhone, 'phone');
             if (genRes.error) {
                 resetTurnstile();
                 if (genRes.isBlocked) {
-                    throw new Error("Trop de tentatives de connexion par SMS (limite de 3/24h dépassée).");
+                    throw new Error(genRes.error);
                 }
                 throw new Error(genRes.error);
             }
@@ -431,17 +415,14 @@ export default function LoginModal({
         setError(null);
 
         try {
-            const verifyData = await verifyTempLinkCodeAction(tempUserId || "", verificationCode.trim());
+            const cleanPhone = getCleanPhone();
+            const verifyData = await verifyOtpAndLoginAction(cleanPhone, verificationCode.trim(), 'phone');
             if (verifyData.error) throw new Error(verifyData.error);
 
-            const token = verifyData.token;
-            if (!token) throw new Error("Token introuvable.");
+            const customToken = verifyData.customToken;
+            if (!customToken) throw new Error("Erreur de connexion (Token introuvable).");
 
-            const tokenVerifyData = await verifyTempLinkTokenAction(token);
-            if (tokenVerifyData.error) throw new Error(tokenVerifyData.error);
-            if (!tokenVerifyData.customToken) throw new Error("Erreur de connexion.");
-
-            await signInWithCustomToken(auth, tokenVerifyData.customToken);
+            await signInWithCustomToken(auth, customToken);
 
             onSuccess();
             onClose();
@@ -491,24 +472,7 @@ export default function LoginModal({
         }
 
         const cleanPhone = `${selectedCountry.dial}${cleanNumber}`;
-        setIsLoading(true);
-        
-        try {
-            const checkData = await checkUserAction(cleanPhone);
-            if (checkData.error) throw new Error(checkData.error);
-            
-            if (checkData.exists) {
-                setTempUserId(checkData.userId || null);
-                setStep('code');
-            } else {
-                setError("Aucun compte trouvé avec ce numéro. Veuillez d'abord valider votre numéro pour recevoir un code.");
-            }
-        } catch (err: any) {
-            console.error("Error checking user for existing code:", err);
-            setError("Une erreur est survenue lors de la vérification du numéro.");
-        } finally {
-            setIsLoading(false);
-        }
+        setStep('code');
     };
 
     const getPlaceholder = () => {

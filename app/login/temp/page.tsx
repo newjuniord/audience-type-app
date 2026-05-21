@@ -1,54 +1,19 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { signInWithCustomToken } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { verifyTempLinkTokenAction } from "@/app/actions/auth";
+import { useRouter } from "next/navigation";
 
 function TempLoginHandler() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const token = searchParams.get("token");
     const [status, setStatus] = useState("Vérification en cours...");
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const handleLogin = async () => {
-            if (!token) {
-                setError("Token manquant");
-                return;
-            }
-
-            try {
-                // 1. Appeler l'action de vérification
-                const data = await verifyTempLinkTokenAction(token);
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-
-                const customToken = data.customToken;
-                if (!customToken) {
-                    throw new Error("Token de connexion invalide");
-                }
-
-                // 2. Se connecter avec le Custom Token
-                await signInWithCustomToken(auth, customToken);
-
-                // 3. Rediriger vers le dashboard
-                setStatus("Connexion réussie ! Redirection...");
-                setTimeout(() => {
-                    router.push("/dashboard");
-                }, 1000);
-
-            } catch (err: any) {
-                console.error("Temp Login Error:", err);
-                setError(err.message || "Une erreur est survenue lors de la connexion.");
-            }
-        };
-
-        handleLogin();
-    }, [token, router]);
+        setError("Les liens de connexion directe sont obsolètes. Veuillez utiliser le code à 4 chiffres reçu par SMS ou Email pour vous connecter.");
+        setTimeout(() => {
+            router.push("/login");
+        }, 4000);
+    }, [router]);
 
     if (error) {
         return (

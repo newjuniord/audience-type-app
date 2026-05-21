@@ -6,8 +6,9 @@ import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { sendSmsMessage, formatMessageTemplate } from "@/lib/whatsapp";
 
 /**
- * Vérifie si un utilisateur existe par numéro de téléphone.
+ * Vérifie si un utilisateur existe par numéro de téléphone ou email.
  * Si targetProductId est fourni, vérifie également s'il possède ce produit.
+ * Note: Cette fonction ne crée PLUS de compte. Elle sert juste pour la vérification.
  */
 export async function checkUserAction(phone: string, email?: string, targetProductId?: string) {
     if (!phone && !email) {
@@ -46,13 +47,8 @@ export async function checkUserAction(phone: string, email?: string, targetProdu
             };
         }
 
-        // Vérifier si l'utilisateur possède déjà le cours dans la collection enrollments
         const enrollmentsRef = adminDb.collection("enrollments");
-
-        // Requête 1: userId en tant que string
         const snapString = await enrollmentsRef.where("userId", "==", userId).get();
-
-        // Requête 2: userId en tant que DocumentReference
         const userDocRef = usersRef.doc(userId);
         const snapRef = await enrollmentsRef.where("userId", "==", userDocRef).get();
 
@@ -94,296 +90,215 @@ export async function checkUserAction(phone: string, email?: string, targetProdu
 }
 
 /**
- * Enregistre un utilisateur s'il n'existe pas, ou retourne l'existant.
+ * Génère un code OTP (4 chiffres) et l'envoie via SMS ou Email.
+ * Gère le rate limiting de 4 ou 10 par 24h selon la méthode dans la collection `otp_code`.
  */
-export async function registerOrFindUserAction(phone: string, email?: string) {
-    if (!phone && !email) {
-        return { error: "Numéro de téléphone ou email requis" };
+export async function generateOtpAction(contact: string, type: 'phone' | 'email') {
+    if (!contact) {
+        return { error: "Contact manquant" };
     }
 
     try {
         const adminDb = getAdminDb();
+        const contactClean = type === 'email' ? contact.trim().toLowerCase() : contact.trim();
+        const otpRef = adminDb.collection("otp_code").doc(contactClean);
+        
+        const otpDoc = await otpRef.get();
+        const now = new Date();
+        const maxLimit = type === 'email' ? 10 : 4;
+
+        let currentCount = 0;
+        let isBlocked = false;
+
+        if (otpDoc.exists) {
+            const data = otpDoc.data();
+            const expireAt = data?.expireAt?.toDate();
+            
+            // Si la fenêtre des 24h n'est pas encore écoulée, on vérifie la limite
+            if (expireAt && expireAt > now) {
+                currentCount = data?.count || 0;
+                if (currentCount >= maxLimit) {
+                    isBlocked = true;
+                }
+            }
+        }
+
+        if (isBlocked) {
+            return {
+                error: "Trop de tentatives. Pour des raisons de sécurité, ce contact est bloqué. Veuillez réessayer demain (dans 24h).",
+                isBlocked: true
+            };
+        }
+
+        const code = Math.floor(1000 + Math.random() * 9000).toString(); // Code à 4 chiffres
+        
+        // Calcul de la nouvelle date d'expiration pour la fenêtre des 24h
+        let newExpireAt = new Date();
+        if (otpDoc.exists && otpDoc.data()?.expireAt?.toDate() > now) {
+             newExpireAt = otpDoc.data()?.expireAt.toDate(); // Conserver la fenêtre actuelle
+        } else {
+             newExpireAt.setHours(newExpireAt.getHours() + 24); // Créer une nouvelle fenêtre de 24h
+             currentCount = 0; // Réinitialiser le compteur
+        }
+
+        const newCount = currentCount + 1;
+
+        await otpRef.set({
+            code: code,
+            count: newCount,
+            type: type,
+            expireAt: Timestamp.fromDate(newExpireAt),
+            userId: "" // Le userId n'est pas nécessaire à ce stade, laissé vide selon les spécifications
+        }, { merge: true });
+
+        // Envoi effectif de l'OTP
+        if (type === 'phone') {
+            const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
+                "🔑 *VÉRIFICATION DJR AKADEMI*\n\nVoici ton code de vérification pour accéder à la plateforme : {{code}}\n\nNe partage jamais ce code.";
+            
+            const message = formatMessageTemplate(authTemplate, { code, link: "audiencetype.com", userName: "Client" });
+            await sendSmsMessage(contactClean, message);
+            console.log(`📩 [SMS] Code de vérification envoyé à ${contactClean}`);
+        } else if (type === 'email') {
+            const sendgridKey = process.env.SENDGRID_API_KEY;
+            const fromEmail = process.env.SENDGRID_FROM_EMAIL || "contact@audiencetype.com";
+
+            if (!sendgridKey) {
+                console.error("❌ SENDGRID_API_KEY manquante !");
+                return { error: "Erreur de configuration email." };
+            }
+
+            const sendgridRes = await fetch("https://api.sendgrid.com/v3/mail/send", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${sendgridKey}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    personalizations: [{ to: [{ email: contactClean }] }],
+                    from: { email: fromEmail, name: "DJR Akademi" },
+                    subject: "Ton code de vérification - DJR Akademi",
+                    content: [{
+                        type: "text/plain",
+                        value: `Voici ton code de vérification pour accéder à DJR Akademi : ${code}\n\nNe partage jamais ce code.`
+                    }]
+                })
+            });
+
+            if (!sendgridRes.ok) {
+                const errorText = await sendgridRes.text();
+                console.error("Erreur SendGrid:", errorText);
+                return { error: "Impossible d'envoyer l'email de vérification." };
+            }
+            console.log(`📩 [EMAIL] Code de vérification envoyé à ${contactClean}`);
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error in generateOtpAction:", error);
+        return { error: "Erreur lors de la génération du code." };
+    }
+}
+
+/**
+ * Vérifie le code de manière stricte dans la collection `otp_code`.
+ * Si valide : vérifie ou crée l'utilisateur dans `users` et génère un token Firebase Auth.
+ */
+export async function verifyOtpAndLoginAction(contact: string, code: string, type: 'phone' | 'email') {
+    if (!contact || !code) {
+        return { error: "Contact ou code manquant" };
+    }
+
+    try {
+        const adminDb = getAdminDb();
+        const contactClean = type === 'email' ? contact.trim().toLowerCase() : contact.trim();
+        const otpRef = adminDb.collection("otp_code").doc(contactClean);
+
+        const otpDoc = await otpRef.get();
+        if (!otpDoc.exists) {
+            return { error: "Aucun code demandé pour ce contact." };
+        }
+
+        const otpData = otpDoc.data();
+        if (!otpData?.code || otpData.code !== code.trim()) {
+            return { error: "Le code saisi est incorrect." };
+        }
+
+        // Le code est bon ! On l'efface immédiatement pour des raisons de sécurité
+        await otpRef.update({ code: "" });
+
+        // Recherche ou création de l'utilisateur
         const usersRef = adminDb.collection("users");
         let querySnapshot;
 
-        if (email) {
-            querySnapshot = await usersRef.where("email", "==", email.trim().toLowerCase()).get();
+        if (type === 'email') {
+            querySnapshot = await usersRef.where("email", "==", contactClean).get();
         } else {
-            const cleanNum = phone.trim();
-            querySnapshot = await usersRef.where("phone", "==", cleanNum).get();
+            querySnapshot = await usersRef.where("phone", "==", contactClean).get();
         }
 
+        const adminAuth = getAdminAuth();
         let userId = "";
-        let exists = false;
 
         if (!querySnapshot.empty) {
             const userDoc = querySnapshot.docs[0];
             userId = userDoc.id;
-            exists = true;
-            console.log(`👤 [registerOrFindUserAction] Utilisateur existant trouvé : ${userId}`);
+            console.log(`👤 [verifyOtpAndLoginAction] Utilisateur existant trouvé : ${userId}`);
         } else {
-            const adminAuth = getAdminAuth();
-            let newUserId = "";
-            const userEmail = email ? email.trim().toLowerCase() : undefined;
-            const userPhone = phone ? phone.trim() : undefined;
-            const userName = email ? email.split('@')[0] : "Client";
+            // Création du compte dans Firebase Auth
+            let userEmail = type === 'email' ? contactClean : undefined;
+            let userPhone = type === 'phone' ? contactClean : undefined;
+            const userName = type === 'email' ? contactClean.split('@')[0] : "Client";
 
             try {
-                // Créer l'utilisateur dans Firebase Auth
                 const authUser = await adminAuth.createUser({
                     email: userEmail,
                     phoneNumber: userPhone,
                     displayName: userName,
                 });
-                newUserId = authUser.uid;
-                console.log("👤 [registerOrFindUserAction] Utilisateur créé dans Firebase Auth:", newUserId);
+                userId = authUser.uid;
             } catch (authErr: any) {
-                console.warn("⚠️ [registerOrFindUserAction] Erreur création Firebase Auth, tentative de récupération...", authErr.message);
+                console.warn("⚠️ [verifyOtpAndLoginAction] Erreur Firebase Auth création :", authErr.message);
                 try {
                     if (userEmail) {
                         const existingAuthUser = await adminAuth.getUserByEmail(userEmail);
-                        newUserId = existingAuthUser.uid;
+                        userId = existingAuthUser.uid;
                     } else if (userPhone) {
                         const existingAuthUser = await adminAuth.getUserByPhoneNumber(userPhone);
-                        newUserId = existingAuthUser.uid;
+                        userId = existingAuthUser.uid;
                     } else {
-                        throw new Error("Missing both email and phone");
+                        throw new Error("Missing email and phone");
                     }
                 } catch {
-                    newUserId = `usr_${Math.random().toString(36).substring(2, 15)}`;
+                    userId = `usr_${uuidv4().substring(0, 13).replace(/-/g, '')}`;
                 }
             }
 
+            // Création du document utilisateur dans Firestore
             const newUserDoc = {
-                uid: newUserId,
+                uid: userId,
                 email: userEmail || "",
                 phone: userPhone || "",
                 name: userName,
                 role: "customer",
-                MAGIC_LINK_CLICK: uuidv4().replace(/-/g, ''),
                 createdAt: FieldValue.serverTimestamp(),
                 status: "active",
-                enrollmentCount: 0,
-                tempLinksCount: 0
+                enrollmentCount: 0
             };
 
-            await usersRef.doc(newUserId).set(newUserDoc);
-            userId = newUserId;
-            exists = false;
-            console.log("👤 [registerOrFindUserAction] Profil utilisateur créé dans Firestore:", newUserId);
+            await usersRef.doc(userId).set(newUserDoc);
+            console.log("👤 [verifyOtpAndLoginAction] Profil utilisateur créé dans Firestore :", userId);
         }
 
-        return {
-            success: true,
-            userId,
-            exists
-        };
-    } catch (error: any) {
-        console.error("Error in registerOrFindUserAction:", error);
-        return { error: "Erreur lors de la recherche ou de la création de l'utilisateur" };
-    }
-}
+        // Lier l'ID utilisateur au document otp_code pour un éventuel suivi futur
+        await otpRef.update({ userId: userId });
 
-/**
- * Génère un code temporaire anonyme à 4 chiffres et l'envoie par SMS via Twilio.
- */
-export async function generateTempLinkAction(userId: string, phone: string, email?: string, contactMethod?: string) {
-    if (!userId) {
-        return { error: "Paramètres manquants" };
-    }
-
-    try {
-        const adminDb = getAdminDb();
-        const userRef = adminDb.collection("users").doc(userId);
-        const userDoc = await userRef.get();
-
-        if (!userDoc.exists) {
-            return { error: "Utilisateur non trouvé" };
-        }
-
-        const finalPhone = phone ? phone.trim() : (userDoc.data()?.phone || "");
-        const finalEmail = email ? email.trim() : (userDoc.data()?.email || "");
-        const actualMethod = contactMethod || (finalPhone ? 'phone' : 'email');
-        const now = new Date();
-        const userData = userDoc.data() || {};
-
-        // 1. Cooldown de 60 secondes
-        const lastSent = userData.otpLastSentAt?.toDate();
-        if (lastSent && (now.getTime() - lastSent.getTime() < 60 * 1000)) {
-            return { error: "Veuillez patienter 60 secondes entre chaque demande de code." };
-        }
-
-        // 2. Limite par 24h (max 3)
-        const firstRequest = userData.otpFirstRequestAt?.toDate();
-        let otpCount = userData.otpCount24h || 0;
-        let resetWindow = false;
-
-        if (!firstRequest || (now.getTime() - firstRequest.getTime() > 24 * 60 * 60 * 1000)) {
-            resetWindow = true;
-            otpCount = 0;
-        }
-
-        const maxLimit = 3;
-        if (otpCount >= maxLimit) {
-            return {
-                error: `Trop de tentatives de connexion par SMS (Limite de ${maxLimit}/24h dépassée).`,
-                isBlocked: true
-            };
-        }
-
-        // Mettre à jour les compteurs
-        const updateData: any = {
-            otpLastSentAt: Timestamp.fromDate(now),
-            otpCount24h: otpCount + 1
-        };
-        if (resetWindow) {
-            updateData.otpFirstRequestAt = Timestamp.fromDate(now);
-        }
-        await userRef.update(updateData);
-
-        // 3. Générer le token UUID et un code à 4 chiffres
-        const token = uuidv4();
-        const code = Math.floor(1000 + Math.random() * 9000).toString(); // 4 chiffres
-
-        const expiresAt = new Date();
-        expiresAt.setFullYear(expiresAt.getFullYear() + 100);
-
-        const tempLinkData = {
-            userId: userId,
-            code: code,
-            expiresAt: Timestamp.fromDate(expiresAt),
-            used: false,
-            createdAt: Timestamp.now()
-        };
-
-        // 4. Sauvegarder dans temp_links
-        await adminDb.collection("temp_links").doc(token).set(tempLinkData);
-
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://audiencetype.com";
-        const link = `${baseUrl}/login/temp?token=${token}`;
-
-        const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
-            "🔑 *VÉRIFICATION DJR AKADEMI*\n\nVoici ton code de vérification pour accéder à ton cours : {{code}}\n\nTu peux également te connecter directement en cliquant sur ce lien sécurisé : {{link}}\n\nNe partage jamais ce code.";
-
-        const userName = userData.name || "Client";
-        
-        if (actualMethod === 'phone' && finalPhone) {
-            const message = formatMessageTemplate(authTemplate, { code, link, userName });
-            await sendSmsMessage(finalPhone, message);
-            console.log(`📩 [SMS] Code de vérification envoyé à ${finalPhone}`);
-        } else if (actualMethod === 'email') {
-            console.log(`📩 [EMAIL] Code de vérification généré pour ${finalEmail} : ${code}`);
-            // TODO: Intégrer Resend / SendGrid ici plus tard si nécessaire
-        }
-
-        return { success: true, userId };
-    } catch (error: any) {
-        console.error("Error in generateTempLinkAction:", error);
-        return { error: "Erreur lors de la génération du code: " + error.message };
-    }
-}
-
-/**
- * Vérifie un code à 4 chiffres et renvoie le token pour la connexion.
- */
-export async function verifyTempLinkCodeAction(userId: string, code: string) {
-    if (!code) {
-        return { error: "Code manquant" };
-    }
-
-    try {
-        const adminDb = getAdminDb();
-        const tempLinksRef = adminDb.collection("temp_links");
-
-        let query = tempLinksRef
-            .where("code", "==", code.trim())
-            .where("used", "==", false);
-
-        if (userId) {
-            query = query.where("userId", "==", userId);
-        }
-
-        const querySnapshot = await query.get();
-
-        if (querySnapshot.empty) {
-            return { error: "Le code saisi est incorrect ou a expiré." };
-        }
-
-        const activeDocs = querySnapshot.docs.filter(doc => {
-            const data = doc.data();
-            if (!data.expiresAt) return false;
-            return data.expiresAt.toDate() > new Date();
-        });
-
-        if (activeDocs.length === 0) {
-            return { error: "Le code saisi est incorrect ou a expiré." };
-        }
-
-        activeDocs.sort((a, b) => {
-            const aTime = a.data().createdAt?.toDate().getTime() || 0;
-            const bTime = b.data().createdAt?.toDate().getTime() || 0;
-            return bTime - aTime;
-        });
-
-        const doc = activeDocs[0];
-        const token = doc.id;
-
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://audiencetype.com";
-        const link = `${baseUrl}/login/temp?token=${token}`;
-
-        console.log(`✅ [verifyTempLinkCodeAction] Code correct. Accès accordé !`);
-
-        return {
-            success: true,
-            link,
-            token
-        };
-    } catch (error: any) {
-        console.error("Error in verifyTempLinkCodeAction:", error);
-        return { error: "Erreur lors de la vérification du code" };
-    }
-}
-
-/**
- * Valide le token, le marque comme utilisé et génère le Firebase Custom Token.
- */
-export async function verifyTempLinkTokenAction(token: string) {
-    if (!token) {
-        return { error: "Token manquant" };
-    }
-
-    try {
-        const adminAuth = getAdminAuth();
-        const adminDb = getAdminDb();
-
-        const linkDoc = await adminDb.collection("temp_links").doc(token).get();
-        if (!linkDoc.exists) {
-            return { error: "Lien invalide ou expiré" };
-        }
-
-        const linkData = linkDoc.data();
-        if (!linkData) {
-            return { error: "Données invalides" };
-        }
-
-        const now = Timestamp.now();
-        if (linkData.used) {
-            return { error: "Ce lien a déjà été utilisé" };
-        }
-
-        if (now.toMillis() > linkData.expiresAt.toMillis()) {
-            return { error: "Ce lien a expiré" };
-        }
-
-        await adminDb.collection("temp_links").doc(token).update({
-            used: true
-        });
-
-        const customToken = await adminAuth.createCustomToken(linkData.userId);
+        // Génération du Custom Token sécurisé
+        const customToken = await adminAuth.createCustomToken(userId);
 
         return { success: true, customToken };
     } catch (error: any) {
-        console.error("Error in verifyTempLinkTokenAction:", error);
-        return { error: "Erreur de vérification" };
+        console.error("Error in verifyOtpAndLoginAction:", error);
+        return { error: "Erreur lors de la vérification du code" };
     }
 }
