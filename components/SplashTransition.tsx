@@ -21,10 +21,10 @@ export default function SplashTransition() {
         setVisible(true);
         sessionStorage.setItem("splash_shown", "1");
 
-        // Commencer à disparaître après 1.2s
-        const fadeTimer = setTimeout(() => setFadeOut(true), 1200);
+        // Commencer à disparaître après 5.5s (un peu plus de 5s)
+        const fadeTimer = setTimeout(() => setFadeOut(true), 5500);
         // Masquer complètement après la transition
-        const hideTimer = setTimeout(() => setVisible(false), 1700);
+        const hideTimer = setTimeout(() => setVisible(false), 6000);
 
         return () => {
             clearTimeout(fadeTimer);
@@ -55,7 +55,7 @@ export default function SplashTransition() {
                 <div
                     className="size-24 rounded-3xl overflow-hidden shadow-2xl"
                     style={{
-                        animation: "splashPulse 1.2s ease-in-out",
+                        animation: "splashPulse 2s ease-in-out infinite",
                         boxShadow: "0 0 60px rgba(249, 115, 22, 0.3)",
                     }}
                 >
@@ -76,7 +76,7 @@ export default function SplashTransition() {
                     <div
                         className="h-full bg-orange-500 rounded-full"
                         style={{
-                            animation: "splashBar 1.2s ease-out forwards",
+                            animation: "splashBar 5.5s ease-out forwards",
                         }}
                     />
                 </div>
