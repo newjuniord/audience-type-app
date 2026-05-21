@@ -181,9 +181,10 @@ export default function DashboardHeader() {
                     ) : (
                         <Link
                             href="/login"
-                            className="bg-primary dark:bg-white text-white dark:text-primary px-8 h-10 rounded-full text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg flex items-center justify-center"
+                            className="bg-primary dark:bg-white text-white dark:text-primary px-4 md:px-8 h-10 rounded-full text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
                         >
-                            <span>Se connecter</span>
+                            <span className="material-symbols-outlined text-[20px] md:hidden notranslate">login</span>
+                            <span className="hidden md:inline">Konekte</span>
                         </Link>
                     )}
                 </div>
