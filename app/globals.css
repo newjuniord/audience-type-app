@@ -122,3 +122,14 @@ input[type="button"] {
   opacity: 0.5;
   margin-left: 0.25rem;
 }
+
+/* Masquer la barre de défilement sur mobile/smartphone */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+}
