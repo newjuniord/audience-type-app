@@ -21,17 +21,26 @@
 
 @keyframes gold-glow-pulse {
   0%, 100% {
-    filter:
-      drop-shadow(0 0 4px  rgba(255, 200,  60, 0.5))
-      drop-shadow(0 0 12px rgba(242, 140,  40, 0.4))
-      drop-shadow(0 0 28px rgba(200,  90,   0, 0.3));
+    text-shadow:
+      0 0 4px  rgba(255, 200,  60, 0.5),
+      0 0 12px rgba(242, 140,  40, 0.3);
   }
   50% {
-    filter:
-      drop-shadow(0 0 10px rgba(255, 220,  80, 1.0))
-      drop-shadow(0 0 28px rgba(242, 140,  40, 0.85))
-      drop-shadow(0 0 55px rgba(200,  90,   0, 0.6))
-      drop-shadow(0 0 80px rgba(255, 180,   0, 0.3));
+    text-shadow:
+      0 0 10px rgba(255, 220,  80, 0.8),
+      0 0 24px rgba(242, 140,  40, 0.5);
+  }
+}
+
+/* Optimisation spécifique pour iOS/Safari (WebKit) */
+@supports (-webkit-touch-callout: none) {
+  @keyframes gold-glow-pulse {
+    0%, 100% {
+      text-shadow: 0 0 5px rgba(255, 200, 60, 0.5);
+    }
+    50% {
+      text-shadow: 0 0 12px rgba(255, 220, 80, 0.8);
+    }
   }
 }
 
@@ -59,9 +68,9 @@
   -webkit-text-fill-color: #FFE082;
   color: #FFE082;
   animation: cursor-blink 0.85s ease-in-out infinite;
-  filter:
-    drop-shadow(0 0 6px  rgba(255, 220, 80, 1.0))
-    drop-shadow(0 0 16px rgba(242, 140, 40, 0.8));
+  text-shadow:
+    0 0 6px  rgba(255, 220, 80, 1.0),
+    0 0 12px rgba(242, 140, 40, 0.8);
 }
 
 @keyframes cursor-blink {

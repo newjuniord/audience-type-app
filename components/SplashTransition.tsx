@@ -74,9 +74,10 @@ export default function SplashTransition() {
                 {/* Barre de chargement orange */}
                 <div className="w-16 h-0.5 bg-white/10 rounded-full overflow-hidden mt-2">
                     <div
-                        className="h-full bg-orange-500 rounded-full"
+                        className="h-full w-full bg-orange-500 rounded-full"
                         style={{
                             animation: "splashBar 5.5s ease-out forwards",
+                            transformOrigin: "left",
                         }}
                     />
                 </div>
@@ -89,8 +90,8 @@ export default function SplashTransition() {
                     100% { opacity: 1; transform: scale(1); }
                 }
                 @keyframes splashBar {
-                    0% { width: 0%; }
-                    100% { width: 100%; }
+                    0% { transform: scaleX(0); }
+                    100% { transform: scaleX(1); }
                 }
             `}</style>
         </div>
