@@ -120,7 +120,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
             if (!is24hWindowOpen) {
                 // La fenêtre de 24h est fermée ou le document n'existe pas.
                 // ON NE CREE PAS le document ici. C'est le webhook qui s'en chargera quand il recevra le message.
-                const businessPhone = process.env.TWILIO_WHATSAPP_NUMBER || "+14155238886";
+                const businessPhone = process.env.NEXT_PUBLIC_TWILIO_NUMBER || "+17157507852";
                 const cleanBusinessPhone = businessPhone.replace('whatsapp:', '').replace(/\+/g, '');
                 return { 
                     success: true, 
