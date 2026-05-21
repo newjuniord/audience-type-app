@@ -38,13 +38,6 @@ export async function middleware(req: NextRequest) {
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
                 const hashedToken = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-                // Detect country (Vercel IP country, Cloudflare IP country, or fallback)
-                const country = (
-                    req.headers.get("x-vercel-ip-country") ||
-                    req.headers.get("cf-ipcountry") ||
-                    "US"
-                ).toUpperCase();
-
                 // Call internal verification API with timeout pour éviter les blocages sur iOS
                 const verifyUrl = new URL("/api/auth/trusted-device-verify", req.url);
                 const controller = new AbortController();
@@ -59,7 +52,7 @@ export async function middleware(req: NextRequest) {
                             "x-internal-secret": process.env.FIREBASE_PRIVATE_KEY || "",
                             "x-redirecting": "1" // Marqueur anti-boucle
                         },
-                        body: JSON.stringify({ userId, hashedToken, country }),
+                        body: JSON.stringify({ userId, hashedToken }),
                         signal: controller.signal,
                     });
                 } finally {

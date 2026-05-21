@@ -28,13 +28,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ valid: false });
         }
 
-        // Compare hashed tokens
+        // Compare hashed tokens uniquement (le pays est retiré — trop instable sur iOS/VPN)
         if (trustedDevice.hashedToken !== hashedToken) {
-            return NextResponse.json({ valid: false });
-        }
-
-        // Compare countries (case-insensitive)
-        if (trustedDevice.country.toUpperCase() !== country.toUpperCase()) {
             return NextResponse.json({ valid: false });
         }
 
