@@ -577,7 +577,32 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
                         <p className="text-xs text-white/50 leading-relaxed">
                           <strong className="text-white">Autre appareil ?</strong> Si tu n'as pas WhatsApp sur cet écran, envoie le mot <strong className="text-[#25D366]">CODE</strong> sur notre numéro <strong className="text-white">WhatsApp</strong> ci-dessous depuis ton téléphone :
                         </p>
-                        <p className="text-lg font-black text-white mt-1.5 tracking-wider">{whatsappRedirect.businessPhone}</p>
+                        <div className="mt-2 flex items-center justify-between bg-black/20 rounded-lg p-3 border border-white/5">
+                          <p className="text-xl font-black text-white tracking-widest font-mono">
+                            {whatsappRedirect.businessPhone.length === 12 && whatsappRedirect.businessPhone.startsWith('+1')
+                              ? whatsappRedirect.businessPhone.replace(/(\+\d{1})(\d{3})(\d{3})(\d{4})/, '$1 $2 $3 $4')
+                              : whatsappRedirect.businessPhone}
+                          </p>
+                          <button 
+                            onClick={(e) => {
+                              navigator.clipboard.writeText(whatsappRedirect.businessPhone);
+                              const target = e.currentTarget;
+                              const originalHtml = target.innerHTML;
+                              target.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> Copié';
+                              target.classList.add('text-green-400', 'bg-green-400/10', 'border-green-400/20');
+                              target.classList.remove('text-white/50', 'hover:text-white', 'bg-white/5', 'hover:bg-white/10', 'border-transparent');
+                              setTimeout(() => {
+                                target.innerHTML = originalHtml;
+                                target.classList.remove('text-green-400', 'bg-green-400/10', 'border-green-400/20');
+                                target.classList.add('text-white/50', 'hover:text-white', 'bg-white/5', 'hover:bg-white/10', 'border-transparent');
+                              }, 2000);
+                            }}
+                            className="h-8 px-3 rounded-md bg-white/5 hover:bg-white/10 border border-transparent flex items-center justify-center gap-1.5 transition-all text-white/50 hover:text-white text-xs font-bold uppercase tracking-wider"
+                            title="Copier le numéro"
+                          >
+                            <span className="material-symbols-outlined text-sm">content_copy</span> Copier
+                          </button>
+                        </div>
                       </div>
                       
                       <div className="text-center w-full mt-4 border-t border-white/10 pt-6">
