@@ -157,6 +157,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
                 "🔑 *VÉRIFICATION DJR AKADEMI*\n\nVoici ton code de vérification pour accéder à la plateforme : {{code}}\n\nNe partage jamais ce code.";
             
             const message = formatMessageTemplate(authTemplate, { code, link: "audiencetype.com", userName: "Client" });
+            
             await sendSmsMessage(contactClean, message);
             console.log(`📩 [SMS] Code de vérification envoyé à ${contactClean}`);
         } else if (type === 'email') {
