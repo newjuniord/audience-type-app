@@ -7,6 +7,7 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const {
+            userId: bodyUserId,
             email,
             phone,
             contactMethod,
@@ -25,27 +26,44 @@ export async function POST(req: Request) {
 
         const adminDb = getAdminDb();
         const usersRef = adminDb.collection("users");
-        let querySnapshot;
-
-        // 1. Rechercher si l'utilisateur existe déjà
-        if (contactMethod === 'email') {
-            querySnapshot = await usersRef.where("email", "==", email.trim().toLowerCase()).get();
-        } else {
-            querySnapshot = await usersRef.where("phone", "==", phone.trim()).get();
-        }
-
+        
         let userId = "";
         let userEmail = "";
         let userName = "";
+        let userDocFound = false;
 
-        if (!querySnapshot.empty) {
-            // L'utilisateur existe déjà !
-            const userDoc = querySnapshot.docs[0];
-            userId = userDoc.id;
-            const userData = userDoc.data();
-            userEmail = userData.email || email || "";
-            userName = userData.name || "Client";
-        } else {
+        if (bodyUserId) {
+            const docSnap = await usersRef.doc(bodyUserId).get();
+            if (docSnap.exists) {
+                userDocFound = true;
+                const userData = docSnap.data();
+                userId = bodyUserId;
+                userEmail = userData?.email || email || "";
+                userName = userData?.name || "Client";
+            }
+        }
+
+        if (!userDocFound) {
+            // 1. Rechercher si l'utilisateur existe déjà par email ou téléphone
+            let querySnapshot;
+            if (contactMethod === 'email' && email) {
+                querySnapshot = await usersRef.where("email", "==", email.trim().toLowerCase()).get();
+            } else if (phone) {
+                querySnapshot = await usersRef.where("phone", "==", phone.trim()).get();
+            }
+
+            if (querySnapshot && !querySnapshot.empty) {
+                // L'utilisateur existe déjà !
+                const userDoc = querySnapshot.docs[0];
+                userId = userDoc.id;
+                const userData = userDoc.data();
+                userEmail = userData.email || email || "";
+                userName = userData.name || "Client";
+                userDocFound = true;
+            }
+        }
+
+        if (!userDocFound) {
             // L'utilisateur n'existe pas ! On le crée d'abord dans Firebase Authentication pour obtenir l'UID officiel
             const adminAuth = getAdminAuth();
             let newUserId = "";

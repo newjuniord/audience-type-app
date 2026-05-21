@@ -50,22 +50,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         }
                     }
 
-                    if (!foundByUid && authUser.email) {
-                        // FALLBACK: Search by email if UID fails or if UID doc is empty
-                        console.log("AuthContext: Searching by email for:", authUser.email);
-                        const q = query(collection(db, "users"), where("email", "==", authUser.email), limit(1));
-                        const querySnapshot = await getDocs(q);
-                        
-                        if (!querySnapshot.empty) {
-                            const foundDoc = querySnapshot.docs[0];
-                            data = foundDoc.data();
-                            // Profile found by email
-                            
-                            // Optional: If we found by email but it's not the same as UID, 
-                            // we should probably link them later, but for now just use this data.
-                        } else {
-                            console.warn("AuthContext: No document found by UID or Email with a role.");
-                        }
+                    if (!foundByUid) {
+                        console.warn("AuthContext: No valid document found by UID.");
                     }
 
                     if (data) {

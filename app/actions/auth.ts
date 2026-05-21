@@ -175,13 +175,15 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    personalizations: [{ to: [{ email: contactClean }] }],
+                    personalizations: [{ 
+                        to: [{ email: contactClean }],
+                        dynamic_template_data: {
+                            otp_code: code,
+                            current_year: new Date().getFullYear().toString()
+                        }
+                    }],
                     from: { email: fromEmail, name: "DJR Akademi" },
-                    subject: "Ton code de vérification - DJR Akademi",
-                    content: [{
-                        type: "text/plain",
-                        value: `Voici ton code de vérification pour accéder à DJR Akademi : ${code}\n\nNe partage jamais ce code.`
-                    }]
+                    template_id: "d-ab881aa9ea704bdda1f3d0736485af12"
                 })
             });
 
@@ -196,7 +198,23 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
         return { success: true };
     } catch (error: any) {
         console.error("Error in generateOtpAction:", error);
-        return { error: "Erreur lors de la génération du code." };
+        
+        // UX Améliorée pour les erreurs communes
+        const errorMsg = error.message || "";
+        
+        if (errorMsg.includes("Permission to send an SMS")) {
+            return { error: "L'envoi de SMS vers ce pays n'est pas autorisé par notre opérateur. Veuillez utiliser une adresse e-mail ou nous contacter." };
+        }
+        
+        if (errorMsg.includes("is not a valid phone number") || errorMsg.includes("unprovisioned")) {
+            return { error: "Le numéro de téléphone fourni semble invalide. Veuillez vérifier le format." };
+        }
+        
+        if (errorMsg.includes("rate limit") || errorMsg.includes("Too many requests")) {
+            return { error: "Vous avez demandé trop de codes. Veuillez patienter un moment avant de réessayer." };
+        }
+        
+        return { error: "Impossible de vous envoyer le code pour le moment. Veuillez vérifier vos informations ou réessayer plus tard." };
     }
 }
 

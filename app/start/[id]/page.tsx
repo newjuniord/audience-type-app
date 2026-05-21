@@ -517,7 +517,17 @@ export default function StartPage() {
   const handleAccessClick = () => {
     setIsClosing(false);
     setDragY(0);
-    setModalStep('contact');
+    
+    if (currentUser) {
+        if (alreadyOwned) {
+            setModalStep('success');
+        } else {
+            setModalStep('payment');
+        }
+    } else {
+        setModalStep('contact');
+    }
+    
     setShowModal(true);
     setError(null);
     setEmailSent(false);
@@ -746,12 +756,16 @@ export default function StartPage() {
       const amountValue = method === 'moncash' ? (courseData.priceGourdes || 0) : (courseData.currentPrice || 0);
       const currencyValue = method === 'moncash' ? "HTG" : (courseData.currency || "USD");
 
+      const finalEmail = (email || currentUser?.email || "").trim().toLowerCase();
+      const finalPhone = verifiedPhone || currentUser?.phoneNumber || "";
+
       const pendingRes = await fetch("/api/checkout/create-pending", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          phone: verifiedPhone,
+          userId: currentUser?.uid,
+          email: finalEmail,
+          phone: finalPhone,
           contactMethod,
           targetProductId: productId,
           productType,
@@ -844,6 +858,40 @@ export default function StartPage() {
   const scrollToCta = () => {
     ctaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
+
+  if (!dataLoaded) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col p-4 sm:p-8 animate-pulse">
+        {/* Fake Sticky Bar */}
+        <div className="fixed top-0 left-0 right-0 h-10 bg-white/5 border-b border-white/10 z-50" />
+        
+        {/* Main skeleton content */}
+        <div className="max-w-6xl w-full mx-auto pt-20">
+          <div className="flex flex-col items-center justify-center mb-12 space-y-4">
+            <div className="h-6 w-32 bg-white/10 rounded-full" />
+            <div className="h-12 w-3/4 sm:w-1/2 bg-white/10 rounded-2xl" />
+            <div className="h-6 w-1/2 sm:w-1/3 bg-white/10 rounded-xl" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
+            <div className="space-y-6">
+               <div className="w-full aspect-video bg-white/5 rounded-3xl" />
+               <div className="h-8 w-1/3 bg-white/10 rounded-xl mt-8" />
+               <div className="space-y-3">
+                 <div className="h-4 w-full bg-white/5 rounded" />
+                 <div className="h-4 w-5/6 bg-white/5 rounded" />
+                 <div className="h-4 w-4/6 bg-white/5 rounded" />
+               </div>
+            </div>
+            <div className="space-y-6">
+              <div className="h-64 w-full bg-white/5 rounded-3xl" />
+              <div className="h-32 w-full bg-white/5 rounded-3xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans antialiased overflow-x-hidden">
@@ -1559,11 +1607,19 @@ export default function StartPage() {
                     <h2 className="text-xl font-black text-white mb-2 leading-tight uppercase">
                       Code de vérification
                     </h2>
-                    <p className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm mx-auto">
-                      {contactMethod === 'email'
-                        ? "Un e-mail de connexion sécurisé ainsi qu'un code de vérification ont été générés. Renseigne le code à 4 chiffres ci-dessous pour confirmer ton identité :"
-                        : "Nous venons de t'envoyer un code de vérification à 4 chiffres par WhatsApp. Renseigne-le ci-dessous pour confirmer ton identité et obtenir ton lien d'accès :"}
-                    </p>
+                    <div className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm mx-auto">
+                      {contactMethod === 'email' ? (
+                        <>
+                          Un e-mail de connexion sécurisé ainsi qu'un code de vérification ont été générés.<br/><br/>
+                          <span className="inline-block text-amber-400 font-bold bg-amber-400/10 border border-amber-400/20 px-3 py-1.5 rounded-lg mb-2">
+                            ⚠️ Pense à vérifier ton dossier SPAM / Courrier indésirable.
+                          </span><br/>
+                          Renseigne le code à 4 chiffres ci-dessous pour confirmer ton identité :
+                        </>
+                      ) : (
+                        "Nous venons de t'envoyer un code de vérification à 4 chiffres par SMS/WhatsApp. Renseigne-le ci-dessous pour confirmer ton identité :"
+                      )}
+                    </div>
 
                     <div className="mb-6 text-left">
                       <label className="block text-[10px] font-bold text-white/40 mb-1.5 uppercase tracking-wider">

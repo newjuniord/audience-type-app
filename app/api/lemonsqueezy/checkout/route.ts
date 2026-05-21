@@ -171,7 +171,17 @@ export async function POST(req: Request) {
             const errorData = await res.text();
             console.error("❌ [ERREUR LEMON SQUEEZY]", errorData);
             await newOrderRef.update({ status: "failed_api", failedReason: errorData });
-            return NextResponse.json({ error: "Erreur lors de la création du checkout Lemon Squeezy" }, { status: 500 });
+            
+            // On renvoie l'erreur détaillée pour comprendre exactement ce qui bloque
+            let errorMsg = "Erreur lors de la création du checkout Lemon Squeezy";
+            try {
+                const parsed = JSON.parse(errorData);
+                if (parsed.errors && parsed.errors[0]) {
+                    errorMsg = parsed.errors[0].detail || parsed.errors[0].title;
+                }
+            } catch(e) {}
+            
+            return NextResponse.json({ error: `LemonSqueezy refusé : ${errorMsg}` }, { status: 500 });
         }
 
         const lsData = await res.json();
