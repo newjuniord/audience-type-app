@@ -31,19 +31,19 @@ const COUNTRIES = [
   { flag: "🇨🇱", name: "Chili", offset: -3 },
 ];
 
-const COUNTRY_OFFSETS: Record<string, { offset: number; flag: string; code: string; placeholder: string }> = {
-  haiti: { offset: -5, flag: "🇭🇹", code: "+509", placeholder: "+509 48 48 0229" },
-  rd: { offset: -4, flag: "🇩🇴", code: "+1", placeholder: "+1 849 123 4567" },
-  france: { offset: 1, flag: "🇫🇷", code: "+33", placeholder: "+33 6 12 34 56 78" },
-  usa: { offset: -5, flag: "🇺🇸", code: "+1", placeholder: "+1 555 123 4567" },
-  usa_east: { offset: -5, flag: "🇺🇸", code: "+1", placeholder: "+1 212 123 4567" },
-  usa_central: { offset: -6, flag: "🇺🇸", code: "+1", placeholder: "+1 312 123 4567" },
-  usa_mountain: { offset: -7, flag: "🇺🇸", code: "+1", placeholder: "+1 303 123 4567" },
-  usa_pacific: { offset: -8, flag: "🇺🇸", code: "+1", placeholder: "+1 213 123 4567" },
-  canada: { offset: -5, flag: "🇨🇦", code: "+1", placeholder: "+1 514 123 4567" },
-  mexique: { offset: -6, flag: "🇲🇽", code: "+52", placeholder: "+52 55 1234 5678" },
-  bresil: { offset: -3, flag: "🇧🇷", code: "+55", placeholder: "+55 11 91234 5678" },
-  chili: { offset: -3, flag: "🇨🇱", code: "+56", placeholder: "+56 9 1234 5678" },
+const COUNTRY_OFFSETS: Record<string, { offset: number; flag: string; code: string; placeholder: string; name: string }> = {
+  haiti: { offset: -5, flag: "🇭🇹", code: "+509", placeholder: "+509 48 48 0229", name: "Haïti" },
+  rd: { offset: -4, flag: "🇩🇴", code: "+1", placeholder: "+1 849 123 4567", name: "Rép. Dominicaine" },
+  france: { offset: 1, flag: "🇫🇷", code: "+33", placeholder: "+33 6 12 34 56 78", name: "France" },
+  usa: { offset: -5, flag: "🇺🇸", code: "+1", placeholder: "+1 555 123 4567", name: "États-Unis" },
+  usa_east: { offset: -5, flag: "🇺🇸", code: "+1", placeholder: "+1 212 123 4567", name: "États-Unis (Est)" },
+  usa_central: { offset: -6, flag: "🇺🇸", code: "+1", placeholder: "+1 312 123 4567", name: "États-Unis (Centre)" },
+  usa_mountain: { offset: -7, flag: "🇺🇸", code: "+1", placeholder: "+1 303 123 4567", name: "États-Unis (Montagnes)" },
+  usa_pacific: { offset: -8, flag: "🇺🇸", code: "+1", placeholder: "+1 213 123 4567", name: "États-Unis (Pacifique)" },
+  canada: { offset: -5, flag: "🇨🇦", code: "+1", placeholder: "+1 514 123 4567", name: "Canada" },
+  mexique: { offset: -6, flag: "🇲🇽", code: "+52", placeholder: "+52 55 1234 5678", name: "Mexique" },
+  bresil: { offset: -3, flag: "🇧🇷", code: "+55", placeholder: "+55 11 91234 5678", name: "Brésil" },
+  chili: { offset: -3, flag: "🇨🇱", code: "+56", placeholder: "+56 9 1234 5678", name: "Chili" },
 };
 
 function convertTime(baseH: number, baseM: number, baseOffset: number, targetOffset: number) {
@@ -554,7 +554,7 @@ export default function ConsultationPage() {
                     <ul className="flex flex-col gap-6">
                         {[
                         { label: "Nom et prénom", value: formData.nomPrenom, icon: "person" },
-                        { label: "Pays", value: selectedCountry ? `${selectedCountry.flag} ${effectivePays}` : formData.pays, icon: "public" },
+                        { label: "Pays", value: selectedCountry ? `${selectedCountry.flag} ${selectedCountry.name}` : formData.pays, icon: "public" },
                         { label: "Numéro de téléphone", value: formData.phone, icon: "call" },
                         { label: "Date souhaitée", value: (() => { const [y, m, d] = formData.date.split("-").map(Number); const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]; return `${d} ${MONTHS[m - 1]} ${y}`; })(), icon: "event" },
                         { label: "Créneau horaire", value: selectedSlot !== null ? (<span className="flex items-center gap-2">{fmtUX(localSlots[selectedSlot].local)}<span className="px-2 py-0.5 rounded bg-white/10 text-[10px] font-bold">1 heure</span></span>) : "", icon: "schedule" },
