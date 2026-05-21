@@ -9,9 +9,17 @@ export async function middleware(req: NextRequest) {
     if (
         path.startsWith('/_next') ||
         path.startsWith('/api') ||
-        path.startsWith('/login/trusted') ||
+        path.startsWith('/login') ||
+        path.startsWith('/icons') ||
+        path.startsWith('/sw.js') ||
         path.includes('.')
     ) {
+        return NextResponse.next();
+    }
+
+    // Éviter les boucles de redirection — si déjà en train de rediriger, on continue
+    const redirecting = req.headers.get("x-redirecting");
+    if (redirecting) {
         return NextResponse.next();
     }
 
@@ -22,7 +30,7 @@ export async function middleware(req: NextRequest) {
         const trustedDeviceCookie = req.cookies.get("trusted_device")?.value;
         if (trustedDeviceCookie && trustedDeviceCookie.includes(":")) {
             const [userId, rawToken] = trustedDeviceCookie.split(":");
-            
+
             try {
                 // Hash token using native Edge Web Crypto API
                 const msgBuffer = new TextEncoder().encode(rawToken);
@@ -32,21 +40,31 @@ export async function middleware(req: NextRequest) {
 
                 // Detect country (Vercel IP country, Cloudflare IP country, or fallback)
                 const country = (
-                    req.headers.get("x-vercel-ip-country") || 
-                    req.headers.get("cf-ipcountry") || 
+                    req.headers.get("x-vercel-ip-country") ||
+                    req.headers.get("cf-ipcountry") ||
                     "US"
                 ).toUpperCase();
 
-                // Call internal verification API
+                // Call internal verification API with timeout pour éviter les blocages sur iOS
                 const verifyUrl = new URL("/api/auth/trusted-device-verify", req.url);
-                const verifyRes = await fetch(verifyUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-internal-secret": process.env.FIREBASE_PRIVATE_KEY || ""
-                    },
-                    body: JSON.stringify({ userId, hashedToken, country })
-                });
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 3000); // 3s max
+
+                let verifyRes: Response;
+                try {
+                    verifyRes = await fetch(verifyUrl, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "x-internal-secret": process.env.FIREBASE_PRIVATE_KEY || "",
+                            "x-redirecting": "1" // Marqueur anti-boucle
+                        },
+                        body: JSON.stringify({ userId, hashedToken, country }),
+                        signal: controller.signal,
+                    });
+                } finally {
+                    clearTimeout(timeout);
+                }
 
                 if (verifyRes.ok) {
                     const data = await verifyRes.json();
@@ -59,10 +77,25 @@ export async function middleware(req: NextRequest) {
                     }
                 }
             } catch (err) {
-                console.error("Middleware trusted device error:", err);
+                // Timeout ou erreur réseau — on laisse passer sans bloquer l'utilisateur
+                console.error("Middleware trusted device error (ignored on iOS):", err);
             }
         }
     }
 
     return NextResponse.next();
 }
+
+// Limiter le middleware uniquement aux routes protégées
+// Évite de s'exécuter sur les pages publiques et assets statiques
+export const config = {
+    matcher: [
+        "/dashboard/:path*",
+        "/admin/:path*",
+        "/start/:path*",
+        "/consultation",
+        "/coaching",
+        "/services",
+        "/products",
+    ],
+};
