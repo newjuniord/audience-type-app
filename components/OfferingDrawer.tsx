@@ -32,7 +32,7 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
     const [price, setPrice] = useState("");
     const [priceHTG, setPriceHTG] = useState("");
     const [lemonSqueezyProductId, setLemonSqueezyProductId] = useState("");
-    const [whatsappNumber, setWhatsappNumber] = useState("");
+    const [phone, setPhone] = useState("");
     const [imageUrl, setImageUrl] = useState("");
     const [description, setDescription] = useState("");
     const [includedItems, setIncludedItems] = useState<string[]>([]);
@@ -60,7 +60,7 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                 setPrice(initialData.price.replace('$', ''));
                 setPriceHTG(initialData.priceHTG?.toString() || "");
                 setLemonSqueezyProductId(initialData.lemonSqueezyProductId || "");
-                setWhatsappNumber(initialData.whatsappNumber || "");
+                setPhone(initialData.phone || "");
                 setImageUrl(initialData.imageUrl || "");
                 setDescription(initialData.description);
                 setIncludedItems(initialData.includedItems || []);
@@ -75,7 +75,7 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                 setPrice("");
                 setPriceHTG("");
                 setLemonSqueezyProductId("");
-                setWhatsappNumber("");
+                setPhone("");
                 setImageUrl("");
                 setDescription("");
                 setIncludedItems([
@@ -116,7 +116,7 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                 price: `${price}`, // Ensure format if needed
                 priceHTG: parseFloat(priceHTG) || 0,
                 lemonSqueezyProductId,
-                whatsappNumber,
+                phone,
                 imageUrl,
                 description,
                 includedItems: includedItems.filter(item => item.trim() !== ""),
@@ -272,18 +272,18 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                                 <p className="text-[10px] text-black/30 dark:text-white/30 mt-1 ml-1">ID de la variante (Lemon Squeezy)</p>
                             </div>
                             <div className="space-y-2">
-                                <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">WhatsApp de destination</label>
+                                <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">Téléphone de destination</label>
                                 <div className="relative">
                                     <span className="absolute left-5 top-1/2 -translate-y-1/2 text-lg">📱</span>
                                     <input
-                                        value={whatsappNumber}
-                                        onChange={(e) => setWhatsappNumber(e.target.value.replace(/\D/g, ''))}
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                                         className="w-full h-14 pl-12 pr-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium"
                                         placeholder="ex: 821012345678"
                                         type="text"
                                     />
                                 </div>
-                                <p className="text-[10px] text-black/30 dark:text-white/30 mt-1 ml-1">Numéro sans espaces ni + (ex: 821012345678 pour la Corée)</p>
+                                <p className="text-[10px] text-black/30 dark:text-white/30 mt-1 ml-1">Numéro de téléphone de destination pour les réservations (ex: 821012345678)</p>
                             </div>
                             <div className="space-y-2">
                                 <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">Image URL</label>

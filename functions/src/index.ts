@@ -291,36 +291,35 @@ export const lemonsqueezyrefund = onRequest({
 });
 
 /**
- * Helper to send a Twilio WhatsApp message using global fetch.
+ * Helper to send a Twilio SMS message using global fetch.
  * Avoids any external Twilio SDK dependencies in Cloud Functions.
  */
-async function sendWhatsAppMessageViaFetch(toPhone: string, message: string) {
+async function sendSmsViaFetch(toPhone: string, message: string) {
     const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
     const authToken = process.env.TWILIO_AUTH_TOKEN || "";
     const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+14155238886";
+    const fromNumber = process.env.TWILIO_SMS_NUMBER || 
+        process.env.TWILIO_PHONE_NUMBER || 
+        twilioWhatsAppNumber.replace("whatsapp:", "");
 
     if (!accountSid || !authToken) {
-        console.error("❌ [WHATSAPP] Twilio credentials missing in Cloud Function environment.");
+        console.error("❌ [SMS] Twilio credentials missing in Cloud Function environment.");
         return { success: false };
     }
 
-    const cleanPhone = toPhone.replace(/\s+/g, '');
-    const toWhatsAppNumber = cleanPhone.startsWith('whatsapp:') 
-        ? cleanPhone 
-        : cleanPhone.startsWith('+') 
-            ? `whatsapp:${cleanPhone}`
-            : `whatsapp:+${cleanPhone}`;
+    const cleanPhone = toPhone.replace(/\s+/g, '').replace('whatsapp:', '');
+    const toSmsNumber = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
 
     const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
     const authString = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
 
     const params = new URLSearchParams();
-    params.append("To", toWhatsAppNumber);
-    params.append("From", twilioWhatsAppNumber);
+    params.append("To", toSmsNumber);
+    params.append("From", fromNumber);
     params.append("Body", message);
 
     try {
-        console.log(`📩 [WHATSAPP] Sending Twilio API request to ${toWhatsAppNumber}...`);
+        console.log(`📩 [SMS] Sending Twilio API request to ${toSmsNumber} from ${fromNumber}...`);
         const response = await fetch(url, {
             method: "POST",
             headers: {
@@ -332,21 +331,21 @@ async function sendWhatsAppMessageViaFetch(toPhone: string, message: string) {
 
         if (response.ok) {
             const data: any = await response.json();
-            console.log(`✅ [WHATSAPP] WhatsApp sent successfully. SID: ${data.sid}`);
+            console.log(`✅ [SMS] SMS sent successfully. SID: ${data.sid}`);
             return { success: true, sid: data.sid };
         } else {
             const errText = await response.text();
-            console.error("❌ [WHATSAPP] Twilio API error response:", errText);
+            console.error("❌ [SMS] Twilio API error response:", errText);
             return { success: false };
         }
     } catch (e: any) {
-        console.error("❌ [WHATSAPP] Exception sending Twilio WhatsApp message:", e.message);
+        console.error("❌ [SMS] Exception sending Twilio SMS message:", e.message);
         return { success: false };
     }
 }
 
 /**
- * Helper to generate a temp link and send a unified WhatsApp notification
+ * Helper to generate a temp link and send a unified SMS notification
  */
 async function generateAndSendNotification(
     userId: string, 
@@ -364,10 +363,10 @@ async function generateAndSendNotification(
         }
 
         const userData = userSnap.data();
-        const whatsappNumber = userData?.whatsappNumber || "";
+        const phone = userData?.phone || "";
 
-        if (!whatsappNumber) {
-            console.log(`ℹ️ [NOTIFY] User ${userId} has no whatsappNumber. Skipping WhatsApp delivery.`);
+        if (!phone) {
+            console.log(`ℹ️ [NOTIFY] User ${userId} has no phone number. Skipping SMS delivery.`);
             return;
         }
 
@@ -418,7 +417,7 @@ async function generateAndSendNotification(
             message = `${introText}\n\nVoici ton code secret de connexion : *${code}*\n\nTu peux également cliquer sur ce lien magique pour te connecter instantanément d'un seul clic :\n${link}\n\nNe partage jamais ce code.`;
         }
 
-        await sendWhatsAppMessageViaFetch(whatsappNumber, message);
+        await sendSmsViaFetch(phone, message);
     } catch (err: any) {
         console.error("❌ [NOTIFY] Error in generateAndSendNotification:", err.message);
     }
@@ -427,7 +426,7 @@ async function generateAndSendNotification(
 /**
  * Cloud Function (Firestore Trigger): onenrollmentcreated
  * Triggers automatically whenever a new enrollment is created in Firestore.
- * If the user has a `whatsappNumber` in their profile, it creates an access code & magic link and sends it via WhatsApp.
+ * If the user has a `phone` in their profile, it creates an access code & magic link and sends it via SMS.
  */
 export const onenrollmentcreated = onDocumentCreated({
     document: "enrollments/{enrollmentId}",
@@ -480,10 +479,10 @@ export const onenrollmentcreated = onDocumentCreated({
 });
 
 /**
- * Cloud Function (HTTPS API): sendwhatsappmessage
+ * Cloud Function (HTTPS API): sendsmsmessage
  * Generic HTTPS endpoint that accepts a phone number and a custom message and dispatches it via Twilio.
  */
-export const sendwhatsappmessage = onRequest({
+export const sendsmsmessage = onRequest({
     secrets: [
         "TWILIO_ACCOUNT_SID",
         "TWILIO_AUTH_TOKEN",
@@ -505,16 +504,19 @@ export const sendwhatsappmessage = onRequest({
             return;
         }
 
-        console.log(`📩 [HTTPS API] Request to send WhatsApp message to ${phone}`);
-        const result = await sendWhatsAppMessageViaFetch(phone, message);
+        console.log(`📩 [HTTPS API] Request to send SMS message to ${phone}`);
+        const result = await sendSmsViaFetch(phone, message);
 
         if (result && result.success) {
             res.status(200).json({ success: true, sid: result.sid });
         } else {
-            res.status(500).json({ error: "Failed to send WhatsApp message via Twilio." });
+            res.status(500).json({ error: "Failed to send SMS message via Twilio." });
         }
     } catch (err: any) {
-        console.error("❌ [HTTPS API] Error sending WhatsApp message:", err.message);
+        console.error("❌ [HTTPS API] Error sending SMS message:", err.message);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
+
+// Alias for compatibility
+export const sendwhatsappmessage = sendsmsmessage;

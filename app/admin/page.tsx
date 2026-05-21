@@ -424,10 +424,10 @@ export default function UserManagementPage() {
                                                             {user.phoneNumber}
                                                         </p>
                                                     )}
-                                                    {user.whatsappNumber && (
+                                                    {user.phone && (
                                                         <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 flex items-center gap-1">
-                                                            <span className="material-symbols-outlined text-[10px]">forum</span>
-                                                            WhatsApp: {user.whatsappNumber}
+                                                            <span className="material-symbols-outlined text-[10px]">smartphone</span>
+                                                            Phone: {user.phone}
                                                         </p>
                                                     )}
                                                 </div>

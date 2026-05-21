@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
+import InstallBanner from "@/components/InstallBanner";
+import SplashTransition from "@/components/SplashTransition";
 
 export default function DashboardLayout({
     children,
@@ -21,11 +23,7 @@ export default function DashboardLayout({
     }, [user, loading, router]);
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
-                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            </div>
-        );
+        return null; // loading.tsx gère le skeleton
     }
 
     if (!user) {
@@ -34,11 +32,13 @@ export default function DashboardLayout({
 
     return (
         <div className="min-h-screen bg-background-light dark:bg-background-dark text-primary dark:text-white transition-colors">
+            <SplashTransition />
             <DashboardHeader />
             <main className="min-h-screen">
                 {children}
             </main>
             <DashboardFooter />
+            <InstallBanner />
         </div>
     );
 }

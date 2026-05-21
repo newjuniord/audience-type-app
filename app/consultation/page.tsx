@@ -6,6 +6,11 @@ import { Service } from "@/lib/types";
 import { ActionModal } from "@/components/ui/ActionModal";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
+import { useAuth } from "@/context/AuthContext";
+import WhatsAppLoginModal from "@/components/WhatsAppLoginModal";
+import { createBookingApplication } from "@/lib/booking-applications";
+import { doc, Timestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const SLOTS_KST = [
   { h: 10, m: 0 }, { h: 11, m: 30 }, { h: 13, m: 0 }, { h: 14, m: 30 },
@@ -199,6 +204,11 @@ function CalendarPicker({ value, onChange, isDateAvailable }: { value: string; o
 }
 
 export default function ConsultationPage() {
+  const { user } = useAuth();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [pendingPaymentMethod, setPendingPaymentMethod] = useState<"moncash" | "card" | null>(null);
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -212,7 +222,7 @@ export default function ConsultationPage() {
 
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [formData, setFormData] = useState({
-    nomPrenom: "", pays: "", whatsapp: "", date: "", sujet: "", kategori: ""
+    nomPrenom: "", pays: "", phone: "", date: "", sujet: "", kategori: ""
   });
   const [submitted, setSubmitted] = useState(false);
   const [reviewing, setReviewing] = useState(false);
@@ -304,7 +314,7 @@ export default function ConsultationPage() {
 
   const isFormValid =
     formData.nomPrenom && formData.pays &&
-    formData.whatsapp && formData.date && formData.sujet && formData.kategori &&
+    formData.phone && formData.date && formData.sujet && formData.kategori &&
     selectedSlot !== null;
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
@@ -313,7 +323,7 @@ export default function ConsultationPage() {
       setSelectedSlot(null);
       setUsZone("");
       const c = COUNTRY_OFFSETS[e.target.value];
-      if (c) newData.whatsapp = c.code + " ";
+      if (c) newData.phone = c.code + " ";
     }
     setFormData(newData);
   }
@@ -324,15 +334,47 @@ export default function ConsultationPage() {
     setReviewing(true);
   }
 
+  async function submitBooking(method: "moncash" | "card") {
+    if (!user || !service || !service.id) return;
+    setIsSubmittingBooking(true);
+    try {
+      const slot = localSlots[selectedSlot!];
+      const paymentMethodName = method === "moncash" ? `MonCash (${service?.priceHTG || 20000} HTG)` : `Carte bancaire / PayPal (${service?.price} USD)`;
+      
+      const userRef = doc(db, "users", user.uid);
+      const serviceRef = doc(db, "services", service.id);
+
+      const newApp = {
+        bookingsId: serviceRef,
+        createdAt: Timestamp.now(),
+        message: `Catégorie: ${formData.kategori}\nSujet: ${formData.sujet}\nMéthode de paiement: ${paymentMethodName}\nCréneau souhaité: ${slot.baseStr} (Heure admin) / ${fmtUX(slot.local)} heure locale`,
+        status: "pending",
+        userName: formData.nomPrenom,
+        userPhone: formData.phone,
+        usersId: userRef,
+        title: service!.title,
+        serviceName: service!.title
+      };
+
+      await createBookingApplication(newApp as any);
+      setShowPaymentModal(false);
+      setReviewing(false);
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Error submitting booking application:", err);
+      alert("Une erreur est survenue lors de l'enregistrement de votre demande. Veuillez réessayer.");
+    } finally {
+      setIsSubmittingBooking(false);
+    }
+  }
+
   function handlePaymentSelection(method: "moncash" | "card") {
-    const slot = localSlots[selectedSlot!];
-    const waNum = service?.whatsappNumber || "821012345678";
-    const paymentMethodName = method === "moncash" ? `MonCash (${service?.priceHTG || 20000} HTG)` : `Carte bancaire / PayPal (${service?.price} USD)`;
-    const msg = `📋 *DEMANDE DE CONSULTATION*\n\nNom et prénom: ${formData.nomPrenom}\nPays: ${formData.pays}\nWhatsApp: ${formData.whatsapp}\nDate: ${formData.date}\nCréneau: ${slot.baseStr} (Heure admin) / ${fmtUX(slot.local)} heure locale\n\nCatégorie: ${formData.kategori}\nSujet: ${formData.sujet}\n\nMéthode de paiement choisie: ${paymentMethodName}\n\n💰 Montant: ${service?.price} USD (1h)`;
-    setShowPaymentModal(false);
-    setReviewing(false);
-    setSubmitted(true);
-    setTimeout(() => window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, "_blank"), 800);
+    if (!user) {
+      setPendingPaymentMethod(method);
+      setIsLoginModalOpen(true);
+    } else {
+      submitBooking(method);
+    }
   }
 
 
@@ -398,7 +440,7 @@ export default function ConsultationPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
               {[
                 { n: "1", t: "Choisissez votre créneau", d: "Sélectionnez la date et l'heure qui vous conviennent dans votre fuseau horaire.", icon: "calendar_month" },
-                { n: "2", t: "Confirmez par WhatsApp", d: "Recevez la confirmation et les instructions de paiement directement sur WhatsApp.", icon: "chat" },
+                { n: "2", t: "Confirmez par SMS / Téléphone", d: "Recevez la confirmation et les instructions de paiement directement par SMS / Téléphone.", icon: "chat" },
                 { n: "3", t: "Connectez-vous", d: "Rejoignez votre session privée en ligne à l'heure convenue. 1h de coaching intensif.", icon: "video_camera_front" },
               ].map((s) => (
                 <div key={s.n} className="flex flex-col items-center text-center group">
@@ -440,7 +482,7 @@ export default function ConsultationPage() {
                 </div>
               ))}
             </div>
-            <p className="mt-6 text-xs text-center text-white/30 font-medium">* Les horaires peuvent varier selon l'heure d'été. Confirmez via WhatsApp.</p>
+            <p className="mt-6 text-xs text-center text-white/30 font-medium">* Les horaires peuvent varier selon l'heure d'été. Confirmez par SMS / Téléphone.</p>
           </div>
         </section>
 
@@ -484,7 +526,7 @@ export default function ConsultationPage() {
                 <p className="text-[10px] font-black tracking-[0.3em] uppercase text-primary mb-4">Réservation</p>
                 <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-4 text-white">Réservez votre séance</h2>
                 <p className="text-sm leading-relaxed text-white/50">
-                Remplissez le formulaire. Vous recevrez une confirmation par WhatsApp avec les instructions de paiement.
+                Remplissez le formulaire. Vous recevrez une confirmation par SMS avec les instructions de paiement.
                 </p>
             </div>
 
@@ -499,7 +541,7 @@ export default function ConsultationPage() {
                   </div>
                   <h3 className="text-3xl font-black uppercase tracking-tight mb-3 text-white">Demande envoyée !</h3>
                   <p className="text-base text-white/60 leading-relaxed max-w-sm mx-auto">
-                    Merci ! Vous recevrez une confirmation sur WhatsApp.<br /><strong className="text-white block mt-2">{service.price} USD · 1 heure</strong>
+                    Merci ! Vous recevrez une confirmation par SMS bientôt.<br /><strong className="text-white block mt-2">{service.price} USD · 1 heure</strong>
                   </p>
                 </div>
               ) : reviewing ? (
@@ -513,7 +555,7 @@ export default function ConsultationPage() {
                         {[
                         { label: "Nom et prénom", value: formData.nomPrenom, icon: "person" },
                         { label: "Pays", value: selectedCountry ? `${selectedCountry.flag} ${effectivePays}` : formData.pays, icon: "public" },
-                        { label: "WhatsApp", value: formData.whatsapp, icon: "chat" },
+                        { label: "Numéro de téléphone", value: formData.phone, icon: "call" },
                         { label: "Date souhaitée", value: (() => { const [y, m, d] = formData.date.split("-").map(Number); const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]; return `${d} ${MONTHS[m - 1]} ${y}`; })(), icon: "event" },
                         { label: "Créneau horaire", value: selectedSlot !== null ? (<span className="flex items-center gap-2">{fmtUX(localSlots[selectedSlot].local)}<span className="px-2 py-0.5 rounded bg-white/10 text-[10px] font-bold">1 heure</span></span>) : "", icon: "schedule" },
                         { label: "Catégorie", value: formData.kategori, icon: "category" },
@@ -535,14 +577,15 @@ export default function ConsultationPage() {
                   <div className="rounded-2xl p-5 mb-8 bg-primary/10 border border-primary/20 flex items-center justify-between">
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Montant à régler</p>
-                        <p className="text-xs text-white/60">Payable après confirmation par WhatsApp</p>
+                        <p className="text-xs text-white/60">Payable après confirmation par SMS</p>
                     </div>
                     <div className="text-2xl font-black text-white">${service.price}</div>
                   </div>
 
-                  <button onClick={() => setShowPaymentModal(true)}
-                    className="w-full py-4 rounded-xl font-black uppercase text-sm tracking-wide transition-all hover:scale-[1.02] active:scale-[0.98] mb-4 bg-primary text-white shadow-lg shadow-primary/20">
-                    Confirmer et payer
+                  <button onClick={() => setShowPaymentModal(true)} disabled={isSubmittingBooking}
+                    className="w-full py-4 rounded-xl font-black uppercase text-sm tracking-wide transition-all hover:scale-[1.02] active:scale-[0.98] mb-4 bg-primary text-white shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+                    {isSubmittingBooking && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>}
+                    <span>Confirmer et payer</span>
                   </button>
                   <button onClick={() => setReviewing(false)}
                     className="w-full py-3 text-xs font-bold uppercase tracking-widest rounded-xl transition-colors text-white/50 hover:text-white hover:bg-white/5">
@@ -555,7 +598,7 @@ export default function ConsultationPage() {
                   <div className="flex flex-col gap-2 mb-5">
                     <label className="text-[10px] font-black tracking-widest uppercase text-white/50">Nom et prénom *</label>
                     <input name="nomPrenom" value={formData.nomPrenom} onChange={handleChange} placeholder="Jean Ronald" required
-                      className="text-sm rounded-xl px-4 py-3 outline-none transition-all border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-primary placeholder:text-white/20" />
+                       className="text-sm rounded-xl px-4 py-3 outline-none transition-all border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-primary placeholder:text-white/20" />
                   </div>
 
                   <div className="flex flex-col gap-2 mb-5">
@@ -589,12 +632,12 @@ export default function ConsultationPage() {
                   )}
 
                   <div className="flex flex-col gap-2 mb-5">
-                    <label className="text-[10px] font-black tracking-widest uppercase text-white/50">WhatsApp *</label>
+                    <label className="text-[10px] font-black tracking-widest uppercase text-white/50">Numéro de téléphone *</label>
                     <div className="flex">
                       <div className="flex items-center gap-2 px-4 py-3 text-sm font-bold rounded-l-xl border border-r-0 border-white/10 bg-white/10 text-white shrink-0">
                         {selectedCountry ? `${selectedCountry.flag} ${selectedCountry.code}` : "📱"}
                       </div>
-                      <input name="whatsapp" value={formData.whatsapp} onChange={handleChange}
+                      <input name="phone" value={formData.phone} onChange={handleChange}
                         placeholder={selectedCountry?.placeholder || "+XXX XXXX XXXX"} required type="tel"
                         className="w-full text-sm rounded-r-xl px-4 py-3 outline-none transition-all border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-primary placeholder:text-white/20" />
                     </div>
@@ -670,7 +713,7 @@ export default function ConsultationPage() {
                     Vérifier ma demande
                   </button>
                   <p className="text-[10px] text-center mt-4 text-white/30 uppercase tracking-widest font-bold">
-                    La confirmation sera envoyée via WhatsApp.
+                    La confirmation sera envoyée par SMS / Téléphone.
                   </p>
                 </form>
               )}
@@ -702,8 +745,8 @@ export default function ConsultationPage() {
 
           <div className="space-y-3">
             {formData.pays === "haiti" && (
-              <button onClick={() => handlePaymentSelection("moncash")}
-                className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-[#e30713]/20 to-[#e30713]/5 border-2 border-[#e30713]/50 hover:border-[#e30713] rounded-2xl transition-all active:scale-95 group text-left">
+              <button onClick={() => handlePaymentSelection("moncash")} disabled={isSubmittingBooking}
+                className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-[#e30713]/20 to-[#e30713]/5 border-2 border-[#e30713]/50 hover:border-[#e30713] rounded-2xl transition-all active:scale-95 group text-left disabled:opacity-50">
                 <img src="/images/moncash-logo.png" alt="MonCash" className="size-12 object-contain rounded-xl shadow-lg shrink-0" onError={(e) => { e.currentTarget.src = "https://play-lh.googleusercontent.com/4g8lT5G0lO3Hwtm5X5wIhpWl4uS45j6m6jN6k9XJ2Y" }} />
                 <div className="flex-1">
                   <p className="font-black text-white text-sm">MonCash ({service?.priceHTG || 20000} HTG)</p>
@@ -713,8 +756,8 @@ export default function ConsultationPage() {
               </button>
             )}
 
-            <button onClick={() => handlePaymentSelection("card")}
-              className="w-full flex items-center gap-4 p-4 bg-white/[0.03] border border-white/10 hover:border-white/30 hover:bg-white/[0.06] rounded-2xl transition-all active:scale-95 group text-left">
+            <button onClick={() => handlePaymentSelection("card")} disabled={isSubmittingBooking}
+              className="w-full flex items-center gap-4 p-4 bg-white/[0.03] border border-white/10 hover:border-white/30 hover:bg-white/[0.06] rounded-2xl transition-all active:scale-95 group text-left disabled:opacity-50">
               <div className="size-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shrink-0 border border-white/10">
                 <span className="material-symbols-outlined text-white text-[24px]">credit_card</span>
               </div>
@@ -727,6 +770,18 @@ export default function ConsultationPage() {
           </div>
         </div>
       </ActionModal>
+
+      <WhatsAppLoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onSuccess={() => {
+          if (pendingPaymentMethod) {
+            submitBooking(pendingPaymentMethod);
+            setPendingPaymentMethod(null);
+          }
+        }}
+        productName={service.title}
+      />
     </div>
   );
 }

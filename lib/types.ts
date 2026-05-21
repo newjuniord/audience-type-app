@@ -268,7 +268,7 @@ export interface User {
     createdAt: Timestamp;
     lastLogin?: Timestamp;
     phoneNumber?: string;
-    whatsappNumber?: string;
+    phone?: string;
     purchases?: string[]; // Liste des IDs produits achetés (optionnel)
     isOnline?: boolean;
     lastActive?: Timestamp;
@@ -317,7 +317,7 @@ export interface Service {
     isInvitationOnly?: boolean;
     invitationCode?: string;
     priceHTG?: number;
-    whatsappNumber?: string; // Numéro WhatsApp de destination pour les réservations (ex: "821012345678")
+    phone?: string; // Numéro de téléphone de destination pour les réservations
     availabilityTimezoneOffset?: number; // Offset UTC du fuseau horaire de l'admin (ex: 9 pour KST, 1 pour France)
 }
 

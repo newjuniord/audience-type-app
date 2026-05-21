@@ -3,10 +3,10 @@ import { getAdminDb } from "@/lib/firebase-admin";
 
 export async function POST(req: Request) {
     try {
-        const { email, whatsappNumber, targetProductId } = await req.json();
+        const { email, phone, targetProductId } = await req.json();
 
-        if (!email && !whatsappNumber) {
-            return NextResponse.json({ error: "Email or whatsappNumber required" }, { status: 400 });
+        if (!email && !phone) {
+            return NextResponse.json({ error: "Email or phone required" }, { status: 400 });
         }
 
         const adminDb = getAdminDb();
@@ -17,22 +17,18 @@ export async function POST(req: Request) {
         if (email) {
             querySnapshot = await usersRef.where("email", "==", email.trim().toLowerCase()).get();
         } else {
-            const cleanNum = whatsappNumber.trim();
-            const [snapWhatsapp, snapSms] = await Promise.all([
-                usersRef.where("whatsappNumber", "==", cleanNum).get(),
-                usersRef.where("smsNumber", "==", cleanNum).get()
-            ]);
-            const docs = [...snapWhatsapp.docs, ...snapSms.docs];
-            if (docs.length === 0) {
-                return NextResponse.json({ exists: false });
-            }
-            querySnapshot = { empty: false, docs };
+            const cleanNum = phone.trim();
+            querySnapshot = await usersRef.where("phone", "==", cleanNum).get();
+        }
+
+        if (querySnapshot.empty) {
+            return NextResponse.json({ exists: false });
         }
 
         const userDoc = querySnapshot.docs[0];
         const userId = userDoc.id;
         const userData = userDoc.data();
-        const userEmail = userData.email || email || `${whatsappNumber}@audiencetype.com`;
+        const userEmail = userData.email || email || "";
         const userName = userData.name || "Client";
 
         // 2. Si pas de targetProductId, on renvoie juste les infos de l'utilisateur

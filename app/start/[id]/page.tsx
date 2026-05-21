@@ -4,8 +4,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { sendSignInLinkToEmail, onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { useBotBlocker } from "@/hooks/useBotBlocker";
-import BotBlockerPopup from "@/components/BotBlockerPopup";
 import VideoPlayer from "@/components/VideoPlayer";
 
 import { doc, getDoc, collection, query, where, getDocs, setDoc, Timestamp } from "firebase/firestore";
@@ -13,6 +11,7 @@ import { createOrder } from "@/lib/orders";
 import { getEnrollmentsByUser } from "@/lib/enrollments";
 import { useParams, useRouter } from "next/navigation";
 import { FunnelData } from "@/lib/types";
+import { useLemonSqueezyOverlay } from "@/hooks/useLemonSqueezyOverlay";
 
 // Données par défaut affichées pendant le chargement (Squelette/Fallback)
 const DEFAULT_COURSE_DATA: FunnelData = {
@@ -204,6 +203,7 @@ export default function StartPage() {
   const params = useParams();
   const router = useRouter();
   const funnelId = params.id as string;
+  const { openCheckout, isVerifying } = useLemonSqueezyOverlay();
 
   const [courseData, setCourseData] = useState<FunnelData>(DEFAULT_COURSE_DATA);
   const [testimonials, setTestimonials] = useState<any[]>([]);
@@ -403,15 +403,15 @@ export default function StartPage() {
   const [countrySearch, setCountrySearch] = useState('');
   const countryBtnRef = useRef<HTMLButtonElement>(null);
   const [contactMethod, setContactMethod] = useState<'email' | 'phone'>('phone');
-  const [modalStep, setModalStep] = useState<'contact' | 'payment' | 'success' | 'verify_code'>('contact');
+  const [modalStep, setModalStep] = useState<'contact' | 'no_account' | 'payment' | 'success' | 'verify_code'>('contact');
+  const [isSessionInactive, setIsSessionInactive] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [emailSent, setEmailSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const countryDropdownRef = useRef<HTMLDivElement>(null);
 
 
-  // Hook anti-bot
-  const { isBlocked, timeLeft, showPopup, handleBotDetected, closePopup } = useBotBlocker();
 
   // Ouvrir le dropdown en calculant la position fixed
   const openCountryDropdown = () => {
@@ -551,15 +551,6 @@ export default function StartPage() {
   const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Vérification du Honeypot anti-bot
-    const formData = new FormData(e.currentTarget);
-    const honeypotValue = formData.get('username_verification');
-
-    if (honeypotValue && honeypotValue.toString().length > 0) {
-      handleBotDetected();
-      return; // Bloque silencieusement la suite
-    }
-
     if (contactMethod === 'email' && !email) return;
     
     let cleanPhone = "";
@@ -641,7 +632,7 @@ export default function StartPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: contactMethod === 'email' ? email : "",
-          whatsappNumber: contactMethod === 'phone' ? cleanPhone : "",
+          phone: contactMethod === 'phone' ? cleanPhone : "",
           targetProductId
         })
       });
@@ -673,13 +664,13 @@ export default function StartPage() {
       }
 
       // ─── NOUVEAU COMPTE (N'EXISTE PAS ENCORE) ───
-      // On l'enregistre d'abord pour obtenir son userId sécurisé
+      // On l'enregistre et on envoie le code auto par SMS ou Email
       const registerRes = await fetch("/api/auth/register-or-find", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: contactMethod === 'email' ? email : "",
-          whatsappNumber: contactMethod === 'phone' ? cleanPhone : "",
+          phone: contactMethod === 'phone' ? cleanPhone : "",
           contactMethod
         })
       });
@@ -691,28 +682,29 @@ export default function StartPage() {
       const registerData = await registerRes.json();
       setTempUserId(registerData.userId);
 
-      // On lui envoie le code de vérification à 4 chiffres par WhatsApp
-      try {
-        const res = await fetch("/api/auth/temp-link/anonymous-generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: registerData.userId,
-            contactMethod: contactMethod,
-            whatsappNumber: contactMethod === 'phone' ? cleanPhone : "",
-            email: contactMethod === 'email' ? email : ""
-          })
-        });
-        if (res.ok) {
-          setVerificationError(null);
-          setVerificationCode("");
-          setTempLink(null);
-        }
-      } catch (genErr) {
-        console.error("Erreur lors de la génération du code de vérification:", genErr);
+      // On lui envoie le code de vérification
+      const genRes = await fetch("/api/auth/temp-link/anonymous-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: registerData.userId,
+          contactMethod: contactMethod,
+          phone: contactMethod === 'phone' ? cleanPhone : "",
+          email: contactMethod === 'email' ? email : ""
+        })
+      });
+
+      if (!genRes.ok) {
+        const genData = await genRes.json().catch(() => ({}));
+        throw new Error(genData.error || "Échec d'envoi du code.");
       }
 
-      setAlreadyOwnedMessage(null); // Nouveau client, il devra passer au paiement après vérification du code
+      setVerificationError(null);
+      setVerificationCode("");
+      setTempLink(null);
+      setCooldownSeconds(60);
+
+      setAlreadyOwnedMessage(null);
       setModalStep('verify_code');
     } catch (err: any) {
       console.error("Erreur lors de la vérification/enregistrement:", err);
@@ -721,6 +713,16 @@ export default function StartPage() {
       setIsLoading(false);
     }
   };
+
+  // ─── COOLDOWN TIMER ───
+  useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setTimeout(() => setCooldownSeconds(prev => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldownSeconds]);
+
+
 
   // ─── VALIDATION DU CODE DE VÉRIFICATION ───
   const handleVerifyCodeSubmit = async () => {
@@ -797,7 +799,7 @@ export default function StartPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email.trim().toLowerCase(),
-          whatsappNumber: verifiedPhone,
+          phone: verifiedPhone,
           contactMethod,
           targetProductId: productId,
           productType,
@@ -871,7 +873,9 @@ export default function StartPage() {
         }
 
         if (data.checkoutUrl) {
-          window.location.href = data.checkoutUrl;
+          // Ouvrir l'overlay Lemon Squeezy (expérience PWA sans rupture)
+          // Le hook gère automatiquement la vérification post-paiement et la redirection
+          await openCheckout(data.checkoutUrl, orderId);
         } else {
           throw new Error("Aucun lien de paiement retourné par Lemon Squeezy");
         }
@@ -1076,14 +1080,14 @@ export default function StartPage() {
                 )}
                 <button
                   onClick={() => { burstConfetti(); handleAccessClick(); }}
-                  disabled={expired || isBlocked}
+                  disabled={expired}
                   className={`relative w-full py-4 rounded-xl text-base font-black tracking-tight active:scale-95 shadow-xl transition-transform duration-150 ${
-                    (expired || isBlocked)
+                    expired
                       ? "bg-white/10 text-white/30 cursor-not-allowed"
                       : "cta-shimmer text-white shadow-orange-500/40 shadow-2xl"
                   }`}
                 >
-                  {isBlocked ? "Accès suspendu" : expired ? "Offre expirée" : courseData.ctaText}
+                  {expired ? "Offre expirée" : courseData.ctaText}
                 </button>
               </div>
               <p className="text-center text-xs text-white/40 mt-3">
@@ -1182,11 +1186,11 @@ export default function StartPage() {
                   {!expired && <div className="absolute inset-0 rounded-xl bg-orange-500/40" style={{ animation: "pulse-ring 1.6s ease-out infinite" }} />}
                   <button
                     onClick={() => { burstConfetti(); handleAccessClick(); }}
-                    disabled={expired || isBlocked}
+                    disabled={expired}
                     className={`relative w-full py-4 rounded-xl text-base font-black tracking-tight active:scale-95 shadow-xl transition-transform duration-150 ${
-                      (expired || isBlocked) ? "bg-white/10 text-white/30 cursor-not-allowed" : "cta-shimmer text-white shadow-orange-500/40 shadow-2xl"
+                      expired ? "bg-white/10 text-white/30 cursor-not-allowed" : "cta-shimmer text-white shadow-orange-500/40 shadow-2xl"
                     }`}
-                  >{isBlocked ? "Accès suspendu" : expired ? "Offre expirée" : courseData.ctaText}</button>
+                  >{expired ? "Offre expirée" : courseData.ctaText}</button>
                 </div>
                 <p className="text-center text-xs text-white/40 mt-3">{courseData.ctaSubtext}</p>
               </div>
@@ -1219,7 +1223,7 @@ export default function StartPage() {
       {/* ── STICKY MOBILE CTA ─── */}
       {hasScrolled && !showModal && (
         <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-[#0a0a0a]/90 backdrop-blur-xl border-t border-white/10 shadow-2xl flex flex-col gap-2 transition-all duration-300">
-          {!expired && !isBlocked && (
+          {!expired && (
             <div className="flex items-center justify-between text-[10px] font-black tracking-wider text-white/50 px-1 max-w-lg mx-auto w-full uppercase">
               <span className="flex items-center gap-1.5 text-amber-400">
                 <span className="size-1.5 bg-amber-400 rounded-full animate-ping shrink-0" />
@@ -1232,7 +1236,7 @@ export default function StartPage() {
           )}
 
           <div className="relative w-full max-w-lg mx-auto">
-            {!expired && !isBlocked && (
+            {!expired && (
               <div
                 className="absolute inset-0 rounded-xl bg-orange-500/40"
                 style={{ animation: "pulse-ring 1.6s ease-out infinite" }}
@@ -1240,14 +1244,14 @@ export default function StartPage() {
             )}
             <button
               onClick={() => { burstConfetti(); handleAccessClick(); }}
-              disabled={expired || isBlocked}
+              disabled={expired}
               className={`relative w-full py-4 rounded-xl text-xs sm:text-sm font-black tracking-tight transition-all duration-200 active:scale-95 shadow-xl ${
-                (expired || isBlocked)
+                expired
                   ? "bg-white/10 text-white/30 cursor-not-allowed"
                   : "bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-white cta-shimmer"
               }`}
             >
-              {isBlocked ? "Accès suspendu" : expired ? "Offre expirée" : `${courseData.ctaText} — ${courseData.currency}${courseData.currentPrice} ${courseData.priceGourdes ? `(${courseData.priceGourdes} HTG)` : ''} →`}
+              {expired ? "Offre expirée" : `${courseData.ctaText} — ${courseData.currency}${courseData.currentPrice} ${courseData.priceGourdes ? `(${courseData.priceGourdes} HTG)` : ''} →`}
             </button>
           </div>
         </div>
@@ -1401,15 +1405,6 @@ export default function StartPage() {
                   )}
 
                   <form onSubmit={handleContactSubmit} className="space-y-4">
-                    {/* CHAMP HONEYPOT - Totalement invisible pour les humains mais visible dans le DOM pour les bots */}
-                    <div className="absolute opacity-0 -z-50 h-0 w-0 pointer-events-none overflow-hidden" aria-hidden="true">
-                      <input 
-                        type="text" 
-                        name="username_verification" 
-                        autoComplete="off" 
-                        tabIndex={-1} 
-                      />
-                    </div>
                     {contactMethod === 'phone' ? (
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-white/50 uppercase tracking-widest">
@@ -1488,7 +1483,7 @@ export default function StartPage() {
                           />
                         </div>
                         <p className="text-[11px] text-white/30 pl-1">
-                          Tu recevras un message WhatsApp ou SMS avec ton lien d'accès.
+                          Tu recevras un SMS avec ton code d'accès.
                         </p>
                       </div>
                     ) : (
@@ -1506,15 +1501,15 @@ export default function StartPage() {
                           className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all text-sm"
                         />
                         <p className="text-[11px] text-white/30 pl-1">
-                          Tu recevras un lien magique par email. Vérifie tes spams.
+                          Tu recevras un code d'accès par email. Vérifie tes spams.
                         </p>
                       </div>
                     )}
 
                     <button type="submit"
-                      disabled={isBlocked || (contactMethod === 'email' ? !email : !phone)}
+                      disabled={contactMethod === 'email' ? !email : !phone}
                       className="w-full py-4 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-white font-black rounded-xl text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-orange-500/20">
-                      {isBlocked ? "Accès suspendu" : "Continuer →"}
+                      Continuer →
                     </button>
                   </form>
                   <div className="flex items-center justify-center gap-4 mt-5">
@@ -1524,6 +1519,7 @@ export default function StartPage() {
                   </div>
                 </>
               )}
+
 
               {/* ══ STEP 2 : PAIEMENT ══ */}
               {modalStep === 'payment' && (
@@ -1557,7 +1553,7 @@ export default function StartPage() {
 
                   <div className="space-y-3">
                     {selectedCountry.code === 'HT' && (
-                      <button onClick={() => handlePurchase('moncash')} disabled={isLoading || isBlocked}
+                      <button onClick={() => handlePurchase('moncash')} disabled={isLoading}
                         className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-[#e30713]/20 to-[#e30713]/5 border-2 border-[#e30713]/50 hover:border-[#e30713] rounded-2xl transition-all active:scale-95 disabled:opacity-50 group">
                         <img src="/images/moncash-logo.png" alt="MonCash" className="size-12 object-contain rounded-xl shadow-lg shrink-0" />
                         <div className="text-left flex-1">
@@ -1568,7 +1564,7 @@ export default function StartPage() {
                       </button>
                     )}
 
-                    <button onClick={() => handlePurchase('lemonsqueezy')} disabled={isLoading || isBlocked}
+                    <button onClick={() => handlePurchase('lemonsqueezy')} disabled={isLoading}
                       className="w-full flex items-center gap-4 p-4 bg-white/[0.03] border border-white/10 hover:border-white/30 hover:bg-white/[0.06] rounded-2xl transition-all active:scale-95 disabled:opacity-50 group">
                       <div className="size-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shrink-0">
                         <span className="text-xl">💳</span>
@@ -1765,10 +1761,6 @@ export default function StartPage() {
         ))}
       </div>
 
-      {/* POPUP ANTI-BOT */}
-      {showPopup && (
-        <BotBlockerPopup timeLeft={timeLeft} />
-      )}
     </div>
   );
 }

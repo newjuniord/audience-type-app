@@ -6,13 +6,14 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
+    "@serwist/next": "^9.5.11",
     "@types/uuid": "^10.0.0",
     "date-fns": "^4.1.0",
     "firebase": "^12.9.0",
@@ -23,6 +24,7 @@
     "react-dom": "19.2.3",
     "react-firebase-hooks": "^5.1.1",
     "react-phone-number-input": "^3.4.16",
+    "serwist": "^9.5.11",
     "twilio": "^6.0.2",
     "uuid": "^13.0.0"
   },

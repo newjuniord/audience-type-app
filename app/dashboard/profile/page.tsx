@@ -91,7 +91,7 @@ export default function ProfilePage() {
     // Form State
     const [displayName, setDisplayName] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
-    const [whatsappNumber, setWhatsappNumber] = useState("");
+    const [phoneState, setPhoneState] = useState("");
     const [photoURL, setPhotoURL] = useState("");
     const [memberSince, setMemberSince] = useState("");
     const [email, setEmail] = useState("");
@@ -145,21 +145,21 @@ export default function ProfilePage() {
                 if (userDoc) {
                     setDisplayName(userDoc.displayName || user.displayName || "");
                     setPhoneNumber(userDoc.phoneNumber || "");
-                    const fullWhatsapp = userDoc.whatsappNumber || "";
-                    setWhatsappNumber(fullWhatsapp);
+                    const fullPhone = userDoc.phone || "";
+                    setPhoneState(fullPhone);
                     setPhotoURL(userDoc.photoURL || user.photoURL || "");
                     setEmail(userDoc.email || user.email || "");
                     setCanGenerateTempLinks(userDoc.canGenerateTempLinks || false);
                     setTempLinksCount(userDoc.tempLinksCount || 0);
 
-                    // Parse country dial code and phone digits from whatsappNumber
-                    if (fullWhatsapp) {
-                        const matchingCountry = COUNTRIES.find(c => fullWhatsapp.startsWith(c.dial));
+                    // Parse country dial code and phone digits from phone field
+                    if (fullPhone) {
+                        const matchingCountry = COUNTRIES.find(c => fullPhone.startsWith(c.dial));
                         if (matchingCountry) {
                             setSelectedCountry(matchingCountry);
-                            setPhone(fullWhatsapp.substring(matchingCountry.dial.length));
+                            setPhone(fullPhone.substring(matchingCountry.dial.length));
                         } else {
-                            setPhone(fullWhatsapp.replace(/\D/g, ''));
+                            setPhone(fullPhone.replace(/\D/g, ''));
                         }
                     }
 
@@ -228,7 +228,7 @@ export default function ProfilePage() {
         if (!user) return;
         setPhoneError(null);
 
-        // Validation of WhatsApp Phone
+        // Validation of Phone
         let cleanNumber = phone.replace(/\D/g, "");
         const dialDigits = selectedCountry.dial.replace(/\D/g, "");
         if (cleanNumber.startsWith(dialDigits)) {
@@ -262,7 +262,7 @@ export default function ProfilePage() {
             }
         }
 
-        const finalWhatsapp = phone.trim() ? `${selectedCountry.dial}${cleanNumber}` : "";
+        const finalPhone = phone.trim() ? `${selectedCountry.dial}${cleanNumber}` : "";
 
         setSaving(true);
         try {
@@ -270,11 +270,11 @@ export default function ProfilePage() {
             await updateUser(user.uid, {
                 displayName,
                 phoneNumber,
-                whatsappNumber: finalWhatsapp,
+                phone: finalPhone,
                 email
             });
 
-            setWhatsappNumber(finalWhatsapp);
+            setPhoneState(finalPhone);
 
             // 2. Update Auth Profile (optional but good for consistency)
             await updateProfile(user, {
@@ -448,8 +448,8 @@ export default function ProfilePage() {
 
                                     <div className="flex flex-col w-full">
                                         <div className="flex items-center gap-2 pb-2">
-                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Numéro WhatsApp</p>
-                                            <span className="material-symbols-outlined text-emerald-500 text-sm">forum</span>
+                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Numéro de téléphone</p>
+                                            <span className="material-symbols-outlined text-emerald-500 text-sm">smartphone</span>
                                         </div>
 
                                         <div className="flex gap-2 relative w-full text-left" ref={countryDropdownRef}>

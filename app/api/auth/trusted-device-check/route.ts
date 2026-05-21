@@ -5,8 +5,8 @@ import crypto from "crypto";
 
 export async function POST(req: Request) {
     try {
-        const { whatsappNumber } = await req.json();
-        if (!whatsappNumber) {
+        const { phone } = await req.json();
+        if (!phone) {
             return NextResponse.json({ valid: false, error: "Numéro requis" });
         }
 
@@ -25,18 +25,14 @@ export async function POST(req: Request) {
         const adminDb = getAdminDb();
         const usersRef = adminDb.collection("users");
 
-        const cleanNum = whatsappNumber.trim();
-        const [snapWhatsapp, snapSms] = await Promise.all([
-            usersRef.where("whatsappNumber", "==", cleanNum).get(),
-            usersRef.where("smsNumber", "==", cleanNum).get()
-        ]);
-        const docs = [...snapWhatsapp.docs, ...snapSms.docs];
+        const cleanNum = phone.trim();
+        const querySnapshot = await usersRef.where("phone", "==", cleanNum).get();
 
-        if (docs.length === 0) {
+        if (querySnapshot.empty) {
             return NextResponse.json({ valid: false });
         }
 
-        const userDoc = docs[0];
+        const userDoc = querySnapshot.docs[0];
         const userId = userDoc.id;
         const userData = userDoc.data();
 

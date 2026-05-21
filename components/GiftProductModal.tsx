@@ -77,8 +77,8 @@ export default function GiftProductModal({ isOpen, onClose, user }: GiftProductM
             const productCollection = product.type === 'course' ? 'courses' : 'ebooks';
             const productRef = doc(db, productCollection, product.id);
 
-            // Send direct WhatsApp notification if they have a WhatsApp number
-            const targetPhone = user.whatsappNumber || user.phoneNumber;
+            // Send direct SMS notification if they have a phone number
+            const targetPhone = user.phone || user.phoneNumber;
             let notificationSent = false;
             if (targetPhone) {
                 try {

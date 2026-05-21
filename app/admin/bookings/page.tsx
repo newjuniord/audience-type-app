@@ -167,8 +167,8 @@ export default function BookingsPage() {
                                     <p className="text-xl font-black">{service.priceHTG || 0} HTG</p>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] text-black/40 font-black uppercase tracking-widest mb-1">WhatsApp</p>
-                                    <p className="text-sm font-bold mt-1">{service.whatsappNumber || "Non défini"}</p>
+                                    <p className="text-[10px] text-black/40 font-black uppercase tracking-widest mb-1">Téléphone</p>
+                                    <p className="text-sm font-bold mt-1">{service.phone || "Non défini"}</p>
                                 </div>
                                 <div>
                                     <p className="text-[10px] text-black/40 font-black uppercase tracking-widest mb-1">Lemon Squeezy</p>

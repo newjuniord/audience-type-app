@@ -1,6 +1,6 @@
 "use server";
 
-import { sendWhatsAppMessage, formatMessageTemplate } from "@/lib/whatsapp";
+import { sendSmsMessage, formatMessageTemplate } from "@/lib/whatsapp";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { v4 as uuidv4 } from "uuid";
 import { Timestamp } from "firebase-admin/firestore";
@@ -60,20 +60,8 @@ export async function sendGiftNotification(
 
         const message = formatMessageTemplate(productTemplate, { code, link: magicLink, userName, productName });
         
-        const productTemplateSid = process.env.TWILIO_TEMPLATE_PRODUCT_SID || process.env.TWILIO_GIFT_CONTENT_SID;
-        if (productTemplateSid) {
-            // Send using Content API (Buttons)
-            await sendWhatsAppMessage(phone, "", productTemplateSid, {
-                "1": code,
-                "2": token,
-                "3": magicLink.replace(/^https?:\/\//, ''),
-                "4": productName,
-                "5": userName
-            });
-        } else {
-            // Send standard text fallback
-            await sendWhatsAppMessage(phone, message);
-        }
+        await sendSmsMessage(phone, message);
+        
         return { success: true };
     } catch (error: any) {
         console.error("Erreur d'envoi de la notification cadeau:", error);

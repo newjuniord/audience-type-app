@@ -8,7 +8,7 @@ export async function POST(req: Request) {
         const body = await req.json();
         const {
             email,
-            whatsappNumber,
+            phone,
             contactMethod,
             targetProductId,
             productType,
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
         if (contactMethod === 'email') {
             querySnapshot = await usersRef.where("email", "==", email.trim().toLowerCase()).get();
         } else {
-            querySnapshot = await usersRef.where("whatsappNumber", "==", whatsappNumber.trim()).get();
+            querySnapshot = await usersRef.where("phone", "==", phone.trim()).get();
         }
 
         let userId = "";
@@ -43,20 +43,21 @@ export async function POST(req: Request) {
             const userDoc = querySnapshot.docs[0];
             userId = userDoc.id;
             const userData = userDoc.data();
-            userEmail = userData.email || email || `${whatsappNumber}@audiencetype.com`;
+            userEmail = userData.email || email || "";
             userName = userData.name || "Client";
         } else {
             // L'utilisateur n'existe pas ! On le crée d'abord dans Firebase Authentication pour obtenir l'UID officiel
             const adminAuth = getAdminAuth();
             let newUserId = "";
-            userEmail = email ? email.trim().toLowerCase() : `${whatsappNumber}@audiencetype.com`;
+            const rawEmail = email ? email.trim().toLowerCase() : undefined;
+            const rawPhone = phone ? phone.trim() : undefined;
             userName = email ? email.split('@')[0] : "Client";
 
             try {
                 // Essayer de créer l'utilisateur dans Firebase Auth
                 const authUser = await adminAuth.createUser({
-                    email: userEmail,
-                    phoneNumber: whatsappNumber || undefined,
+                    email: rawEmail,
+                    phoneNumber: rawPhone,
                     displayName: userName,
                 });
                 newUserId = authUser.uid;
@@ -64,30 +65,25 @@ export async function POST(req: Request) {
             } catch (authErr: any) {
                 console.warn("⚠️ [AUTH] Erreur création Firebase Auth, tentative de récupération...", authErr.message);
                 try {
-                    // Si déjà existant par email
-                    const existingAuthUser = await adminAuth.getUserByEmail(userEmail);
-                    newUserId = existingAuthUser.uid;
-                } catch {
-                    try {
-                        if (whatsappNumber) {
-                            // Si déjà existant par numéro de téléphone
-                            const existingAuthUser = await adminAuth.getUserByPhoneNumber(whatsappNumber);
-                            newUserId = existingAuthUser.uid;
-                        } else {
-                            throw authErr;
-                        }
-                    } catch {
-                        // Fallback de sécurité
-                        newUserId = `usr_${Math.random().toString(36).substring(2, 15)}`;
+                    if (rawEmail) {
+                        const existingAuthUser = await adminAuth.getUserByEmail(rawEmail);
+                        newUserId = existingAuthUser.uid;
+                    } else if (rawPhone) {
+                        const existingAuthUser = await adminAuth.getUserByPhoneNumber(rawPhone);
+                        newUserId = existingAuthUser.uid;
+                    } else {
+                        throw authErr;
                     }
+                } catch {
+                    // Fallback de sécurité
+                    newUserId = `usr_${Math.random().toString(36).substring(2, 15)}`;
                 }
             }
 
             const newUserDoc = {
                 uid: newUserId,
-                email: userEmail,
-                phoneNumber: whatsappNumber || "",
-                whatsappNumber: whatsappNumber || "",
+                email: rawEmail || "",
+                phone: rawPhone || "",
                 name: userName,
                 role: "customer",
                 MAGIC_LINK_CLICK: uuidv4().replace(/-/g, ''),
@@ -99,6 +95,7 @@ export async function POST(req: Request) {
 
             await usersRef.doc(newUserId).set(newUserDoc);
             userId = newUserId;
+            userEmail = rawEmail || "";
             console.log("👤 [FIRESTORE] Profil utilisateur créé dans Firestore:", newUserId);
         }
 

@@ -13,7 +13,7 @@ interface CreateUserDrawerProps {
 export default function CreateUserDrawer({ isOpen, onClose, onUserCreated }: CreateUserDrawerProps) {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
-    const [whatsappNumber, setWhatsappNumber] = useState("");
+    const [phone, setPhone] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -26,8 +26,8 @@ export default function CreateUserDrawer({ isOpen, onClose, onUserCreated }: Cre
             return;
         }
 
-        if (!email.trim() && !whatsappNumber.trim()) {
-            setError("Vous devez fournir un email ou un numéro WhatsApp.");
+        if (!email.trim() && !phone.trim()) {
+            setError("Vous devez fournir un email ou un numéro de téléphone.");
             return;
         }
 
@@ -47,25 +47,23 @@ export default function CreateUserDrawer({ isOpen, onClose, onUserCreated }: Cre
                 }
             }
 
-            // Vérifier si le numéro WhatsApp existe déjà
-            if (whatsappNumber.trim()) {
-                const waQuery = query(usersRef, where("whatsappNumber", "==", whatsappNumber.trim()));
-                const waSnap = await getDocs(waQuery);
-                if (!waSnap.empty) {
-                    setError("Ce numéro WhatsApp est déjà associé à un autre compte.");
+            // Vérifier si le numéro existe déjà
+            if (phone.trim()) {
+                const phoneQuery = query(usersRef, where("phone", "==", phone.trim()));
+                const phoneSnap = await getDocs(phoneQuery);
+                if (!phoneSnap.empty) {
+                    setError("Ce numéro de téléphone est déjà associé à un autre compte.");
                     setLoading(false);
                     return;
                 }
             }
 
             // Créer l'utilisateur dans Firestore
-            // Un ID auto-généré sera utilisé. Si l'utilisateur se connecte plus tard via WhatsApp ou Lien temporaire,
-            // le système utilisera cet ID pour générer son compte Firebase Auth.
             await addDoc(usersRef, {
                 fullName: name.trim(),
                 displayName: name.trim(),
                 email: email.trim().toLowerCase(),
-                whatsappNumber: whatsappNumber.trim(),
+                phone: phone.trim(),
                 role: "customer",
                 createdAt: serverTimestamp(),
                 enrollmentCount: 0,
@@ -74,7 +72,7 @@ export default function CreateUserDrawer({ isOpen, onClose, onUserCreated }: Cre
             // Réinitialiser le formulaire
             setName("");
             setEmail("");
-            setWhatsappNumber("");
+            setPhone("");
             
             onUserCreated();
             onClose();
@@ -150,12 +148,12 @@ export default function CreateUserDrawer({ isOpen, onClose, onUserCreated }: Cre
 
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
-                                Numéro WhatsApp
+                                Numéro de téléphone
                             </label>
                             <input 
                                 type="text" 
-                                value={whatsappNumber}
-                                onChange={(e) => setWhatsappNumber(e.target.value)}
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
                                 className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                                 placeholder="Ex: +33612345678"
                             />
@@ -164,7 +162,7 @@ export default function CreateUserDrawer({ isOpen, onClose, onUserCreated }: Cre
 
                         <div className="pt-4 border-t border-black/5 dark:border-white/10">
                             <p className="text-xs text-black/50 italic leading-relaxed">
-                                Note : L&apos;utilisateur n&apos;aura pas besoin de mot de passe. Il pourra se connecter via OTP (WhatsApp) ou par e-mail en utilisant les informations saisies ci-dessus.
+                                Note : L&apos;utilisateur n&apos;aura pas besoin de mot de passe. Il pourra se connecter via OTP (SMS) ou par e-mail en utilisant les informations saisies ci-dessus.
                             </p>
                         </div>
                     </form>

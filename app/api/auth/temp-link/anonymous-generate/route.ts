@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { v4 as uuidv4 } from "uuid";
 import { Timestamp } from "firebase-admin/firestore";
-import { sendWhatsAppMessage, sendSmsMessage, formatMessageTemplate } from "@/lib/whatsapp";
+import { sendSmsMessage, formatMessageTemplate } from "@/lib/whatsapp";
 import { getOrCreateUserMagicToken } from "@/lib/magicLink";
 
 export async function POST(req: Request) {
     try {
-        const { userId, whatsappNumber, contactMethod, email, channel, turnstileToken } = await req.json();
+        const { userId, phone, contactMethod, email } = await req.json();
         if (!userId) {
             return NextResponse.json({ error: "userId manquant" }, { status: 400 });
         }
@@ -21,33 +21,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 });
         }
 
-        const finalPhone = whatsappNumber || userDoc.data()?.whatsappNumber || userDoc.data()?.smsNumber;
-        const type = channel || 'whatsapp'; // 'whatsapp' ou 'sms'
+        const finalPhone = phone || userDoc.data()?.phone;
 
-        // 2. Si c'est par téléphone, valider Turnstile et appliquer les limites de taux via Firestore
+        // 2. Si c'est par téléphone, appliquer les limites de taux via Firestore
         if (contactMethod === 'phone' && finalPhone) {
-            // A. Validation Cloudflare Turnstile — DÉSACTIVÉ TEMPORAIREMENT
-            // const turnstileSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY || "1x00000000000000000000000000000000";
-            // if (!turnstileToken) {
-            //     return NextResponse.json({ error: "Validation de sécurité Turnstile manquante." }, { status: 400 });
-            // }
-            // try {
-            //     const ip = req.headers.get("x-forwarded-for") || "";
-            //     const turnstileRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-            //         method: "POST",
-            //         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            //         body: `secret=${encodeURIComponent(turnstileSecret)}&response=${encodeURIComponent(turnstileToken)}&remoteip=${encodeURIComponent(ip)}`
-            //     });
-            //     const turnstileData = await turnstileRes.json();
-            //     if (!turnstileData.success) {
-            //         return NextResponse.json({ error: "Échec de la validation de sécurité Turnstile. Veuillez réessayer." }, { status: 400 });
-            //     }
-            // } catch (err) {
-            //     console.error("Turnstile verification error:", err);
-            //     return NextResponse.json({ error: "Erreur de validation de sécurité." }, { status: 500 });
-            // }
-
-            // B. Limite de taux Firestore (Spam Shield et Cooldown)
             const now = new Date();
             const userData = userDoc.data() || {};
             
@@ -59,7 +36,7 @@ export async function POST(req: Request) {
                 }, { status: 429 });
             }
 
-            // 2. Limite par 24 heures (5 pour WhatsApp, 3 pour SMS)
+            // 2. Limite par 24 heures (3 pour SMS)
             const firstRequest = userData.otpFirstRequestAt?.toDate();
             let otpCount = userData.otpCount24h || 0;
             let resetWindow = false;
@@ -69,10 +46,10 @@ export async function POST(req: Request) {
                 otpCount = 0;
             }
 
-            const maxLimit = type === 'whatsapp' ? 5 : 3;
+            const maxLimit = 3;
             if (otpCount >= maxLimit) {
                 return NextResponse.json({
-                    error: `Trop de tentatives de connexion par ${type === 'whatsapp' ? 'WhatsApp' : 'SMS'}. (Limite de ${maxLimit}/24h dépassée).`,
+                    error: `Trop de tentatives de connexion par SMS. (Limite de ${maxLimit}/24h dépassée).`,
                     isBlocked: true
                 }, { status: 429 });
             }
@@ -86,19 +63,6 @@ export async function POST(req: Request) {
                 updateData.otpFirstRequestAt = Timestamp.fromDate(now);
             }
             await userRef.update(updateData);
-
-            // C. Vérification de la session active WhatsApp (20 heures)
-            if (type === 'whatsapp') {
-                const sessionLastOpen = userData.whatsappSessionLastOpen?.toDate();
-                const isSessionActive = sessionLastOpen && (now.getTime() - sessionLastOpen.getTime()) < 20 * 60 * 60 * 1000;
-                
-                if (!isSessionActive) {
-                    return NextResponse.json({ 
-                        error: "La session de communication WhatsApp a expiré ou n'est pas ouverte. Veuillez envoyer 'metem' sur WhatsApp pour l'ouvrir.",
-                        isSessionInactive: true 
-                    }, { status: 403 });
-                }
-            }
         }
 
         // 3. Générer le token UUID et un code à 4 chiffres
@@ -124,7 +88,6 @@ export async function POST(req: Request) {
         const baseUrl = `${protocol}://${host}`;
         const link = `${baseUrl}/login/temp?token=${token}`;
 
-        const formattedCode = `*${code}*`;
         const rawFormattedCode = `${code}`;
 
         const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
@@ -133,38 +96,13 @@ export async function POST(req: Request) {
         // 5. Envoyer le code
         if (contactMethod === 'phone' && finalPhone) {
             const userName = userDoc.data()?.name || "Client";
-            const authTemplateSid = process.env.TWILIO_TEMPLATE_AUTH_SID;
-
-            if (type === 'whatsapp') {
-                try {
-                    const magicToken = await getOrCreateUserMagicToken(userId);
-                    const magicLink = `${baseUrl}/login/magic?token=${magicToken}`;
-
-                    if (authTemplateSid) {
-                        await sendWhatsAppMessage(finalPhone, "", authTemplateSid, {
-                            "1": code,
-                            "2": token,
-                            "3": magicLink.replace(/^https?:\/\//, ''),
-                            "4": userName
-                        });
-                        console.log(`📩 [WHATSAPP TEMPLATE] Envoyé avec succès à ${finalPhone}`);
-                    } else {
-                        const message = formatMessageTemplate(authTemplate, { code: formattedCode, link: magicLink, userName });
-                        await sendWhatsAppMessage(finalPhone, message);
-                        console.log(`📩 [WHATSAPP TEXT] Code de vérification envoyé à ${finalPhone}`);
-                    }
-                } catch (err) {
-                    console.error("Erreur lors de l'envoi du message WhatsApp Twilio:", err);
-                }
-            } else {
-                // SMS
-                const message = formatMessageTemplate(authTemplate, { code: rawFormattedCode, link, userName });
-                try {
-                    await sendSmsMessage(finalPhone, message);
-                    console.log(`📩 [SMS] Code de vérification envoyé à ${finalPhone}`);
-                } catch (err) {
-                    console.error("Erreur lors de l'envoi du SMS Twilio:", err);
-                }
+            // SMS
+            const message = formatMessageTemplate(authTemplate, { code: rawFormattedCode, link, userName });
+            try {
+                await sendSmsMessage(finalPhone, message);
+                console.log(`📩 [SMS] Code de vérification envoyé à ${finalPhone}`);
+            } catch (err) {
+                console.error("Erreur lors de l'envoi du SMS Twilio:", err);
             }
         } else if (contactMethod === 'email') {
             console.log(`📩 [EMAIL] Code de vérification généré pour ${email || userDoc.data()?.email} : ${code}`);

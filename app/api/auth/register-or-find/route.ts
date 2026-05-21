@@ -5,12 +5,12 @@ import { v4 as uuidv4 } from "uuid";
 
 export async function POST(req: Request) {
     try {
-        const { email, whatsappNumber, contactMethod, channel } = await req.json();
+        const { email, phone, contactMethod } = await req.json();
 
         if (contactMethod === 'email' && !email) {
             return NextResponse.json({ error: "Email manquant" }, { status: 400 });
         }
-        if (contactMethod === 'phone' && !whatsappNumber) {
+        if (contactMethod === 'phone' && !phone) {
             return NextResponse.json({ error: "Numéro de téléphone manquant" }, { status: 400 });
         }
 
@@ -22,13 +22,8 @@ export async function POST(req: Request) {
         if (contactMethod === 'email') {
             querySnapshot = await usersRef.where("email", "==", email.trim().toLowerCase()).get();
         } else {
-            const cleanNum = whatsappNumber.trim();
-            const [snapWhatsapp, snapSms] = await Promise.all([
-                usersRef.where("whatsappNumber", "==", cleanNum).get(),
-                usersRef.where("smsNumber", "==", cleanNum).get()
-            ]);
-            const docs = [...snapWhatsapp.docs, ...snapSms.docs];
-            querySnapshot = { empty: docs.length === 0, docs };
+            const cleanNum = phone.trim();
+            querySnapshot = await usersRef.where("phone", "==", cleanNum).get();
         }
 
         let userId = "";
@@ -44,14 +39,15 @@ export async function POST(req: Request) {
             // L'utilisateur n'existe pas ! On le crée
             const adminAuth = getAdminAuth();
             let newUserId = "";
-            const userEmail = email ? email.trim().toLowerCase() : `${whatsappNumber}@audiencetype.com`;
+            const userEmail = email ? email.trim().toLowerCase() : undefined;
+            const userPhone = phone ? phone.trim() : undefined;
             const userName = email ? email.split('@')[0] : "Client";
 
             try {
                 // Créer l'utilisateur dans Firebase Auth
                 const authUser = await adminAuth.createUser({
                     email: userEmail,
-                    phoneNumber: whatsappNumber || undefined,
+                    phoneNumber: userPhone,
                     displayName: userName,
                 });
                 newUserId = authUser.uid;
@@ -59,29 +55,24 @@ export async function POST(req: Request) {
             } catch (authErr: any) {
                 console.warn("⚠️ [REGISTER-OR-FIND] Erreur création Firebase Auth, tentative de récupération...", authErr.message);
                 try {
-                    const existingAuthUser = await adminAuth.getUserByEmail(userEmail);
-                    newUserId = existingAuthUser.uid;
-                } catch {
-                    try {
-                        if (whatsappNumber) {
-                            const existingAuthUser = await adminAuth.getUserByPhoneNumber(whatsappNumber);
-                            newUserId = existingAuthUser.uid;
-                        } else {
-                            throw authErr;
-                        }
-                    } catch {
-                        newUserId = `usr_${Math.random().toString(36).substring(2, 15)}`;
+                    if (userEmail) {
+                        const existingAuthUser = await adminAuth.getUserByEmail(userEmail);
+                        newUserId = existingAuthUser.uid;
+                    } else if (userPhone) {
+                        const existingAuthUser = await adminAuth.getUserByPhoneNumber(userPhone);
+                        newUserId = existingAuthUser.uid;
+                    } else {
+                        throw authErr;
                     }
+                } catch {
+                    newUserId = `usr_${Math.random().toString(36).substring(2, 15)}`;
                 }
             }
 
-            const isSms = channel === 'sms';
             const newUserDoc = {
                 uid: newUserId,
-                email: userEmail,
-                phoneNumber: whatsappNumber || "",
-                whatsappNumber: isSms ? "" : (whatsappNumber || ""),
-                smsNumber: isSms ? (whatsappNumber || "") : "",
+                email: userEmail || "",
+                phone: userPhone || "",
                 name: userName,
                 role: "customer",
                 MAGIC_LINK_CLICK: uuidv4().replace(/-/g, ''),
