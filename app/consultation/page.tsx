@@ -3,11 +3,10 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { getServices } from "@/lib/services";
 import { Service } from "@/lib/types";
-import { ActionModal } from "@/components/ui/ActionModal";
+import { useAuth } from "@/context/AuthContext";
+import CheckoutModal from "@/components/CheckoutModal";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
-import { useAuth } from "@/context/AuthContext";
-import LoginModal from "@/components/LoginModal";
 import { createBookingApplication } from "@/lib/booking-applications";
 import { doc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -205,9 +204,7 @@ function CalendarPicker({ value, onChange, isDateAvailable }: { value: string; o
 
 export default function ConsultationPage() {
   const { user } = useAuth();
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [pendingPaymentMethod, setPendingPaymentMethod] = useState<"moncash" | "card" | null>(null);
-  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
@@ -226,7 +223,6 @@ export default function ConsultationPage() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [reviewing, setReviewing] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [usZone, setUsZone] = useState("");
 
   const effectivePays = formData.pays === "usa" && usZone ? usZone : formData.pays;
@@ -334,46 +330,30 @@ export default function ConsultationPage() {
     setReviewing(true);
   }
 
-  async function submitBooking(method: "moncash" | "card") {
-    if (!user || !service || !service.id) return;
-    setIsSubmittingBooking(true);
+  async function submitBooking(userId: string) {
+    if (!service || !service.id) return;
     try {
       const slot = localSlots[selectedSlot!];
-      const paymentMethodName = method === "moncash" ? `MonCash (${service?.priceHTG || 20000} HTG)` : `Carte bancaire / PayPal (${service?.price} USD)`;
       
-      const userRef = doc(db, "users", user.uid);
+      const userRef = doc(db, "users", userId);
       const serviceRef = doc(db, "services", service.id);
 
       const newApp = {
         bookingsId: serviceRef,
         createdAt: Timestamp.now(),
-        message: `Catégorie: ${formData.kategori}\nSujet: ${formData.sujet}\nMéthode de paiement: ${paymentMethodName}\nCréneau souhaité: ${slot.baseStr} (Heure admin) / ${fmtUX(slot.local)} heure locale`,
+        message: `Catégorie: ${formData.kategori}\nSujet: ${formData.sujet}\nCréneau souhaité: ${slot.baseStr} (Heure admin) / ${fmtUX(slot.local)} heure locale`,
         status: "pending",
         userName: formData.nomPrenom,
         userPhone: formData.phone,
         usersId: userRef,
-        title: service!.title,
-        serviceName: service!.title
+        title: service.title,
+        serviceName: service.title
       };
 
       await createBookingApplication(newApp as any);
-      setShowPaymentModal(false);
-      setReviewing(false);
       setSubmitted(true);
     } catch (err) {
       console.error("Error submitting booking application:", err);
-      alert("Une erreur est survenue lors de l'enregistrement de votre demande. Veuillez réessayer.");
-    } finally {
-      setIsSubmittingBooking(false);
-    }
-  }
-
-  function handlePaymentSelection(method: "moncash" | "card") {
-    if (!user) {
-      setPendingPaymentMethod(method);
-      setIsLoginModalOpen(true);
-    } else {
-      submitBooking(method);
     }
   }
 
@@ -582,9 +562,8 @@ export default function ConsultationPage() {
                     <div className="text-2xl font-black text-white">${service.price}</div>
                   </div>
 
-                  <button onClick={() => setShowPaymentModal(true)} disabled={isSubmittingBooking}
+                  <button onClick={() => setIsCheckoutModalOpen(true)}
                     className="w-full py-4 rounded-xl font-black uppercase text-sm tracking-wide transition-all hover:scale-[1.02] active:scale-[0.98] mb-4 bg-primary text-white shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
-                    {isSubmittingBooking && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>}
                     <span>Confirmer et payer</span>
                   </button>
                   <button onClick={() => setReviewing(false)}
@@ -725,63 +704,25 @@ export default function ConsultationPage() {
 
       <DashboardFooter />
 
-      {/* ── PAYMENT ACTION MODAL ── */}
-      <ActionModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        iconEmoji="💳"
-        title="Sélectionnez votre paiement"
-        subtitle="Consultation privée · 1h"
-      >
-        <div className="text-white space-y-4">
-          <div className="bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-widest text-white/50">Total</span>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-black text-white">${service?.price} USD</span>
-            </div>
-          </div>
+      <DashboardFooter />
 
-          <p className="text-[10px] text-white/40 text-center font-black uppercase tracking-widest my-6">Comment veux-tu payer ?</p>
-
-          <div className="space-y-3">
-            {formData.pays === "haiti" && (
-              <button onClick={() => handlePaymentSelection("moncash")} disabled={isSubmittingBooking}
-                className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-[#e30713]/20 to-[#e30713]/5 border-2 border-[#e30713]/50 hover:border-[#e30713] rounded-2xl transition-all active:scale-95 group text-left disabled:opacity-50">
-                <img src="/images/moncash-logo.png" alt="MonCash" className="size-12 object-contain rounded-xl shadow-lg shrink-0" onError={(e) => { e.currentTarget.src = "https://play-lh.googleusercontent.com/4g8lT5G0lO3Hwtm5X5wIhpWl4uS45j6m6jN6k9XJ2Y" }} />
-                <div className="flex-1">
-                  <p className="font-black text-white text-sm">MonCash ({service?.priceHTG || 20000} HTG)</p>
-                  <p className="text-xs font-medium text-white/50 mt-0.5">Paiement mobile haïtien · Rapide</p>
-                </div>
-                <span className="material-symbols-outlined text-white/50 group-hover:text-white transition-colors">arrow_forward_ios</span>
-              </button>
-            )}
-
-            <button onClick={() => handlePaymentSelection("card")} disabled={isSubmittingBooking}
-              className="w-full flex items-center gap-4 p-4 bg-white/[0.03] border border-white/10 hover:border-white/30 hover:bg-white/[0.06] rounded-2xl transition-all active:scale-95 group text-left disabled:opacity-50">
-              <div className="size-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shrink-0 border border-white/10">
-                <span className="material-symbols-outlined text-white text-[24px]">credit_card</span>
-              </div>
-              <div className="flex-1">
-                <p className="font-black text-white text-sm">Carte bancaire · PayPal</p>
-                <p className="text-xs font-medium text-white/50 mt-0.5">Visa, Mastercard, Amex, PayPal</p>
-              </div>
-              <span className="material-symbols-outlined text-white/50 group-hover:text-white transition-colors">arrow_forward_ios</span>
-            </button>
-          </div>
-        </div>
-      </ActionModal>
-
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onSuccess={() => {
-          if (pendingPaymentMethod) {
-            submitBooking(pendingPaymentMethod);
-            setPendingPaymentMethod(null);
-          }
-        }}
-        productName={service.title}
-      />
+      {service && isCheckoutModalOpen && (
+        <CheckoutModal
+          isOpen={isCheckoutModalOpen}
+          onClose={() => setIsCheckoutModalOpen(false)}
+          onBeforePaymentRedirect={submitBooking}
+          product={{
+            id: service.id!,
+            title: service.title,
+            priceHTG: service.priceHTG || 0,
+            price: parseFloat(service.price.replace(/[^0-9.]/g, '')) || 0,
+            currency: "$",
+            type: "service",
+            image: service.imageUrl || "",
+            headline: "Réservation de votre session",
+          }}
+        />
+      )}
     </div>
   );
 }

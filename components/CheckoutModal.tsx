@@ -30,6 +30,7 @@ interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: CheckoutProduct;
+  onBeforePaymentRedirect?: (userId: string) => Promise<void>;
 }
 
 // ─── COUNTRIES LIST ──────────────────────────────────────────────────────────
@@ -132,7 +133,7 @@ function formatPhone(digits: string, countryCode: string): string {
   return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 9)} ${d.slice(9)}`;
 }
 
-export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModalProps) {
+export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymentRedirect }: CheckoutModalProps) {
   const { user: currentUser } = useAuth();
   const [isClosing, setIsClosing] = useState(false);
   const [dragY, setDragY] = useState(0);
@@ -387,6 +388,10 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
       }
 
       const { userId, userEmail, userName, orderId } = await pendingRes.json();
+
+      if (onBeforePaymentRedirect) {
+        await onBeforePaymentRedirect(userId);
+      }
 
       if (method === 'moncash') {
         const response = await fetch("/api/bazik/payment", {
