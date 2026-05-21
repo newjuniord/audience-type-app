@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ConfirmModal from "./ui/ConfirmModal";
-import WhatsAppLoginModal from "./WhatsAppLoginModal";
+import LoginModal from "./LoginModal";
 import { Product } from "@/types/product";
 import BubbleButton from "./BubbleButton";
 import { useAuth } from "@/context/AuthContext";
@@ -379,7 +379,7 @@ export default function FeaturedProducts({
             )}
 
             {/* WhatsApp Login Modal */}
-            <WhatsAppLoginModal
+            <LoginModal
                 isOpen={isWhatsAppLoginOpen}
                 onClose={() => setIsWhatsAppLoginOpen(false)}
                 onSuccess={handleWhatsAppLoginSuccess}

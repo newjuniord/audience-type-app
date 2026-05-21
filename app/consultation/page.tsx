@@ -7,7 +7,7 @@ import { ActionModal } from "@/components/ui/ActionModal";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
 import { useAuth } from "@/context/AuthContext";
-import WhatsAppLoginModal from "@/components/WhatsAppLoginModal";
+import LoginModal from "@/components/LoginModal";
 import { createBookingApplication } from "@/lib/booking-applications";
 import { doc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -771,7 +771,7 @@ export default function ConsultationPage() {
         </div>
       </ActionModal>
 
-      <WhatsAppLoginModal
+      <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onSuccess={() => {

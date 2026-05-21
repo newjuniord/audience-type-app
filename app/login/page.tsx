@@ -94,12 +94,6 @@ export default function LoginPage() {
                     createdAt: serverTimestamp(),
                 });
                 
-                await fetch("/api/auth/trusted-device-register", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ userId: user.uid })
-                }).catch(e => console.error("Trusted device register error:", e));
-
                 window.location.href = "/dashboard";
                 return;
             }
@@ -108,12 +102,6 @@ export default function LoginPage() {
                 if (!userSnap.data().createdAt) {
                     await setDoc(userRef, { createdAt: serverTimestamp() }, { merge: true });
                 }
-
-                await fetch("/api/auth/trusted-device-register", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ userId: user.uid })
-                }).catch(e => console.error("Trusted device register error:", e));
 
                 if (userSnap.data().role?.trim().toLowerCase() === "admin") {
                     window.location.href = "/admin";
@@ -178,13 +166,6 @@ export default function LoginPage() {
 
                 await setDoc(userRef, updates, { merge: true });
             }
-            // Enregistrer l'appareil de confiance
-            await fetch("/api/auth/trusted-device-register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: user.uid })
-            }).catch(e => console.error("Trusted device register error:", e));
-
             // 4. Redirection vers le tableau approprié
             if (userSnap.exists() && userSnap.data().role?.trim().toLowerCase() === "admin") {
                 window.location.href = "/admin";
