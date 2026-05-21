@@ -683,6 +683,12 @@ export default function StartPage() {
       setModalStep('verify_code');
     } catch (err: any) {
       console.error("Erreur lors de la vérification/enregistrement:", err);
+      // Fallback automatique pour les erreurs de Server Actions périmées (très commun dans les PWA après une mise à jour)
+      if (err.message && (err.message.includes("was not found on the server") || err.message.includes("Failed to find Server Action"))) {
+        console.warn("Mise à jour détectée, rafraîchissement de la page...");
+        window.location.reload();
+        return;
+      }
       setError(err.message || "Une erreur est survenue. Veuillez réessayer.");
     } finally {
       setIsLoading(false);
