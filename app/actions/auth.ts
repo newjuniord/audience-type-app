@@ -101,7 +101,8 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
     try {
         const adminDb = getAdminDb();
         const contactClean = type === 'email' ? contact.trim().toLowerCase() : contact.trim();
-        const otpRef = adminDb.collection("otp_code").doc(contactClean);
+        const contactId = type === 'whatsapp' ? `whatsapp:${contactClean}` : contactClean;
+        const otpRef = adminDb.collection("otp_code").doc(contactId);
         
         const otpDoc = await otpRef.get();
         const now = new Date();
@@ -258,7 +259,8 @@ export async function verifyOtpAndLoginAction(contact: string, code: string, typ
     try {
         const adminDb = getAdminDb();
         const contactClean = type === 'email' ? contact.trim().toLowerCase() : contact.trim();
-        const otpRef = adminDb.collection("otp_code").doc(contactClean);
+        const contactId = type === 'whatsapp' ? `whatsapp:${contactClean}` : contactClean;
+        const otpRef = adminDb.collection("otp_code").doc(contactId);
 
         const otpDoc = await otpRef.get();
         if (!otpDoc.exists) {
