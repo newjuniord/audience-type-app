@@ -575,7 +575,7 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
 
                       <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 mb-2 text-left">
                         <p className="text-xs text-white/50 leading-relaxed">
-                          <strong className="text-white">Autre appareil ?</strong> Si tu n'as pas WhatsApp sur cet écran, envoie le mot <strong className="text-orange-400">CODE</strong> au numéro suivant depuis ton téléphone :
+                          <strong className="text-white">Autre appareil ?</strong> Si tu n'as pas WhatsApp sur cet écran, envoie le mot <strong className="text-[#25D366]">CODE</strong> sur notre numéro <strong className="text-white">WhatsApp</strong> ci-dessous depuis ton téléphone :
                         </p>
                         <p className="text-lg font-black text-white mt-1.5 tracking-wider">{whatsappRedirect.businessPhone}</p>
                       </div>
