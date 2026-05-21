@@ -143,6 +143,9 @@ export async function POST(req: Request) {
             console.log(`📧 [CHECKOUT] Aucun e-mail valide trouvé, utilisation du repli par défaut.`);
         }
 
+        // Expiration de la session fixée à 1 minute à partir de maintenant (pour test)
+        const sessionExpiresAtMs = Date.now() + 1 * 60 * 1000;
+
         const payload = {
             data: {
                 type: "checkouts",
@@ -151,7 +154,8 @@ export async function POST(req: Request) {
                     checkout_data: checkoutData,
                     product_options: {
                         redirect_url: returnUrl
-                    }
+                    },
+                    expires_at: new Date(sessionExpiresAtMs).toISOString()
                 },
                 relationships
             }
@@ -191,7 +195,7 @@ export async function POST(req: Request) {
         newOrderRef.update({ transactionId: lsData.data.id }).catch(e => console.error(e));
 
         console.log(`🚀 [SUCCESS] Redirection LemonSqueezy vers : ${checkoutUrl}`);
-        return NextResponse.json({ checkoutUrl });
+        return NextResponse.json({ checkoutUrl, sessionExpiresAtMs });
 
     } catch (error: any) {
         console.error("🔥 [ERREUR CRITIQUE]", error);

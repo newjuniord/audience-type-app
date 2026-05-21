@@ -9,12 +9,15 @@ interface OverlayOptions {
 }
 
 interface UseLemonSqueezyOverlayReturn {
-    openCheckout: (checkoutUrl: string, orderId: string) => Promise<void>;
+    openCheckout: (checkoutUrl: string, orderId: string, expiresAtMs?: number) => Promise<void>;
+    closeCheckout: () => void;
     isVerifying: boolean;
+    hasExpiredSession: boolean;
 }
 
 export function useLemonSqueezyOverlay(): UseLemonSqueezyOverlayReturn {
     const [isVerifying, setIsVerifying] = useState(false);
+    const [hasExpiredSession, setHasExpiredSession] = useState(false);
     const router = useRouter();
 
     const verifyAndRedirect = useCallback(async (orderId: string) => {
@@ -93,12 +96,34 @@ export function useLemonSqueezyOverlay(): UseLemonSqueezyOverlayReturn {
         LS.Url.Open(checkoutUrl);
     }, [verifyAndRedirect]);
 
+    const closeCheckout = useCallback(() => {
+        const LS = (window as any).LemonSqueezy;
+        if (LS && typeof LS.Url?.Close === "function") {
+            LS.Url.Close();
+        }
+    }, []);
+
     // Surcharge pour signature simple (checkoutUrl, orderId)
     const openCheckoutSimple = useCallback(
-        (checkoutUrl: string, orderId: string) =>
-            openCheckout({ checkoutUrl, orderId }),
-        [openCheckout]
+        async (checkoutUrl: string, orderId: string, expiresAtMs?: number) => {
+            setHasExpiredSession(false); // Réinitialiser l'état d'expiration
+            await openCheckout({ checkoutUrl, orderId });
+            
+            if (expiresAtMs) {
+                const msLeft = expiresAtMs - Date.now();
+                if (msLeft > 0) {
+                    setTimeout(() => {
+                        closeCheckout();
+                        setHasExpiredSession(true);
+                    }, msLeft);
+                } else {
+                    closeCheckout();
+                    setHasExpiredSession(true);
+                }
+            }
+        },
+        [openCheckout, closeCheckout]
     );
 
-    return { openCheckout: openCheckoutSimple, isVerifying };
+    return { openCheckout: openCheckoutSimple, closeCheckout, isVerifying, hasExpiredSession };
 }

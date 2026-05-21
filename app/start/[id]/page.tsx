@@ -208,7 +208,7 @@ export default function StartPage() {
   const params = useParams();
   const router = useRouter();
   const funnelId = params.id as string;
-  const { openCheckout, isVerifying } = useLemonSqueezyOverlay();
+  const { openCheckout, closeCheckout, isVerifying, hasExpiredSession } = useLemonSqueezyOverlay();
 
   const [courseData, setCourseData] = useState<FunnelData>(DEFAULT_COURSE_DATA);
   const [testimonials, setTestimonials] = useState<any[]>([]);
@@ -343,6 +343,13 @@ export default function StartPage() {
       return () => clearInterval(timer);
     }
   }, [dataLoaded, courseData.expirationDate]);
+
+  // Si le timer expire, on force la fermeture de la fenêtre Lemon Squeezy si elle était ouverte
+  useEffect(() => {
+    if (expired) {
+      closeCheckout();
+    }
+  }, [expired, closeCheckout]);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [alreadyOwned, setAlreadyOwned] = useState(false);
@@ -841,7 +848,7 @@ export default function StartPage() {
         if (data.checkoutUrl) {
           // Ouvrir l'overlay Lemon Squeezy (expérience PWA sans rupture)
           // Le hook gère automatiquement la vérification post-paiement et la redirection
-          await openCheckout(data.checkoutUrl, orderId);
+          await openCheckout(data.checkoutUrl, orderId, data.sessionExpiresAtMs);
         } else {
           throw new Error("Aucun lien de paiement retourné par Lemon Squeezy");
         }
@@ -1768,6 +1775,30 @@ export default function StartPage() {
           </div>
         ))}
       </div>
+
+      {/* ── SESSION EXPIRÉE POPUP ── */}
+      {hasExpiredSession && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="bg-[#1a1a1a] border border-red-500/30 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl shadow-red-500/20 animate-in fade-in zoom-in duration-300">
+            <div className="size-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+              ⏱️
+            </div>
+            <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">
+              Session expirée
+            </h3>
+            <p className="text-sm text-white/60 mb-8 leading-relaxed">
+              Le temps alloué pour votre paiement est écoulé. Veuillez rafraîchir la page pour générer une nouvelle session sécurisée.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full h-14 bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-white font-black uppercase tracking-wider text-sm rounded-2xl transition-all shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 active:scale-95"
+            >
+              <span className="material-symbols-outlined text-lg">refresh</span>
+              Rafraîchir la page
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
