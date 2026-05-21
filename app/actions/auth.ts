@@ -214,7 +214,8 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
             return { error: "Vous avez demandé trop de codes. Veuillez patienter un moment avant de réessayer." };
         }
         
-        return { error: "Impossible de vous envoyer le code pour le moment. Veuillez vérifier vos informations ou réessayer plus tard." };
+        // Temporaire pour débogage : on renvoie le message d'erreur exact de Twilio pour comprendre pourquoi ça bloque
+        return { error: `Erreur interne Twilio : ${errorMsg}. Veuillez vérifier le terminal pour plus de détails.` };
     }
 }
 
