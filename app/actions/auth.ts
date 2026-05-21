@@ -9,17 +9,22 @@ import { sendSmsMessage, formatMessageTemplate } from "@/lib/whatsapp";
  * Vérifie si un utilisateur existe par numéro de téléphone.
  * Si targetProductId est fourni, vérifie également s'il possède ce produit.
  */
-export async function checkUserAction(phone: string, targetProductId?: string) {
-    if (!phone) {
-        return { error: "Numéro de téléphone requis" };
+export async function checkUserAction(phone: string, email?: string, targetProductId?: string) {
+    if (!phone && !email) {
+        return { error: "Numéro de téléphone ou email requis" };
     }
 
     try {
         const adminDb = getAdminDb();
         const usersRef = adminDb.collection("users");
-        const cleanNum = phone.trim();
+        let querySnapshot;
 
-        const querySnapshot = await usersRef.where("phone", "==", cleanNum).get();
+        if (email) {
+            querySnapshot = await usersRef.where("email", "==", email.trim().toLowerCase()).get();
+        } else {
+            const cleanNum = phone.trim();
+            querySnapshot = await usersRef.where("phone", "==", cleanNum).get();
+        }
 
         if (querySnapshot.empty) {
             return { exists: false };
@@ -91,17 +96,22 @@ export async function checkUserAction(phone: string, targetProductId?: string) {
 /**
  * Enregistre un utilisateur s'il n'existe pas, ou retourne l'existant.
  */
-export async function registerOrFindUserAction(phone: string) {
-    if (!phone) {
-        return { error: "Numéro de téléphone requis" };
+export async function registerOrFindUserAction(phone: string, email?: string) {
+    if (!phone && !email) {
+        return { error: "Numéro de téléphone ou email requis" };
     }
 
     try {
         const adminDb = getAdminDb();
         const usersRef = adminDb.collection("users");
-        const cleanNum = phone.trim();
+        let querySnapshot;
 
-        const querySnapshot = await usersRef.where("phone", "==", cleanNum).get();
+        if (email) {
+            querySnapshot = await usersRef.where("email", "==", email.trim().toLowerCase()).get();
+        } else {
+            const cleanNum = phone.trim();
+            querySnapshot = await usersRef.where("phone", "==", cleanNum).get();
+        }
 
         let userId = "";
         let exists = false;
@@ -114,12 +124,14 @@ export async function registerOrFindUserAction(phone: string) {
         } else {
             const adminAuth = getAdminAuth();
             let newUserId = "";
-            const userPhone = cleanNum;
-            const userName = "Client";
+            const userEmail = email ? email.trim().toLowerCase() : undefined;
+            const userPhone = phone ? phone.trim() : undefined;
+            const userName = email ? email.split('@')[0] : "Client";
 
             try {
                 // Créer l'utilisateur dans Firebase Auth
                 const authUser = await adminAuth.createUser({
+                    email: userEmail,
                     phoneNumber: userPhone,
                     displayName: userName,
                 });
@@ -128,8 +140,15 @@ export async function registerOrFindUserAction(phone: string) {
             } catch (authErr: any) {
                 console.warn("⚠️ [registerOrFindUserAction] Erreur création Firebase Auth, tentative de récupération...", authErr.message);
                 try {
-                    const existingAuthUser = await adminAuth.getUserByPhoneNumber(userPhone);
-                    newUserId = existingAuthUser.uid;
+                    if (userEmail) {
+                        const existingAuthUser = await adminAuth.getUserByEmail(userEmail);
+                        newUserId = existingAuthUser.uid;
+                    } else if (userPhone) {
+                        const existingAuthUser = await adminAuth.getUserByPhoneNumber(userPhone);
+                        newUserId = existingAuthUser.uid;
+                    } else {
+                        throw new Error("Missing both email and phone");
+                    }
                 } catch {
                     newUserId = `usr_${Math.random().toString(36).substring(2, 15)}`;
                 }
@@ -137,8 +156,8 @@ export async function registerOrFindUserAction(phone: string) {
 
             const newUserDoc = {
                 uid: newUserId,
-                email: "",
-                phone: userPhone,
+                email: userEmail || "",
+                phone: userPhone || "",
                 name: userName,
                 role: "customer",
                 MAGIC_LINK_CLICK: uuidv4().replace(/-/g, ''),
@@ -168,8 +187,8 @@ export async function registerOrFindUserAction(phone: string) {
 /**
  * Génère un code temporaire anonyme à 4 chiffres et l'envoie par SMS via Twilio.
  */
-export async function generateTempLinkAction(userId: string, phone: string) {
-    if (!userId || !phone) {
+export async function generateTempLinkAction(userId: string, phone: string, email?: string, contactMethod?: string) {
+    if (!userId) {
         return { error: "Paramètres manquants" };
     }
 
@@ -182,7 +201,9 @@ export async function generateTempLinkAction(userId: string, phone: string) {
             return { error: "Utilisateur non trouvé" };
         }
 
-        const finalPhone = phone.trim();
+        const finalPhone = phone ? phone.trim() : (userDoc.data()?.phone || "");
+        const finalEmail = email ? email.trim() : (userDoc.data()?.email || "");
+        const actualMethod = contactMethod || (finalPhone ? 'phone' : 'email');
         const now = new Date();
         const userData = userDoc.data() || {};
 
@@ -245,10 +266,15 @@ export async function generateTempLinkAction(userId: string, phone: string) {
             "🔑 *VÉRIFICATION DJR AKADEMI*\n\nVoici ton code de vérification pour accéder à ton cours : {{code}}\n\nTu peux également te connecter directement en cliquant sur ce lien sécurisé : {{link}}\n\nNe partage jamais ce code.";
 
         const userName = userData.name || "Client";
-        const message = formatMessageTemplate(authTemplate, { code, link, userName });
-
-        await sendSmsMessage(finalPhone, message);
-        console.log(`📩 [SMS] Code de vérification envoyé à ${finalPhone}`);
+        
+        if (actualMethod === 'phone' && finalPhone) {
+            const message = formatMessageTemplate(authTemplate, { code, link, userName });
+            await sendSmsMessage(finalPhone, message);
+            console.log(`📩 [SMS] Code de vérification envoyé à ${finalPhone}`);
+        } else if (actualMethod === 'email') {
+            console.log(`📩 [EMAIL] Code de vérification généré pour ${finalEmail} : ${code}`);
+            // TODO: Intégrer Resend / SendGrid ici plus tard si nécessaire
+        }
 
         return { success: true, userId };
     } catch (error: any) {

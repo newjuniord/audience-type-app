@@ -2,9 +2,16 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { sendSignInLinkToEmail, onAuthStateChanged } from "firebase/auth";
+import { sendSignInLinkToEmail, onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import VideoPlayer from "@/components/VideoPlayer";
+import {
+  checkUserAction,
+  registerOrFindUserAction,
+  generateTempLinkAction,
+  verifyTempLinkCodeAction,
+  verifyTempLinkTokenAction
+} from "@/app/actions/auth";
 
 import { doc, getDoc, collection, query, where, getDocs, setDoc, Timestamp } from "firebase/firestore";
 import { createOrder } from "@/lib/orders";
@@ -627,25 +634,19 @@ export default function StartPage() {
         targetProductId = courseData.id || "default";
       }
 
-      const checkRes = await fetch("/api/auth/check-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: contactMethod === 'email' ? email : "",
-          phone: contactMethod === 'phone' ? cleanPhone : "",
-          targetProductId
-        })
-      });
+      const checkData = await checkUserAction(
+        contactMethod === 'phone' ? cleanPhone : "", 
+        contactMethod === 'email' ? email : "", 
+        targetProductId
+      );
 
-      if (!checkRes.ok) {
-        throw new Error("Erreur de communication avec le serveur");
+      if (checkData.error) {
+        throw new Error(checkData.error);
       }
-
-      const checkData = await checkRes.json();
 
       if (checkData.exists) {
         // L'UTILISATEUR EXISTE DÉJÀ : Bypasser complètement la vérification de code !
-        setTempUserId(checkData.userId);
+        setTempUserId(checkData.userId || null);
 
         if (checkData.ownsCourse) {
           // Possède déjà le cours : redirection vers l'accès direct sans code
@@ -665,38 +666,27 @@ export default function StartPage() {
 
       // ─── NOUVEAU COMPTE (N'EXISTE PAS ENCORE) ───
       // On l'enregistre et on envoie le code auto par SMS ou Email
-      const registerRes = await fetch("/api/auth/register-or-find", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: contactMethod === 'email' ? email : "",
-          phone: contactMethod === 'phone' ? cleanPhone : "",
-          contactMethod
-        })
-      });
+      const registerData = await registerOrFindUserAction(
+        contactMethod === 'phone' ? cleanPhone : "",
+        contactMethod === 'email' ? email : ""
+      );
 
-      if (!registerRes.ok) {
-        throw new Error("Erreur d'enregistrement de l'utilisateur");
+      if (registerData.error) {
+        throw new Error(registerData.error);
       }
 
-      const registerData = await registerRes.json();
-      setTempUserId(registerData.userId);
+      setTempUserId(registerData.userId || null);
 
       // On lui envoie le code de vérification
-      const genRes = await fetch("/api/auth/temp-link/anonymous-generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: registerData.userId,
-          contactMethod: contactMethod,
-          phone: contactMethod === 'phone' ? cleanPhone : "",
-          email: contactMethod === 'email' ? email : ""
-        })
-      });
+      const genData = await generateTempLinkAction(
+        registerData.userId!,
+        contactMethod === 'phone' ? cleanPhone : "",
+        contactMethod === 'email' ? email : "",
+        contactMethod
+      );
 
-      if (!genRes.ok) {
-        const genData = await genRes.json().catch(() => ({}));
-        throw new Error(genData.error || "Échec d'envoi du code.");
+      if (genData.error) {
+        throw new Error(genData.error);
       }
 
       setVerificationError(null);
@@ -735,23 +725,14 @@ export default function StartPage() {
     setVerificationError(null);
 
     try {
-      const res = await fetch("/api/auth/temp-link/anonymous-verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: tempUserId,
-          code: verificationCode.trim()
-        })
-      });
+      const data = await verifyTempLinkCodeAction(tempUserId || "", verificationCode.trim());
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Code invalide");
+      if (data.error) {
+        throw new Error(data.error);
       }
 
       // Succès ! Le serveur nous renvoie le lien d'accès déverrouillé
-      setTempLink(data.link);
+      setTempLink(data.link || null);
       
       if (alreadyOwnedMessage) {
         setModalStep('success');
