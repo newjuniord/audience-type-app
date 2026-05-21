@@ -1,16 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import ConfirmModal from "./ui/ConfirmModal";
-import LoginModal from "./LoginModal";
 import { Product } from "@/types/product";
 import BubbleButton from "./BubbleButton";
 import { useAuth } from "@/context/AuthContext";
 import { getEnrollmentsByUser } from "@/lib/enrollments";
-import { doc, Timestamp } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
-import { createOrder } from "@/lib/orders";
+import CheckoutModal from "./CheckoutModal";
 
 export default function FeaturedProducts({
     title = "Produits en vedette",
@@ -31,11 +29,7 @@ export default function FeaturedProducts({
     const [ownedProductIds, setOwnedProductIds] = useState<Set<string>>(new Set());
 
     // Modal States
-    const [isWhatsAppLoginOpen, setIsWhatsAppLoginOpen] = useState(false);
-    const [isPaymentSelectorOpen, setIsPaymentSelectorOpen] = useState(false);
-    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'moncash' | 'lemonsqueezy'>('lemonsqueezy');
-    const [isPurchasing, setIsPurchasing] = useState(false);
+    const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
     useEffect(() => {
         async function syncOwnedStatus() {
@@ -86,120 +80,7 @@ export default function FeaturedProducts({
         }
 
         setSelectedProduct(product);
-
-        if (!user) {
-            setIsWhatsAppLoginOpen(true);
-        } else {
-            setIsPaymentSelectorOpen(true);
-        }
-    };
-
-    const handleWhatsAppLoginSuccess = () => {
-        // User is now logged in. Open payment selector directly.
-        setIsPaymentSelectorOpen(true);
-    };
-
-    const getGourdesPrice = () => {
-        return selectedProduct?.priceHTG || 0;
-    };
-
-    const handlePaymentMethodSelect = (method: 'moncash' | 'lemonsqueezy') => {
-        setIsPaymentSelectorOpen(false);
-        setTimeout(() => {
-            setSelectedPaymentMethod(method);
-            setIsPurchaseModalOpen(true);
-        }, 200);
-    };
-
-    const handlePurchase = async () => {
-        if (!user || !selectedProduct) return;
-
-        setIsPurchasing(true);
-        try {
-            if (selectedPaymentMethod === 'moncash') {
-                let collectionName = "courses";
-                if (selectedProduct.type.toLowerCase() === "ebook") collectionName = "ebooks";
-                else if (selectedProduct.type.toLowerCase() === "service" || selectedProduct.type.toLowerCase() === "booking") collectionName = "services";
-
-                const priceInGourdes = getGourdesPrice();
-                const orderData = {
-                    userId: user.uid,
-                    userEmail: user.email || `${user.uid}@audiencetype.com`,
-                    productId: doc(db, collectionName, selectedProduct.id!),
-                    productThumbnailUrl: selectedProduct.image,
-                    productTitle: selectedProduct.title,
-                    productType: selectedProduct.type.toLowerCase(),
-                    transactionId: "",
-                    amount: priceInGourdes,
-                    currency: "HTG",
-                    status: "pending",
-                    paymentMethod: "moncash",
-                    createdAt: Timestamp.now()
-                };
-
-                const orderId = await createOrder(orderData);
-
-                const response = await fetch("/api/bazik/payment", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        orderId,
-                        amount: priceInGourdes,
-                        description: selectedProduct.title,
-                        customerFirstName: user.displayName || "Client",
-                        userId: user.uid,
-                    }),
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || "Failed to initialize Moncash payment");
-                }
-
-                const redirectUrl = data.redirectUrl || data.redirect_url || data.payment_link;
-
-                if (redirectUrl) {
-                    window.location.href = redirectUrl;
-                } else if (data.payment_token?.redirect_url) {
-                    window.location.href = data.payment_token.redirect_url;
-                } else {
-                    throw new Error("No redirect URL returned from payment provider");
-                }
-
-            } else if (selectedPaymentMethod === 'lemonsqueezy') {
-                const response = await fetch("/api/lemonsqueezy/checkout", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        productId: selectedProduct.id,
-                        userId: user.uid,
-                        userEmail: user.email || `${user.uid}@audiencetype.com`,
-                        userName: user.displayName || "Client"
-                    }),
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || "Failed to create checkout session");
-                }
-
-                if (data.checkoutUrl) {
-                    window.location.href = data.checkoutUrl;
-                } else {
-                    throw new Error("No checkout URL returned");
-                }
-            }
-
-        } catch (error: any) {
-            console.error("Purchase failed", error);
-            alert(`Une erreur est survenue lors de l'initialisation du paiement: ${error.message || "Erreur inconnue"}`);
-        } finally {
-            setIsPurchasing(false);
-        }
+        setIsCheckoutModalOpen(true);
     };
 
     const displayCategories = [
@@ -378,81 +259,23 @@ export default function FeaturedProducts({
                 </div>
             )}
 
-            {/* WhatsApp Login Modal */}
-            <LoginModal
-                isOpen={isWhatsAppLoginOpen}
-                onClose={() => setIsWhatsAppLoginOpen(false)}
-                onSuccess={handleWhatsAppLoginSuccess}
-                productName={selectedProduct?.title || ""}
-            />
-
-            {/* Payment Method Selector Modal */}
-            <div className={`fixed inset-0 z-[160] flex items-center justify-center p-4 transition-all duration-300 ${isPaymentSelectorOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                <div
-                    className="absolute inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm"
-                    onClick={() => setIsPaymentSelectorOpen(false)}
+            {/* Global Checkout Modal */}
+            {selectedProduct && isCheckoutModalOpen && (
+                <CheckoutModal
+                    isOpen={isCheckoutModalOpen}
+                    onClose={() => setIsCheckoutModalOpen(false)}
+                    product={{
+                        id: selectedProduct.id!,
+                        title: selectedProduct.title,
+                        priceHTG: selectedProduct.priceHTG || 0,
+                        price: parseFloat(selectedProduct.price.replace(/[^0-9.]/g, '')) || 0,
+                        currency: "$",
+                        type: selectedProduct.type.toLowerCase() === "course" ? "course" : selectedProduct.type.toLowerCase() === "ebook" ? "ebook" : "service",
+                        image: selectedProduct.image,
+                        headline: selectedProduct.title,
+                    }}
                 />
-
-                <div className={`bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl w-full max-w-sm relative overflow-hidden transform transition-all duration-300 ${isPaymentSelectorOpen ? 'scale-100' : 'scale-95'}`}>
-                    <div className="p-8">
-                        <h3 className="text-xl font-black text-center mb-6">Choisir le mode de paiement</h3>
-                        <div className="space-y-4">
-                            <button
-                                onClick={() => handlePaymentMethodSelect('lemonsqueezy')}
-                                className="w-full h-14 rounded-2xl bg-primary text-white font-bold flex items-center justify-between px-6 hover:opacity-90 transition-all active:scale-[0.98]"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className="material-symbols-outlined">payments</span>
-                                    <span>Payer par Carte ou PayPal</span>
-                                </div>
-                                <span className="material-symbols-outlined text-sm">arrow_forward_ios</span>
-                            </button>
-
-                            <div className="flex items-center gap-4 text-xs font-bold text-primary/10 dark:text-white/10 uppercase tracking-widest text-center py-2">
-                                <div className="h-px bg-primary/10 dark:bg-white/10 flex-1"></div>
-                                <span>ou</span>
-                                <div className="h-px bg-primary/10 dark:bg-white/10 flex-1"></div>
-                            </div>
-
-                            <button
-                                onClick={() => handlePaymentMethodSelect('moncash')}
-                                disabled={!selectedProduct?.priceHTG || selectedProduct.priceHTG <= 0}
-                                className="w-full h-14 rounded-2xl bg-red-600/10 text-red-600 border border-red-600/20 font-bold flex items-center justify-between px-6 hover:bg-red-600/20 transition-all active:scale-[0.98] disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <img src="/images/moncash-logo.png" alt="Moncash" className="h-6 w-6 object-contain" />
-                                    <span>Payer avec Moncash</span>
-                                </div>
-                                <span className="material-symbols-outlined text-sm">arrow_forward_ios</span>
-                            </button>
-                        </div>
-
-                        <button
-                            onClick={() => setIsPaymentSelectorOpen(false)}
-                            className="w-full mt-6 text-sm font-bold opacity-40 hover:opacity-100 transition-opacity"
-                        >
-                            Annuler
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <ConfirmModal
-                isOpen={isPurchaseModalOpen}
-                onClose={() => setIsPurchaseModalOpen(false)}
-                onConfirm={handlePurchase}
-                title="Confirmer l'achat"
-                image={selectedPaymentMethod === 'moncash' ? "/images/moncash-logo.png" : undefined}
-                message={
-                    selectedPaymentMethod === 'moncash'
-                        ? `Vous êtes sur le point de débloquer "${selectedProduct?.title}". Confirmez votre paiement de ${getGourdesPrice()} gourdes via MonCash pour commencer l'aventure !`
-                        : `Prêt à commencer ? Confirmez l'acquisition de "${selectedProduct?.title}" pour ${selectedProduct?.price} et accédez à votre contenu instantanément.`
-                }
-                confirmText={selectedPaymentMethod === 'moncash' ? "Payer avec Moncash" : "Confirmer l'achat"}
-                isLoading={isPurchasing}
-                showIcon={false}
-                showReferenceInput={false}
-            />
+            )}
         </section>
     );
 }
