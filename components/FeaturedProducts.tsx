@@ -72,7 +72,7 @@ export default function FeaturedProducts({
         if (initialProducts.length > 0) {
             syncOwnedStatus();
         }
-    }, [user, initialProducts]);
+    }, [user, initialProducts.length]);
 
     const handleProductClick = (product: Product) => {
         if (product.type === "Service") {

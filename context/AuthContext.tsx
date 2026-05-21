@@ -44,7 +44,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         data = userDoc.data();
                         // Check if this is a "real" profile (has a role) or just a "shadow" presence doc
                         if (data.role || data.Role || data.ROLE) {
-                            console.log("AuthContext: Real profile found by UID:", data);
                             foundByUid = true;
                         } else {
                             console.warn("AuthContext: Shadow/empty doc found by UID, trying email fallback...");
@@ -60,7 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         if (!querySnapshot.empty) {
                             const foundDoc = querySnapshot.docs[0];
                             data = foundDoc.data();
-                            console.log("AuthContext: Real profile found by Email Fallback:", data);
+                            // Profile found by email
                             
                             // Optional: If we found by email but it's not the same as UID, 
                             // we should probably link them later, but for now just use this data.
@@ -74,7 +73,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         const updates: any = {};
                         if (!data.createdAt) {
                             updates.createdAt = serverTimestamp();
-                            console.log("AuthContext: Backfilling missing createdAt for user:", authUser.uid);
                         }
 
                         if (Object.keys(updates).length > 0) {
