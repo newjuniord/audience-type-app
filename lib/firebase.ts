@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getAnalytics, isSupported, Analytics } from "firebase/analytics";
 
 // REPLACE THIS OBJECT WITH YOUR FIREBASE CONFIG FROM THE CONSOLE
 const firebaseConfig = {
@@ -21,6 +22,8 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
+let analytics: Analytics | null = null;
+
 // Enable Offline Persistence (Client-side only)
 if (typeof window !== "undefined") {
     enableIndexedDbPersistence(db).catch((err) => {
@@ -34,6 +37,14 @@ if (typeof window !== "undefined") {
             console.warn("Firestore Persistence: The current browser does not support persistence.");
         }
     });
+
+    isSupported().then((supported) => {
+        if (supported) {
+            analytics = getAnalytics(app);
+        }
+    }).catch((err) => {
+        console.warn("Firebase Analytics is not supported:", err);
+    });
 }
 
-export { app, auth, db, storage, googleProvider };
+export { app, auth, db, storage, googleProvider, analytics };
