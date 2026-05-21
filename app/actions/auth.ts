@@ -3,7 +3,7 @@
 import { getAdminDb, getAdminAuth } from "@/lib/firebase-admin";
 import { v4 as uuidv4 } from "uuid";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
-import { sendSmsMessage, formatMessageTemplate } from "@/lib/whatsapp";
+import { sendSmsMessage, formatMessageTemplate, sendWhatsAppMessage } from "@/lib/whatsapp";
 
 /**
  * Vérifie si un utilisateur existe par numéro de téléphone ou email.
@@ -93,7 +93,7 @@ export async function checkUserAction(phone: string, email?: string, targetProdu
  * Génère un code OTP (4 chiffres) et l'envoie via SMS ou Email.
  * Gère le rate limiting de 4 ou 10 par 24h selon la méthode dans la collection `otp_code`.
  */
-export async function generateOtpAction(contact: string, type: 'phone' | 'email') {
+export async function generateOtpAction(contact: string, type: 'phone' | 'email' | 'whatsapp') {
     if (!contact) {
         return { error: "Contact manquant" };
     }
@@ -152,14 +152,40 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
         }, { merge: true });
 
         // Envoi effectif de l'OTP
-        if (type === 'phone') {
+        if (type === 'phone' || type === 'whatsapp') {
+            const isWhatsApp = type === 'whatsapp';
+            let is24hWindowOpen = false;
+
+            if (isWhatsApp && otpDoc.exists) {
+                const data = otpDoc.data();
+                if (data?.expireAt?.toDate() > now) {
+                    is24hWindowOpen = true;
+                }
+            }
+
+            if (isWhatsApp && !is24hWindowOpen) {
+                // La fenêtre de 24h est fermée, on redirige l'utilisateur vers WhatsApp
+                const businessPhone = process.env.TWILIO_WHATSAPP_NUMBER || "+14155238886";
+                const cleanBusinessPhone = businessPhone.replace('whatsapp:', '').replace(/\+/g, ''); // Pour le lien wa.me, pas de +
+                return { 
+                    success: true, 
+                    action: "redirect_to_whatsapp",
+                    businessPhone: cleanBusinessPhone
+                };
+            }
+
             const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
                 "🔑 *VÉRIFICATION DJR AKADEMI*\n\nVoici ton code de vérification pour accéder à la plateforme : {{code}}\n\nNe partage jamais ce code.";
             
             const message = formatMessageTemplate(authTemplate, { code, link: "audiencetype.com", userName: "Client" });
             
-            await sendSmsMessage(contactClean, message);
-            console.log(`📩 [SMS] Code de vérification envoyé à ${contactClean}`);
+            if (isWhatsApp) {
+                await sendWhatsAppMessage(contactClean, message);
+                console.log(`📩 [WhatsApp] Code envoyé directement à ${contactClean} (fenêtre 24h ouverte)`);
+            } else {
+                await sendSmsMessage(contactClean, message);
+                console.log(`📩 [SMS] Code de vérification envoyé à ${contactClean}`);
+            }
         } else if (type === 'email') {
             const sendgridKey = process.env.SENDGRID_API_KEY;
             const fromEmail = process.env.SENDGRID_FROM_EMAIL || "contact@audiencetype.com";
@@ -224,7 +250,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
  * Vérifie le code de manière stricte dans la collection `otp_code`.
  * Si valide : vérifie ou crée l'utilisateur dans `users` et génère un token Firebase Auth.
  */
-export async function verifyOtpAndLoginAction(contact: string, code: string, type: 'phone' | 'email') {
+export async function verifyOtpAndLoginAction(contact: string, code: string, type: 'phone' | 'email' | 'whatsapp') {
     if (!contact || !code) {
         return { error: "Contact ou code manquant" };
     }
