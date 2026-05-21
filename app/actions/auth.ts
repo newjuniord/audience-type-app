@@ -106,7 +106,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
         
         const otpDoc = await otpRef.get();
         const now = new Date();
-        const maxLimit = (type === 'email' || type === 'whatsapp') ? 10 : 4;
+        const maxLimit = type === 'whatsapp' ? 10 : type === 'email' ? 5 : 4;
 
         let currentCount = 0;
         let isBlocked = false;
