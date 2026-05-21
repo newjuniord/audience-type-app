@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signInWithCustomToken } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { verifyTempLinkTokenAction } from "@/app/actions/auth";
 
 function TempLoginHandler() {
     const router = useRouter();
@@ -20,14 +21,16 @@ function TempLoginHandler() {
             }
 
             try {
-                // 1. Appeler l'API de vérification
-                const res = await fetch(`/api/auth/temp-link/verify?token=${token}`);
-                if (!res.ok) {
-                    const data = await res.json();
-                    throw new Error(data.error || "Erreur de connexion");
+                // 1. Appeler l'action de vérification
+                const data = await verifyTempLinkTokenAction(token);
+                if (data.error) {
+                    throw new Error(data.error);
                 }
 
-                const { customToken } = await res.json();
+                const customToken = data.customToken;
+                if (!customToken) {
+                    throw new Error("Token de connexion invalide");
+                }
 
                 // 2. Se connecter avec le Custom Token
                 await signInWithCustomToken(auth, customToken);

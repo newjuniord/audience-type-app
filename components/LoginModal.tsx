@@ -4,6 +4,13 @@ import { useState, useEffect, useRef } from "react";
 import { signInWithCustomToken } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { ActionModal } from "@/components/ui/ActionModal";
+import {
+    checkUserAction,
+    registerOrFindUserAction,
+    generateTempLinkAction,
+    verifyTempLinkCodeAction,
+    verifyTempLinkTokenAction
+} from "@/app/actions/auth";
 
 declare global {
     interface Window {
@@ -341,37 +348,20 @@ export default function LoginModal({
 
         try {
             // Vérifier si l'utilisateur existe
-            const checkRes = await fetch("/api/auth/check-user", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ phone: cleanPhone })
-            });
-
-            if (!checkRes.ok) throw new Error("Erreur de vérification.");
-            const checkData = await checkRes.json();
+            const checkData = await checkUserAction(cleanPhone);
+            if (checkData.error) throw new Error(checkData.error);
 
             if (checkData.exists) {
-                setTempUserId(checkData.userId);
+                setTempUserId(checkData.userId || null);
 
-                const genRes = await fetch("/api/auth/temp-link/anonymous-generate", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        userId: checkData.userId,
-                        contactMethod: "phone",
-                        phone: cleanPhone,
-                        turnstileToken
-                    })
-                });
-
-                if (!genRes.ok) {
-                    const genData = await genRes.json();
+                const genRes = await generateTempLinkAction(checkData.userId!, cleanPhone);
+                if (genRes.error) {
                     resetTurnstile();
-                    if (genData.isBlocked) {
+                    if (genRes.isBlocked) {
                         setError("Trop de tentatives de connexion (limite dépassée).");
                         return;
                     }
-                    throw new Error(genData.error || "Échec d'envoi du code SMS.");
+                    throw new Error(genRes.error);
                 }
 
                 incrementLocalCount(cleanPhone, 'sms');
@@ -404,38 +394,18 @@ export default function LoginModal({
 
         try {
             // 1. Register user
-            const regRes = await fetch("/api/auth/register-or-find", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    phone: cleanPhone,
-                    contactMethod: "phone"
-                })
-            });
-
-            if (!regRes.ok) throw new Error("Erreur de création de compte.");
-            const regData = await regRes.json();
-            setTempUserId(regData.userId);
+            const regData = await registerOrFindUserAction(cleanPhone);
+            if (regData.error) throw new Error(regData.error);
+            setTempUserId(regData.userId || null);
 
             // 2. Send SMS verification code
-            const genRes = await fetch("/api/auth/temp-link/anonymous-generate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    userId: regData.userId,
-                    contactMethod: "phone",
-                    phone: cleanPhone,
-                    turnstileToken
-                })
-            });
-
-            if (!genRes.ok) {
-                const genData = await genRes.json().catch(() => ({}));
+            const genRes = await generateTempLinkAction(regData.userId!, cleanPhone);
+            if (genRes.error) {
                 resetTurnstile();
-                if (genData.isBlocked) {
+                if (genRes.isBlocked) {
                     throw new Error("Trop de tentatives de connexion par SMS (limite de 3/24h dépassée).");
                 }
-                throw new Error(genData.error || "Échec d'envoi du code SMS.");
+                throw new Error(genRes.error);
             }
 
             incrementLocalCount(cleanPhone, 'sms');
@@ -461,22 +431,15 @@ export default function LoginModal({
         setError(null);
 
         try {
-            const verifyRes = await fetch("/api/auth/temp-link/anonymous-verify", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    userId: tempUserId || undefined,
-                    code: verificationCode.trim()
-                })
-            });
+            const verifyData = await verifyTempLinkCodeAction(tempUserId || "", verificationCode.trim());
+            if (verifyData.error) throw new Error(verifyData.error);
 
-            const verifyData = await verifyRes.json();
-            if (!verifyRes.ok) throw new Error(verifyData.error || "Code incorrect.");
+            const token = verifyData.token;
+            if (!token) throw new Error("Token introuvable.");
 
-            const token = new URL(verifyData.link).searchParams.get("token");
-            const tokenVerifyRes = await fetch(`/api/auth/temp-link/verify?token=${token}`);
-            const tokenVerifyData = await tokenVerifyRes.json();
-            if (!tokenVerifyRes.ok) throw new Error(tokenVerifyData.error || "Erreur de connexion.");
+            const tokenVerifyData = await verifyTempLinkTokenAction(token);
+            if (tokenVerifyData.error) throw new Error(tokenVerifyData.error);
+            if (!tokenVerifyData.customToken) throw new Error("Erreur de connexion.");
 
             await signInWithCustomToken(auth, tokenVerifyData.customToken);
 
@@ -531,17 +494,11 @@ export default function LoginModal({
         setIsLoading(true);
         
         try {
-            const checkRes = await fetch("/api/auth/check-user", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ phone: cleanPhone })
-            });
-            
-            if (!checkRes.ok) throw new Error("Erreur de vérification.");
-            const checkData = await checkRes.json();
+            const checkData = await checkUserAction(cleanPhone);
+            if (checkData.error) throw new Error(checkData.error);
             
             if (checkData.exists) {
-                setTempUserId(checkData.userId);
+                setTempUserId(checkData.userId || null);
                 setStep('code');
             } else {
                 setError("Aucun compte trouvé avec ce numéro. Veuillez d'abord valider votre numéro pour recevoir un code.");
