@@ -111,6 +111,25 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
         let currentCount = 0;
         let isBlocked = false;
 
+        if (type === 'whatsapp') {
+            let is24hWindowOpen = false;
+            if (otpDoc.exists && otpDoc.data()?.expireAt?.toDate() > now) {
+                is24hWindowOpen = true;
+            }
+
+            if (!is24hWindowOpen) {
+                // La fenêtre de 24h est fermée ou le document n'existe pas.
+                // ON NE CREE PAS le document ici. C'est le webhook qui s'en chargera quand il recevra le message.
+                const businessPhone = process.env.TWILIO_WHATSAPP_NUMBER || "+14155238886";
+                const cleanBusinessPhone = businessPhone.replace('whatsapp:', '').replace(/\+/g, '');
+                return { 
+                    success: true, 
+                    action: "redirect_to_whatsapp",
+                    businessPhone: cleanBusinessPhone
+                };
+            }
+        }
+
         if (otpDoc.exists) {
             const data = otpDoc.data();
             const expireAt = data?.expireAt?.toDate();
@@ -154,33 +173,12 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
 
         // Envoi effectif de l'OTP
         if (type === 'phone' || type === 'whatsapp') {
-            const isWhatsApp = type === 'whatsapp';
-            let is24hWindowOpen = false;
-
-            if (isWhatsApp && otpDoc.exists) {
-                const data = otpDoc.data();
-                if (data?.expireAt?.toDate() > now) {
-                    is24hWindowOpen = true;
-                }
-            }
-
-            if (isWhatsApp && !is24hWindowOpen) {
-                // La fenêtre de 24h est fermée, on redirige l'utilisateur vers WhatsApp
-                const businessPhone = process.env.TWILIO_WHATSAPP_NUMBER || "+14155238886";
-                const cleanBusinessPhone = businessPhone.replace('whatsapp:', '').replace(/\+/g, ''); // Pour le lien wa.me, pas de +
-                return { 
-                    success: true, 
-                    action: "redirect_to_whatsapp",
-                    businessPhone: cleanBusinessPhone
-                };
-            }
-
             const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
                 "🔑 *VÉRIFICATION DJR AKADEMI*\n\nVoici ton code de vérification pour accéder à la plateforme : {{code}}\n\nNe partage jamais ce code.";
             
             const message = formatMessageTemplate(authTemplate, { code, link: "audiencetype.com", userName: "Client" });
             
-            if (isWhatsApp) {
+            if (type === 'whatsapp') {
                 await sendWhatsAppMessage(contactClean, message);
                 console.log(`📩 [WhatsApp] Code envoyé directement à ${contactClean} (fenêtre 24h ouverte)`);
             } else {
