@@ -262,8 +262,8 @@ export default function LoginPage() {
             if (cleanNumber.length !== expectedLength) {
                 setError(
                     selectedCountry.code === 'HT'
-                        ? `Le numéro pour Haïti doit comporter exactement 8 chiffres (ex: 34567890). Tu as saisi ${cleanNumber.length} chiffre(s).`
-                        : `Le numéro pour ${selectedCountry.name} doit comporter exactement ${expectedLength} chiffres. Tu as saisi ${cleanNumber.length} chiffre(s).`
+                        ? `Nimewo pou Ayiti a dwe gen 8 chif ladan l (egz: 34567890). Ou antre ${cleanNumber.length} chif.`
+                        : `Nimewo pou ${selectedCountry.name} la dwe gen presizeman ${expectedLength} chif ladan l. Ou antre ${cleanNumber.length} chif.`
                 );
                 setIsLoading(false);
                 return;
@@ -299,7 +299,7 @@ export default function LoginPage() {
             }
         } catch (err: any) {
             console.error("Erreur de connexion sans mot de passe :", err);
-            setError(err.message || "Une erreur est survenue. Veuillez réessayer.");
+            setError(err.message || "Gen yon erè ki fèt. Tanpri reyezi ankò.");
         } finally {
             setIsLoading(false);
         }
@@ -309,7 +309,7 @@ export default function LoginPage() {
     const handleVerifyOtpSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!verificationCode || verificationCode.length !== 4) {
-            setVerificationError("Le code doit comporter exactement 4 chiffres.");
+            setVerificationError("Kòd la dwe gen 4 chif presizeman.");
             return;
         }
         setIsLoading(true);
@@ -326,7 +326,7 @@ export default function LoginPage() {
                 await signInWithCustomToken(auth, data.customToken);
             }
         } catch (err: any) {
-            setVerificationError(err.message || "Code de vérification invalide.");
+            setVerificationError(err.message || "Kòd verifikasyon sa a pa bon.");
         } finally {
             setIsLoading(false);
         }
@@ -334,7 +334,7 @@ export default function LoginPage() {
 
     const handleResetPassword = async () => {
         if (!email) {
-            setError("Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.");
+            setError("Tanpri antre adrès imel ou pou nou ka voye yon lyen pou chanje modpas ou.");
             setMessage(null);
             return;
         }
@@ -343,13 +343,13 @@ export default function LoginPage() {
         setMessage(null);
         try {
             await sendPasswordResetEmail(auth, email);
-            setMessage("Un e-mail de réinitialisation a été envoyé à votre adresse.");
+            setMessage("Nou voye yon imel pou chanje modpas ou nan adrès ou a.");
         } catch (err: any) {
             console.error("Reset password error:", err);
             if (err.code === 'auth/user-not-found') {
-                setError("Aucun utilisateur trouvé avec cette adresse e-mail.");
+                setError("Nou pa jwenn okenn itilizatè ki gen adrès imel sa a.");
             } else {
-                setError("Erreur lors de l'envoi de l'e-mail de réinitialisation.");
+                setError("Erreur pandan n ap voye imel pou chanje modpas la.");
             }
         }
         setIsLoading(false);
@@ -361,11 +361,11 @@ export default function LoginPage() {
 
         if (!isLoginView) {
             if (password !== confirmPassword) {
-                setError("Les mots de passe ne correspondent pas.");
+                setError("Modpas yo pa parèy.");
                 return;
             }
             if (password.length < 6) {
-                setError("Le mot de passe doit contenir au moins 6 caractères.");
+                setError("Modpas la dwe gen 6 karaktè pou pi piti.");
                 return;
             }
         }
@@ -415,14 +415,14 @@ export default function LoginPage() {
         } catch (err: any) {
             console.error("Auth error:", err);
             if (isLoginView) {
-                setError("Email ou mot de passe incorrect.");
+                setError("Imel oswa modpas la pa bon.");
             } else {
                 if (err.code === 'auth/email-already-in-use') {
-                    setError("Cette adresse e-mail est déjà utilisée.");
+                    setError("Adrès imel sa a deja itilize.");
                 } else if (err.code === 'auth/weak-password') {
-                    setError("Le mot de passe doit contenir au moins 6 caractères.");
+                    setError("Modpas la dwe gen 6 karaktè pou pi piti.");
                 } else {
-                    setError("Une erreur est survenue lors de l'inscription.");
+                    setError("Gen yon erè ki fèt pandan enskripsyon an.");
                 }
             }
             setIsLoading(false);
@@ -476,7 +476,7 @@ export default function LoginPage() {
             }
         } catch (err: any) {
             console.error("Login error:", err);
-            setError("Une erreur est survenue lors de la connexion. Veuillez réessayer.");
+            setError("Gen yon erè ki fèt pandan koneksyon an. Tanpri reyezi ankò.");
             setIsLoading(false);
         }
     };
@@ -493,12 +493,12 @@ export default function LoginPage() {
 
                 <div className="max-w-md w-full mx-auto flex-1 flex flex-col justify-center">
                     <div className="mb-10">
-                        <p className="text-primary text-xs font-black uppercase tracking-[0.25em] mb-3">Bienvenu</p>
+                        <p className="text-primary text-xs font-black uppercase tracking-[0.25em] mb-3">Byenvini</p>
                         <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4 uppercase leading-[0.9] text-white">
                             Aprann sèvi <br /> ak IA.
                         </h1>
                         <p className="text-white/50 text-base">
-                            Accède à tes cours, ebooks et réservations en un clic.
+                            Antre nan kou w, ebook ak rezèvasyon w yo fasil.
                         </p>
                     </div>
 
@@ -524,14 +524,14 @@ export default function LoginPage() {
                                                 <path d="M12.012 3c-4.966 0-9.006 4.04-9.006 9.002 0 1.588.413 3.131 1.2 4.493L3 21.01l4.636-1.215a8.96 8.96 0 004.377 1.135h.004c4.964 0 9.003-4.04 9.003-9.003-.002-2.405-.939-4.667-2.639-6.368A8.956 8.956 0 0012.012 3zm4.945 12.393c-.271.765-1.353 1.394-1.854 1.488-.475.09-1.092.164-1.748-.05-.417-.137-.935-.308-1.579-.585-2.738-1.176-4.521-3.957-4.658-4.14-.136-.184-1.112-1.48-1.112-2.825 0-1.344.704-2.004.954-2.271.25-.266.542-.333.722-.333h.52c.162 0 .38.062.593.57.217.519.742 1.81.805 1.942.064.133.107.288.021.462-.085.174-.128.3-.255.448-.128.148-.268.33-.383.443-.128.125-.263.262-.113.52.15.258.667 1.1 1.433 1.785.987.88 1.815 1.152 2.073 1.28.258.128.408.107.562-.067.155-.174.663-.77.842-1.034.178-.264.358-.22.604-.128.247.092 1.56.735 1.829.87.269.135.448.203.513.315.065.112.065.65-.206 1.414z" fill="#ffffff"/>
                                             </svg>
                                         </div>
-                                        <h3 className="font-bold text-lg mb-1 text-white">Vérifie ton WhatsApp</h3>
+                                        <h3 className="font-bold text-lg mb-1 text-white">Verifye WhatsApp ou</h3>
                                         <p className="text-xs text-white/50 mb-4 max-w-xs leading-relaxed">
-                                            Nous avons envoyé un lien de connexion magique au <span className="text-emerald-400 font-bold">{verifiedPhone}</span>.
+                                            Nou voye yon lyen koneksyon rapid nan <span className="text-emerald-400 font-bold">{verifiedPhone}</span>.
                                         </p>
                                         
                                         <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-[11px] text-white/60 mb-6">
                                             <div className="size-2 rounded-full bg-primary animate-ping" />
-                                            En attente de connexion automatique...
+                                            N ap tann koneksyon otomatik la...
                                         </div>
 
                                         {verificationError && (
@@ -549,7 +549,7 @@ export default function LoginPage() {
                                             }}
                                             className="text-xs text-white/40 hover:text-white transition-colors py-1 underline"
                                         >
-                                            Modifier le numéro / Retour
+                                            Chanje nimewo a / Retounen
                                         </button>
                                     </div>
                                 ) : (
@@ -558,9 +558,9 @@ export default function LoginPage() {
                                             <div className="size-12 rounded-full bg-primary/15 flex items-center justify-center mb-3 text-primary">
                                                 <span className="material-symbols-outlined notranslate text-2xl">{loginMethod === 'phone' ? 'sms' : 'mail'}</span>
                                             </div>
-                                            <h3 className="font-bold text-base text-white">Saisis le code de vérification</h3>
+                                            <h3 className="font-bold text-base text-white">Antre kòd verifikasyon an</h3>
                                             <p className="text-xs text-white/50 max-w-xs leading-relaxed mt-1">
-                                                Entre le code à 4 chiffres envoyé à : <br />
+                                                Antre kòd 4 chif nou voye nan : <br />
                                                 <span className="text-white font-bold">{loginMethod === 'phone' ? verifiedPhone : email}</span>
                                             </p>
                                         </div>
@@ -595,7 +595,7 @@ export default function LoginPage() {
                                             {isLoading ? (
                                                 <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                                             ) : (
-                                                "Valider le code"
+                                                "Valide kòd la"
                                             )}
                                         </button>
 
@@ -608,11 +608,11 @@ export default function LoginPage() {
                                                 }}
                                                 className="text-white/40 hover:text-white transition-colors"
                                             >
-                                                Retour
+                                                Retounen
                                             </button>
                                             {cooldownSeconds > 0 ? (
                                                 <span className="text-white/30">
-                                                    Renvoyer dans {cooldownSeconds}s
+                                                    Renvoye kòd la nan {cooldownSeconds}s
                                                 </span>
                                             ) : (
                                                 <button
@@ -620,7 +620,7 @@ export default function LoginPage() {
                                                     onClick={handlePasswordlessSubmit}
                                                     className="text-primary hover:underline font-semibold"
                                                 >
-                                                    Renvoyer le code
+                                                    Renvoye kòd la
                                                 </button>
                                             )}
                                         </div>
@@ -635,8 +635,8 @@ export default function LoginPage() {
                                         const labels = {
                                             whatsapp: 'WhatsApp',
                                             phone: 'SMS',
-                                            email: 'Code',
-                                            password: 'Passe'
+                                            email: 'Kòd',
+                                            password: 'Modpas'
                                         };
                                         const icons = {
                                             whatsapp: 'chat',
@@ -677,7 +677,7 @@ export default function LoginPage() {
                                 {loginMethod === 'password' ? (
                                     <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
                                         <div className="flex flex-col gap-1.5">
-                                            <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Adresse e-mail</label>
+                                            <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Adrès imel</label>
                                             <input
                                                 type="email"
                                                 value={email}
@@ -689,14 +689,14 @@ export default function LoginPage() {
                                         </div>
                                         <div className="flex flex-col gap-1.5">
                                             <div className="flex justify-between items-center">
-                                                <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Mot de passe</label>
+                                                <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Modpas</label>
                                                 {isLoginView && (
                                                     <button
                                                         type="button"
                                                         onClick={handleResetPassword}
                                                         className="text-xs text-white/40 hover:text-primary transition-colors"
                                                     >
-                                                        Mot de passe oublié ?
+                                                        Ou bliye modpas ou?
                                                     </button>
                                                 )}
                                             </div>
@@ -712,7 +712,7 @@ export default function LoginPage() {
                                         </div>
                                         {!isLoginView && (
                                             <div className="flex flex-col gap-1.5">
-                                                <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Confirmer le mot de passe</label>
+                                                <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Konfime modpas la</label>
                                                 <input
                                                     type="password"
                                                     value={confirmPassword}
@@ -732,7 +732,7 @@ export default function LoginPage() {
                                             {isLoading ? (
                                                 <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                                             ) : (
-                                                isLoginView ? "Se connecter" : "S'inscrire"
+                                                isLoginView ? "Konekte" : "Kreye yon kont"
                                             )}
                                         </button>
 
@@ -746,7 +746,7 @@ export default function LoginPage() {
                                                 }}
                                                 className="text-sm text-white/40 hover:text-white transition-colors"
                                             >
-                                                {isLoginView ? "Pas encore de compte ? S'inscrire" : "Déjà un compte ? Se connecter"}
+                                                {isLoginView ? "Ou pa gen kont? Kreye yon kont" : "Ou gen yon kont deja? Konekte"}
                                             </button>
                                         </div>
                                     </form>
@@ -755,7 +755,7 @@ export default function LoginPage() {
                                         {(loginMethod === 'whatsapp' || loginMethod === 'phone') ? (
                                             <div className="flex flex-col gap-1.5">
                                                 <label className="text-xs font-bold text-white/50 uppercase tracking-wider">
-                                                    Numéro de téléphone
+                                                    Nimewo telefòn
                                                 </label>
                                                 <div className="flex gap-2">
                                                     <button
@@ -783,7 +783,7 @@ export default function LoginPage() {
                                             </div>
                                         ) : (
                                             <div className="flex flex-col gap-1.5">
-                                                <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Adresse e-mail</label>
+                                                <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Adrès imel</label>
                                                 <input
                                                     type="email"
                                                     value={email}
@@ -803,11 +803,11 @@ export default function LoginPage() {
                                             {isLoading ? (
                                                 <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                                             ) : loginMethod === 'whatsapp' ? (
-                                                "Se connecter par WhatsApp"
+                                                "Konekte ak WhatsApp"
                                             ) : loginMethod === 'phone' ? (
-                                                "Recevoir le code par SMS"
+                                                "Resevwa kòd pa SMS"
                                             ) : (
-                                                "Recevoir le code par E-mail"
+                                                "Resevwa kòd pa Imel"
                                             )}
                                         </button>
                                     </form>
@@ -832,7 +832,7 @@ export default function LoginPage() {
                                         type="text"
                                         value={countrySearch}
                                         onChange={(e) => setCountrySearch(e.target.value)}
-                                        placeholder="Rechercher un pays..."
+                                        placeholder="Chache yon peyi..."
                                         className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-primary/50"
                                         autoFocus
                                     />
@@ -871,14 +871,14 @@ export default function LoginPage() {
 
 
                         <p className="text-center text-xs text-white/30">
-                            En continuant, vous acceptez nos{" "}
-                            <Link href="/terms" className="underline hover:text-primary transition-colors">
-                                Conditions d'utilisation
-                            </Link>{" "}
-                            et notre{" "}
-                            <Link href="/privacy" className="underline hover:text-primary transition-colors">
-                                Politique de confidentialité
-                            </Link>.
+                                    Lè ou kontinye, ou dakò ak{" "}
+                                    <Link href="/terms" className="underline hover:text-primary transition-colors">
+                                        Kondisyon itilizasyon
+                                    </Link>{" "}
+                                    ak{" "}
+                                    <Link href="/privacy" className="underline hover:text-primary transition-colors">
+                                        Règleman konfidansyalite
+                                    </Link>.
                         </p>
                     </div>
                 </div>
