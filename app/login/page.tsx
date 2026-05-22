@@ -484,14 +484,14 @@ export default function LoginPage() {
     return (
         <div className="flex h-screen w-full bg-background-dark text-white overflow-hidden">
             {/* Left Side: Auth Form */}
-            <div className="w-full lg:w-[62%] xl:w-[68%] flex flex-col px-8 md:px-16 lg:px-24 xl:px-32 py-12 overflow-y-auto bg-[#080808]">
+            <div className="w-full lg:w-[62%] xl:w-[68%] flex flex-col px-8 md:px-16 lg:px-24 xl:px-32 py-12 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full bg-[#080808]">
                 {/* Logo Area */}
                 <Link href="/" className="flex items-center gap-3 mb-20 group">
                     <img src="/logo.png" alt="DJR Akademi" className="size-10 rounded-xl object-cover" />
                     <span className="text-white text-xl font-black tracking-tighter uppercase">DJR Akademi</span>
                 </Link>
 
-                <div className="max-w-md w-full mx-auto lg:mx-0 flex-1 flex flex-col justify-center">
+                <div className="max-w-md w-full mx-auto flex-1 flex flex-col justify-center">
                     <div className="mb-10">
                         <p className="text-primary text-xs font-black uppercase tracking-[0.25em] mb-3">Bienvenu</p>
                         <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4 uppercase leading-[0.9] text-white">
@@ -519,7 +519,9 @@ export default function LoginPage() {
                                 {loginMethod === 'whatsapp' ? (
                                     <div className="flex flex-col items-center text-center p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
                                         <div className="size-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-                                            <span className="material-symbols-outlined notranslate text-3xl text-emerald-400 animate-pulse">chat</span>
+                                            <svg viewBox="0 0 24 24" className="w-8 h-8 fill-emerald-400 animate-pulse" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.966C16.69 1.976 14.218.953 11.59.953c-5.441 0-9.865 4.371-9.87 9.8.001 1.77.472 3.498 1.365 5.021l-.993 3.627 3.722-.976zm11.582-7.795c-.3-.15-1.774-.875-2.05-.976-.275-.1-.475-.15-.675.15-.2.3-.775.976-.95 1.176-.175.2-.35.225-.65.075-1.04-.519-1.797-1.018-2.522-2.259-.192-.328.192-.305.549-1.019.06-.12.03-.225-.015-.325-.045-.1-.475-1.145-.65-1.565-.171-.414-.343-.358-.475-.364l-.4-.008c-.135 0-.355.05-.54.25-.185.2-.71.695-.71 1.695 0 1 .725 1.96 1.025 2.11.3.15 2.825 4.314 6.84 6.052.955.413 1.7.66 2.285.845.96.305 1.83.262 2.52.16.77-.115 1.775-.725 2.025-1.39.25-.665.25-1.24.175-1.39-.075-.15-.275-.25-.575-.4z"/>
+                                            </svg>
                                         </div>
                                         <h3 className="font-bold text-lg mb-1 text-white">Vérifie ton WhatsApp</h3>
                                         <p className="text-xs text-white/50 mb-4 max-w-xs leading-relaxed">
@@ -657,7 +659,13 @@ export default function LoginPage() {
                                                         : 'text-white/40 hover:text-white/80 hover:bg-white/5'
                                                 }`}
                                             >
-                                                <span className="material-symbols-outlined notranslate text-lg mb-0.5">{icons[method]}</span>
+                                                {method === 'whatsapp' ? (
+                                                    <svg viewBox="0 0 24 24" className={`w-5 h-5 mb-0.5 fill-current ${isActive ? 'text-white' : 'text-[#25D366]'}`} xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.966C16.69 1.976 14.218.953 11.59.953c-5.441 0-9.865 4.371-9.87 9.8.001 1.77.472 3.498 1.365 5.021l-.993 3.627 3.722-.976zm11.582-7.795c-.3-.15-1.774-.875-2.05-.976-.275-.1-.475-.15-.675.15-.2.3-.775.976-.95 1.176-.175.2-.35.225-.65.075-1.04-.519-1.797-1.018-2.522-2.259-.192-.328.192-.305.549-1.019.06-.12.03-.225-.015-.325-.045-.1-.475-1.145-.65-1.565-.171-.414-.343-.358-.475-.364l-.4-.008c-.135 0-.355.05-.54.25-.185.2-.71.695-.71 1.695 0 1 .725 1.96 1.025 2.11.3.15 2.825 4.314 6.84 6.052.955.413 1.7.66 2.285.845.96.305 1.83.262 2.52.16.77-.115 1.775-.725 2.025-1.39.25-.665.25-1.24.175-1.39-.075-.15-.275-.25-.575-.4z"/>
+                                                    </svg>
+                                                ) : (
+                                                    <span className="material-symbols-outlined notranslate text-lg mb-0.5">{icons[method]}</span>
+                                                )}
                                                 <span className="text-[10px] uppercase tracking-wider font-semibold">{labels[method]}</span>
                                             </button>
                                         );
