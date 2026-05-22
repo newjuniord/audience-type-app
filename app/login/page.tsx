@@ -283,7 +283,7 @@ export default function LoginPage() {
                 if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
                     const cleanBizPhone = genData.businessPhone.replace(/"/g, '').replace(/'/g, '');
                     setWhatsappRedirect({
-                        url: `https://wa.me/${cleanBizPhone}?text=${encodeURIComponent("KÒD")}`,
+                        url: `https://wa.me/${cleanBizPhone}?text=kod`,
                         businessPhone: `+${cleanBizPhone}`
                     });
                     setMagicLinkToken(null);
