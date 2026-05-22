@@ -140,29 +140,34 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
     // For better UX, let's show a confirmation step.
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-[#121212] border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4 animate-in fade-in duration-300">
+            <div className="bg-[#121212] border border-white/10 rounded-t-[2rem] md:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-300">
+                {/* Drag handle for mobile */}
+                <div className="absolute top-0 left-0 w-full flex justify-center pt-3 z-20 md:hidden">
+                    <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+                </div>
+
                 {/* Close button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all z-10"
+                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md text-white/70 hover:text-white transition-all z-20"
                 >
                     <span className="material-symbols-outlined text-sm">close</span>
                 </button>
 
                 {/* Header Image */}
-                <div className="relative h-48 w-full bg-white/5">
+                <div className="relative h-40 md:h-48 w-full bg-white/5">
                     <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/50 to-transparent" />
                     <div className="absolute bottom-4 left-6 right-6">
                         <span className="inline-block px-3 py-1 bg-orange-500/90 text-white text-[10px] font-black uppercase tracking-wider rounded-full mb-2">
                             Kado Spécial
                         </span>
-                        <h3 className="font-black text-xl text-white leading-tight">{item.title}</h3>
+                        <h3 className="font-black text-xl md:text-2xl text-white leading-tight">{item.title}</h3>
                     </div>
                 </div>
 
-                <div className="p-6">
+                <div className="p-6 md:p-8 pb-8 md:pb-8">
                     {/* States */}
                     {step === "initial" && (
                         <div className="space-y-6">
