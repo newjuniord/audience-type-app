@@ -484,7 +484,7 @@ export default function LoginPage() {
     return (
         <div className="flex h-screen w-full bg-background-dark text-white overflow-hidden">
             {/* Left Side: Auth Form */}
-            <div className="w-full lg:w-[45%] flex flex-col px-8 md:px-16 lg:px-24 py-12 overflow-y-auto bg-[#0d0d0d]">
+            <div className="w-full lg:w-[62%] xl:w-[68%] flex flex-col px-8 md:px-16 lg:px-24 xl:px-32 py-12 overflow-y-auto bg-[#080808]">
                 {/* Logo Area */}
                 <Link href="/" className="flex items-center gap-3 mb-20 group">
                     <img src="/logo.png" alt="DJR Akademi" className="size-10 rounded-xl object-cover" />
@@ -881,38 +881,84 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            {/* Right Side: Hero Image */}
-            <div className="hidden lg:block flex-1 relative bg-black overflow-hidden">
-                <img
-                    src="https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop"
-                    alt="DJR Akademi"
-                    className="absolute inset-0 w-full h-full object-cover opacity-50"
-                />
-                {/* Overlay gradients */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
-                <div className="absolute inset-0 bg-gradient-to-r from-[#0d0d0d] via-transparent to-transparent"></div>
+            {/* Right Side: Sleek Designer Panel */}
+            <div className="hidden lg:flex lg:w-[38%] xl:w-[32%] flex-col justify-between p-12 relative bg-[#070707] border-l border-white/[0.06] overflow-hidden">
+                {/* Background Grid Pattern & Radial Glows */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:32px_32px]" />
+                <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-primary/15 blur-[120px]" />
+                <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-orange-500/10 blur-[120px]" />
 
-                {/* Floating Content */}
-                <div className="absolute bottom-16 left-12 right-12">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full mb-6">
+                {/* Top Badge */}
+                <div className="relative z-10 flex justify-end">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-full">
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                         </span>
-                        <span className="text-xs font-bold text-white uppercase tracking-wider">Plateforme Active</span>
+                        <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">Live Platform</span>
                     </div>
-                    <h2 className="text-white text-4xl font-black uppercase tracking-tighter leading-tight max-w-md mb-6">
-                        Yon kominote ki ap grandi chak jou.
-                    </h2>
-                    <div className="flex -space-x-3">
-                        {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="size-10 rounded-full border-2 border-black bg-white/20 backdrop-blur-md overflow-hidden">
-                                <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" />
+                </div>
+
+                {/* Interactive Preview Cards (Sleek Visuals) */}
+                <div className="relative z-10 my-auto space-y-5">
+                    {/* Course Card Preview */}
+                    <div className="p-4 bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl transition-all duration-300 hover:border-white/20 group">
+                        <div className="flex items-center gap-3">
+                            <div className="size-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                <span className="material-symbols-outlined notranslate">school</span>
                             </div>
-                        ))}
-                        <div className="size-10 rounded-full border-2 border-black bg-primary flex items-center justify-center text-[10px] font-black text-white">
-                            +100
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs text-white/40 font-bold uppercase tracking-wider">Kou Aktif</p>
+                                <h4 className="text-sm font-bold text-white truncate">Maîtrise de l'IA Générative</h4>
+                            </div>
                         </div>
+                        <div className="mt-4 space-y-1.5">
+                            <div className="flex justify-between text-[10px] text-white/50">
+                                <span>Pwogrè</span>
+                                <span className="font-bold text-primary">68%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-full bg-primary rounded-full" style={{ width: '68%' }} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Booking Card Preview */}
+                    <div className="p-4 bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl transition-all duration-300 hover:border-white/20 group">
+                        <div className="flex items-center gap-3">
+                            <div className="size-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 group-hover:scale-110 transition-transform">
+                                <span className="material-symbols-outlined notranslate">calendar_today</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs text-white/40 font-bold uppercase tracking-wider">Konsiltasyon</p>
+                                <h4 className="text-sm font-bold text-white truncate">Rezèv konfime ak DJR</h4>
+                            </div>
+                        </div>
+                        <div className="mt-3 flex items-center gap-2 text-[10px] text-white/60 bg-white/5 p-2 rounded-lg border border-white/5">
+                            <span className="material-symbols-outlined notranslate text-sm text-emerald-400">check_circle</span>
+                            <span>Jodi a a 15:00 (15 min)</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer Content */}
+                <div className="relative z-10 mt-auto">
+                    <h3 className="text-white text-2xl font-black uppercase tracking-tight leading-none mb-4">
+                        Kominote <br />
+                        <span className="text-primary">DJR Akademi</span>
+                    </h3>
+                    <div className="flex items-center gap-3">
+                        <div className="flex -space-x-2.5">
+                            {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="size-8 rounded-full border border-black bg-white/20 overflow-hidden">
+                                    <img src={`https://i.pravatar.cc/100?img=${i + 15}`} alt="User" />
+                                </div>
+                            ))}
+                            <div className="size-8 rounded-full border border-black bg-primary flex items-center justify-center text-[9px] font-black text-white">
+                                +100
+                            </div>
+                        </div>
+                        <span className="text-xs font-bold text-white/40 uppercase tracking-wider">Plis pase 100 elèv</span>
                     </div>
                 </div>
             </div>
