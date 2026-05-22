@@ -180,7 +180,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
             />
 
             <div 
-                className="bg-[#121212] border border-white/10 rounded-t-[2rem] md:rounded-3xl w-full md:max-w-md overflow-hidden shadow-2xl relative min-h-[55vh] md:min-h-0 flex flex-col"
+                className="bg-[#121212] border border-white/10 rounded-t-[2rem] md:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative min-h-[55vh] md:min-h-0 flex flex-col"
                 style={{
                     transform: isClosing
                       ? 'translateY(100%)'
