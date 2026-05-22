@@ -73,6 +73,9 @@ service cloud.firestore {
     match /settings/{settingId} { allow read: if true; allow write: if isAdmin(); }
     match /funnels/{funnelId} { allow read: if true; allow write: if isAdmin(); }
 
+    // Cadeaux / Bonus (Kado) : Lecture publique (pour affichage), écriture Admin.
+    match /gifts/{giftId} { allow read: if true; allow write: if isAdmin(); }
+
     // Commandes (Orders)
     match /orders/{orderId} {
       allow create: if isAuthenticated();
