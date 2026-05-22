@@ -163,13 +163,6 @@ export default function DashboardHeader() {
                                         <span className="material-symbols-outlined text-base notranslate text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white transition-colors">manage_accounts</span>
                                         Mon Profil
                                     </Link>
-                                    <button
-                                        onClick={() => { setIsDropdownOpen(false); signOutUser(); }}
-                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/8 text-red-500/70 hover:text-red-500 transition-all text-sm font-semibold text-left group"
-                                    >
-                                        <span className="material-symbols-outlined text-base notranslate transition-colors">logout</span>
-                                        Se déconnecter
-                                    </button>
                                 </div>
                             </div>
                         </div>
