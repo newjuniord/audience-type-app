@@ -542,6 +542,8 @@ export const webhookbotmessage = onRequest({
     res.status(200).send("OK");
     if (req.method !== "POST") return;
 
+    let lockId: string | null = null;
+
     try {
         // ── Parse Twilio's URL-encoded body ──────────────────────────────────
         const bodyParams  = new URLSearchParams(req.rawBody?.toString() || "");
@@ -558,6 +560,32 @@ export const webhookbotmessage = onRequest({
         const otpDocId    = From.trim();                          // "whatsapp:+18296692914"
         const rawMessage = Body.trim().toLowerCase();
         const userMessage = rawMessage.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        lockId = `${phoneNumber}_${userMessage}`;
+
+        // ── Verrou de sécurité contre les requêtes identiques concurrentes ─────
+        const lockRef = db.collection("bot_locks").doc(lockId);
+        const isLocked = await db.runTransaction(async (transaction) => {
+            const doc = await transaction.get(lockRef);
+            if (doc.exists) {
+                const data = doc.data();
+                const now = Date.now();
+                if (data && data.isProcessing && (now - data.lockedAt < 15000)) {
+                    return true;
+                }
+            }
+            transaction.set(lockRef, {
+                isProcessing: true,
+                lockedAt: Date.now()
+            });
+            return false;
+        });
+
+        if (isLocked) {
+            console.warn(`🔒 [BOT] Duplicate request blocked by isProcessing lock: ${phoneNumber} -> ${userMessage}`);
+            lockId = null;
+            return;
+        }
 
         console.log(`📩 [BOT] "${rawMessage}" (normalized: "${userMessage}") from ${phoneNumber} (${ProfileName})`);
 
@@ -733,6 +761,14 @@ export const webhookbotmessage = onRequest({
     } catch (error: any) {
         // 200 déjà envoyé à Twilio — on log seulement, pas de retry
         console.error("🔥 [BOT ERROR]", error.message || error);
+    } finally {
+        if (lockId) {
+            try {
+                await db.collection("bot_locks").doc(lockId).delete();
+            } catch (lockError) {
+                console.error("❌ Failed to release lock:", lockError);
+            }
+        }
     }
 });
 
