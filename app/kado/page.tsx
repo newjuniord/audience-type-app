@@ -184,7 +184,6 @@ function KadoCard({ item }: { item: FreeItem }) {
                     src={item.image}
                     alt={item.title}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    onError={(e) => { (e.target as HTMLImageElement).src = "/logo.png"; }}
                 />
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
