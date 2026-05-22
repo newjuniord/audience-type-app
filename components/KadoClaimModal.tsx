@@ -188,7 +188,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                                 <input
                                     type="text"
                                     value={invitationCode}
-                                    onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
+                                    onChange={(e) => setInvitationCode(e.target.value)}
                                     placeholder="Entrez le code ici..."
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono uppercase"
                                     autoFocus
