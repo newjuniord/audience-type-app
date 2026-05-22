@@ -375,7 +375,7 @@ export interface Gift {
     description: string;
     photoLink: string;
     type: 'course' | 'ebook' | 'consultation';
-    triggerProductId: string;           // Produit acheté qui déclenche ce cadeau
+    triggerProductId?: string;          // Produit acheté qui déclenche ce cadeau (optionnel)
     giftProductId: string;              // Produit (cours/ebook/service) à débloquer
     giftProductTitle: string;           // Dénormalisé pour affichage rapide
     giftProductType: 'course' | 'ebook' | 'service';

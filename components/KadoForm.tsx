@@ -89,9 +89,8 @@ export default function KadoForm({ initialData, giftId }: KadoFormProps) {
         setError("");
 
         if (!title.trim()) return setError("Le titre est requis.");
-        if (!triggerProductId) return setError("Sélectionnez un produit déclencheur.");
         if (!giftProductId) return setError("Sélectionnez un produit à offrir.");
-        if (triggerProductId === giftProductId) return setError("Le produit déclencheur et le cadeau doivent être différents.");
+        if (triggerProductId && triggerProductId === giftProductId) return setError("Le produit déclencheur et le cadeau doivent être différents.");
         if (requiresInvitation && !invitationCode.trim()) return setError("Saisissez un code d'invitation.");
 
         setSaving(true);
@@ -239,7 +238,7 @@ export default function KadoForm({ initialData, giftId }: KadoFormProps) {
                     <ProductSelect
                         value={triggerProductId}
                         onChange={setTriggerProductId}
-                        label="Produit déclencheur (celui que le client achète) *"
+                        label="Produit déclencheur (optionnel — débloqué après cet achat)"
                         excludeId={giftProductId}
                     />
 
