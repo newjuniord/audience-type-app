@@ -130,7 +130,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
                 // La fenêtre de 24h est fermée ou le document n'existe pas.
                 // ON NE CREE PAS le document ici. C'est le webhook qui s'en chargera quand il recevra le message.
                 const businessPhone = process.env.NEXT_PUBLIC_TWILIO_NUMBER || "+17157507852";
-                const cleanBusinessPhone = businessPhone.replace('whatsapp:', '').replace(/\+/g, '');
+                const cleanBusinessPhone = businessPhone.replace('whatsapp:', '').replace(/"/g, '').replace(/'/g, '').replace(/\D/g, '');
                 return { 
                     success: true, 
                     action: "redirect_to_whatsapp",
@@ -391,7 +391,7 @@ export async function generateMagicLinkAction(contact: string) {
 
         if (!is24hWindowOpen) {
             const businessPhone = process.env.NEXT_PUBLIC_TWILIO_NUMBER || "+17157507852";
-            const cleanBusinessPhone = businessPhone.replace('whatsapp:', '').replace(/\+/g, '');
+            const cleanBusinessPhone = businessPhone.replace('whatsapp:', '').replace(/"/g, '').replace(/'/g, '').replace(/\D/g, '');
             return { 
                 success: true, 
                 action: "redirect_to_whatsapp",

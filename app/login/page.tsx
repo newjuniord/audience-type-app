@@ -18,102 +18,102 @@ import {
 
 // ─── COUNTRIES LIST ──────────────────────────────────────────────────────────
 const COUNTRIES = [
-  { code: 'HT', name: 'Haïti',              dial: '+509', flag: '🇭🇹' },
-  { code: 'DO', name: 'Rép. Dominicaine',    dial: '+1',   flag: '🇩🇴' },
-  { code: 'CU', name: 'Cuba',               dial: '+53',  flag: '🇨🇺' },
-  { code: 'JM', name: 'Jamaïque',           dial: '+1',   flag: '🇯🇲' },
-  { code: 'PR', name: 'Porto Rico',          dial: '+1',   flag: '🇵🇷' },
-  { code: 'TT', name: 'Trinidad & Tobago',   dial: '+1',   flag: '🇹🇹' },
-  { code: 'BB', name: 'Barbade',             dial: '+1',   flag: '🇧🇧' },
-  { code: 'US', name: 'États-Unis',          dial: '+1',   flag: '🇺🇸' },
-  { code: 'CA', name: 'Canada',              dial: '+1',   flag: '🇨🇦' },
-  { code: 'MX', name: 'Mexique',             dial: '+52',  flag: '🇲🇽' },
-  { code: 'GT', name: 'Guatemala',           dial: '+502', flag: '🇬🇹' },
-  { code: 'HN', name: 'Honduras',            dial: '+504', flag: '🇭🇳' },
-  { code: 'SV', name: 'El Salvador',         dial: '+503', flag: '🇸🇻' },
-  { code: 'NI', name: 'Nicaragua',           dial: '+505', flag: '🇳🇮' },
-  { code: 'CR', name: 'Costa Rica',          dial: '+506', flag: '🇨🇷' },
-  { code: 'PA', name: 'Panama',              dial: '+507', flag: '🇵🇦' },
-  { code: 'CO', name: 'Colombie',            dial: '+57',  flag: '🇨🇴' },
-  { code: 'VE', name: 'Venezuela',           dial: '+58',  flag: '🇻🇪' },
-  { code: 'EC', name: 'Équateur',            dial: '+593', flag: '🇪🇨' },
-  { code: 'PE', name: 'Pérou',              dial: '+51',  flag: '🇵🇪' },
-  { code: 'BO', name: 'Bolivie',             dial: '+591', flag: '🇧🇴' },
-  { code: 'CL', name: 'Chili',              dial: '+56',  flag: '🇨🇱' },
-  { code: 'AR', name: 'Argentine',           dial: '+54',  flag: '🇦🇷' },
-  { code: 'UY', name: 'Uruguay',             dial: '+598', flag: '🇺🇾' },
-  { code: 'PY', name: 'Paraguay',            dial: '+595', flag: '🇵🇾' },
-  { code: 'BR', name: 'Brésil',             dial: '+55',  flag: '🇧🇷' },
-  { code: 'FR', name: 'France',              dial: '+33',  flag: '🇫🇷' },
-  { code: 'BE', name: 'Belgique',            dial: '+32',  flag: '🇧🇪' },
-  { code: 'CH', name: 'Suisse',              dial: '+41',  flag: '🇨🇭' },
-  { code: 'GP', name: 'Guadeloupe',          dial: '+590', flag: '🇬🇵' },
-  { code: 'MQ', name: 'Martinique',          dial: '+596', flag: '🇲🇶' },
-  { code: 'GF', name: 'Guyane',             dial: '+594', flag: '🇬🇫' },
-  { code: 'RE', name: 'La Réunion',         dial: '+262', flag: '🇷🇪' },
-  { code: 'GB', name: 'Royaume-Uni',         dial: '+44',  flag: '🇬🇧' },
-  { code: 'DE', name: 'Allemagne',           dial: '+49',  flag: '🇩🇪' },
-  { code: 'ES', name: 'Espagne',             dial: '+34',  flag: '🇪🇸' },
-  { code: 'PT', name: 'Portugal',            dial: '+351', flag: '🇵🇹' },
-  { code: 'IT', name: 'Italie',              dial: '+39',  flag: '🇮🇹' },
-  { code: 'NL', name: 'Pays-Bas',           dial: '+31',  flag: '🇳🇱' },
-  { code: 'CN', name: 'Chine',              dial: '+86',  flag: '🇨🇳' },
-  { code: 'KR', name: 'Corée du Sud',        dial: '+82',  flag: '🇰🇷' },
-  { code: 'JP', name: 'Japon',              dial: '+81',  flag: '🇯🇵' },
+    { code: 'HT', name: 'Haïti', dial: '+509', flag: '🇭🇹' },
+    { code: 'DO', name: 'Rép. Dominicaine', dial: '+1', flag: '🇩🇴' },
+    { code: 'CU', name: 'Cuba', dial: '+53', flag: '🇨🇺' },
+    { code: 'JM', name: 'Jamaïque', dial: '+1', flag: '🇯🇲' },
+    { code: 'PR', name: 'Porto Rico', dial: '+1', flag: '🇵🇷' },
+    { code: 'TT', name: 'Trinidad & Tobago', dial: '+1', flag: '🇹🇹' },
+    { code: 'BB', name: 'Barbade', dial: '+1', flag: '🇧🇧' },
+    { code: 'US', name: 'États-Unis', dial: '+1', flag: '🇺🇸' },
+    { code: 'CA', name: 'Canada', dial: '+1', flag: '🇨🇦' },
+    { code: 'MX', name: 'Mexique', dial: '+52', flag: '🇲🇽' },
+    { code: 'GT', name: 'Guatemala', dial: '+502', flag: '🇬🇹' },
+    { code: 'HN', name: 'Honduras', dial: '+504', flag: '🇭🇳' },
+    { code: 'SV', name: 'El Salvador', dial: '+503', flag: '🇸🇻' },
+    { code: 'NI', name: 'Nicaragua', dial: '+505', flag: '🇳🇮' },
+    { code: 'CR', name: 'Costa Rica', dial: '+506', flag: '🇨🇷' },
+    { code: 'PA', name: 'Panama', dial: '+507', flag: '🇵🇦' },
+    { code: 'CO', name: 'Colombie', dial: '+57', flag: '🇨🇴' },
+    { code: 'VE', name: 'Venezuela', dial: '+58', flag: '🇻🇪' },
+    { code: 'EC', name: 'Équateur', dial: '+593', flag: '🇪🇨' },
+    { code: 'PE', name: 'Pérou', dial: '+51', flag: '🇵🇪' },
+    { code: 'BO', name: 'Bolivie', dial: '+591', flag: '🇧🇴' },
+    { code: 'CL', name: 'Chili', dial: '+56', flag: '🇨🇱' },
+    { code: 'AR', name: 'Argentine', dial: '+54', flag: '🇦🇷' },
+    { code: 'UY', name: 'Uruguay', dial: '+598', flag: '🇺🇾' },
+    { code: 'PY', name: 'Paraguay', dial: '+595', flag: '🇵🇾' },
+    { code: 'BR', name: 'Brésil', dial: '+55', flag: '🇧🇷' },
+    { code: 'FR', name: 'France', dial: '+33', flag: '🇫🇷' },
+    { code: 'BE', name: 'Belgique', dial: '+32', flag: '🇧🇪' },
+    { code: 'CH', name: 'Suisse', dial: '+41', flag: '🇨🇭' },
+    { code: 'GP', name: 'Guadeloupe', dial: '+590', flag: '🇬🇵' },
+    { code: 'MQ', name: 'Martinique', dial: '+596', flag: '🇲🇶' },
+    { code: 'GF', name: 'Guyane', dial: '+594', flag: '🇬🇫' },
+    { code: 'RE', name: 'La Réunion', dial: '+262', flag: '🇷🇪' },
+    { code: 'GB', name: 'Royaume-Uni', dial: '+44', flag: '🇬🇧' },
+    { code: 'DE', name: 'Allemagne', dial: '+49', flag: '🇩🇪' },
+    { code: 'ES', name: 'Espagne', dial: '+34', flag: '🇪🇸' },
+    { code: 'PT', name: 'Portugal', dial: '+351', flag: '🇵🇹' },
+    { code: 'IT', name: 'Italie', dial: '+39', flag: '🇮🇹' },
+    { code: 'NL', name: 'Pays-Bas', dial: '+31', flag: '🇳🇱' },
+    { code: 'CN', name: 'Chine', dial: '+86', flag: '🇨🇳' },
+    { code: 'KR', name: 'Corée du Sud', dial: '+82', flag: '🇰🇷' },
+    { code: 'JP', name: 'Japon', dial: '+81', flag: '🇯🇵' },
 ];
 
 const TIMEZONE_MAP: Record<string, string> = {
-  'America/Port-au-Prince': 'HT', 'America/Santo_Domingo': 'DO',
-  'America/New_York': 'US', 'America/Chicago': 'US', 'America/Denver': 'US',
-  'America/Los_Angeles': 'US', 'America/Phoenix': 'US', 'America/Anchorage': 'US',
-  'America/Toronto': 'CA', 'America/Vancouver': 'CA', 'America/Winnipeg': 'CA',
-  'America/Montreal': 'CA', 'America/Halifax': 'CA',
-  'Europe/Paris': 'FR', 'Europe/Brussels': 'BE', 'Europe/Zurich': 'CH',
-  'America/Guadeloupe': 'GP', 'America/Martinique': 'MQ',
-  'America/Cayenne': 'GF', 'Indian/Reunion': 'RE',
-  'America/Havana': 'CU', 'America/Jamaica': 'JM', 'America/Puerto_Rico': 'PR',
-  'America/Port_of_Spain': 'TT', 'America/Barbados': 'BB',
-  'America/Mexico_City': 'MX', 'America/Cancun': 'MX', 'America/Monterrey': 'MX',
-  'America/Guatemala': 'GT', 'America/Tegucigalpa': 'HN', 'America/El_Salvador': 'SV',
-  'America/Managua': 'NI', 'America/Costa_Rica': 'CR', 'America/Panama': 'PA',
-  'America/Bogota': 'CO', 'America/Caracas': 'VE', 'America/Guayaquil': 'EC',
-  'America/Lima': 'PE', 'America/La_Paz': 'BO', 'America/Santiago': 'CL',
-  'America/Argentina/Buenos_Aires': 'AR', 'America/Montevideo': 'UY', 'America/Asuncion': 'PY',
-  'America/Sao_Paulo': 'BR', 'America/Manaus': 'BR', 'America/Fortaleza': 'BR',
-  'Europe/London': 'GB', 'Europe/Berlin': 'DE', 'Europe/Madrid': 'ES',
-  'Europe/Lisbon': 'PT', 'Europe/Rome': 'IT', 'Europe/Amsterdam': 'NL',
-  'Asia/Shanghai': 'CN', 'Asia/Chongqing': 'CN', 'Asia/Beijing': 'CN',
-  'Asia/Seoul': 'KR', 'Asia/Tokyo': 'JP',
+    'America/Port-au-Prince': 'HT', 'America/Santo_Domingo': 'DO',
+    'America/New_York': 'US', 'America/Chicago': 'US', 'America/Denver': 'US',
+    'America/Los_Angeles': 'US', 'America/Phoenix': 'US', 'America/Anchorage': 'US',
+    'America/Toronto': 'CA', 'America/Vancouver': 'CA', 'America/Winnipeg': 'CA',
+    'America/Montreal': 'CA', 'America/Halifax': 'CA',
+    'Europe/Paris': 'FR', 'Europe/Brussels': 'BE', 'Europe/Zurich': 'CH',
+    'America/Guadeloupe': 'GP', 'America/Martinique': 'MQ',
+    'America/Cayenne': 'GF', 'Indian/Reunion': 'RE',
+    'America/Havana': 'CU', 'America/Jamaica': 'JM', 'America/Puerto_Rico': 'PR',
+    'America/Port_of_Spain': 'TT', 'America/Barbados': 'BB',
+    'America/Mexico_City': 'MX', 'America/Cancun': 'MX', 'America/Monterrey': 'MX',
+    'America/Guatemala': 'GT', 'America/Tegucigalpa': 'HN', 'America/El_Salvador': 'SV',
+    'America/Managua': 'NI', 'America/Costa_Rica': 'CR', 'America/Panama': 'PA',
+    'America/Bogota': 'CO', 'America/Caracas': 'VE', 'America/Guayaquil': 'EC',
+    'America/Lima': 'PE', 'America/La_Paz': 'BO', 'America/Santiago': 'CL',
+    'America/Argentina/Buenos_Aires': 'AR', 'America/Montevideo': 'UY', 'America/Asuncion': 'PY',
+    'America/Sao_Paulo': 'BR', 'America/Manaus': 'BR', 'America/Fortaleza': 'BR',
+    'Europe/London': 'GB', 'Europe/Berlin': 'DE', 'Europe/Madrid': 'ES',
+    'Europe/Lisbon': 'PT', 'Europe/Rome': 'IT', 'Europe/Amsterdam': 'NL',
+    'Asia/Shanghai': 'CN', 'Asia/Chongqing': 'CN', 'Asia/Beijing': 'CN',
+    'Asia/Seoul': 'KR', 'Asia/Tokyo': 'JP',
 };
 
 function detectCountry(): (typeof COUNTRIES)[0] {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const code = TIMEZONE_MAP[tz];
-    if (code) { const found = COUNTRIES.find(c => c.code === code); if (found) return found; }
-  } catch {}
-  return COUNTRIES[0]; // fallback Haïti
+    try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const code = TIMEZONE_MAP[tz];
+        if (code) { const found = COUNTRIES.find(c => c.code === code); if (found) return found; }
+    } catch { }
+    return COUNTRIES[0]; // fallback Haïti
 }
 
 function formatPhone(digits: string, countryCode: string): string {
-  if (!digits) return '';
-  if (countryCode === 'HT') {
-    const d = digits.slice(0, 8);
-    if (d.length <= 4) return d;
-    return `${d.slice(0, 4)} ${d.slice(4)}`;
-  }
-  const plusOne = ['US','CA','DO','JM','PR','TT','BB'];
-  if (plusOne.includes(countryCode)) {
-    const d = digits.slice(0, 10);
+    if (!digits) return '';
+    if (countryCode === 'HT') {
+        const d = digits.slice(0, 8);
+        if (d.length <= 4) return d;
+        return `${d.slice(0, 4)} ${d.slice(4)}`;
+    }
+    const plusOne = ['US', 'CA', 'DO', 'JM', 'PR', 'TT', 'BB'];
+    if (plusOne.includes(countryCode)) {
+        const d = digits.slice(0, 10);
+        if (d.length <= 3) return d;
+        if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
+        return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
+    }
+    const d = digits.slice(0, 12);
     if (d.length <= 3) return d;
     if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
-    return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
-  }
-  const d = digits.slice(0, 12);
-  if (d.length <= 3) return d;
-  if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
-  if (d.length <= 9) return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
-  return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 9)} ${d.slice(9)}`;
+    if (d.length <= 9) return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
+    return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 9)} ${d.slice(9)}`;
 }
 
 export default function LoginPage() {
@@ -279,7 +279,7 @@ export default function LoginPage() {
             if (loginMethod === 'whatsapp') {
                 const genData = await generateMagicLinkAction(contactToUse);
                 if (genData.error) throw new Error(genData.error);
-                
+
                 if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
                     const cleanBizPhone = genData.businessPhone.replace(/"/g, '').replace(/'/g, '');
                     setWhatsappRedirect({
@@ -393,7 +393,7 @@ export default function LoginPage() {
                 const result = await createUserWithEmailAndPassword(auth, email, password);
                 user = result.user;
             }
-            
+
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
 
@@ -406,7 +406,7 @@ export default function LoginPage() {
                     role: "customer",
                     createdAt: serverTimestamp(),
                 });
-                
+
                 window.location.href = "/dashboard";
                 return;
             }
@@ -472,7 +472,7 @@ export default function LoginPage() {
                     displayName: user.displayName || existingData.displayName || existingData.fullName,
                     photoURL: user.photoURL || existingData.photoURL,
                 };
-                
+
                 if (!existingData.createdAt) {
                     updates.createdAt = serverTimestamp();
                 }
@@ -532,15 +532,15 @@ export default function LoginPage() {
                                         <div className="flex flex-col items-center text-center p-6 bg-white/[0.02] border border-white/10 rounded-2xl w-full">
                                             <div className="size-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
                                                 <svg viewBox="0 0 24 24" className="w-10 h-10 animate-pulse" xmlns="http://www.w3.org/2000/svg">
-                                                    <circle cx="12" cy="12" r="12" fill="#25D366"/>
-                                                    <path d="M12.012 3c-4.966 0-9.006 4.04-9.006 9.002 0 1.588.413 3.131 1.2 4.493L3 21.01l4.636-1.215a8.96 8.96 0 004.377 1.135h.004c4.964 0 9.003-4.04 9.003-9.003-.002-2.405-.939-4.667-2.639-6.368A8.956 8.956 0 0012.012 3zm4.945 12.393c-.271.765-1.353 1.394-1.854 1.488-.475.09-1.092.164-1.748-.05-.417-.137-.935-.308-1.579-.585-2.738-1.176-4.521-3.957-4.658-4.14-.136-.184-1.112-1.48-1.112-2.825 0-1.344.704-2.004.954-2.271.25-.266.542-.333.722-.333h.52c.162 0 .38.062.593.57.217.519.742 1.81.805 1.942.064.133.107.288.021.462-.085.174-.128.3-.255.448-.128.148-.268.33-.383.443-.128.125-.263.262-.113.52.15.258.667 1.1 1.433 1.785.987.88 1.815 1.152 2.073 1.28.258.128.408.107.562-.067.155-.174.663-.77.842-1.034.178-.264.358-.22.604-.128.247.092 1.56.735 1.829.87.269.135.448.203.513.315.065.112.065.65-.206 1.414z" fill="#ffffff"/>
+                                                    <circle cx="12" cy="12" r="12" fill="#25D366" />
+                                                    <path d="M12.012 3c-4.966 0-9.006 4.04-9.006 9.002 0 1.588.413 3.131 1.2 4.493L3 21.01l4.636-1.215a8.96 8.96 0 004.377 1.135h.004c4.964 0 9.003-4.04 9.003-9.003-.002-2.405-.939-4.667-2.639-6.368A8.956 8.956 0 0012.012 3zm4.945 12.393c-.271.765-1.353 1.394-1.854 1.488-.475.09-1.092.164-1.748-.05-.417-.137-.935-.308-1.579-.585-2.738-1.176-4.521-3.957-4.658-4.14-.136-.184-1.112-1.48-1.112-2.825 0-1.344.704-2.004.954-2.271.25-.266.542-.333.722-.333h.52c.162 0 .38.062.593.57.217.519.742 1.81.805 1.942.064.133.107.288.021.462-.085.174-.128.3-.255.448-.128.148-.268.33-.383.443-.128.125-.263.262-.113.52.15.258.667 1.1 1.433 1.785.987.88 1.815 1.152 2.073 1.28.258.128.408.107.562-.067.155-.174.663-.77.842-1.034.178-.264.358-.22.604-.128.247.092 1.56.735 1.829.87.269.135.448.203.513.315.065.112.065.65-.206 1.414z" fill="#ffffff" />
                                                 </svg>
                                             </div>
                                             <h3 className="font-bold text-lg mb-1 text-white">Verifye WhatsApp ou</h3>
                                             <p className="text-xs text-white/50 mb-4 max-w-xs leading-relaxed">
                                                 Nou voye yon lyen koneksyon rapid nan <span className="text-emerald-400 font-bold">{verifiedPhone}</span>.
                                             </p>
-                                            
+
                                             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-[11px] text-white/60 mb-6">
                                                 <div className="size-2 rounded-full bg-primary animate-ping" />
                                                 N ap tann koneksyon otomatik la...
@@ -574,15 +574,15 @@ export default function LoginPage() {
                                             <p className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm">
                                                 Klike sou bouton anba a pou w voye mesaj la. <strong className="text-white">Robo a ap reponn ou ak kòd ou a!</strong>
                                             </p>
-                                            
+
                                             <a href={whatsappRedirect.url} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 py-4 mb-5 bg-[#25D366] text-white font-black rounded-xl text-sm transition-all hover:bg-[#1ebd5a] shadow-lg shadow-[#25D366]/20">
-                                                <svg className="size-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                                                <svg className="size-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" /></svg>
                                                 Ouvri WhatsApp
                                             </a>
 
                                             <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 mb-4 text-left w-full">
                                                 <p className="text-xs text-white/50 leading-relaxed">
-                                                    <strong className="text-white">Lòt aparèy ?</strong> Si ou pa gen WhatsApp sou ekran sa a, voye mo <strong className="text-[#25D366]">KÒD</strong> nan nimewo <strong className="text-white">WhatsApp</strong> nou an anba a depi sou telefòn ou :
+                                                    <strong className="text-white">Lòt aparèy ?</strong> Si ou pa gen WhatsApp sou aparèy sa a, voye mo <strong className="text-[#25D366]">KÒD</strong> nan nimewo <strong className="text-white">WhatsApp</strong> nou an anba a depi sou telefòn ou :
                                                 </p>
                                                 <p className="text-lg font-black text-white tracking-widest font-mono mt-2 text-center bg-black/20 rounded-lg p-2.5 border border-white/5">
                                                     {whatsappRedirect.businessPhone}
@@ -613,7 +613,7 @@ export default function LoginPage() {
                                                     disabled={isLoading || verificationCode.length !== 4}
                                                     className="w-full h-14 bg-gradient-to-r from-primary to-orange-500 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                                                 >
-                                                    {isLoading ? <div className="size-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"/> : "Valide kòd la"}
+                                                    {isLoading ? <div className="size-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" /> : "Valide kòd la"}
                                                 </button>
                                             </form>
 
@@ -738,16 +738,15 @@ export default function LoginPage() {
                                                     setError(null);
                                                     setMessage(null);
                                                 }}
-                                                className={`flex flex-col items-center justify-center py-2 rounded-lg transition-all duration-200 ${
-                                                    isActive
+                                                className={`flex flex-col items-center justify-center py-2 rounded-lg transition-all duration-200 ${isActive
                                                         ? 'bg-primary text-white font-bold shadow-md'
                                                         : 'text-white/40 hover:text-white/80 hover:bg-white/5'
-                                                }`}
+                                                    }`}
                                             >
                                                 {method === 'whatsapp' ? (
                                                     <svg viewBox="0 0 24 24" className="w-5 h-5 mb-0.5" xmlns="http://www.w3.org/2000/svg">
-                                                        <circle cx="12" cy="12" r="12" fill={isActive ? '#ffffff' : '#25D366'}/>
-                                                        <path d="M12.012 3c-4.966 0-9.006 4.04-9.006 9.002 0 1.588.413 3.131 1.2 4.493L3 21.01l4.636-1.215a8.96 8.96 0 004.377 1.135h.004c4.964 0 9.003-4.04 9.003-9.003-.002-2.405-.939-4.667-2.639-6.368A8.956 8.956 0 0012.012 3zm4.945 12.393c-.271.765-1.353 1.394-1.854 1.488-.475.09-1.092.164-1.748-.05-.417-.137-.935-.308-1.579-.585-2.738-1.176-4.521-3.957-4.658-4.14-.136-.184-1.112-1.48-1.112-2.825 0-1.344.704-2.004.954-2.271.25-.266.542-.333.722-.333h.52c.162 0 .38.062.593.57.217.519.742 1.81.805 1.942.064.133.107.288.021.462-.085.174-.128.3-.255.448-.128.148-.268.33-.383.443-.128.125-.263.262-.113.52.15.258.667 1.1 1.433 1.785.987.88 1.815 1.152 2.073 1.28.258.128.408.107.562-.067.155-.174.663-.77.842-1.034.178-.264.358-.22.604-.128.247.092 1.56.735 1.829.87.269.135.448.203.513.315.065.112.065.65-.206 1.414z" fill={isActive ? '#25D366' : '#ffffff'}/>
+                                                        <circle cx="12" cy="12" r="12" fill={isActive ? '#ffffff' : '#25D366'} />
+                                                        <path d="M12.012 3c-4.966 0-9.006 4.04-9.006 9.002 0 1.588.413 3.131 1.2 4.493L3 21.01l4.636-1.215a8.96 8.96 0 004.377 1.135h.004c4.964 0 9.003-4.04 9.003-9.003-.002-2.405-.939-4.667-2.639-6.368A8.956 8.956 0 0012.012 3zm4.945 12.393c-.271.765-1.353 1.394-1.854 1.488-.475.09-1.092.164-1.748-.05-.417-.137-.935-.308-1.579-.585-2.738-1.176-4.521-3.957-4.658-4.14-.136-.184-1.112-1.48-1.112-2.825 0-1.344.704-2.004.954-2.271.25-.266.542-.333.722-.333h.52c.162 0 .38.062.593.57.217.519.742 1.81.805 1.942.064.133.107.288.021.462-.085.174-.128.3-.255.448-.128.148-.268.33-.383.443-.128.125-.263.262-.113.52.15.258.667 1.1 1.433 1.785.987.88 1.815 1.152 2.073 1.28.258.128.408.107.562-.067.155-.174.663-.77.842-1.034.178-.264.358-.22.604-.128.247.092 1.56.735 1.829.87.269.135.448.203.513.315.065.112.065.65-.206 1.414z" fill={isActive ? '#25D366' : '#ffffff'} />
                                                     </svg>
                                                 ) : (
                                                     <span className="material-symbols-outlined notranslate text-lg mb-0.5">{icons[method]}</span>
@@ -901,7 +900,7 @@ export default function LoginPage() {
 
                         {/* Country Dropdown (rendered via Portal) */}
                         {showCountryDropdown && typeof window !== "undefined" && createPortal(
-                            <div 
+                            <div
                                 ref={countryDropdownRef}
                                 style={{
                                     position: 'fixed',
@@ -922,7 +921,7 @@ export default function LoginPage() {
                                     />
                                 </div>
                                 <div className="space-y-0.5">
-                                    {COUNTRIES.filter(c => 
+                                    {COUNTRIES.filter(c =>
                                         c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
                                         c.dial.includes(countrySearch)
                                     ).map((c) => (
@@ -935,11 +934,10 @@ export default function LoginPage() {
                                                 setCountrySearch('');
                                                 setPhone('');
                                             }}
-                                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left text-xs transition-colors ${
-                                                selectedCountry.code === c.code 
-                                                    ? 'bg-primary text-white font-bold' 
+                                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left text-xs transition-colors ${selectedCountry.code === c.code
+                                                    ? 'bg-primary text-white font-bold'
                                                     : 'text-white/60 hover:bg-white/5 hover:text-white'
-                                            }`}
+                                                }`}
                                         >
                                             <span className="flex items-center gap-2 truncate">
                                                 <span>{c.flag}</span>
@@ -955,14 +953,14 @@ export default function LoginPage() {
 
 
                         <p className="text-center text-xs text-white/30">
-                                    Lè ou kontinye, ou dakò ak{" "}
-                                    <Link href="/terms" className="underline hover:text-primary transition-colors">
-                                        Kondisyon itilizasyon
-                                    </Link>{" "}
-                                    ak{" "}
-                                    <Link href="/privacy" className="underline hover:text-primary transition-colors">
-                                        Règleman konfidansyalite
-                                    </Link>.
+                            Lè ou kontinye, ou dakò ak{" "}
+                            <Link href="/terms" className="underline hover:text-primary transition-colors">
+                                Kondisyon itilizasyon
+                            </Link>{" "}
+                            ak{" "}
+                            <Link href="/privacy" className="underline hover:text-primary transition-colors">
+                                Règleman konfidansyalite
+                            </Link>.
                         </p>
                     </div>
                 </div>
