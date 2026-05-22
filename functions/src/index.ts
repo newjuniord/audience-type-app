@@ -14,14 +14,14 @@ const auth = getAuth();
  * Cloud Function: lemonsqueezyWebhook
  * Listen for Lemon Squeezy events (e.g., order_created).
  */
-export const lemonsqueezywebhook = onRequest({ 
+export const lemonsqueezywebhook = onRequest({
     secrets: [
         "LEMON_SQUEEZY_WEBHOOK_SECRET",
         "TWILIO_ACCOUNT_SID",
         "TWILIO_AUTH_TOKEN",
         "TWILIO_WHATSAPP_NUMBER"
     ],
-    region: "us-central1" 
+    region: "us-central1"
 }, async (req, res) => {
     // Only allow POST requests
     if (req.method !== "POST") {
@@ -53,7 +53,7 @@ export const lemonsqueezywebhook = onRequest({
 
         const payload = JSON.parse(rawBody);
         const eventName = payload.meta.event_name;
-        
+
         console.log(`🔔 [WEBHOOK] Lemon Squeezy event received: ${eventName}`);
 
         // Handle events
@@ -64,7 +64,7 @@ export const lemonsqueezywebhook = onRequest({
             if (custom && custom.orderId) {
                 console.log(`✅ [WEBHOOK] Handling SUCCESS for order: ${custom.orderId}`);
                 const now = new Date();
-                
+
                 // On convertit les centimes en dollars (ou euros)
                 const finalAmount = (attributes.total || 0) / 100;
 
@@ -74,7 +74,7 @@ export const lemonsqueezywebhook = onRequest({
 
                 if (orderSnap.exists) {
                     const orderData = orderSnap.data();
-                    
+
                     if (orderData && orderData.status !== "paid") {
                         const userId = orderData.userId;
                         const customerEmail = attributes.user_email || "";
@@ -137,7 +137,7 @@ export const lemonsqueezywebhook = onRequest({
                         // 2. Create enrollment if not a service
                         if (orderData.productType !== "service" && orderData.productType !== "booking") {
                             const enrollmentsRef = db.collection("enrollments");
-                            
+
                             // Check for existing enrollment
                             const existingEnrollment = await enrollmentsRef
                                 .where("userId", "==", orderData.userId)
@@ -147,7 +147,7 @@ export const lemonsqueezywebhook = onRequest({
 
                             if (existingEnrollment.empty) {
                                 console.log(`📚 [WEBHOOK] Creating enrollment for user ${finalUserEmail}`);
-                                
+
                                 await enrollmentsRef.add({
                                     accessGranted: true,
                                     completedLessons: [],
@@ -190,15 +190,15 @@ export const lemonsqueezywebhook = onRequest({
                     console.error(`❌ [WEBHOOK] Order not found: ${custom.orderId}`);
                 }
             } else {
-                 console.error(`❌ [WEBHOOK] Custom data or orderId missing in payload`);
+                console.error(`❌ [WEBHOOK] Custom data or orderId missing in payload`);
             }
-        } 
+        }
         else if (eventName === "order_failed") {
             const custom = payload.meta.custom_data;
             if (custom && custom.orderId) {
                 console.log(`❌ [WEBHOOK] Handling FAILED for order: ${custom.orderId}`);
                 const now = new Date();
-                
+
                 await db.collection("orders").doc(custom.orderId).update({
                     status: "failed",
                     failedAt: now,
@@ -219,9 +219,9 @@ export const lemonsqueezywebhook = onRequest({
  * Cloud Function: lemonsqueezyrefund
  * Handles ONLY order_refunded events.
  */
-export const lemonsqueezyrefund = onRequest({ 
+export const lemonsqueezyrefund = onRequest({
     secrets: ["LEMON_SQUEEZY_WEBHOOK_SECRET"],
-    region: "us-central1" 
+    region: "us-central1"
 }, async (req, res) => {
     if (req.method !== "POST") {
         res.status(405).send("Method Not Allowed");
@@ -259,7 +259,7 @@ export const lemonsqueezyrefund = onRequest({
                 const now = new Date();
                 const refundedAt = attributes.refunded_at ? new Date(attributes.refunded_at) : now;
                 const refundAmount = (attributes.refunded_amount || 0) / 100;
-                
+
                 const orderRef = db.collection("orders").doc(custom.orderId);
                 await orderRef.update({
                     status: "refunded",
@@ -298,8 +298,8 @@ async function sendSmsViaFetch(toPhone: string, message: string) {
     const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
     const authToken = process.env.TWILIO_AUTH_TOKEN || "";
     const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+17157507852";
-    const fromNumber = process.env.TWILIO_SMS_NUMBER || 
-        process.env.TWILIO_PHONE_NUMBER || 
+    const fromNumber = process.env.TWILIO_SMS_NUMBER ||
+        process.env.TWILIO_PHONE_NUMBER ||
         twilioWhatsAppNumber.replace("whatsapp:", "");
 
     if (!accountSid || !authToken) {
@@ -348,10 +348,10 @@ async function sendSmsViaFetch(toPhone: string, message: string) {
  * Helper to generate a temp link and send a unified SMS notification
  */
 async function generateAndSendNotification(
-    userId: string, 
-    userName: string, 
-    productTitle: string, 
-    productType: string, 
+    userId: string,
+    userName: string,
+    productTitle: string,
+    productType: string,
     isGift: boolean
 ) {
     try {
@@ -383,7 +383,7 @@ async function generateAndSendNotification(
         if (existingLinks.empty) {
             token = crypto.randomUUID();
             code = Math.floor(100000 + Math.random() * 900000).toString();
-            
+
             const expiresAt = new Date();
             expiresAt.setFullYear(expiresAt.getFullYear() + 100);
 
@@ -403,7 +403,7 @@ async function generateAndSendNotification(
         }
 
         const link = `https://audiencetype.com/login/temp?token=${token}`;
-        
+
         let message = "";
         if (isGift) {
             message = `Bonjour, votre commande est prête. Utilisez ce code *${code}* pour avoir accès. - Connecte-toi ici : ${link}`;
@@ -491,14 +491,14 @@ async function sendWhatsAppViaFetch(toPhone: string, message: string) {
         return { success: false };
     }
 
-    const cleanTo   = toPhone.startsWith("whatsapp:") ? toPhone : `whatsapp:${toPhone}`;
+    const cleanTo = toPhone.startsWith("whatsapp:") ? toPhone : `whatsapp:${toPhone}`;
     const cleanFrom = twilioWhatsAppNumber.startsWith("whatsapp:") ? twilioWhatsAppNumber : `whatsapp:${twilioWhatsAppNumber}`;
 
     const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
     const authString = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
 
     const params = new URLSearchParams();
-    params.append("To",   cleanTo);
+    params.append("To", cleanTo);
     params.append("From", cleanFrom);
     params.append("Body", message);
 
@@ -546,9 +546,9 @@ export const webhookbotmessage = onRequest({
 
     try {
         // ── Parse Twilio's URL-encoded body ──────────────────────────────────
-        const bodyParams  = new URLSearchParams(req.rawBody?.toString() || "");
-        const From        = bodyParams.get("From") || "";    // "whatsapp:+18296692914"
-        const Body        = bodyParams.get("Body") || "";
+        const bodyParams = new URLSearchParams(req.rawBody?.toString() || "");
+        const From = bodyParams.get("From") || "";    // "whatsapp:+18296692914"
+        const Body = bodyParams.get("Body") || "";
         const ProfileName = bodyParams.get("ProfileName") || "Client";
 
         if (!From || !Body) {
@@ -557,7 +557,7 @@ export const webhookbotmessage = onRequest({
         }
 
         const phoneNumber = From.replace("whatsapp:", "").trim(); // "+18296692914"
-        const otpDocId    = From.trim();                          // "whatsapp:+18296692914"
+        const otpDocId = From.trim();                          // "whatsapp:+18296692914"
         const rawMessage = Body.trim().toLowerCase();
         const userMessage = rawMessage.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
@@ -596,9 +596,9 @@ export const webhookbotmessage = onRequest({
             const otpDoc = await db.collection("otp_code").doc(otpDocId).get();
             const now = new Date();
             if (otpDoc.exists) {
-                const data     = otpDoc.data()!;
+                const data = otpDoc.data()!;
                 const expireAt = data.expireAt?.toDate() as Date;
-                const count    = (data.count || 0) as number;
+                const count = (data.count || 0) as number;
                 if (expireAt && expireAt > now && count >= MAX_PER_DAY) {
                     return { blocked: true, count, expireAt };
                 }
@@ -642,8 +642,8 @@ export const webhookbotmessage = onRequest({
 
         // ── Helper: créer un nouveau temp_link (10h) ──────────────────────────
         const createTempLink = async (uid: string): Promise<string> => {
-            const token     = crypto.randomUUID();
-            const now       = new Date();
+            const token = crypto.randomUUID();
+            const now = new Date();
             const expiresAt = new Date(now.getTime() + 10 * 60 * 60 * 1000); // +10h
             await db.collection("temp_links").doc(token).set({ userId: uid, expiresAt, used: false, createdAt: now });
             return token;
@@ -690,20 +690,20 @@ export const webhookbotmessage = onRequest({
                 const now = new Date();
                 await db.collection("users").doc(uid).set({
                     uid,
-                    phone:       phoneNumber,
+                    phone: phoneNumber,
                     displayName: ProfileName,
-                    email:       `${uid}@audiencetype.com`,
-                    status:      "active",
-                    role:        "user",
-                    createdAt:   now,
-                    updatedAt:   now
+                    email: `${uid}@audiencetype.com`,
+                    status: "active",
+                    role: "user",
+                    createdAt: now,
+                    updatedAt: now
                 });
             }
 
             await clearOldTempLinks(uid);
             const token = await createTempLink(uid);
-            const link  = `https://audiencetype.com/login/temp?token=${token}`;
-            const code  = generateOtp();
+            const link = `https://audiencetype.com/login/temp?token=${token}`;
+            const code = generateOtp();
             await updateOtpDoc(uid, code, rateLimit.count, rateLimit.expireAt);
 
             const msg = isNewUser
@@ -760,10 +760,12 @@ export const webhookbotmessage = onRequest({
             userMessage === "enfomasyon" ||
             userMessage === "information" ||
             userMessage === "edem" ||
+            userMessage === "problem" ||
+            userMessage === "help" ||
             userMessage === "404" ||
             userMessage === "500"
         ) {
-            await sendWhatsAppViaFetch(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* ➜ kreye kont ou epi resevwa lyen koneksyon ou\n• Tape *kod* ➜ resevwa yon kòd koneksyon ' OTP '\n• Tape *bug* ➜ jwenn sipò teknik\n• Tape *kontak* ➜ kontakte ekip nou an.`);
+            await sendWhatsAppViaFetch(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* ➜ kreye kont ou epi resevwa lyen koneksyon ou\n• Tape *kod* ➜ resevwa yon kòd koneksyon ' OTP '\n• Tape *bug* ➜ jwenn sipò teknik\n• Tape *kontak* ➜ kontakte ekip nou an.\n Tanpri tann 2 minit pou resevwa repons! avan tape yon lòt kòmand...`);
         }
         // ════════════════════════════════════════════════════════════════════════
         // UNKNOWN — Ignorer silencieusement
