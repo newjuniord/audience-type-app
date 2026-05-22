@@ -23,7 +23,10 @@ export async function checkUserAction(phone: string, email?: string, targetProdu
         if (email) {
             querySnapshot = await usersRef.where("email", "==", email.trim().toLowerCase()).get();
         } else {
-            const cleanNum = phone.trim();
+            let cleanNum = phone.trim().replace(/^whatsapp:/i, '');
+            if (!cleanNum.startsWith('+')) {
+                cleanNum = '+' + cleanNum;
+            }
             querySnapshot = await usersRef.where("phone", "==", cleanNum).get();
         }
 
@@ -100,7 +103,13 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
 
     try {
         const adminDb = getAdminDb();
-        const contactClean = type === 'email' ? contact.trim().toLowerCase() : contact.trim();
+        let contactClean = type === 'email' ? contact.trim().toLowerCase() : contact.trim();
+        if (type === 'whatsapp' || type === 'phone') {
+            contactClean = contactClean.replace(/^whatsapp:/i, '');
+            if (!contactClean.startsWith('+')) {
+                contactClean = '+' + contactClean;
+            }
+        }
         const contactId = type === 'whatsapp' ? `whatsapp:${contactClean}` : contactClean;
         const otpRef = adminDb.collection("otp_code").doc(contactId);
         
@@ -256,7 +265,13 @@ export async function verifyOtpAndLoginAction(contact: string, code: string, typ
 
     try {
         const adminDb = getAdminDb();
-        const contactClean = type === 'email' ? contact.trim().toLowerCase() : contact.trim();
+        let contactClean = type === 'email' ? contact.trim().toLowerCase() : contact.trim();
+        if (type === 'whatsapp' || type === 'phone') {
+            contactClean = contactClean.replace(/^whatsapp:/i, '');
+            if (!contactClean.startsWith('+')) {
+                contactClean = '+' + contactClean;
+            }
+        }
         const contactId = type === 'whatsapp' ? `whatsapp:${contactClean}` : contactClean;
         const otpRef = adminDb.collection("otp_code").doc(contactId);
 
