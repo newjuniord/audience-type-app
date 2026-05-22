@@ -7,11 +7,11 @@ import DashboardFooter from "@/components/DashboardFooter";
 const faqs = [
     {
         question: "Kijan pou m jwenn aksè kours mwen yo apre acha ?",
-        answer: "Ou kapab jwenn tout kontni ou yo dirèkteman nan tab 'Mon contenu' nan tablo de bò ou a."
+        answer: "Ou kapab jwenn tout kontni ou yo dirèkteman nan tab 'Kontni mwen' nan tablo de bò ou a."
     },
     {
         question: "Ki mòd peman nou aksepte ?",
-        answer: "Nou aksepte tout kat kredi prensipal yo (Visa, Mastercard, American Express), Google Pay ak Moncash."
+        answer: "Nou aksepte tout kat kredi prensikal yo (Visa, Mastercard, American Express), Google Pay ak Moncash."
     },
     {
         question: "Èske nou ofri ranbousman ?",
@@ -54,7 +54,7 @@ export default function SupportPage() {
         } catch (error) {
             console.error("Error sending message:", error);
             setFormStatus("idle");
-            alert("Une erreur est survenue. Veuillez réessayer.");
+            alert("Gen yon erè ki fèt. Tanpri reyezi.");
         }
     };
 
@@ -67,7 +67,7 @@ export default function SupportPage() {
                 <section className="max-w-[860px] mx-auto px-6 py-16">
                     <span className="text-primary text-xs font-black uppercase tracking-[0.3em]">Èd & Sipò</span>
                     <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mt-3 mb-5 text-white">
-                        Centre de Support
+                        Sant Sipò
                     </h1>
                     <p className="text-white/50 text-lg max-w-2xl leading-relaxed">
                         Bezwen èd ? Ekip nou an disponib pou ou. Gade kesyon ki poze souvan yo oswa voye nou yon mesaj dirèkteman.
@@ -136,7 +136,7 @@ export default function SupportPage() {
                                     {formStatus === "submitting" && (
                                         <span className="flex items-center justify-center gap-2">
                                             <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />
-                                            Envoi en cours...
+                                            N ap voye l...
                                         </span>
                                     )}
                                 </button>
@@ -154,7 +154,7 @@ export default function SupportPage() {
                             <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/10">
                                 <span className="material-symbols-outlined text-white/40 mb-3 block">schedule</span>
                                 <h3 className="font-black uppercase tracking-widest text-xs text-white mb-1">Orè travay</h3>
-                                <p className="text-sm text-white/50">Lun – Ven, 9h – 18h</p>
+                                <p className="text-sm text-white/50">Lendi – Vandredi, 9è - 6è</p>
                                 <p className="text-xs text-white/30 mt-1">Reponse souvan nan 24h</p>
                             </div>
                         </div>

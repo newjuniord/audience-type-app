@@ -26,8 +26,8 @@ export default function ConfirmModal({
     onConfirm,
     title,
     message,
-    confirmText = "Confirmer",
-    cancelText = "Annuler",
+    confirmText = "Konfime",
+    cancelText = "Anile",
     isDanger = false,
     isLoading = false,
     image,
@@ -93,14 +93,14 @@ export default function ConfirmModal({
                     {showReferenceInput && (
                         <div className="mb-8 group">
                             <label className="block text-left text-[10px] font-black uppercase tracking-widest text-primary/40 dark:text-white/40 mb-2 ml-1">
-                                Code de référence (Optionnel)
+                                Kòd referans (Si w vle)
                             </label>
                             <div className="relative">
                                 <input
                                     type="text"
                                     value={referenceValue}
                                     onChange={(e) => onReferenceChange?.(e.target.value)}
-                                    placeholder="Entrez votre code..."
+                                    placeholder="Antre kòd ou a..."
                                     className="w-full h-12 bg-black/[0.03] dark:bg-white/[0.03] border border-black/5 dark:border-white/5 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 dark:focus:ring-white/20 transition-all placeholder:text-black/20 dark:placeholder:text-white/20"
                                 />
                                 <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary/20 dark:text-white/20 text-lg">

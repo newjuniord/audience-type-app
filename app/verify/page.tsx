@@ -10,13 +10,13 @@ function VerifyContent() {
     const token = searchParams.get("token");
 
     const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-    const [message, setMessage] = useState("Vérification du lien magique...");
+    const [message, setMessage] = useState("N ap verifye lyen majik la...");
 
     useEffect(() => {
         const verify = async () => {
             if (!token) {
                 setStatus("error");
-                setMessage("Lien de connexion invalide ou manquant.");
+                setMessage("Lyen koneksyon an pa valab oswa li manke.");
                 return;
             }
 
@@ -27,11 +27,11 @@ function VerifyContent() {
                     setMessage(result.error);
                 } else {
                     setStatus("success");
-                    setMessage("Connexion réussie ! Tu peux fermer cette page et retourner sur ton ordinateur.");
+                    setMessage("Koneksyon an reyalize avèk siksè! Ou ka fèmen paj sa a epi tounen sou òdinatè w.");
                 }
             } catch (err: any) {
                 setStatus("error");
-                setMessage("Une erreur inattendue s'est produite lors de la vérification.");
+                setMessage("Gen yon erè ki fèt pandan n ap verifye.");
             }
         };
 
@@ -65,9 +65,9 @@ function VerifyContent() {
             {/* Titre */}
             <div>
                 <h1 className="text-2xl font-black text-white uppercase tracking-wider mb-2">
-                    {status === "loading" && "Connexion en cours…"}
-                    {status === "success" && "🎉 Connecté !"}
-                    {status === "error" && "Échec"}
+                    {status === "loading" && "Koneksyon ap fèt..."}
+                    {status === "success" && "🎉 Ou konekte!"}
+                    {status === "error" && "Koneksyon an echwe"}
                 </h1>
                 <p className="text-white/50 text-sm font-medium leading-relaxed">
                     {message}
@@ -78,17 +78,17 @@ function VerifyContent() {
             {status === "success" && (
                 <div className="pt-2 space-y-3">
                     <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4">
-                        <p className="text-green-400 text-xs font-bold uppercase tracking-wider mb-1">✨ La magie a opéré</p>
+                        <p className="text-green-400 text-xs font-bold uppercase tracking-wider mb-1">✨ Maji a mache</p>
                         <p className="text-white/50 text-xs leading-relaxed">
-                            Ton ordinateur vient de se connecter automatiquement.<br/>
-                            Tu peux fermer cet onglet et revenir à ta session.
+                            Òdinatè w la sot konekte otomatikman.<br/>
+                            Ou ka fèmen paj sa a pou w ka kontinye.
                         </p>
                     </div>
                     <button
                         onClick={() => window.close()}
                         className="w-full h-12 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-xl transition-all uppercase tracking-widest text-xs"
                     >
-                        Fermer cet onglet
+                        Fèmen paj sa a
                     </button>
                 </div>
             )}
@@ -98,7 +98,7 @@ function VerifyContent() {
                         href="/"
                         className="inline-flex items-center justify-center w-full h-12 bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90 text-white font-bold rounded-xl transition-all uppercase tracking-widest text-xs shadow-lg shadow-orange-500/20"
                     >
-                        Retour à l'accueil
+                        Tounen sou paj prensipal la
                     </a>
                 </div>
             )}
@@ -113,7 +113,7 @@ function LoadingFallback() {
             <div className="w-20 h-20 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mx-auto">
                 <div className="w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
             </div>
-            <p className="text-white/40 text-sm">Chargement…</p>
+            <p className="text-white/40 text-sm">N ap chaje...</p>
         </div>
     );
 }

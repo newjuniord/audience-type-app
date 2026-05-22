@@ -71,9 +71,9 @@ export default function InvitationCodeModal({
                         <span className="material-symbols-outlined text-4xl text-primary dark:text-white font-bold">lock_open</span>
                     </div>
 
-                    <h2 className="text-3xl font-black tracking-tight mb-2">Accès Limité</h2>
+                    <h2 className="text-3xl font-black tracking-tight mb-2">Aksè Limite</h2>
                     <p className="text-black/40 dark:text-white/40 text-sm font-medium mb-8 max-w-[280px]">
-                        <span className="text-black dark:text-white font-bold">{productName}</span> est disponible exclusivement sur invitation.
+                        <span className="text-black dark:text-white font-bold">{productName}</span> disponib sèlman sou envitasyon.
                     </p>
 
                     <form onSubmit={handleSubmit} className="w-full space-y-4">
@@ -87,11 +87,11 @@ export default function InvitationCodeModal({
                                     setError(false);
                                 }}
                                 className={`w-full h-16 px-8 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-2 transition-all outline-none text-center text-lg font-black tracking-[0.2em] uppercase placeholder:tracking-normal placeholder:font-medium placeholder:text-black/20 dark:placeholder:text-white/20 ${error ? 'border-red-500/50 text-red-500' : 'border-transparent focus:border-primary/20 dark:focus:border-white/20'}`}
-                                placeholder="Entrer le code"
+                                placeholder="Antre kòd la"
                             />
                             {error && (
                                 <p className="absolute -bottom-6 left-0 w-full text-[10px] font-black uppercase text-red-500 tracking-widest animate-in fade-in slide-in-from-top-1">
-                                    Code invalide. Veuillez réessayer.
+                                    Kòd la pa bon. Tanpri refè l ankò.
                                 </p>
                             )}
                         </div>
@@ -100,7 +100,7 @@ export default function InvitationCodeModal({
                             type="submit"
                             className="w-full h-16 bg-primary dark:bg-white text-white dark:text-primary rounded-2xl font-black text-xs uppercase tracking-widest hover:opacity-90 active:scale-[0.98] transition-all shadow-xl shadow-primary/20 dark:shadow-white/5 mt-4"
                         >
-                            Vérifier le code
+                            Verifye kòd la
                         </button>
                     </form>
 
@@ -108,7 +108,7 @@ export default function InvitationCodeModal({
                         onClick={onClose}
                         className="mt-8 text-[10px] font-black uppercase text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white tracking-widest transition-colors"
                     >
-                        Annuler et fermer
+                        Anile ak fèmen
                     </button>
                 </div>
             </div>

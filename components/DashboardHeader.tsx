@@ -37,10 +37,10 @@ export default function DashboardHeader() {
                     <nav className="hidden md:flex items-center gap-9">
 
                         <Link href="/products" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
-                            Produits
+                            Pwodui
                         </Link>
                         <Link href="/dashboard" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
-                            Mon contenu
+                            Kontni mwen
                         </Link>
                         <Link href="/consultation" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
                             Konsiltasyon
@@ -52,10 +52,10 @@ export default function DashboardHeader() {
                             Sèvis
                         </Link>
                         <Link href="/dashboard/transactions" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
-                            Transactions
+                            Tranzaksyon
                         </Link>
                         <Link href="/dashboard/profile" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
-                            Profil
+                            Pwofil
                         </Link>
                     </nav>
                 )}
@@ -71,7 +71,7 @@ export default function DashboardHeader() {
                     {user && role === 'admin' && (
                         <Link href="/admin" className="flex items-center gap-2 bg-primary text-white dark:bg-white dark:text-primary px-4 md:px-5 h-10 rounded-full text-xs font-bold tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg border border-black/5 dark:border-white/10">
                             <span className="material-symbols-outlined text-sm">security</span>
-                            <span className="hidden md:inline uppercase">Espace Admin</span>
+                            <span className="hidden md:inline uppercase">Espas Admin</span>
                         </Link>
                     )}
                     {user ? (
@@ -99,7 +99,7 @@ export default function DashboardHeader() {
                                             style={{ backgroundImage: `url("${user.photoURL || 'https://lh3.googleusercontent.com/a/default-user'}")` }}
                                         />
                                         <div className="min-w-0">
-                                            <p className="text-sm font-black truncate leading-tight">{user.displayName || "Utilisateur"}</p>
+                                            <p className="text-sm font-black truncate leading-tight">{user.displayName || "Itilizatè"}</p>
                                             <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{user.email}</p>
                                         </div>
                                     </div>
@@ -110,18 +110,18 @@ export default function DashboardHeader() {
                                             className="mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-primary dark:bg-white text-white dark:text-primary text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-lg shadow-primary/20"
                                         >
                                             <span className="material-symbols-outlined text-sm notranslate">shield_person</span>
-                                            Espace Administrateur
+                                            Espas Administratè
                                         </Link>
                                     )}
                                 </div>
 
                                 {/* Navigation principale */}
                                 <div className="px-3 py-3 space-y-0.5">
-                                    <p className="px-2 text-[9px] font-black uppercase tracking-[0.15em] text-black/30 dark:text-white/30 mb-2">Navigation</p>
+                                    <p className="px-2 text-[9px] font-black uppercase tracking-[0.15em] text-black/30 dark:text-white/30 mb-2">Navigasyon</p>
 
                                     {[
-                                        { href: "/dashboard", icon: "grid_view", label: "Mon contenu" },
-                                        { href: "/products", icon: "storefront", label: "Produits" },
+                                        { href: "/dashboard", icon: "grid_view", label: "Kontni mwen" },
+                                        { href: "/products", icon: "storefront", label: "Pwodui" },
                                         { href: "/kado", icon: "redeem", label: "Kado", highlight: true },
                                         { href: "/consultation", icon: "support_agent", label: "Konsiltasyon" },
                                         { href: "/coaching", icon: "psychology", label: "Coaching" },
@@ -139,21 +139,21 @@ export default function DashboardHeader() {
                                         >
                                             <span className={`material-symbols-outlined text-base notranslate ${highlight ? "text-orange-500" : "text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white"} transition-colors`}>{icon}</span>
                                             {label}
-                                            {highlight && <span className="ml-auto text-[9px] font-black uppercase tracking-widest bg-orange-500/15 text-orange-500 px-2 py-0.5 rounded-full">Gratuit</span>}
+                                            {highlight && <span className="ml-auto text-[9px] font-black uppercase tracking-widest bg-orange-500/15 text-orange-500 px-2 py-0.5 rounded-full">Gratis</span>}
                                         </Link>
                                     ))}
                                 </div>
 
                                 {/* Section profil + déconnexion */}
                                 <div className="px-3 pb-3 pt-1 border-t border-black/5 dark:border-white/5 space-y-0.5">
-                                    <p className="px-2 text-[9px] font-black uppercase tracking-[0.15em] text-black/30 dark:text-white/30 mb-2 pt-2">Compte</p>
+                                    <p className="px-2 text-[9px] font-black uppercase tracking-[0.15em] text-black/30 dark:text-white/30 mb-2 pt-2">Kont</p>
                                     <Link
                                         href="/dashboard/transactions"
                                         onClick={() => setIsDropdownOpen(false)}
                                         className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-sm font-semibold text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white group"
                                     >
                                         <span className="material-symbols-outlined text-base notranslate text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white transition-colors">receipt_long</span>
-                                        Transactions
+                                        Tranzaksyon
                                     </Link>
                                     <Link
                                         href="/dashboard/profile"
@@ -161,7 +161,7 @@ export default function DashboardHeader() {
                                         className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-sm font-semibold text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white group"
                                     >
                                         <span className="material-symbols-outlined text-base notranslate text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white transition-colors">manage_accounts</span>
-                                        Mon Profil
+                                        Pwofil mwen
                                     </Link>
                                 </div>
                             </div>

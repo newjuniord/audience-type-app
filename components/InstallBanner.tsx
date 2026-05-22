@@ -107,20 +107,11 @@ export default function InstallBanner() {
                                 />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-white font-black text-sm">Installer DJR Akademi</p>
+                                <p className="text-white font-black text-sm">Enstale DJR Akademi</p>
                                 <p className="text-white/50 text-xs font-medium mt-0.5">
-                                    Accès instantané, sans navigateur
+                                    Aksè rapid, san navigatè
                                 </p>
                             </div>
-                            <button
-                                onClick={handleDismiss}
-                                className="size-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors flex-shrink-0"
-                                aria-label="Fermer"
-                            >
-                                <svg className="size-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
                         </div>
 
                         {!showIosInstructions ? (
@@ -129,40 +120,40 @@ export default function InstallBanner() {
                                     onClick={handleInstall}
                                     className="flex-1 h-11 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-[0.98] shadow-lg shadow-orange-500/20"
                                 >
-                                    {isIos ? "Voir comment installer" : "Installer"}
+                                    {isIos ? "Gade kijan pou w enstale l" : "Enstale"}
                                 </button>
                                 <button
                                     onClick={handleDismiss}
                                     className="px-4 h-11 bg-white/5 border border-white/10 hover:bg-white/10 text-white/60 rounded-xl font-bold text-xs transition-all"
                                 >
-                                    Plus tard
+                                    Pita
                                 </button>
                             </div>
                         ) : (
                             /* Instructions iOS */
                             <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-2">
                                 <p className="text-white/80 text-xs font-bold uppercase tracking-wider">
-                                    📱 Instructions iOS (Safari)
+                                    📱 Enstriksyon pou iOS (Safari)
                                 </p>
                                 <div className="space-y-1.5 text-xs text-white/60">
                                     <div className="flex items-center gap-2">
                                         <span className="size-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-[10px] font-black flex-shrink-0">1</span>
-                                        <span>Appuyez sur le bouton <strong className="text-white">Partager</strong> <span className="text-orange-400">⬆️</span></span>
+                                        <span>Peze sou bouton <strong className="text-white">Pataje a</strong> <span className="text-orange-400">⬆️</span></span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="size-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-[10px] font-black flex-shrink-0">2</span>
-                                        <span>Faites défiler et appuyez sur <strong className="text-white">"Sur l'écran d'accueil"</strong></span>
+                                        <span>Desann epi peze sou <strong className="text-white">"Ajoute sou ekran akey"</strong></span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="size-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-[10px] font-black flex-shrink-0">3</span>
-                                        <span>Appuyez sur <strong className="text-white">"Ajouter"</strong> en haut à droite</span>
+                                        <span>Peze sou <strong className="text-white">"Ajoute"</strong> anlè a dwat</span>
                                     </div>
                                 </div>
                                 <button
                                     onClick={handleDismiss}
                                     className="w-full h-9 mt-1 bg-white/5 border border-white/10 hover:bg-white/10 text-white/60 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all"
                                 >
-                                    Compris
+                                    Mwen konprann
                                 </button>
                             </div>
                         )}

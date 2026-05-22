@@ -194,10 +194,10 @@ export default function LoginPage() {
                         setMagicLinkToken(null);
                     } catch (err) {
                         console.error("Erreur de connexion via magic link", err);
-                        setVerificationError("Échec de la connexion automatique.");
+                        setVerificationError("Koneksyon otomatik la echwe.");
                     }
                 } else if (data.status === "expired") {
-                    setVerificationError("Le lien a expiré. Veuillez recommencer.");
+                    setVerificationError("Lyen an ekspire. Tanpri rekòmanse.");
                     setMagicLinkToken(null);
                 }
             }
@@ -206,7 +206,7 @@ export default function LoginPage() {
         // Timeout local de 10 minutes
         timeoutId = setTimeout(() => {
             unsubscribe();
-            setVerificationError("Délai d'attente dépassé (10 minutes).");
+            setVerificationError("Tan datant lan depase (10 minit).");
             setMagicLinkToken(null);
         }, 10 * 60 * 1000);
 
@@ -289,7 +289,7 @@ export default function LoginPage() {
                 if (genData.error) throw new Error(genData.error);
 
                 if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
-                    window.open(`https://wa.me/${genData.businessPhone}?text=${encodeURIComponent("Bonjour, je souhaite recevoir mon code de vérification.")}`, "_blank");
+                    window.open(`https://wa.me/${genData.businessPhone}?text=${encodeURIComponent("Bonjou, mwen ta renmen resevwa kòd verifikasyon mwen an.")}`, "_blank");
                 }
 
                 setVerificationError(null);
@@ -349,7 +349,7 @@ export default function LoginPage() {
             if (err.code === 'auth/user-not-found') {
                 setError("Nou pa jwenn okenn itilizatè ki gen adrès imel sa a.");
             } else {
-                setError("Erreur pandan n ap voye imel pou chanje modpas la.");
+                setError("Erè pandan n ap voye imel pou chanje modpas la.");
             }
         }
         setIsLoading(false);
@@ -484,7 +484,7 @@ export default function LoginPage() {
     return (
         <div className="flex h-screen w-full bg-background-dark text-white overflow-hidden">
             {/* Left Side: Auth Form */}
-            <div className="w-full lg:w-[62%] xl:w-[68%] flex flex-col px-8 md:px-16 lg:px-24 xl:px-32 py-12 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full bg-[#080808]">
+            <div className="w-full lg:w-[62%] xl:w-[68%] flex flex-col px-1.5 md:px-16 lg:px-24 xl:px-32 py-6 md:py-12 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full bg-[#080808]">
                 {/* Logo Area */}
                 <Link href="/" className="flex items-center gap-3 mb-20 group">
                     <img src="/logo.png" alt="DJR Akademi" className="size-10 rounded-xl object-cover" />
@@ -553,7 +553,7 @@ export default function LoginPage() {
                                         </button>
                                     </div>
                                 ) : (
-                                    <form onSubmit={handleVerifyOtpSubmit} className="flex flex-col gap-4 p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
+                                    <form onSubmit={handleVerifyOtpSubmit} className="flex flex-col gap-4 p-1 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
                                         <div className="flex flex-col items-center text-center mb-2">
                                             <div className="size-12 rounded-full bg-primary/15 flex items-center justify-center mb-3 text-primary">
                                                 <span className="material-symbols-outlined notranslate text-2xl">{loginMethod === 'phone' ? 'sms' : 'mail'}</span>
@@ -675,7 +675,7 @@ export default function LoginPage() {
                                 </div>
 
                                 {loginMethod === 'password' ? (
-                                    <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
+                                    <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 p-1 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
                                         <div className="flex flex-col gap-1.5">
                                             <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Adrès imel</label>
                                             <input
@@ -751,7 +751,7 @@ export default function LoginPage() {
                                         </div>
                                     </form>
                                 ) : (
-                                    <form onSubmit={handlePasswordlessSubmit} className="flex flex-col gap-4 p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
+                                    <form onSubmit={handlePasswordlessSubmit} className="flex flex-col gap-4 p-1 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
                                         {(loginMethod === 'whatsapp' || loginMethod === 'phone') ? (
                                             <div className="flex flex-col gap-1.5">
                                                 <label className="text-xs font-bold text-white/50 uppercase tracking-wider">
@@ -762,7 +762,7 @@ export default function LoginPage() {
                                                         ref={countryBtnRef}
                                                         type="button"
                                                         onClick={openCountryDropdown}
-                                                        className="flex items-center gap-1.5 px-3 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm text-white"
+                                                        className="flex items-center gap-1.5 px-3 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm text-white shrink-0"
                                                     >
                                                         <span className="text-base leading-none">{selectedCountry.flag}</span>
                                                         <span className="font-bold">{selectedCountry.dial}</span>
@@ -776,7 +776,7 @@ export default function LoginPage() {
                                                             setPhone(formatPhone(digits, selectedCountry.code));
                                                         }}
                                                         placeholder={selectedCountry.code === 'HT' ? "3456 7890" : "06 12 34 56 78"}
-                                                        className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
+                                                        className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
                                                         required
                                                     />
                                                 </div>
@@ -919,7 +919,7 @@ export default function LoginPage() {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-xs text-white/40 font-bold uppercase tracking-wider">Kou Aktif</p>
-                                <h4 className="text-sm font-bold text-white truncate">Maîtrise de l'IA Générative</h4>
+                                <h4 className="text-sm font-bold text-white truncate">Metriz Entelijans Atifisyèl (IA)</h4>
                             </div>
                         </div>
                         <div className="mt-4 space-y-1.5">

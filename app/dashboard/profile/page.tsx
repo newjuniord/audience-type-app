@@ -340,11 +340,11 @@ export default function ProfilePage() {
     };
 
     if (authLoading || loading) {
-        return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+        return <div className="min-h-screen flex items-center justify-center">N ap chaje...</div>;
     }
 
     if (!user) {
-        return <div className="min-h-screen flex items-center justify-center">Veuillez vous connecter.</div>;
+        return <div className="min-h-screen flex items-center justify-center">Tanpri konekte w.</div>;
     }
 
     const getPlaceholder = () => {
@@ -361,7 +361,7 @@ export default function ProfilePage() {
                     <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-5 duration-300">
                         <div className="bg-green-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
                             <span className="material-symbols-outlined text-xl">check_circle</span>
-                            <span className="font-bold text-sm">Profil mis à jour avec succès !</span>
+                            <span className="font-bold text-sm">Pwofil ou mete ajou avèk siksè !</span>
                         </div>
                     </div>
                 )}
@@ -378,9 +378,9 @@ export default function ProfilePage() {
                                 </div>
                             </div>
                             <div className="flex flex-col items-center justify-center">
-                                <h1 className="text-primary dark:text-white text-3xl font-bold leading-tight tracking-[-0.015em] text-center">{displayName || "Utilisateur"}</h1>
+                                <h1 className="text-primary dark:text-white text-3xl font-bold leading-tight tracking-[-0.015em] text-center">{displayName || "Itilizatè"}</h1>
                                 {memberSince && (
-                                    <p className="text-primary/60 dark:text-white/60 text-base font-normal leading-normal text-center mt-1">Membre depuis {memberSince}</p>
+                                    <p className="text-primary/60 dark:text-white/60 text-base font-normal leading-normal text-center mt-1">Manm depi {memberSince}</p>
                                 )}
                             </div>
                         </section>
@@ -388,10 +388,10 @@ export default function ProfilePage() {
                         <div className="grid grid-cols-1 gap-12">
                             {/* Personal Information Form */}
                             <section>
-                                <h2 className="text-primary dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] mb-6">Informations personnelles</h2>
+                                <h2 className="text-primary dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] mb-6">Enfòmasyon pèsonèl</h2>
                                 <div className="space-y-4">
                                     <div className="flex flex-col w-full">
-                                        <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-2">Nom complet</p>
+                                        <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-2">Non konplè</p>
                                         <input
                                             className="form-input flex w-full rounded-xl text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-primary/10 bg-white dark:bg-background-dark/50 h-12 px-4 text-base font-normal"
                                             type="text"
@@ -402,8 +402,8 @@ export default function ProfilePage() {
                                     {user.email ? (
                                         <div className="flex flex-col w-full">
                                             <div className="flex items-center justify-between pb-2">
-                                                <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Adresse e-mail</p>
-                                                <span className="text-[10px] uppercase tracking-wider text-primary/40 dark:text-white/40 font-bold">Lecture seule</span>
+                                                <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Adrès e-mail</p>
+                                                <span className="text-[10px] uppercase tracking-wider text-primary/40 dark:text-white/40 font-bold">Lekti sèlman</span>
                                             </div>
                                             <div className="relative">
                                                 <input
@@ -418,8 +418,8 @@ export default function ProfilePage() {
                                     ) : (
                                         <div className="flex flex-col w-full">
                                             <div className="flex items-center justify-between pb-2">
-                                                <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Numéro de téléphone</p>
-                                                <span className="text-[10px] uppercase tracking-wider text-primary/40 dark:text-white/40 font-bold">Lecture seule</span>
+                                                <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Nimewo telefòn</p>
+                                                <span className="text-[10px] uppercase tracking-wider text-primary/40 dark:text-white/40 font-bold">Lekti sèlman</span>
                                             </div>
                                             <div className="relative">
                                                 <input
@@ -435,7 +435,7 @@ export default function ProfilePage() {
 
                                     {user.email && (
                                         <div className="flex flex-col w-full">
-                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-2">Numéro de téléphone (Contact)</p>
+                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-2">Nimewo telefòn (Kontak)</p>
                                             <input
                                                 className="form-input flex w-full rounded-xl text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-primary/10 bg-white dark:bg-background-dark/50 h-12 px-4 text-base font-normal"
                                                 type="tel"
@@ -448,7 +448,7 @@ export default function ProfilePage() {
 
                                     <div className="flex flex-col w-full">
                                         <div className="flex items-center gap-2 pb-2">
-                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Numéro de téléphone</p>
+                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Nimewo telefòn</p>
                                             <span className="material-symbols-outlined text-emerald-500 text-sm">smartphone</span>
                                         </div>
 
@@ -470,7 +470,7 @@ export default function ProfilePage() {
                                                         <div className="px-3 pb-2 pt-1 border-b border-black/5 dark:border-white/5 sticky top-0 bg-white dark:bg-[#18181b] z-10">
                                                             <input
                                                                 type="text"
-                                                                placeholder="Rechercher..."
+                                                                placeholder="Chache..."
                                                                 value={countrySearch}
                                                                 onChange={(e) => setCountrySearch(e.target.value)}
                                                                 className="w-full h-10 px-3 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-xl text-xs font-bold text-zinc-900 dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30 focus:outline-none"
@@ -530,35 +530,35 @@ export default function ProfilePage() {
                                             <span className="material-symbols-outlined text-primary text-xl">share_reviews</span>
                                         </div>
                                         <div>
-                                            <h2 className="text-primary dark:text-white text-xl font-bold leading-tight">Accès Partagé</h2>
-                                            <p className="text-[10px] text-primary/40 dark:text-white/40 uppercase font-black tracking-widest mt-1">Lien de connexion temporaire</p>
+                                            <h2 className="text-primary dark:text-white text-xl font-bold leading-tight">Aksè Pataje</h2>
+                                            <p className="text-[10px] text-primary/40 dark:text-white/40 uppercase font-black tracking-widest mt-1">Lyen koneksyon tanporè</p>
                                         </div>
                                     </div>
                                     
                                     <div className="space-y-6">
                                         <div className="bg-white dark:bg-background-dark/50 p-6 rounded-xl border border-primary/5 shadow-sm">
                                             <p className="text-sm text-primary/70 dark:text-white/70 leading-relaxed mb-6">
-                                                Vous pouvez générer un lien spécial pour permettre à une personne d'accéder à vos cours <span className="font-bold text-primary dark:text-white">sans partager votre mot de passe</span>.
+                                                Ou ka kreye yon lyen espesyal pou pèmèt yon lòt moun gen aksè ak kour ou yo <span className="font-bold text-primary dark:text-white">san ou pa pataje modpas ou</span>.
                                             </p>
                                             
                                             <ul className="space-y-3 mb-8">
                                                 <li className="flex items-start gap-2 text-xs text-primary/60 dark:text-white/60">
                                                     <span className="material-symbols-outlined text-sm text-green-500">check_circle</span>
-                                                    <span>Valide pendant 24 heures uniquement.</span>
+                                                    <span>Li bon pou 24 èdtan sèlman.</span>
                                                 </li>
                                                 <li className="flex items-start gap-2 text-xs text-primary/60 dark:text-white/60">
                                                     <span className="material-symbols-outlined text-sm text-green-500">check_circle</span>
-                                                    <span>Usage unique (expire après la première connexion).</span>
+                                                    <span>Li sèvi yon sèl fwa (li ekspire apre premye koneksyon an).</span>
                                                 </li>
                                                 <li className="flex items-start gap-2 text-xs text-primary/60 dark:text-white/60">
                                                     <span className="material-symbols-outlined text-sm text-primary/40">info</span>
-                                                    <span>Quota : {2 - tempLinksCount} lien(s) restant(s).</span>
+                                                    <span>Kota : {2 - tempLinksCount} lyen ki rete.</span>
                                                 </li>
                                             </ul>
 
                                             {generatedLink ? (
                                                 <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                                    <p className="text-[10px] uppercase font-bold text-primary/40 dark:text-white/40 tracking-widest">Votre lien généré :</p>
+                                                    <p className="text-[10px] uppercase font-bold text-primary/40 dark:text-white/40 tracking-widest">Lyen ou kreye a :</p>
                                                     <div className="relative group">
                                                         <input
                                                             readOnly
@@ -570,10 +570,10 @@ export default function ProfilePage() {
                                                             className="absolute right-2 top-2 h-8 px-4 bg-primary text-white text-[10px] font-bold rounded-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2 shadow-sm"
                                                         >
                                                             <span className="material-symbols-outlined text-xs">{linkCopied ? 'check' : 'content_copy'}</span>
-                                                            <span>{linkCopied ? 'Copié' : 'Copier'}</span>
+                                                            <span>{linkCopied ? 'Kopye' : 'Kopye'}</span>
                                                         </button>
                                                     </div>
-                                                    <p className="text-[10px] text-red-500 italic">Attention : ce lien ne peut être utilisé qu'une seule fois.</p>
+                                                    <p className="text-[10px] text-red-500 italic">Atansyon : ou ka sèvi ak lyen sa a yon sèl fwa sèlman.</p>
                                                 </div>
                                             ) : (
                                                 <button
@@ -586,7 +586,7 @@ export default function ProfilePage() {
                                                     ) : (
                                                         <span className="material-symbols-outlined">add_link</span>
                                                     )}
-                                                    <span>{tempLinksCount >= 2 ? 'Quota de liens atteint' : 'Générer un lien d\'accès unique'}</span>
+                                                    <span>{tempLinksCount >= 2 ? 'Kota lyen yo rive nan limit' : 'Kreye yon lyen aksè espesyal'}</span>
                                                 </button>
                                             )}
                                         </div>
@@ -596,22 +596,22 @@ export default function ProfilePage() {
 
                             {/* Activity Summary */}
                             <section>
-                                <h2 className="text-primary dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] mb-6">Résumé de l'activité</h2>
+                                <h2 className="text-primary dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] mb-6">Rezime aktivite</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="bg-white dark:bg-background-dark/50 border border-primary/10 p-5 rounded-xl">
                                         <span className="material-symbols-outlined text-primary/40 mb-2">menu_book</span>
                                         <p className="text-2xl font-bold text-primary dark:text-white">{stats.coursesRaw}</p>
-                                        <p className="text-sm text-primary/60 dark:text-white/60">Cours possédés</p>
+                                        <p className="text-sm text-primary/60 dark:text-white/60">Kou ou genyen</p>
                                     </div>
                                     <div className="bg-white dark:bg-background-dark/50 border border-primary/10 p-5 rounded-xl">
                                         <span className="material-symbols-outlined text-primary/40 mb-2">auto_stories</span>
                                         <p className="text-2xl font-bold text-primary dark:text-white">{stats.ebooks}</p>
-                                        <p className="text-sm text-primary/60 dark:text-white/60">Ebooks possédés</p>
+                                        <p className="text-sm text-primary/60 dark:text-white/60">Ebook ou genyen</p>
                                     </div>
                                     <div className="bg-white dark:bg-background-dark/50 border border-primary/10 p-5 rounded-xl">
                                         <span className="material-symbols-outlined text-primary/40 mb-2">event_available</span>
                                         <p className="text-2xl font-bold text-primary dark:text-white">{stats.bookings}</p>
-                                        <p className="text-sm text-primary/60 dark:text-white/60">Réservations actives</p>
+                                        <p className="text-sm text-primary/60 dark:text-white/60">Rezèvasyon ki aktif</p>
                                     </div>
                                 </div>
                             </section>
@@ -623,14 +623,14 @@ export default function ProfilePage() {
                                     disabled={saving}
                                     className="w-full md:w-auto flex min-w-[160px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-8 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity disabled:opacity-50"
                                 >
-                                    <span>{saving ? 'Enregistrement...' : 'Enregistrer les modifications'}</span>
+                                    <span>{saving ? 'N ap sove...' : 'Sove chanjman yo'}</span>
                                 </button>
                                 <button
                                     onClick={handleLogout}
                                     className="flex items-center gap-2 text-[#d32f2f] hover:text-red-700 font-semibold text-sm transition-colors group"
                                 >
                                     <span className="material-symbols-outlined text-lg">logout</span>
-                                    <span>Se déconnecter</span>
+                                    <span>Dekonekte</span>
                                 </button>
                             </section>
                         </div>

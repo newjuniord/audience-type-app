@@ -21,26 +21,26 @@ export default function DashboardFooter() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                         <div className="space-y-3">
                             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Plateforme</p>
-                            <Link href="/products" className="block text-sm text-white/50 hover:text-white transition-colors">Produits</Link>
-                            <Link href="/dashboard" className="block text-sm text-white/50 hover:text-white transition-colors">Mon contenu</Link>
+                            <Link href="/products" className="block text-sm text-white/50 hover:text-white transition-colors">Pwodui</Link>
+                            <Link href="/dashboard" className="block text-sm text-white/50 hover:text-white transition-colors">Kontni mwen</Link>
                             <Link href="/consultation" className="block text-sm text-white/50 hover:text-white transition-colors">Konsiltasyon</Link>
                             <Link href="/coaching" className="block text-sm text-white/50 hover:text-white transition-colors">Coaching</Link>
                             <Link href="/services" className="block text-sm text-white/50 hover:text-white transition-colors">Sèvis Pratik</Link>
                         </div>
                         <div className="space-y-3">
-                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Compte</p>
-                            <Link href="/login" className="block text-sm text-white/50 hover:text-white transition-colors">Connexion</Link>
-                            <Link href="/dashboard/profile" className="block text-sm text-white/50 hover:text-white transition-colors">Profil</Link>
-                            <Link href="/dashboard/transactions" className="block text-sm text-white/50 hover:text-white transition-colors">Transactions</Link>
+                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Kont</p>
+                            <Link href="/login" className="block text-sm text-white/50 hover:text-white transition-colors">Koneksyon</Link>
+                            <Link href="/dashboard/profile" className="block text-sm text-white/50 hover:text-white transition-colors">Pwofil</Link>
+                            <Link href="/dashboard/transactions" className="block text-sm text-white/50 hover:text-white transition-colors">Tranzaksyon</Link>
                         </div>
                         <div className="space-y-3">
                             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Légal</p>
-                            <Link href="/privacy" className="block text-sm text-white/50 hover:text-white transition-colors">Confidentialité</Link>
-                            <Link href="/terms" className="block text-sm text-white/50 hover:text-white transition-colors">Conditions</Link>
-                            <Link href="/support" className="block text-sm text-white/50 hover:text-white transition-colors">Support</Link>
+                            <Link href="/privacy" className="block text-sm text-white/50 hover:text-white transition-colors">Konfidansyalite</Link>
+                            <Link href="/terms" className="block text-sm text-white/50 hover:text-white transition-colors">Kondisyon yo</Link>
+                            <Link href="/support" className="block text-sm text-white/50 hover:text-white transition-colors">Sipò</Link>
                         </div>
                         <div className="space-y-3">
-                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Réseaux</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Rezo</p>
                             <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors group">
                                 <svg className="w-4 h-4 group-hover:text-[#1877F2] transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                                 Facebook
@@ -63,7 +63,7 @@ export default function DashboardFooter() {
 
                 {/* Bottom bar */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-white/5">
-                    <p className="text-white/30 text-xs">© 2026 DJR Akademi. Tous droits réservés.</p>
+                    <p className="text-white/30 text-xs">© 2026 DJR Akademi. Tout dwa rezève.</p>
                     <p className="text-white/20 text-xs italic">"Mond lan Gen ase richès pou tout moun jwenn epi viv byen."</p>
                 </div>
             </div>

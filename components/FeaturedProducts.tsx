@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import CheckoutModal from "./CheckoutModal";
 
 export default function FeaturedProducts({
-    title = "Produits en vedette",
+    title = "Pwodui an vedèt",
     showBorder = true,
     initialProducts = []
 }: {
@@ -149,7 +149,7 @@ export default function FeaturedProducts({
                                     {product.isOwned && (
                                         <div className="absolute top-3 right-3 z-10">
                                             <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full bg-green-500/80 text-white border border-green-400/20 backdrop-blur-sm">
-                                                Possédé
+                                                Achte deja
                                             </span>
                                         </div>
                                     )}
@@ -165,7 +165,7 @@ export default function FeaturedProducts({
                                             onClick={() => handleProductClick(product)}
                                         >
                                             <span>
-                                                {product.isOwned ? "Accéder" : "Acheter"}
+                                                {product.isOwned ? "Antre" : "Achte"}
                                             </span>
                                         </BubbleButton>
                                     </div>
@@ -174,7 +174,7 @@ export default function FeaturedProducts({
                         ))}
                         {filteredProducts.length === 0 && (
                             <div className="col-span-full flex items-center justify-center py-20">
-                                <p className="text-white/30 uppercase font-bold tracking-widest"><span>Aucun produit trouvé dans cette catégorie</span></p>
+                                <p className="text-white/30 uppercase font-bold tracking-widest"><span>Nou pa jwenn okenn pwodui nan kategori sa a</span></p>
                             </div>
                         )}
                     </div>
@@ -184,7 +184,7 @@ export default function FeaturedProducts({
                                 onClick={handleLoadMore}
                                 className="group flex items-center gap-2 text-sm font-bold uppercase tracking-widest border border-white/20 px-10 py-4 rounded-full hover:border-primary/60 hover:bg-primary/10 hover:text-white transition-all text-white/60"
                             >
-                                <span>Voir plus</span>
+                                <span>Gade plis</span>
                                 <span className="material-symbols-outlined text-sm notranslate transition-transform group-hover:translate-x-1" translate="no">trending_flat</span>
                             </button>
                         </div>
@@ -210,7 +210,7 @@ export default function FeaturedProducts({
                             />
                             <div className="absolute top-6 left-6 z-10">
                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 bg-emerald-600 text-white border border-emerald-400/20 rounded-full shadow-2xl">
-                                    Session 1-sur-1 en Direct
+                                    Sesyon 1-sou-1 an Dirèk
                                 </span>
                             </div>
                         </div>
@@ -250,7 +250,7 @@ export default function FeaturedProducts({
                                     className="px-12 py-5 text-base font-bold tracking-wider"
                                 >
                                     <span>
-                                        {consultationProduct.isOwned ? "Déjà réservé (Accéder)" : "Réserver ma séance"}
+                                        {consultationProduct.isOwned ? "Achte deja (Antre)" : "Rezeve sesyon m kounye a"}
                                     </span>
                                 </BubbleButton>
                             </div>

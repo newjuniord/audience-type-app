@@ -263,8 +263,8 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
       if (cleanNumber.length !== expectedLength) {
         setError(
           selectedCountry.code === 'HT'
-            ? `Le numéro pour Haïti doit comporter exactement 8 chiffres (ex: 34567890). Tu as saisi ${cleanNumber.length} chiffre(s).`
-            : `Le numéro pour ${selectedCountry.name} doit comporter exactement ${expectedLength} chiffres. Tu as saisi ${cleanNumber.length} chiffre(s).`
+            ? `Nimewo pou Ayiti a dwe gen 8 chif ladan l (egz: 34567890). Ou antre ${cleanNumber.length} chif.`
+            : `Nimewo pou ${selectedCountry.name} la dwe gen presizeman ${expectedLength} chif ladan l. Ou antre ${cleanNumber.length} chif.`
         );
         return;
       }
@@ -286,7 +286,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
 
       if (checkData.exists && checkData.ownsCourse) {
         setAlreadyOwnedMessage(
-          "Tu possèdes déjà ce produit ! 🎉 Saisis le code reçu pour y accéder directement."
+          "Ou gen pwodui sa a deja ! 🎉 Antre kòd ou resevwa a pou w ka antre dirèkteman."
         );
       } else {
         setAlreadyOwnedMessage(null);
@@ -312,7 +312,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
 
         if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
           setWhatsappRedirect({
-              url: `https://wa.me/${genData.businessPhone}?text=${encodeURIComponent("Bonjour, je souhaite recevoir mon code de vérification.")}`,
+              url: `https://wa.me/${genData.businessPhone}?text=${encodeURIComponent("Bonjou, mwen ta renmen resevwa kòd verifikasyon mwen an.")}`,
               businessPhone: `+${genData.businessPhone}`
           });
         } else {
@@ -331,7 +331,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
         window.location.reload();
         return;
       }
-      setError(err.message || "Une erreur est survenue. Veuillez réessayer.");
+      setError(err.message || "Gen yon erè ki fèt. Tanpri reyezi ankò.");
     } finally {
       setIsLoading(false);
     }
@@ -362,10 +362,10 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
             setMagicLinkToken(null);
           } catch (err) {
             console.error("Erreur de connexion via magic link", err);
-            setVerificationError("Échec de la connexion automatique.");
+            setVerificationError("Koneksyon otomatik la echwe.");
           }
         } else if (data.status === "expired") {
-          setVerificationError("Le lien a expiré. Veuillez recommencer.");
+          setVerificationError("Lyen an ekspire. Tanpri rekòmanse.");
           setMagicLinkToken(null);
         }
       }
@@ -374,7 +374,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
     // Timeout local de 10 minutes (600000 ms)
     timeoutId = setTimeout(() => {
       unsubscribe();
-      setVerificationError("Délai d'attente dépassé (10 minutes).");
+      setVerificationError("Tan datant lan depase (10 minit).");
       setMagicLinkToken(null);
     }, 10 * 60 * 1000);
 
@@ -386,7 +386,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
 
   const handleVerifyCodeSubmit = async () => {
     if (!verificationCode || verificationCode.length !== 4) {
-      setVerificationError("Le code doit comporter exactement 4 chiffres.");
+      setVerificationError("Kòd la dwe gen 4 chif presizeman.");
       return;
     }
     setIsVerifyingCode(true);
@@ -405,7 +405,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
       if (alreadyOwnedMessage) setModalStep('success');
       else setModalStep('payment');
     } catch (err: any) {
-      setVerificationError(err.message || "Code de vérification invalide.");
+      setVerificationError(err.message || "Kòd verifikasyon sa a pa bon.");
     } finally {
       setIsVerifyingCode(false);
     }
@@ -441,7 +441,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
 
       if (!pendingRes.ok) {
         const errorData = await pendingRes.json();
-        throw new Error(errorData.error || "Échec de l'initialisation de la commande");
+        throw new Error(errorData.error || "Echèk nan kòmanse kòmand lan");
       }
 
       const { userId, userEmail, userName, orderId } = await pendingRes.json();
@@ -458,16 +458,16 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
             orderId,
             amount: amountValue,
             description: product.title || product.headline,
-            customerFirstName: userName || "Client",
+            customerFirstName: userName || "Kliyan",
             userId: userId,
           }),
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Échec de l'initialisation du paiement Moncash");
+        if (!response.ok) throw new Error(data.error || "Echèk nan kòmanse peman Moncash la");
         const redirectUrl = data.redirectUrl || data.redirect_url || data.payment_link;
         if (redirectUrl) window.location.href = redirectUrl;
         else if (data.payment_token?.redirect_url) window.location.href = data.payment_token.redirect_url;
-        else throw new Error("Lien de redirection MonCash introuvable");
+        else throw new Error("Nou pa jwenn lyen Moncash la");
 
       } else if (method === 'lemonsqueezy') {
         const response = await fetch("/api/lemonsqueezy/checkout", {
@@ -481,15 +481,15 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
           }),
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Échec de la création de la session de paiement");
+        if (!response.ok) throw new Error(data.error || "Echèk nan kòmanse sesyon peman an");
         if (data.checkoutUrl) {
           await openCheckout(data.checkoutUrl, orderId, data.sessionExpiresAtMs);
         } else {
-          throw new Error("Aucun lien de paiement retourné");
+          throw new Error("Nou pa resevwa okenn lyen peman");
         }
       }
     } catch (err: any) {
-      setError(err.message || "Une erreur est survenue lors de l'initialisation du paiement.");
+      setError(err.message || "Gen yon erè ki fèt pandan n ap kòmanse peman an.");
     } finally {
       setIsLoading(false);
     }
@@ -522,9 +522,6 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
             onTouchStart={onDragStart}
             onTouchMove={onDragMove}
             onTouchEnd={onDragEnd}
-            onPointerDown={onDragStart}
-            onPointerMove={onDragMove}
-            onPointerUp={onDragEnd}
           >
             <div
               className="rounded-full bg-white/25 transition-all duration-150"
@@ -547,8 +544,8 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                       <span className="text-xl">🚀</span>
                     </div>
                     <div>
-                      <h2 className="text-lg lg:text-xl font-black leading-tight">Accès instantané</h2>
-                      <p className="text-xs text-white/40">Aucun mot de passe requis</p>
+                      <h2 className="text-lg lg:text-xl font-black leading-tight">Aksè rapid</h2>
+                      <p className="text-xs text-white/40">Ou pa bezwen modpas</p>
                     </div>
                   </div>
                   <button onClick={handleClose} className="hidden lg:flex size-8 rounded-full bg-white/5 hover:bg-white/10 items-center justify-center transition-colors shrink-0 ml-2">
@@ -573,7 +570,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                 <form onSubmit={handleContactSubmit} className="space-y-4">
                   {(contactMethod === 'phone' || contactMethod === 'whatsapp') ? (
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-white/50 uppercase tracking-widest">Numéro de téléphone</label>
+                      <label className="text-xs font-bold text-white/50 uppercase tracking-widest">Nimewo telefòn</label>
                       <div className="flex gap-2">
                         <div className="relative">
                           <button ref={countryBtnRef} type="button" onClick={() => showCountryDropdown ? setShowCountryDropdown(false) : openCountryDropdown()} className="h-full min-w-[90px] px-3 py-3.5 bg-white/5 border border-white/10 rounded-xl flex items-center gap-1.5 hover:bg-white/10 transition-colors text-sm font-bold whitespace-nowrap">
@@ -583,7 +580,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                           </button>
                           {showCountryDropdown && typeof window !== 'undefined' && createPortal(
                             <div ref={countryDropdownRef} className="fixed w-64 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-[9999] overflow-hidden" style={{ left: dropdownPos.left, ...(dropdownPos.above ? { bottom: window.innerHeight - dropdownPos.top, top: 'auto' } : { top: dropdownPos.top }) }}>
-                              <div className="p-2 border-b border-white/5"><input type="text" value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)} placeholder="Pays ou indicatif (+509, 33...)" autoFocus className="w-full px-3 py-2 bg-white/5 rounded-lg text-xs placeholder:text-white/30 focus:outline-none bg-transparent text-white" /></div>
+                              <div className="p-2 border-b border-white/5"><input type="text" value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)} placeholder="Peyi oswa kòd (+509, 33...)" autoFocus className="w-full px-3 py-2 bg-white/5 rounded-lg text-xs placeholder:text-white/30 focus:outline-none bg-transparent text-white" /></div>
                               <div className="max-h-56 overflow-y-auto">
                                 {COUNTRIES.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.dial.includes(countrySearch)).map((country) => (
                                   <button key={country.code} type="button" onClick={() => { setSelectedCountry(country); setShowCountryDropdown(false); setCountrySearch(''); }} className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-white/5 transition-colors text-left ${selectedCountry.code === country.code ? 'bg-orange-500/10 text-orange-400' : 'text-white/80'}`}>
@@ -596,18 +593,18 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                         </div>
                         <input type="tel" value={formatPhone(phone, selectedCountry.code)} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))} placeholder={selectedCountry.code === 'HT' ? '34 56 7890' : '## ## ## ##'} required autoFocus className="flex-1 px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all text-sm tracking-wide font-medium bg-transparent text-white" />
                       </div>
-                      <p className="text-[11px] text-white/30 pl-1">Tu recevras un {contactMethod === 'whatsapp' ? 'message WhatsApp' : 'SMS'} avec ton code d'accès.</p>
+                      <p className="text-[11px] text-white/30 pl-1">W ap resevwa yon {contactMethod === 'whatsapp' ? 'mesaj WhatsApp' : 'SMS'} avèk kòd aksè ou la.</p>
                     </div>
                   ) : (
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-white/50 uppercase tracking-widest">Adresse e-mail</label>
+                      <label className="text-xs font-bold text-white/50 uppercase tracking-widest">Adrès e-mail</label>
                       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ton@email.com" required autoFocus className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all text-sm bg-transparent text-white" />
-                      <p className="text-[11px] text-white/30 pl-1">Tu recevras un code d'accès par email.</p>
+                      <p className="text-[11px] text-white/30 pl-1">W ap resevwa yon kòd aksè nan e-mail ou.</p>
                     </div>
                   )}
 
                   <button type="submit" disabled={isLoading || (contactMethod === 'email' ? !email : !phone)} className="w-full py-4 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-white font-black rounded-xl text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-orange-500/20 flex items-center justify-center">
-                    {isLoading ? <div className="size-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : "Continuer →"}
+                    {isLoading ? <div className="size-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : "Kontinye →"}
                   </button>
                 </form>
               </>
@@ -617,8 +614,8 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
             {modalStep === 'verify_code' && (
               <div>
                 <div className="flex items-center justify-between mb-5">
-                  <button onClick={() => { setModalStep('contact'); setVerificationCode(''); setVerificationError(null); }} className="flex items-center gap-1 text-white/40 hover:text-white text-xs font-bold transition-colors"><svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/></svg> Retour</button>
-                  <p className="text-xs text-white/40 font-bold uppercase tracking-widest">Sécurité</p>
+                  <button onClick={() => { setModalStep('contact'); setVerificationCode(''); setVerificationError(null); }} className="flex items-center gap-1 text-white/40 hover:text-white text-xs font-bold transition-colors"><svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/></svg> Retounen</button>
+                  <p className="text-xs text-white/40 font-bold uppercase tracking-widest">Sekirite</p>
                   <button onClick={handleClose} className="hidden lg:flex size-7 rounded-full bg-white/5 hover:bg-white/10 items-center justify-center transition-colors"><svg className="size-3.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
                 <div className="text-center py-4">
@@ -627,11 +624,11 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                       <div className="size-16 bg-[#25D366]/10 border border-[#25D366]/20 rounded-2xl flex items-center justify-center mx-auto mb-4 relative">
                         <span className="text-3xl animate-pulse">✨</span>
                       </div>
-                      <h2 className="text-xl font-black mb-2 leading-tight uppercase">Vérifie WhatsApp</h2>
+                      <h2 className="text-xl font-black mb-2 leading-tight uppercase">Verifye WhatsApp ou</h2>
                       <div className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm mx-auto">
-                        Nous t'avons envoyé un <strong className="text-white">Lien Magique</strong> sécurisé sur WhatsApp.<br/><br/>
-                        <span className="text-orange-400 font-bold tracking-wider uppercase text-[10px]">Ne ferme pas cette page !</span><br/>
-                        Clique simplement sur le lien depuis ton téléphone et cette page se mettra à jour instantanément.
+                        Nou voye yon <strong className="text-white">Lyen Majik</strong> ki an sekirite nan WhatsApp ou.<br/><br/>
+                        <span className="text-orange-400 font-bold tracking-wider uppercase text-[10px]">Pa fèmen paj sa a !</span><br/>
+                        Klike sou lyen an depi sou telefòn ou epi paj sa a ap mete ajou otomatikman.
                       </div>
                       
                       <div className="flex justify-center mb-6">
@@ -642,19 +639,19 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                   ) : whatsappRedirect ? (
                     <>
                       <div className="size-16 bg-[#25D366]/10 border border-[#25D366]/20 rounded-2xl flex items-center justify-center mx-auto mb-4"><span className="text-3xl">📱</span></div>
-                      <h2 className="text-xl font-black mb-2 leading-tight uppercase">Ouvre WhatsApp !</h2>
+                      <h2 className="text-xl font-black mb-2 leading-tight uppercase">Louvri WhatsApp !</h2>
                       <div className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm mx-auto">
-                        Clique sur le bouton ci-dessous pour nous envoyer le message pré-rempli. <strong className="text-white">Le robot te répondra avec ton code !</strong>
+                        Klike sou bouton anba a pou w voye mesaj la. <strong className="text-white">Roba a ap reponn ou ak kòd ou a!</strong>
                       </div>
                       
                       <a href={whatsappRedirect.url} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 py-4 mb-4 bg-[#25D366] text-white font-black rounded-xl text-sm transition-all hover:bg-[#1ebd5a] shadow-lg shadow-[#25D366]/20">
                         <svg className="size-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
-                        Ouvrir WhatsApp
+                        Louvri WhatsApp
                       </a>
 
                       <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 mb-2 text-left">
                         <p className="text-xs text-white/50 leading-relaxed">
-                          <strong className="text-white">Autre appareil ?</strong> Si tu n'as pas WhatsApp sur cet écran, envoie le mot <strong className="text-[#25D366]">CODE</strong> sur notre numéro <strong className="text-white">WhatsApp</strong> ci-dessous depuis ton téléphone :
+                          <strong className="text-white">Lòt aparèy ?</strong> Si ou pa gen WhatsApp sou ekran sa a, voye mo <strong className="text-[#25D366]">KÒD</strong> nan nimewo <strong className="text-white">WhatsApp</strong> nou an anba a depi sou telefòn ou :
                         </p>
                         <div className="mt-2 flex items-center justify-between bg-black/20 rounded-lg p-3 border border-white/5">
                           <p className="text-xl font-black text-white tracking-widest font-mono">
@@ -667,7 +664,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                               navigator.clipboard.writeText(whatsappRedirect.businessPhone);
                               const target = e.currentTarget;
                               const originalHtml = target.innerHTML;
-                              target.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> Copié';
+                              target.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> Kopye';
                               target.classList.add('text-green-400', 'bg-green-400/10', 'border-green-400/20');
                               target.classList.remove('text-white/50', 'hover:text-white', 'bg-white/5', 'hover:bg-white/10', 'border-transparent');
                               setTimeout(() => {
@@ -677,24 +674,24 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                               }, 2000);
                             }}
                             className="h-8 px-3 rounded-md bg-white/5 hover:bg-white/10 border border-transparent flex items-center justify-center gap-1.5 transition-all text-white/50 hover:text-white text-xs font-bold uppercase tracking-wider"
-                            title="Copier le numéro"
+                            title="Kopye nimewo a"
                           >
-                            <span className="material-symbols-outlined text-sm">content_copy</span> Copier
+                            <span className="material-symbols-outlined text-sm">content_copy</span> Kopye
                           </button>
                         </div>
                       </div>
                       
                       <div className="text-center w-full mt-4 border-t border-white/10 pt-6">
-                        <p className="text-xs text-white/50 mb-3 font-bold uppercase tracking-wider">Étape 2</p>
-                        <p className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm mx-auto">Une fois le code reçu sur WhatsApp, tapez-le ici :</p>
+                        <p className="text-xs text-white/50 mb-3 font-bold uppercase tracking-wider">Etap 2</p>
+                        <p className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm mx-auto">Kou ou resevwa kòd la sou WhatsApp, antre li la :</p>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="size-16 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20"><span className="text-3xl">🔑</span></div>
-                      <h2 className="text-xl font-black mb-2 leading-tight uppercase">Code de vérification</h2>
+                      <h2 className="text-xl font-black mb-2 leading-tight uppercase">Kòd verifikasyon</h2>
                       <div className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm mx-auto">
-                        Nous t'avons envoyé un code à 4 chiffres. Renseigne-le ci-dessous pour confirmer ton identité :
+                        Nou voye yon kòd 4 chif ba ou. Antre li anba a pou nou ka konfime se ou menm :
                       </div>
                     </>
                   )}
@@ -707,7 +704,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                     {verificationError && <p className="text-[11px] text-red-500 mt-2 font-semibold">⚠️ {verificationError}</p>}
                   </div>
                       <button onClick={handleVerifyCodeSubmit} disabled={isVerifyingCode || verificationCode.length !== 4} className="w-full h-14 bg-gradient-to-r from-orange-500 to-red-500 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
-                        {isVerifyingCode ? <div className="size-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"/> : "Valider le code"}
+                        {isVerifyingCode ? <div className="size-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"/> : "Valide kòd la"}
                       </button>
                     </>
                   )}
@@ -719,9 +716,9 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
             {modalStep === 'payment' && (
               <div>
                 <div className="flex items-center justify-between mb-5">
-                  {!currentUser && <button onClick={() => { setModalStep('contact'); setError(null); }} className="flex items-center gap-1 text-white/40 hover:text-white text-xs font-bold transition-colors"><svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/></svg> Retour</button>}
+                  {!currentUser && <button onClick={() => { setModalStep('contact'); setError(null); }} className="flex items-center gap-1 text-white/40 hover:text-white text-xs font-bold transition-colors"><svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/></svg> Retounen</button>}
                   {currentUser && <div />}
-                  <p className="text-xs text-white/40 font-bold uppercase tracking-widest">Paiement</p>
+                  <p className="text-xs text-white/40 font-bold uppercase tracking-widest">Peman</p>
                   <button onClick={handleClose} className="hidden lg:flex size-7 rounded-full bg-white/5 hover:bg-white/10 items-center justify-center transition-colors"><svg className="size-3.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
 
@@ -734,7 +731,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
 
                 {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium px-4 py-3 rounded-xl mb-4 text-center">{error}</div>}
 
-                <p className="text-xs text-white/40 text-center mb-4 font-semibold uppercase tracking-widest">Comment veux-tu payer ?</p>
+                <p className="text-xs text-white/40 text-center mb-4 font-semibold uppercase tracking-widest">Kijan ou vle peye ?</p>
 
                 <div className="space-y-3">
                   {(selectedCountry.code === 'HT' || product.priceHTG > 0) && (
@@ -742,7 +739,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                       <img src="/images/moncash-logo.png" alt="MonCash" className="size-12 object-contain rounded-xl shadow-lg shrink-0" />
                       <div className="text-left flex-1">
                         <p className="font-black text-sm">MonCash ({product.priceHTG} HTG)</p>
-                        <p className="text-xs text-white/50">Paiement mobile haïtien</p>
+                        <p className="text-xs text-white/50">Peman mobil ayisyen</p>
                       </div>
                     </button>
                   )}
@@ -750,13 +747,13 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                   <button onClick={() => handlePurchase('lemonsqueezy')} disabled={isLoading} className="w-full flex items-center gap-4 p-4 bg-white/[0.03] border border-white/10 hover:border-white/30 hover:bg-white/[0.06] rounded-2xl transition-all active:scale-95 disabled:opacity-50 group">
                     <div className="size-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shrink-0"><span className="text-xl">💳</span></div>
                     <div className="text-left flex-1">
-                      <p className="font-black text-sm">Carte bancaire · PayPal</p>
+                      <p className="font-black text-sm">Kat bankè · PayPal</p>
                       <p className="text-xs text-white/50">Visa, Mastercard, Amex</p>
                     </div>
                   </button>
                 </div>
 
-                {isLoading && <div className="flex items-center justify-center gap-2 mt-4 text-white/40 text-xs"><div className="size-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"/> Traitement...</div>}
+                {isLoading && <div className="flex items-center justify-center gap-2 mt-4 text-white/40 text-xs"><div className="size-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"/> N ap trete...</div>}
               </div>
             )}
 
@@ -766,16 +763,16 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                 {alreadyOwnedMessage ? (
                   <>
                     <div className="size-16 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/30"><span className="text-3xl">🎉</span></div>
-                    <h2 className="text-xl font-black mb-2 leading-tight uppercase">Tu possèdes déjà ce produit !</h2>
+                    <h2 className="text-xl font-black mb-2 leading-tight uppercase">Ou gen pwodui sa a deja !</h2>
                     <p className="text-sm text-white/60 mb-6">{alreadyOwnedMessage}</p>
-                    <button onClick={() => window.location.href = tempLink || "/dashboard"} className="w-full h-14 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"><span className="material-symbols-outlined text-lg">login</span> Accéder</button>
+                    <button onClick={() => window.location.href = tempLink || "/dashboard"} className="w-full h-14 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"><span className="material-symbols-outlined text-lg">login</span> Antre</button>
                   </>
                 ) : (
                   <>
                     <div className="size-16 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4"><span className="text-3xl">{(contactMethod === 'phone' || contactMethod === 'whatsapp') ? '📱' : '📬'}</span></div>
-                    <h2 className="text-xl font-black mb-2">{(contactMethod === 'phone' || contactMethod === 'whatsapp') ? 'Vérifie tes messages !' : 'Vérifie tes e-mails !'}</h2>
-                    <p className="text-sm text-white/50 mb-6 text-center">{(contactMethod === 'phone' || contactMethod === 'whatsapp') ? <><span className="text-white font-bold">{selectedCountry.dial} {phone}</span> — ton lien arrive sous peu.</> : <>Lien envoyé à <span className="text-white font-bold">{email}</span>.</>}</p>
-                    <button onClick={() => { setModalStep('contact'); setEmail(''); setPhone(''); }} className="text-xs text-orange-400 underline hover:text-orange-300 transition-colors">Utiliser une autre méthode</button>
+                    <h2 className="text-xl font-black mb-2">{(contactMethod === 'phone' || contactMethod === 'whatsapp') ? 'Verifye mesaj ou yo !' : 'Verifye e-mail ou yo !'}</h2>
+                    <p className="text-sm text-white/50 mb-6 text-center">{(contactMethod === 'phone' || contactMethod === 'whatsapp') ? <><span className="text-white font-bold">{selectedCountry.dial} {phone}</span> — lyen ou an ap rive talè konsa.</> : <>Lyen an voye nan <span className="text-white font-bold">{email}</span>.</>}</p>
+                    <button onClick={() => { setModalStep('contact'); setEmail(''); setPhone(''); }} className="text-xs text-orange-400 underline hover:text-orange-300 transition-colors">Itilize yon lòt fason</button>
                   </>
                 )}
               </div>
@@ -789,9 +786,9 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
           <div className="bg-[#1a1a1a] border border-red-500/30 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl shadow-red-500/20 animate-in fade-in zoom-in duration-300">
             <div className="size-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">⏱️</div>
-            <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Session expirée</h3>
-            <p className="text-sm text-white/60 mb-8 leading-relaxed">Le temps alloué pour votre paiement est écoulé. Veuillez rafraîchir la page pour générer une nouvelle session sécurisée.</p>
-            <button onClick={() => window.location.reload()} className="w-full h-14 bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-white font-black uppercase tracking-wider text-sm rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2">Recharger la page</button>
+            <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Sesyon an ekspire</h3>
+            <p className="text-sm text-white/60 mb-8 leading-relaxed">Tan pou w fè peman an depase. Tanpri rechaje paj la pou w ka kòmanse yon lòt sesyon an sekirite.</p>
+            <button onClick={() => window.location.reload()} className="w-full h-14 bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-white font-black uppercase tracking-wider text-sm rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2">Rechaje paj la</button>
           </div>
         </div>
       )}

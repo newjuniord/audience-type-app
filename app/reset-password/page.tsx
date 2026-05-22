@@ -1,11 +1,11 @@
 "use client";
-
+ 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { confirmPasswordReset } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import Link from "next/link";
-
+ 
 function ResetPasswordForm() {
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -18,25 +18,25 @@ function ResetPasswordForm() {
     
     // Firebase inclut un paramètre 'oobCode' dans le lien envoyé par e-mail
     const oobCode = searchParams.get("oobCode");
-
+ 
     const handleReset = async (e: React.FormEvent) => {
         e.preventDefault();
         
         if (!oobCode) {
-            setError("Le code de réinitialisation est manquant ou invalide.");
+            setError("Kòd pou chanje modpas la pa bon oswa li manke.");
             return;
         }
-
+ 
         if (newPassword !== confirmPassword) {
-            setError("Les mots de passe ne correspondent pas.");
+            setError("Modpas yo pa menm.");
             return;
         }
-
+ 
         if (newPassword.length < 6) {
-            setError("Le mot de passe doit contenir au moins 6 caractères.");
+            setError("Modpas la dwe gen omwen 6 karaktè.");
             return;
         }
-
+ 
         setIsLoading(true);
         setError(null);
         
@@ -46,15 +46,15 @@ function ResetPasswordForm() {
         } catch (err: any) {
             console.error("Password reset error:", err);
             if (err.code === "auth/invalid-action-code" || err.code === "auth/expired-action-code") {
-                setError("Le lien de réinitialisation est invalide ou a expiré. Veuillez refaire une demande.");
+                setError("Lyen an pa bon oswa li ekspire. Tanpri fè yon lòt demann.");
             } else {
-                setError("Une erreur est survenue. Veuillez réessayer.");
+                setError("Gen yon erè ki fèt. Tanpri reyezi.");
             }
         } finally {
             setIsLoading(false);
         }
     };
-
+ 
     if (success) {
         return (
             <div className="flex flex-col items-center justify-center text-center p-8 border border-primary/10 dark:border-white/10 rounded-2xl bg-white/50 dark:bg-white/5 backdrop-blur-sm">
@@ -63,20 +63,20 @@ function ResetPasswordForm() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                 </div>
-                <h2 className="text-2xl font-black tracking-tight mb-2 uppercase">Mot de passe modifié</h2>
+                <h2 className="text-2xl font-black tracking-tight mb-2 uppercase">Modpas la chanje</h2>
                 <p className="text-primary/60 dark:text-white/60 mb-8">
-                    Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.
+                    Modpas ou a chanje avèk siksè. Ou ka konekte kounye a avèk nouvo modpas ou a.
                 </p>
                 <Link 
                     href="/login"
                     className="w-full py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center"
                 >
-                    Retour à la connexion
+                    Tounen nan koneksyon
                 </Link>
             </div>
         );
     }
-
+ 
     return (
         <form onSubmit={handleReset} className="flex flex-col gap-4 p-[20px] border border-primary/10 dark:border-white/10 rounded-2xl bg-white/50 dark:bg-white/5 backdrop-blur-sm">
             {error && (
@@ -87,12 +87,12 @@ function ResetPasswordForm() {
             
             {!oobCode && !error && (
                 <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-sm font-medium text-center">
-                    Le lien semble invalide. Assurez-vous d'avoir cliqué sur le lien complet dans votre e-mail.
+                    Lyen an sanble pa bon. Asire w ou klike sou tout lyen ki nan imèl ou a.
                 </div>
             )}
-
+ 
             <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Nouveau mot de passe</label>
+                <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Nouvo modpas</label>
                 <input 
                     type="password" 
                     value={newPassword}
@@ -105,7 +105,7 @@ function ResetPasswordForm() {
             </div>
             
             <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Confirmer le nouveau mot de passe</label>
+                <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Konfime nouvo modpas la</label>
                 <input 
                     type="password" 
                     value={confirmPassword}
@@ -116,7 +116,7 @@ function ResetPasswordForm() {
                     minLength={6}
                 />
             </div>
-
+ 
             <button 
                 type="submit"
                 disabled={isLoading || !oobCode}
@@ -125,7 +125,7 @@ function ResetPasswordForm() {
                 {isLoading ? (
                     <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                    "Réinitialiser le mot de passe"
+                    "Chanje modpas la"
                 )}
             </button>
             
@@ -134,13 +134,13 @@ function ResetPasswordForm() {
                     href="/login"
                     className="text-sm text-primary/60 dark:text-white/60 hover:text-primary dark:hover:text-white transition-colors"
                 >
-                    Retour à la connexion
+                    Tounen nan koneksyon
                 </Link>
             </div>
         </form>
     );
 }
-
+ 
 export default function ResetPasswordPage() {
     return (
         <div className="flex h-screen w-full bg-white dark:bg-background-dark text-primary dark:text-white overflow-hidden items-center justify-center p-4">
@@ -151,16 +151,16 @@ export default function ResetPasswordPage() {
                     </div>
                     <span className="text-xl font-black tracking-tighter uppercase italic">DJR Akademi</span>
                 </Link>
-
+ 
                 <div className="mb-8 text-center">
                     <h1 className="text-3xl font-black tracking-tight mb-2 uppercase">
-                        Nouveau mot de passe
+                        Nouvo modpas
                     </h1>
                     <p className="text-primary/60 dark:text-white/60 text-sm">
-                        Créez un nouveau mot de passe sécurisé pour votre compte.
+                        Kreye yon nouvo modpas ki an sekirite pou kont ou.
                     </p>
                 </div>
-
+ 
                 <Suspense fallback={
                     <div className="flex justify-center p-8">
                         <div className="h-8 w-8 border-4 border-black dark:border-white border-t-transparent rounded-full animate-spin"></div>

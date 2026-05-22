@@ -71,7 +71,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
         }
 
         if (step === "code" && item.requiresInvitation && !invitationCode.trim()) {
-            setErrorMessage("Veuillez entrer un code d'invitation.");
+            setErrorMessage("Tanpri antre yon kòd envitasyon.");
             setStep("error");
             return;
         }
@@ -87,7 +87,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                     giftId: item.kadoId,
                     userId: user.uid,
                     userEmail: user.email,
-                    userName: user.displayName || "Utilisateur",
+                    userName: user.displayName || "Itilizatè",
                     invitationCode: invitationCode.trim(),
                 }),
             });
@@ -95,7 +95,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.error || "Une erreur s'est produite");
+                throw new Error(data.error || "Gen yon erè ki pase");
             }
 
             switch (data.result) {
@@ -103,11 +103,11 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                     setStep("success");
                     break;
                 case "already_enrolled":
-                    setErrorMessage("Vous possédez déjà ce produit.");
+                    setErrorMessage("Ou gen pwodui sa a deja.");
                     setStep("error");
                     break;
                 case "invalid_code":
-                    setErrorMessage("Code d'invitation incorrect.");
+                    setErrorMessage("Kòd envitasyon an pa kòrèk.");
                     setStep("error");
                     break;
                 case "missing_code":
@@ -116,19 +116,19 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                     break;
                 case "inactive":
                 case "expired":
-                    setErrorMessage("Ce cadeau n'est plus disponible.");
+                    setErrorMessage("Kado sa a pa disponib ankò.");
                     setStep("error");
                     break;
                 case "max_uses_reached":
-                    setErrorMessage("La limite d'utilisation de ce cadeau a été atteinte.");
+                    setErrorMessage("Limit itilizasyon kado sa a rive nan bout li.");
                     setStep("error");
                     break;
                 default:
-                    setErrorMessage("Erreur inconnue.");
+                    setErrorMessage("Erè enkoni.");
                     setStep("error");
             }
         } catch (e: any) {
-            setErrorMessage(e.message || "Une erreur de connexion est survenue.");
+            setErrorMessage(e.message || "Gen yon erè koneksyon ki pase.");
             setStep("error");
         }
     };
@@ -225,7 +225,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                     <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/50 to-transparent" />
                     <div className="absolute bottom-4 left-6 right-6">
                         <span className="inline-block px-3 py-1 bg-orange-500/90 text-white text-[10px] font-black uppercase tracking-wider rounded-full mb-2 shadow-lg">
-                            Kado Spécial
+                            Kado Espesyal
                         </span>
                         <h3 className="font-black text-2xl md:text-2xl text-white leading-tight drop-shadow-md">{item.title}</h3>
                     </div>
@@ -236,13 +236,13 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                     {step === "initial" && (
                         <div className="space-y-6">
                             <p className="text-white/60 text-sm">
-                                Vous êtes sur le point de débloquer ce contenu exclusif gratuitement.
+                                Ou pral debloke kontni eksklizif sa a gratis.
                             </p>
                             <button
                                 onClick={handleClaim}
                                 className="w-full py-3.5 bg-primary text-white font-black rounded-xl uppercase tracking-wider hover:opacity-90 transition-all"
                             >
-                                Débloquer maintenant
+                                Debloke kounye a
                             </button>
                         </div>
                     )}
@@ -250,15 +250,15 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                     {step === "code" && (
                         <div className="space-y-5">
                             <p className="text-white/60 text-sm">
-                                Ce cadeau nécessite un code d'invitation secret pour être débloqué.
+                                Kado sa a bezwen yon kòd envitasyon sekrè pou debloke.
                             </p>
                             <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Code secret</label>
+                                <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Kòd sekrè</label>
                                 <input
                                     type="text"
                                     value={invitationCode}
                                     onChange={(e) => setInvitationCode(e.target.value)}
-                                    placeholder="Entrez le code ici..."
+                                    placeholder="Antre kòd la la..."
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono uppercase"
                                     autoFocus
                                 />
@@ -268,7 +268,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                                 disabled={!invitationCode.trim()}
                                 className="w-full py-3.5 bg-primary text-white font-black rounded-xl uppercase tracking-wider hover:opacity-90 transition-all disabled:opacity-50"
                             >
-                                Valider le code
+                                Valide kòd la
                             </button>
                         </div>
                     )}
@@ -276,7 +276,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                     {step === "loading" && (
                         <div className="flex flex-col items-center justify-center py-8 space-y-4">
                             <div className="w-10 h-10 border-4 border-white/10 border-t-primary rounded-full animate-spin" />
-                            <p className="text-white/50 text-sm font-medium animate-pulse">Vérification en cours...</p>
+                            <p className="text-white/50 text-sm font-medium animate-pulse">Verifikasyon ap fèt...</p>
                         </div>
                     )}
 
@@ -291,13 +291,13 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                                     onClick={() => item.requiresInvitation ? setStep("code") : setStep("initial")}
                                     className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all"
                                 >
-                                    Réessayer
+                                    Refè l ankò
                                 </button>
                                 <button
                                     onClick={handleClose}
                                     className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all"
                                 >
-                                    Fermer
+                                    Fèmen
                                 </button>
                             </div>
                         </div>
@@ -308,15 +308,15 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                             <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-500 mb-4">
                                 <span className="material-symbols-outlined text-3xl">check_circle</span>
                             </div>
-                            <h4 className="text-white text-xl font-black">Cadeau débloqué !</h4>
+                            <h4 className="text-white text-xl font-black">Kado debloke !</h4>
                             <p className="text-white/60 text-sm">
-                                Le contenu a été ajouté à votre compte. Vous y avez maintenant accès en illimité.
+                                Kontni an ajoute nan kont ou. Ou gen aksè san limit kounye a.
                             </p>
                             <button
                                 onClick={() => router.push("/dashboard")}
                                 className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl uppercase tracking-wider transition-all"
                             >
-                                Aller au tableau de bord
+                                Ale nan tablodbò a
                             </button>
                         </div>
                     )}
