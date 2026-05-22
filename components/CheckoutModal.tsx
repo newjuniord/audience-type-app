@@ -298,7 +298,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
         const genData = await generateMagicLinkAction(contactToUse);
         if (genData.error) throw new Error(genData.error);
         
-        setMagicLinkToken(genData.token);
+        setMagicLinkToken(genData.token || null);
         setWhatsappRedirect(null);
         setVerificationError(null);
         setVerificationCode("");
