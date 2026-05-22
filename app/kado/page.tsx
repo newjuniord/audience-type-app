@@ -22,6 +22,7 @@ type FreeItem = {
     fileUrl?: string;
     isKado?: boolean;
     kadoId?: string;
+    isExpired?: boolean;
 };
 
 export default async function KadoPage() {
@@ -48,16 +49,23 @@ export default async function KadoPage() {
                 type: "Kou" as const,
             })),
         ...gifts
-            .filter((g) => g.isActive && (!g.expirationDate || g.expirationDate.toDate().getTime() > Date.now()))
-            .map((g) => ({
-                id: g.giftProductId, // On redirige vers le produit cadeau
-                title: g.title, // On affiche le titre du Kado au lieu du produit original
-                description: g.description || `Cadeau exclusif : ${g.giftProductTitle}`,
-                image: g.photoLink || g.giftProductThumbnailUrl || "/logo.png",
-                type: "Bonus" as const,
-                isKado: true,
-                kadoId: g.id,
-            })),
+            .filter((g) => g.isActive)
+            .map((g) => {
+                const isExpired = g.expirationDate && typeof g.expirationDate.toDate === 'function'
+                    ? g.expirationDate.toDate().getTime() < Date.now()
+                    : false;
+
+                return {
+                    id: g.giftProductId, // On redirige vers le produit cadeau
+                    title: g.title, // On affiche le titre du Kado au lieu du produit original
+                    description: g.description || `Cadeau exclusif : ${g.giftProductTitle}`,
+                    image: g.photoLink || g.giftProductThumbnailUrl || "/logo.png",
+                    type: "Bonus" as const,
+                    isKado: true,
+                    kadoId: g.id,
+                    isExpired
+                };
+            }),
     ];
 
     return (
@@ -159,17 +167,19 @@ export default async function KadoPage() {
 }
 
 function KadoCard({ item }: { item: FreeItem }) {
-    const href = item.type === "Ebook"
+    const href = item.isExpired ? "#" : item.type === "Ebook"
         ? `/course/${item.id}?type=ebook`
         : `/course/${item.id}`;
 
     return (
         <Link
             href={href}
-            className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] hover:border-primary/40 hover:bg-white/[0.04] transition-all duration-300 hover:-translate-y-1"
+            className={`group relative flex flex-col overflow-hidden rounded-3xl border ${
+                item.isExpired ? "border-red-500/20 bg-red-500/5 opacity-80 cursor-not-allowed" : "border-white/10 bg-white/[0.02] hover:border-primary/40 hover:bg-white/[0.04] hover:-translate-y-1"
+            } transition-all duration-300`}
         >
             {/* Image */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-white/5">
+            <div className={`relative aspect-[4/3] overflow-hidden bg-white/5 ${item.isExpired ? "grayscale" : ""}`}>
                 <img
                     src={item.image}
                     alt={item.title}
@@ -187,10 +197,16 @@ function KadoCard({ item }: { item: FreeItem }) {
                     <span className="px-3 py-1 bg-black/60 backdrop-blur text-white/70 text-[10px] font-bold uppercase tracking-wider rounded-full border border-white/10">
                         {item.type}
                     </span>
-                    {item.isKado && (
+                    {item.isKado && !item.isExpired && (
                         <span className="px-3 py-1 bg-orange-500/90 backdrop-blur text-white text-[10px] font-black uppercase tracking-wider rounded-full flex items-center gap-1 shadow-lg">
                             <span className="material-symbols-outlined text-[10px]">redeem</span>
                             Kado Spécial
+                        </span>
+                    )}
+                    {item.isExpired && (
+                        <span className="px-3 py-1 bg-red-500/90 backdrop-blur text-white text-[10px] font-black uppercase tracking-wider rounded-full flex items-center gap-1 shadow-lg">
+                            <span className="material-symbols-outlined text-[10px]">timer_off</span>
+                            Expiré
                         </span>
                     )}
                 </div>
@@ -212,11 +228,13 @@ function KadoCard({ item }: { item: FreeItem }) {
                         <span className="text-2xl font-black text-primary">$0</span>
                         <span className="text-xs text-white/30 font-medium">100% gratis</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-white/40 group-hover:text-primary transition-colors text-xs font-bold uppercase tracking-wider">
-                        <span>Jwenn li</span>
-                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
+                    <div className={`flex items-center gap-1.5 ${item.isExpired ? "text-red-500" : "text-white/40 group-hover:text-primary"} transition-colors text-xs font-bold uppercase tracking-wider`}>
+                        <span>{item.isExpired ? "Expiré" : "Jwenn li"}</span>
+                        {!item.isExpired && (
+                            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        )}
                     </div>
                 </div>
             </div>
