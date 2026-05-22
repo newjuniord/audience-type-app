@@ -348,3 +348,139 @@ export async function verifyOtpAndLoginAction(contact: string, code: string, typ
         return { error: "Erreur lors de la vérification du code" };
     }
 }
+
+/**
+ * Génère un Magic Link WhatsApp et l'envoie à l'utilisateur.
+ * Ce token expire dans 12 minutes en base de données.
+ */
+export async function generateMagicLinkAction(contact: string) {
+    if (!contact) return { error: "Contact manquant" };
+
+    try {
+        const adminDb = getAdminDb();
+        const contactClean = contact.trim();
+        
+        // Nettoyage des anciens tokens pour ce numéro (optionnel, mais garde la DB propre)
+        const oldLinksSnap = await adminDb.collection("magic_links")
+            .where("phone", "==", contactClean)
+            .where("status", "==", "pending")
+            .get();
+        
+        const batch = adminDb.batch();
+        oldLinksSnap.forEach(doc => {
+            batch.update(doc.ref, { status: "expired" });
+        });
+
+        // Génération d'un token sécurisé (64 caractères)
+        const token = (uuidv4() + uuidv4()).replace(/-/g, '');
+        const expiresAt = new Date(Date.now() + 12 * 60 * 1000); // +12 minutes
+
+        const magicLinkRef = adminDb.collection("magic_links").doc(token);
+        batch.set(magicLinkRef, {
+            phone: contactClean,
+            status: "pending",
+            createdAt: FieldValue.serverTimestamp(),
+            expiresAt: Timestamp.fromDate(expiresAt),
+        });
+
+        await batch.commit();
+
+        // Envoi via WhatsApp
+        const domain = process.env.NEXT_PUBLIC_BASE_URL || "https://audiencetype.com";
+        const verifyUrl = `${domain}/verify?token=${token}`;
+        
+        const message = `✨ *CONNEXION SANS MOT DE PASSE*\n\nClique sur le lien ci-dessous pour te connecter automatiquement sur ton ordinateur :\n\n🔗 ${verifyUrl}\n\n⏳ _Ce lien expire dans 10 minutes._`;
+        
+        await sendWhatsAppMessage(contactClean, message);
+        console.log(`🔗 [WhatsApp] Magic Link envoyé à ${contactClean} : ${verifyUrl}`);
+
+        return { success: true, token };
+    } catch (error: any) {
+        console.error("Error in generateMagicLinkAction:", error);
+        return { error: "Erreur lors de la génération du lien magique." };
+    }
+}
+
+/**
+ * Vérifie un Magic Link cliqué depuis le téléphone et connecte l'utilisateur.
+ * Appelé par la page /verify?token=...
+ */
+export async function verifyMagicLinkAction(token: string) {
+    if (!token) return { error: "Token manquant." };
+
+    try {
+        const adminDb = getAdminDb();
+        const magicLinkRef = adminDb.collection("magic_links").doc(token);
+        
+        const docSnap = await magicLinkRef.get();
+        if (!docSnap.exists) {
+            return { error: "Ce lien est invalide ou n'existe pas." };
+        }
+
+        const data = docSnap.data();
+        if (data?.status !== "pending") {
+            return { error: "Ce lien a déjà été utilisé ou est expiré." };
+        }
+
+        const now = Timestamp.now();
+        if (data.expiresAt.toMillis() < now.toMillis()) {
+            await magicLinkRef.update({ status: "expired" });
+            return { error: "Ce lien a expiré." };
+        }
+
+        const contactClean = data.phone;
+
+        // On cherche ou on crée l'utilisateur comme dans verifyOtp
+        const usersRef = adminDb.collection("users");
+        const querySnapshot = await usersRef.where("phone", "==", contactClean).get();
+        const adminAuth = getAdminAuth();
+        let userId = "";
+
+        if (!querySnapshot.empty) {
+            userId = querySnapshot.docs[0].id;
+            console.log(`👤 [verifyMagicLinkAction] Utilisateur existant trouvé : ${userId}`);
+        } else {
+            // Création de l'utilisateur
+            try {
+                const authUser = await adminAuth.createUser({
+                    phoneNumber: contactClean,
+                    displayName: "Client",
+                });
+                userId = authUser.uid;
+            } catch (authErr: any) {
+                console.warn("⚠️ [verifyMagicLinkAction] Erreur Auth création:", authErr.message);
+                try {
+                    const existingAuthUser = await adminAuth.getUserByPhoneNumber(contactClean);
+                    userId = existingAuthUser.uid;
+                } catch {
+                    userId = `usr_${uuidv4().substring(0, 13).replace(/-/g, '')}`;
+                }
+            }
+
+            const newUserDoc = {
+                uid: userId,
+                phone: contactClean,
+                name: "Client",
+                role: "customer",
+                createdAt: FieldValue.serverTimestamp(),
+                status: "active",
+                enrollmentCount: 0
+            };
+            await usersRef.doc(userId).set(newUserDoc);
+        }
+
+        // On génère le Custom Token (qui servira au PC pour se connecter silencieusement)
+        const customToken = await adminAuth.createCustomToken(userId);
+
+        // On met à jour le token pour marquer comme utilisé ET stocker le customToken pour le PC
+        await magicLinkRef.update({ 
+            status: "used",
+            customToken: customToken
+        });
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error in verifyMagicLinkAction:", error);
+        return { error: "Une erreur est survenue lors de la vérification du lien." };
+    }
+}

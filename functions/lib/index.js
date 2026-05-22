@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendwhatsappmessage = exports.onenrollmentcreated = exports.lemonsqueezyrefund = exports.lemonsqueezywebhook = void 0;
+exports.webhookbotmessage = exports.onenrollmentcreated = exports.lemonsqueezyrefund = exports.lemonsqueezywebhook = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const app_1 = require("firebase-admin/app");
@@ -286,31 +286,30 @@ exports.lemonsqueezyrefund = (0, https_1.onRequest)({
     }
 });
 /**
- * Helper to send a Twilio WhatsApp message using global fetch.
+ * Helper to send a Twilio SMS message using global fetch.
  * Avoids any external Twilio SDK dependencies in Cloud Functions.
  */
-async function sendWhatsAppMessageViaFetch(toPhone, message) {
+async function sendSmsViaFetch(toPhone, message) {
     const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
     const authToken = process.env.TWILIO_AUTH_TOKEN || "";
-    const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+14155238886";
+    const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+17157507852";
+    const fromNumber = process.env.TWILIO_SMS_NUMBER ||
+        process.env.TWILIO_PHONE_NUMBER ||
+        twilioWhatsAppNumber.replace("whatsapp:", "");
     if (!accountSid || !authToken) {
-        console.error("❌ [WHATSAPP] Twilio credentials missing in Cloud Function environment.");
+        console.error("❌ [SMS] Twilio credentials missing in Cloud Function environment.");
         return { success: false };
     }
-    const cleanPhone = toPhone.replace(/\s+/g, '');
-    const toWhatsAppNumber = cleanPhone.startsWith('whatsapp:')
-        ? cleanPhone
-        : cleanPhone.startsWith('+')
-            ? `whatsapp:${cleanPhone}`
-            : `whatsapp:+${cleanPhone}`;
+    const cleanPhone = toPhone.replace(/\s+/g, '').replace('whatsapp:', '');
+    const toSmsNumber = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
     const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
     const authString = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
     const params = new URLSearchParams();
-    params.append("To", toWhatsAppNumber);
-    params.append("From", twilioWhatsAppNumber);
+    params.append("To", toSmsNumber);
+    params.append("From", fromNumber);
     params.append("Body", message);
     try {
-        console.log(`📩 [WHATSAPP] Sending Twilio API request to ${toWhatsAppNumber}...`);
+        console.log(`📩 [SMS] Sending Twilio API request to ${toSmsNumber} from ${fromNumber}...`);
         const response = await fetch(url, {
             method: "POST",
             headers: {
@@ -321,22 +320,22 @@ async function sendWhatsAppMessageViaFetch(toPhone, message) {
         });
         if (response.ok) {
             const data = await response.json();
-            console.log(`✅ [WHATSAPP] WhatsApp sent successfully. SID: ${data.sid}`);
+            console.log(`✅ [SMS] SMS sent successfully. SID: ${data.sid}`);
             return { success: true, sid: data.sid };
         }
         else {
             const errText = await response.text();
-            console.error("❌ [WHATSAPP] Twilio API error response:", errText);
+            console.error("❌ [SMS] Twilio API error response:", errText);
             return { success: false };
         }
     }
     catch (e) {
-        console.error("❌ [WHATSAPP] Exception sending Twilio WhatsApp message:", e.message);
+        console.error("❌ [SMS] Exception sending Twilio SMS message:", e.message);
         return { success: false };
     }
 }
 /**
- * Helper to generate a temp link and send a unified WhatsApp notification
+ * Helper to generate a temp link and send a unified SMS notification
  */
 async function generateAndSendNotification(userId, userName, productTitle, productType, isGift) {
     try {
@@ -347,9 +346,9 @@ async function generateAndSendNotification(userId, userName, productTitle, produ
             return;
         }
         const userData = userSnap.data();
-        const whatsappNumber = userData?.whatsappNumber || "";
-        if (!whatsappNumber) {
-            console.log(`ℹ️ [NOTIFY] User ${userId} has no whatsappNumber. Skipping WhatsApp delivery.`);
+        const phone = userData?.phone || "";
+        if (!phone) {
+            console.log(`ℹ️ [NOTIFY] User ${userId} has no phone number. Skipping SMS delivery.`);
             return;
         }
         console.log(`🔍 [NOTIFY] Checking existing temp links for user: ${userId}`);
@@ -395,7 +394,7 @@ async function generateAndSendNotification(userId, userName, productTitle, produ
             }
             message = `${introText}\n\nVoici ton code secret de connexion : *${code}*\n\nTu peux également cliquer sur ce lien magique pour te connecter instantanément d'un seul clic :\n${link}\n\nNe partage jamais ce code.`;
         }
-        await sendWhatsAppMessageViaFetch(whatsappNumber, message);
+        await sendSmsViaFetch(phone, message);
     }
     catch (err) {
         console.error("❌ [NOTIFY] Error in generateAndSendNotification:", err.message);
@@ -404,7 +403,7 @@ async function generateAndSendNotification(userId, userName, productTitle, produ
 /**
  * Cloud Function (Firestore Trigger): onenrollmentcreated
  * Triggers automatically whenever a new enrollment is created in Firestore.
- * If the user has a `whatsappNumber` in their profile, it creates an access code & magic link and sends it via WhatsApp.
+ * If the user has a `phone` in their profile, it creates an access code & magic link and sends it via SMS.
  */
 exports.onenrollmentcreated = (0, firestore_1.onDocumentCreated)({
     document: "enrollments/{enrollmentId}",
@@ -451,41 +450,233 @@ exports.onenrollmentcreated = (0, firestore_1.onDocumentCreated)({
     }
     await generateAndSendNotification(userId, userName, productTitle, productType, isGift);
 });
-/**
- * Cloud Function (HTTPS API): sendwhatsappmessage
- * Generic HTTPS endpoint that accepts a phone number and a custom message and dispatches it via Twilio.
- */
-exports.sendwhatsappmessage = (0, https_1.onRequest)({
-    secrets: [
-        "TWILIO_ACCOUNT_SID",
-        "TWILIO_AUTH_TOKEN",
-        "TWILIO_WHATSAPP_NUMBER"
-    ],
-    region: "us-central1"
-}, async (req, res) => {
-    // Only allow POST requests
-    if (req.method !== "POST") {
-        res.status(405).send("Method Not Allowed");
-        return;
+// ============================================================================
+// Helper: Send WhatsApp message via Twilio (WhatsApp channel)
+// ============================================================================
+async function sendWhatsAppViaFetch(toPhone, message) {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
+    const authToken = process.env.TWILIO_AUTH_TOKEN || "";
+    const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+17157507852";
+    if (!accountSid || !authToken) {
+        console.error("❌ [WA] Twilio credentials missing.");
+        return { success: false };
     }
+    const cleanTo = toPhone.startsWith("whatsapp:") ? toPhone : `whatsapp:${toPhone}`;
+    const cleanFrom = twilioWhatsAppNumber.startsWith("whatsapp:") ? twilioWhatsAppNumber : `whatsapp:${twilioWhatsAppNumber}`;
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const authString = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
+    const params = new URLSearchParams();
+    params.append("To", cleanTo);
+    params.append("From", cleanFrom);
+    params.append("Body", message);
     try {
-        const { phone, message } = req.body;
-        if (!phone || !message) {
-            res.status(400).json({ error: "Missing phone or message in payload." });
-            return;
-        }
-        console.log(`📩 [HTTPS API] Request to send WhatsApp message to ${phone}`);
-        const result = await sendWhatsAppMessageViaFetch(phone, message);
-        if (result && result.success) {
-            res.status(200).json({ success: true, sid: result.sid });
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Authorization": `Basic ${authString}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: params.toString()
+        });
+        if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ [WA] Sent. SID: ${data.sid}`);
+            return { success: true, sid: data.sid };
         }
         else {
-            res.status(500).json({ error: "Failed to send WhatsApp message via Twilio." });
+            const errText = await response.text();
+            console.error("❌ [WA] Twilio error:", errText);
+            return { success: false };
         }
     }
-    catch (err) {
-        console.error("❌ [HTTPS API] Error sending WhatsApp message:", err.message);
-        res.status(500).json({ error: "Internal Server Error" });
+    catch (e) {
+        console.error("❌ [WA] Exception:", e.message);
+        return { success: false };
+    }
+}
+// ============================================================================
+// Cloud Function: webhookbotmessage
+// Bot WhatsApp DJR Akademi — metem | kod | bug | kontak | contact
+//
+// RÈGLE D'OR: phoneNumber provient UNIQUEMENT de `From` (Twilio).
+// Le Body n'est jamais utilisé pour identifier l'utilisateur.
+// ============================================================================
+exports.webhookbotmessage = (0, https_1.onRequest)({
+    secrets: ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_WHATSAPP_NUMBER"],
+    region: "us-central1"
+}, async (req, res) => {
+    // Répondre 200 immédiatement à Twilio pour éviter les retries
+    res.status(200).send("OK");
+    if (req.method !== "POST")
+        return;
+    try {
+        // ── Parse Twilio's URL-encoded body ──────────────────────────────────
+        const bodyParams = new URLSearchParams(req.rawBody?.toString() || "");
+        const From = bodyParams.get("From") || ""; // "whatsapp:+18296692914"
+        const Body = bodyParams.get("Body") || "";
+        const ProfileName = bodyParams.get("ProfileName") || "Client";
+        if (!From || !Body) {
+            console.warn("⚠️ [BOT] Missing From or Body.");
+            return;
+        }
+        // ── Nettoyage — RÈGLE D'OR ────────────────────────────────────────────
+        const phoneNumber = From.replace("whatsapp:", "").trim(); // "+18296692914"
+        const otpDocId = From.trim(); // "whatsapp:+18296692914"
+        const userMessage = Body.trim().toLowerCase();
+        console.log(`📩 [BOT] "${userMessage}" from ${phoneNumber} (${ProfileName})`);
+        const MAX_PER_DAY = 10;
+        // ── Helper: vérifier le rate limit ───────────────────────────────────
+        const checkRateLimit = async () => {
+            const otpDoc = await db.collection("otp_code").doc(otpDocId).get();
+            const now = new Date();
+            if (otpDoc.exists) {
+                const data = otpDoc.data();
+                const expireAt = data.expireAt?.toDate();
+                const count = (data.count || 0);
+                if (expireAt && expireAt > now && count >= MAX_PER_DAY) {
+                    return { blocked: true, count, expireAt };
+                }
+                return { blocked: false, count: (expireAt && expireAt > now) ? count : 0, expireAt: expireAt || null };
+            }
+            return { blocked: false, count: 0, expireAt: null };
+        };
+        // ── Helper: écrire le doc OTP (fenêtre 24h partagée) ─────────────────
+        const updateOtpDoc = async (uid, code, currentCount, existingExpireAt) => {
+            const now = new Date();
+            const newExpireAt = (existingExpireAt && existingExpireAt > now)
+                ? existingExpireAt
+                : new Date(now.getTime() + 24 * 60 * 60 * 1000); // +24h
+            await db.collection("otp_code").doc(otpDocId).set({ code, count: currentCount + 1, expireAt: newExpireAt, type: "whatsapp", userId: uid }, { merge: true });
+        };
+        const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
+        // ── Helper: trouver l'utilisateur par numéro ──────────────────────────
+        const findUserByPhone = async () => {
+            const snap = await db.collection("users").where("phone", "==", phoneNumber).limit(1).get();
+            if (snap.empty)
+                return null;
+            const d = snap.docs[0].data();
+            return { uid: snap.docs[0].id, displayName: d.displayName || "Client" };
+        };
+        // ── Helper: effacer tous les anciens temp_links non utilisés ──────────
+        const clearOldTempLinks = async (uid) => {
+            const old = await db.collection("temp_links").where("userId", "==", uid).where("used", "==", false).get();
+            if (!old.empty) {
+                const batch = db.batch();
+                old.docs.forEach(d => batch.delete(d.ref));
+                await batch.commit();
+                console.log(`🗑️ [BOT] Deleted ${old.size} old temp_link(s) for ${uid}`);
+            }
+        };
+        // ── Helper: créer un nouveau temp_link (10h) ──────────────────────────
+        const createTempLink = async (uid) => {
+            const token = crypto.randomUUID();
+            const now = new Date();
+            const expiresAt = new Date(now.getTime() + 10 * 60 * 60 * 1000); // +10h
+            await db.collection("temp_links").doc(token).set({ userId: uid, expiresAt, used: false, createdAt: now });
+            return token;
+        };
+        // ════════════════════════════════════════════════════════════════════════
+        // KEYWORD: metem — Inscription ou Reconnexion rapide
+        // ════════════════════════════════════════════════════════════════════════
+        if (userMessage === "metem") {
+            const rateLimit = await checkRateLimit();
+            if (rateLimit.blocked) {
+                await sendWhatsAppViaFetch(From, `🚫 Ou te mande twòp kòd jodi a.\nEsaye ankò demen (limit ${MAX_PER_DAY} fwa pou 24 tè).`);
+                return;
+            }
+            let uid = "";
+            let displayName = ProfileName;
+            let isNewUser = false;
+            const existingUser = await findUserByPhone();
+            if (existingUser) {
+                uid = existingUser.uid;
+                displayName = existingUser.displayName;
+                console.log(`✅ [BOT/metem] Existing user: ${uid}`);
+            }
+            else {
+                isNewUser = true;
+                try {
+                    const newUser = await auth.createUser({ phoneNumber, displayName: ProfileName });
+                    uid = newUser.uid;
+                    console.log(`✅ [BOT/metem] Auth user created: ${uid}`);
+                }
+                catch (authErr) {
+                    if (authErr.code === "auth/phone-number-already-exists") {
+                        // Auto-guérison : Auth existe mais doc Firestore manquant
+                        const existingAuthUser = await auth.getUserByPhoneNumber(phoneNumber);
+                        uid = existingAuthUser.uid;
+                        displayName = existingAuthUser.displayName || ProfileName;
+                        console.warn(`⚠️ [BOT/metem] Self-healing for uid: ${uid}`);
+                    }
+                    else {
+                        throw authErr;
+                    }
+                }
+                const now = new Date();
+                await db.collection("users").doc(uid).set({
+                    uid,
+                    phone: phoneNumber,
+                    displayName: ProfileName,
+                    email: `${uid}@audiencetype.com`,
+                    status: "active",
+                    role: "user",
+                    createdAt: now,
+                    updatedAt: now
+                });
+            }
+            await clearOldTempLinks(uid);
+            const token = await createTempLink(uid);
+            const link = `https://audiencetype.com/login/temp?token=${token}`;
+            const code = generateOtp();
+            await updateOtpDoc(uid, code, rateLimit.count, rateLimit.expireAt);
+            const msg = isNewUser
+                ? `🎉 Kont ou a kreye avèk suksè, ${displayName}!\n\nMen lyen sekirize ou pou w konekte an 1 klik (li ekspire nan 10 tè) :\n🔗 ${link}\n\nNou jenere yon kòd OTP pou ou tou si w vle konekte sou yon òdinatè :\n🔑 *${code}*\n\n⚠️ Pa pataje lyen sa a — li pou ou sèlman.`
+                : `Mèsi paske ou mande kont ou, li egziste deja 😊!\n\n🔐 Pou sekirite ou, tout ansyen lyen ou yo efase.\nMen nouvo lyen koneksyon rapid ou a (li ekspire nan 10 tè) :\n🔗 ${link}\n\nEpi men kòd OTP ou a si ou bezwen konekte sou yon lòt aparèy :\n🔑 *${code}*\n\n⚠️ Pa pataje lyen sa a — li pou ou sèlman.`;
+            await sendWhatsAppViaFetch(From, msg);
+            console.log(`📤 [BOT/metem] Done (isNew=${isNewUser})`);
+        }
+        // ════════════════════════════════════════════════════════════════════════
+        // KEYWORD: kod — OTP pour autre appareil
+        // ════════════════════════════════════════════════════════════════════════
+        else if (userMessage === "kod") {
+            const rateLimit = await checkRateLimit();
+            if (rateLimit.blocked) {
+                await sendWhatsAppViaFetch(From, `🚫 Ou te mande twòp kòd jodi a.\nEsaye ankò demen (limit ${MAX_PER_DAY} fwa pou 24 tè).`);
+                return;
+            }
+            const existingUser = await findUserByPhone();
+            if (!existingUser) {
+                await sendWhatsAppViaFetch(From, `❌ Nou pa jwenn okenn kont pou nimewo sa a.\nTanpri, ekri mo sa a anvan : *metem*\npou w ka kreye kont ou.`);
+                return;
+            }
+            const { uid } = existingUser;
+            const code = generateOtp();
+            await updateOtpDoc(uid, code, rateLimit.count, rateLimit.expireAt);
+            await sendWhatsAppViaFetch(From, `🔑 KÒD OTP OU A\n\nVoici ton code de connexion :\n*${code}*\n\nCe code est valide 24 heures.\nEntre-le sur la page de connexion de DJR Akademi.`);
+            console.log(`📤 [BOT/kod] OTP sent to ${phoneNumber}`);
+        }
+        // ════════════════════════════════════════════════════════════════════════
+        // KEYWORD: bug — Support technique
+        // ════════════════════════════════════════════════════════════════════════
+        else if (userMessage === "bug") {
+            await sendWhatsAppViaFetch(From, `⚠️ SIPÒ TEKNIK\n\nSi ou rankontre yon pwoblèm teknik oswa yon bug sou sit la, kontakte nou imedyatman nan imel sa a :\n📧 contact@audiencetype.com\n\noswa dirèkteman sou WhatsApp nan nimewo sa a :\n📞 3094848394`);
+        }
+        // ════════════════════════════════════════════════════════════════════════
+        // KEYWORD: kontak / contact — Contact général
+        // ════════════════════════════════════════════════════════════════════════
+        else if (userMessage === "kontak" || userMessage === "contact") {
+            await sendWhatsAppViaFetch(From, `📞 KONTAKTE NOU\n\nPou nenpòt enfòmasyon, kesyon, oswa asistans jeneral, ou ka ekri nou dirèkteman sou WhatsApp nan nimewo sa a :\n👉 3094848394`);
+        }
+        // ════════════════════════════════════════════════════════════════════════
+        // UNKNOWN — Menu d'aide
+        // ════════════════════════════════════════════════════════════════════════
+        else {
+            await sendWhatsAppViaFetch(From, `👋 Bonjou! Voici les commandes disponibles :\n\n• Tape *metem* pou konekte ou rapid an 1 klik\n• Tape *kod* pou jwenn yon kòd OTP (lòt aparèy)\n• Tape *bug* pou sipò teknik\n• Tape *kontak* pou kontakte nou`);
+        }
+    }
+    catch (error) {
+        // 200 déjà envoyé à Twilio — on log seulement, pas de retry
+        console.error("🔥 [BOT ERROR]", error.message || error);
     }
 });
 //# sourceMappingURL=index.js.map

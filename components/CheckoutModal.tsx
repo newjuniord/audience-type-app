@@ -3,13 +3,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { signInWithCustomToken } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import { useLemonSqueezyOverlay } from "@/hooks/useLemonSqueezyOverlay";
 import { useAuth } from "@/context/AuthContext";
 import {
   checkUserAction,
   generateOtpAction,
-  verifyOtpAndLoginAction
+  verifyOtpAndLoginAction,
+  generateMagicLinkAction
 } from "@/app/actions/auth";
 
 export interface CheckoutProduct {
@@ -162,6 +164,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [alreadyOwnedMessage, setAlreadyOwnedMessage] = useState<string | null>(null);
   const [tempLink, setTempLink] = useState<string | null>(null);
+  const [magicLinkToken, setMagicLinkToken] = useState<string | null>(null);
 
   const { openCheckout, hasExpiredSession } = useLemonSqueezyOverlay();
 
@@ -290,24 +293,38 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
       }
 
       const contactToUse = (contactMethod === 'phone' || contactMethod === 'whatsapp') ? cleanPhone : email;
-      const genData = await generateOtpAction(contactToUse, contactMethod);
-
-      if (genData.error) throw new Error(genData.error);
-
-      if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
-        setWhatsappRedirect({
-            url: `https://wa.me/${genData.businessPhone}?text=${encodeURIComponent("Bonjour, je souhaite recevoir mon code de vérification.")}`,
-            businessPhone: `+${genData.businessPhone}`
-        });
-      } else {
+      
+      if (contactMethod === 'whatsapp') {
+        const genData = await generateMagicLinkAction(contactToUse);
+        if (genData.error) throw new Error(genData.error);
+        
+        setMagicLinkToken(genData.token);
         setWhatsappRedirect(null);
-      }
+        setVerificationError(null);
+        setVerificationCode("");
+        setTempLink(null);
+        setCooldownSeconds(0); // Pas de cooldown de code pour le magic link, l'expiration est gérée globalement
+        setModalStep('verify_code');
+      } else {
+        const genData = await generateOtpAction(contactToUse, contactMethod);
 
-      setVerificationError(null);
-      setVerificationCode("");
-      setTempLink(null);
-      setCooldownSeconds(60);
-      setModalStep('verify_code');
+        if (genData.error) throw new Error(genData.error);
+
+        if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
+          setWhatsappRedirect({
+              url: `https://wa.me/${genData.businessPhone}?text=${encodeURIComponent("Bonjour, je souhaite recevoir mon code de vérification.")}`,
+              businessPhone: `+${genData.businessPhone}`
+          });
+        } else {
+          setWhatsappRedirect(null);
+        }
+
+        setVerificationError(null);
+        setVerificationCode("");
+        setTempLink(null);
+        setCooldownSeconds(60);
+        setModalStep('verify_code');
+      }
     } catch (err: any) {
       console.error("Erreur de vérification:", err);
       if (err.message && (err.message.includes("was not found on the server") || err.message.includes("Failed to find Server Action"))) {
@@ -326,6 +343,46 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
       return () => clearTimeout(timer);
     }
   }, [cooldownSeconds]);
+
+  // Écoute du Magic Link en temps réel
+  useEffect(() => {
+    if (!magicLinkToken) return;
+
+    let timeoutId: NodeJS.Timeout;
+
+    const unsubscribe = onSnapshot(doc(db, "magic_links", magicLinkToken), async (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data.status === "used" && data.customToken) {
+          try {
+            await signInWithCustomToken(auth, data.customToken);
+            // Utilisateur connecté ! On passe à l'étape de paiement ou succès
+            if (alreadyOwnedMessage) setModalStep('success');
+            else setModalStep('payment');
+            setMagicLinkToken(null);
+          } catch (err) {
+            console.error("Erreur de connexion via magic link", err);
+            setVerificationError("Échec de la connexion automatique.");
+          }
+        } else if (data.status === "expired") {
+          setVerificationError("Le lien a expiré. Veuillez recommencer.");
+          setMagicLinkToken(null);
+        }
+      }
+    });
+
+    // Timeout local de 10 minutes (600000 ms)
+    timeoutId = setTimeout(() => {
+      unsubscribe();
+      setVerificationError("Délai d'attente dépassé (10 minutes).");
+      setMagicLinkToken(null);
+    }, 10 * 60 * 1000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timeoutId);
+    };
+  }, [magicLinkToken, alreadyOwnedMessage]);
 
   const handleVerifyCodeSubmit = async () => {
     if (!verificationCode || verificationCode.length !== 4) {
@@ -565,7 +622,24 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                   <button onClick={handleClose} className="hidden lg:flex size-7 rounded-full bg-white/5 hover:bg-white/10 items-center justify-center transition-colors"><svg className="size-3.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
                 <div className="text-center py-4">
-                  {whatsappRedirect ? (
+                  {magicLinkToken ? (
+                    <>
+                      <div className="size-16 bg-[#25D366]/10 border border-[#25D366]/20 rounded-2xl flex items-center justify-center mx-auto mb-4 relative">
+                        <span className="text-3xl animate-pulse">✨</span>
+                      </div>
+                      <h2 className="text-xl font-black mb-2 leading-tight uppercase">Vérifie WhatsApp</h2>
+                      <div className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm mx-auto">
+                        Nous t'avons envoyé un <strong className="text-white">Lien Magique</strong> sécurisé sur WhatsApp.<br/><br/>
+                        <span className="text-orange-400 font-bold tracking-wider uppercase text-[10px]">Ne ferme pas cette page !</span><br/>
+                        Clique simplement sur le lien depuis ton téléphone et cette page se mettra à jour instantanément.
+                      </div>
+                      
+                      <div className="flex justify-center mb-6">
+                        <div className="size-8 border-2 border-white/10 border-t-orange-500 rounded-full animate-spin"></div>
+                      </div>
+                      {verificationError && <p className="text-[11px] text-red-500 mt-2 font-semibold">⚠️ {verificationError}</p>}
+                    </>
+                  ) : whatsappRedirect ? (
                     <>
                       <div className="size-16 bg-[#25D366]/10 border border-[#25D366]/20 rounded-2xl flex items-center justify-center mx-auto mb-4"><span className="text-3xl">📱</span></div>
                       <h2 className="text-xl font-black mb-2 leading-tight uppercase">Ouvre WhatsApp !</h2>
@@ -624,13 +698,19 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                       </div>
                     </>
                   )}
-                  <div className="mb-6 text-left">
+
+                  {/* Input Code (seulement si pas de magic link) */}
+                  {!magicLinkToken && (
+                    <>
+                      <div className="mb-6 text-left">
                     <input type="text" maxLength={4} placeholder="2102" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').substring(0, 4))} className="w-full h-14 bg-white/5 border-2 border-white/10 rounded-2xl px-6 text-center text-xl font-mono placeholder-white/20 tracking-[0.5em] focus:outline-none focus:border-white transition-colors bg-transparent text-white" />
                     {verificationError && <p className="text-[11px] text-red-500 mt-2 font-semibold">⚠️ {verificationError}</p>}
                   </div>
-                  <button onClick={handleVerifyCodeSubmit} disabled={isVerifyingCode || verificationCode.length !== 4} className="w-full h-14 bg-gradient-to-r from-orange-500 to-red-500 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
-                    {isVerifyingCode ? <div className="size-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"/> : "Valider le code"}
-                  </button>
+                      <button onClick={handleVerifyCodeSubmit} disabled={isVerifyingCode || verificationCode.length !== 4} className="w-full h-14 bg-gradient-to-r from-orange-500 to-red-500 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
+                        {isVerifyingCode ? <div className="size-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"/> : "Valider le code"}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}

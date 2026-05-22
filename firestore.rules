@@ -120,6 +120,12 @@ service cloud.firestore {
     // Liens temporaires : Accès interdit en direct (via API uniquement)
     match /temp_links/{tokenId} { allow read, write: if false; }
 
+    // Magic Links (Connexion sans mot de passe) : Lecture unitaire publique, écriture serveur
+    match /magic_links/{tokenId} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
     // Logs Admin
     match /admin_logs/{logId} { allow read: if isAdmin(); allow write: if false; }
 

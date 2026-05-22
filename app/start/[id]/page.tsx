@@ -74,60 +74,60 @@ function Bold({ text }: { text: string }) {
 // ─── COUNTRIES LIST ──────────────────────────────────────────────────────────
 const COUNTRIES = [
   // Caraïbes & Haïti en tête
-  { code: 'HT', name: 'Haïti',              dial: '+509', flag: '🇭🇹' },
-  { code: 'DO', name: 'Rép. Dominicaine',    dial: '+1',   flag: '🇩🇴' },
-  { code: 'CU', name: 'Cuba',               dial: '+53',  flag: '🇨🇺' },
-  { code: 'JM', name: 'Jamaïque',           dial: '+1',   flag: '🇯🇲' },
-  { code: 'PR', name: 'Porto Rico',          dial: '+1',   flag: '🇵🇷' },
-  { code: 'TT', name: 'Trinidad & Tobago',   dial: '+1',   flag: '🇹🇹' },
-  { code: 'BB', name: 'Barbade',             dial: '+1',   flag: '🇧🇧' },
+  { code: 'HT', name: 'Haïti', dial: '+509', flag: '🇭🇹' },
+  { code: 'DO', name: 'Rép. Dominicaine', dial: '+1', flag: '🇩🇴' },
+  { code: 'CU', name: 'Cuba', dial: '+53', flag: '🇨🇺' },
+  { code: 'JM', name: 'Jamaïque', dial: '+1', flag: '🇯🇲' },
+  { code: 'PR', name: 'Porto Rico', dial: '+1', flag: '🇵🇷' },
+  { code: 'TT', name: 'Trinidad & Tobago', dial: '+1', flag: '🇹🇹' },
+  { code: 'BB', name: 'Barbade', dial: '+1', flag: '🇧🇧' },
   // Amérique du Nord
-  { code: 'US', name: 'États-Unis',          dial: '+1',   flag: '🇺🇸' },
-  { code: 'CA', name: 'Canada',              dial: '+1',   flag: '🇨🇦' },
-  { code: 'MX', name: 'Mexique',             dial: '+52',  flag: '🇲🇽' },
+  { code: 'US', name: 'États-Unis', dial: '+1', flag: '🇺🇸' },
+  { code: 'CA', name: 'Canada', dial: '+1', flag: '🇨🇦' },
+  { code: 'MX', name: 'Mexique', dial: '+52', flag: '🇲🇽' },
   // Amérique Centrale
-  { code: 'GT', name: 'Guatemala',           dial: '+502', flag: '🇬🇹' },
-  { code: 'HN', name: 'Honduras',            dial: '+504', flag: '🇭🇳' },
-  { code: 'SV', name: 'El Salvador',         dial: '+503', flag: '🇸🇻' },
-  { code: 'NI', name: 'Nicaragua',           dial: '+505', flag: '🇳🇮' },
-  { code: 'CR', name: 'Costa Rica',          dial: '+506', flag: '🇨🇷' },
-  { code: 'PA', name: 'Panama',              dial: '+507', flag: '🇵🇦' },
+  { code: 'GT', name: 'Guatemala', dial: '+502', flag: '🇬🇹' },
+  { code: 'HN', name: 'Honduras', dial: '+504', flag: '🇭🇳' },
+  { code: 'SV', name: 'El Salvador', dial: '+503', flag: '🇸🇻' },
+  { code: 'NI', name: 'Nicaragua', dial: '+505', flag: '🇳🇮' },
+  { code: 'CR', name: 'Costa Rica', dial: '+506', flag: '🇨🇷' },
+  { code: 'PA', name: 'Panama', dial: '+507', flag: '🇵🇦' },
   // Amérique du Sud
-  { code: 'CO', name: 'Colombie',            dial: '+57',  flag: '🇨🇴' },
-  { code: 'VE', name: 'Venezuela',           dial: '+58',  flag: '🇻🇪' },
-  { code: 'EC', name: 'Équateur',            dial: '+593', flag: '🇪🇨' },
-  { code: 'PE', name: 'Pérou',              dial: '+51',  flag: '🇵🇪' },
-  { code: 'BO', name: 'Bolivie',             dial: '+591', flag: '🇧🇴' },
-  { code: 'CL', name: 'Chili',              dial: '+56',  flag: '🇨🇱' },
-  { code: 'AR', name: 'Argentine',           dial: '+54',  flag: '🇦🇷' },
-  { code: 'UY', name: 'Uruguay',             dial: '+598', flag: '🇺🇾' },
-  { code: 'PY', name: 'Paraguay',            dial: '+595', flag: '🇵🇾' },
-  { code: 'BR', name: 'Brésil',             dial: '+55',  flag: '🇧🇷' },
+  { code: 'CO', name: 'Colombie', dial: '+57', flag: '🇨🇴' },
+  { code: 'VE', name: 'Venezuela', dial: '+58', flag: '🇻🇪' },
+  { code: 'EC', name: 'Équateur', dial: '+593', flag: '🇪🇨' },
+  { code: 'PE', name: 'Pérou', dial: '+51', flag: '🇵🇪' },
+  { code: 'BO', name: 'Bolivie', dial: '+591', flag: '🇧🇴' },
+  { code: 'CL', name: 'Chili', dial: '+56', flag: '🇨🇱' },
+  { code: 'AR', name: 'Argentine', dial: '+54', flag: '🇦🇷' },
+  { code: 'UY', name: 'Uruguay', dial: '+598', flag: '🇺🇾' },
+  { code: 'PY', name: 'Paraguay', dial: '+595', flag: '🇵🇾' },
+  { code: 'BR', name: 'Brésil', dial: '+55', flag: '🇧🇷' },
   // Europe francophone
-  { code: 'FR', name: 'France',              dial: '+33',  flag: '🇫🇷' },
-  { code: 'BE', name: 'Belgique',            dial: '+32',  flag: '🇧🇪' },
-  { code: 'CH', name: 'Suisse',              dial: '+41',  flag: '🇨🇭' },
-  { code: 'GP', name: 'Guadeloupe',          dial: '+590', flag: '🇬🇵' },
-  { code: 'MQ', name: 'Martinique',          dial: '+596', flag: '🇲🇶' },
-  { code: 'GF', name: 'Guyane',             dial: '+594', flag: '🇬🇫' },
-  { code: 'RE', name: 'La Réunion',         dial: '+262', flag: '🇷🇪' },
+  { code: 'FR', name: 'France', dial: '+33', flag: '🇫🇷' },
+  { code: 'BE', name: 'Belgique', dial: '+32', flag: '🇧🇪' },
+  { code: 'CH', name: 'Suisse', dial: '+41', flag: '🇨🇭' },
+  { code: 'GP', name: 'Guadeloupe', dial: '+590', flag: '🇬🇵' },
+  { code: 'MQ', name: 'Martinique', dial: '+596', flag: '🇲🇶' },
+  { code: 'GF', name: 'Guyane', dial: '+594', flag: '🇬🇫' },
+  { code: 'RE', name: 'La Réunion', dial: '+262', flag: '🇷🇪' },
   // Europe
-  { code: 'GB', name: 'Royaume-Uni',         dial: '+44',  flag: '🇬🇧' },
-  { code: 'DE', name: 'Allemagne',           dial: '+49',  flag: '🇩🇪' },
-  { code: 'ES', name: 'Espagne',             dial: '+34',  flag: '🇪🇸' },
-  { code: 'PT', name: 'Portugal',            dial: '+351', flag: '🇵🇹' },
-  { code: 'IT', name: 'Italie',              dial: '+39',  flag: '🇮🇹' },
-  { code: 'NL', name: 'Pays-Bas',           dial: '+31',  flag: '🇳🇱' },
+  { code: 'GB', name: 'Royaume-Uni', dial: '+44', flag: '🇬🇧' },
+  { code: 'DE', name: 'Allemagne', dial: '+49', flag: '🇩🇪' },
+  { code: 'ES', name: 'Espagne', dial: '+34', flag: '🇪🇸' },
+  { code: 'PT', name: 'Portugal', dial: '+351', flag: '🇵🇹' },
+  { code: 'IT', name: 'Italie', dial: '+39', flag: '🇮🇹' },
+  { code: 'NL', name: 'Pays-Bas', dial: '+31', flag: '🇳🇱' },
   // Asie
-  { code: 'CN', name: 'Chine',              dial: '+86',  flag: '🇨🇳' },
-  { code: 'KR', name: 'Corée du Sud',        dial: '+82',  flag: '🇰🇷' },
-  { code: 'JP', name: 'Japon',              dial: '+81',  flag: '🇯🇵' },
+  { code: 'CN', name: 'Chine', dial: '+86', flag: '🇨🇳' },
+  { code: 'KR', name: 'Corée du Sud', dial: '+82', flag: '🇰🇷' },
+  { code: 'JP', name: 'Japon', dial: '+81', flag: '🇯🇵' },
 ];
 
 // ─── TIMEZONE → COUNTRY CODE MAP ─────────────────────────────────────────────
 const TIMEZONE_MAP: Record<string, string> = {
   'America/Port-au-Prince': 'HT',
-  'America/Santo_Domingo':  'DO',
+  'America/Santo_Domingo': 'DO',
   'America/New_York': 'US', 'America/Chicago': 'US', 'America/Denver': 'US',
   'America/Los_Angeles': 'US', 'America/Phoenix': 'US', 'America/Anchorage': 'US',
   'America/Toronto': 'CA', 'America/Vancouver': 'CA', 'America/Winnipeg': 'CA',
@@ -155,7 +155,7 @@ function detectCountry(): (typeof COUNTRIES)[0] {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const code = TIMEZONE_MAP[tz];
     if (code) { const found = COUNTRIES.find(c => c.code === code); if (found) return found; }
-  } catch {}
+  } catch { }
   return COUNTRIES[0]; // fallback Haïti
 }
 
@@ -170,7 +170,7 @@ function formatPhone(digits: string, countryCode: string): string {
     return `${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4)}`;
   }
   // Pays +1 (US, CA, DO, JM...) : ### ### ####
-  const plusOne = ['US','CA','DO','JM','PR','TT','BB'];
+  const plusOne = ['US', 'CA', 'DO', 'JM', 'PR', 'TT', 'BB'];
   if (plusOne.includes(countryCode)) {
     const d = digits;
     if (d.length <= 3) return d;
@@ -305,21 +305,21 @@ export default function StartPage() {
   }, [dataLoaded, courseData]);
 
   const [secondsLeft, setSecondsLeft] = useState(17 * 60); // Valeur par défaut
-  
+
   // 2. Calcul du temps restant basé sur la date d'expiration absolue
   useEffect(() => {
     if (!dataLoaded) return;
-    
+
     if (courseData.expirationDate) {
       // Date absolue depuis Firestore
-      const expiryDate = typeof courseData.expirationDate === 'string' 
-        ? new Date(courseData.expirationDate).getTime() 
+      const expiryDate = typeof courseData.expirationDate === 'string'
+        ? new Date(courseData.expirationDate).getTime()
         : (courseData.expirationDate as any).toDate().getTime();
-      
+
       const interval = setInterval(() => {
         const now = new Date().getTime();
         const diff = Math.floor((expiryDate - now) / 1000);
-        
+
         if (diff <= 0) {
           setSecondsLeft(0);
           setExpired(true);
@@ -526,17 +526,17 @@ export default function StartPage() {
   const handleAccessClick = () => {
     setIsClosing(false);
     setDragY(0);
-    
+
     if (currentUser) {
-        if (alreadyOwned) {
-            setModalStep('success');
-        } else {
-            setModalStep('payment');
-        }
+      if (alreadyOwned) {
+        setModalStep('success');
+      } else {
+        setModalStep('payment');
+      }
     } else {
-        setModalStep('contact');
+      setModalStep('contact');
     }
-    
+
     setShowModal(true);
     setError(null);
     setEmailSent(false);
@@ -576,7 +576,7 @@ export default function StartPage() {
     e.preventDefault();
 
     if (contactMethod === 'email' && !email) return;
-    
+
     let cleanPhone = "";
     if (contactMethod === 'phone') {
       if (!phone) return;
@@ -584,7 +584,7 @@ export default function StartPage() {
 
       // Extraction uniquement des chiffres pour analyse de longueur
       let cleanNumber = phone.replace(/\D/g, "");
-      
+
       // Si l'utilisateur a saisi l'indicatif dans l'input (ex: +509 ou 509), on le retire pour la validation de longueur
       const dialDigits = selectedCountry.dial.replace(/\D/g, "");
       if (cleanNumber.startsWith(dialDigits)) {
@@ -652,8 +652,8 @@ export default function StartPage() {
       }
 
       const checkData = await checkUserAction(
-        contactMethod === 'phone' ? cleanPhone : "", 
-        contactMethod === 'email' ? email : "", 
+        contactMethod === 'phone' ? cleanPhone : "",
+        contactMethod === 'email' ? email : "",
         targetProductId
       );
 
@@ -672,7 +672,6 @@ export default function StartPage() {
       // Dans TOUS LES CAS, on génère et on envoie un code OTP (nouvelle logique sécurisée)
       const contactToUse = contactMethod === 'phone' ? cleanPhone : email;
       const genData = await generateOtpAction(contactToUse, contactMethod);
-
       if (genData.error) {
         throw new Error(genData.error);
       }
@@ -720,7 +719,6 @@ export default function StartPage() {
     try {
       const contactToUse = contactMethod === 'phone' ? verifiedPhone : email;
       const data = await verifyOtpAndLoginAction(contactToUse, verificationCode.trim(), contactMethod);
-
       if (data.error) {
         throw new Error(data.error);
       }
@@ -729,7 +727,7 @@ export default function StartPage() {
       if (data.customToken) {
         await signInWithCustomToken(auth, data.customToken);
       }
-      
+
       if (alreadyOwnedMessage) {
         setModalStep('success');
       } else {
@@ -753,7 +751,7 @@ export default function StartPage() {
       // 1. Déterminer le productId et le type du produit associé au funnel
       let productId = "";
       let productType = "course"; // défaut
-      
+
       if (courseData.linkedProductId) {
         if (typeof courseData.linkedProductId === 'string') {
           productId = courseData.linkedProductId;
@@ -879,7 +877,7 @@ export default function StartPage() {
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col p-4 sm:p-8 animate-pulse">
         {/* Fake Sticky Bar */}
         <div className="fixed top-0 left-0 right-0 h-10 bg-white/5 border-b border-white/10 z-50" />
-        
+
         {/* Main skeleton content */}
         <div className="max-w-6xl w-full mx-auto pt-20">
           <div className="flex flex-col items-center justify-center mb-12 space-y-4">
@@ -890,13 +888,13 @@ export default function StartPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
             <div className="space-y-6">
-               <div className="w-full aspect-video bg-white/5 rounded-3xl" />
-               <div className="h-8 w-1/3 bg-white/10 rounded-xl mt-8" />
-               <div className="space-y-3">
-                 <div className="h-4 w-full bg-white/5 rounded" />
-                 <div className="h-4 w-5/6 bg-white/5 rounded" />
-                 <div className="h-4 w-4/6 bg-white/5 rounded" />
-               </div>
+              <div className="w-full aspect-video bg-white/5 rounded-3xl" />
+              <div className="h-8 w-1/3 bg-white/10 rounded-xl mt-8" />
+              <div className="space-y-3">
+                <div className="h-4 w-full bg-white/5 rounded" />
+                <div className="h-4 w-5/6 bg-white/5 rounded" />
+                <div className="h-4 w-4/6 bg-white/5 rounded" />
+              </div>
             </div>
             <div className="space-y-6">
               <div className="h-64 w-full bg-white/5 rounded-3xl" />
@@ -960,40 +958,40 @@ export default function StartPage() {
 
         {/* ── TWO-COLUMN GRID ─── */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 lg:gap-12 items-start">
-        {/* ═ LEFT COLUMN ═ */}
-        <div>
+          {/* ═ LEFT COLUMN ═ */}
+          <div>
 
             {/* VIDEO */}
             <div className="relative w-full mb-6 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border border-white/10 bg-black aspect-video">
-          {!videoPlaying ? (
-            <div
-              className="absolute inset-0 cursor-pointer group flex items-center justify-center"
-              onClick={() => setVideoPlaying(true)}
-            >
-              {courseData.videoPoster ? (
-                <img
-                  src={courseData.videoPoster}
-                  alt="Aperçu du cours"
-                  className="absolute inset-0 w-full h-full object-cover opacity-60"
-                />
-              ) : null}
-              <div className="relative z-10 flex flex-col items-center gap-3">
-                <div className="size-16 bg-white rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-200">
-                  <div className="w-0 h-0 border-t-[10px] border-b-[10px] border-l-[18px] border-t-transparent border-b-transparent border-l-black ml-1" />
+              {!videoPlaying ? (
+                <div
+                  className="absolute inset-0 cursor-pointer group flex items-center justify-center"
+                  onClick={() => setVideoPlaying(true)}
+                >
+                  {courseData.videoPoster ? (
+                    <img
+                      src={courseData.videoPoster}
+                      alt="Aperçu du cours"
+                      className="absolute inset-0 w-full h-full object-cover opacity-60"
+                    />
+                  ) : null}
+                  <div className="relative z-10 flex flex-col items-center gap-3">
+                    <div className="size-16 bg-white rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-200">
+                      <div className="w-0 h-0 border-t-[10px] border-b-[10px] border-l-[18px] border-t-transparent border-b-transparent border-l-black ml-1" />
+                    </div>
+                    <span className="text-sm font-bold text-white bg-black/50 backdrop-blur px-3 py-1 rounded-full">
+                      Regarde la présentation gratuite
+                    </span>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
                 </div>
-                <span className="text-sm font-bold text-white bg-black/50 backdrop-blur px-3 py-1 rounded-full">
-                  Regarde la présentation gratuite
-                </span>
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
-            </div>
-          ) : (
-            <VideoPlayer
-              url={courseData.videoUrl}
-              className="absolute inset-0 w-full h-full"
-              roundedClassName="rounded-none"
-            />
-          )}
+              ) : (
+                <VideoPlayer
+                  url={courseData.videoUrl}
+                  className="absolute inset-0 w-full h-full"
+                  roundedClassName="rounded-none"
+                />
+              )}
             </div>
 
             {/* SPOTS WARNING */}
@@ -1011,32 +1009,31 @@ export default function StartPage() {
             {/* CTA BLOCK — mobile only */}
             <div className="lg:hidden" ref={ctaRef}>
               <div
-                className={`relative bg-gradient-to-b from-white/5 to-white/[0.02] rounded-2xl p-6 shadow-2xl overflow-visible transition-all duration-500 ${
-                  glowing
+                className={`relative bg-gradient-to-b from-white/5 to-white/[0.02] rounded-2xl p-6 shadow-2xl overflow-visible transition-all duration-500 ${glowing
                     ? "border-2 border-amber-400/80 shadow-amber-500/40 shadow-[0_0_40px_10px]"
                     : "border border-white/10"
-                }`}
+                  }`}
               >
-          {/* ── Floating ambient sparkles (always visible) */}
-              {[...Array(6)].map((_, i) => (
-                <span
-                  key={i}
-                  className="absolute pointer-events-none select-none text-sm"
-                  style={{
-                    left: `${10 + i * 15}%`,
-                    top: i % 2 === 0 ? "-18px" : "auto",
-                    bottom: i % 2 !== 0 ? "-14px" : "auto",
-                    animation: `float-sparkle ${1.8 + i * 0.4}s ease-in-out infinite`,
-                    animationDelay: `${i * 0.3}s`,
-                    opacity: 0.7,
-                  }}
-                >
-                  {["✨", "💫", "⭐", "🌟", "✦", "★"][i]}
-                </span>
-              ))}
+                {/* ── Floating ambient sparkles (always visible) */}
+                {[...Array(6)].map((_, i) => (
+                  <span
+                    key={i}
+                    className="absolute pointer-events-none select-none text-sm"
+                    style={{
+                      left: `${10 + i * 15}%`,
+                      top: i % 2 === 0 ? "-18px" : "auto",
+                      bottom: i % 2 !== 0 ? "-14px" : "auto",
+                      animation: `float-sparkle ${1.8 + i * 0.4}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.3}s`,
+                      opacity: 0.7,
+                    }}
+                  >
+                    {["✨", "💫", "⭐", "🌟", "✦", "★"][i]}
+                  </span>
+                ))}
 
-          {/* ── Shimmer overlay on button hover */}
-          <style>{`
+                {/* ── Shimmer overlay on button hover */}
+                <style>{`
             @keyframes float-sparkle {
               0%, 100% { transform: translateY(0px) scale(1); opacity: 0.6; }
               50% { transform: translateY(-8px) scale(1.2); opacity: 1; }
@@ -1069,45 +1066,44 @@ export default function StartPage() {
             }
           `}</style>
 
-              {/* Price */}
-              <div className="flex items-center justify-center gap-4 mb-2">
-                <span className="text-white/40 text-xl font-bold line-through">
-                  {courseData.currency}{courseData.originalPrice}
-                </span>
-                <span className="text-5xl font-black text-white price-bounce drop-shadow-lg">
-                  {courseData.currency}{courseData.currentPrice}
-                </span>
-                <span className="text-xs font-black bg-green-500 text-white px-2 py-1 rounded-full uppercase tracking-wider discount-badge shadow-lg shadow-green-500/30">
-                  -{Math.round((1 - courseData.currentPrice / courseData.originalPrice) * 100)}%
-                </span>
-              </div>
-              <p className="text-center text-xs text-white/40 mb-6">
-                Paiement unique · Accès à vie
-              </p>
+                {/* Price */}
+                <div className="flex items-center justify-center gap-4 mb-2">
+                  <span className="text-white/40 text-xl font-bold line-through">
+                    {courseData.currency}{courseData.originalPrice}
+                  </span>
+                  <span className="text-5xl font-black text-white price-bounce drop-shadow-lg">
+                    {courseData.currency}{courseData.currentPrice}
+                  </span>
+                  <span className="text-xs font-black bg-green-500 text-white px-2 py-1 rounded-full uppercase tracking-wider discount-badge shadow-lg shadow-green-500/30">
+                    -{Math.round((1 - courseData.currentPrice / courseData.originalPrice) * 100)}%
+                  </span>
+                </div>
+                <p className="text-center text-xs text-white/40 mb-6">
+                  Paiement unique · Accès à vie
+                </p>
 
-              {/* Main CTA button */}
-              <div className="relative">
-                {!expired && (
-                  <div
-                    className="absolute inset-0 rounded-xl bg-orange-500/40"
-                    style={{ animation: "pulse-ring 1.6s ease-out infinite" }}
-                  />
-                )}
-                <button
-                  onClick={() => { burstConfetti(); handleAccessClick(); }}
-                  disabled={expired}
-                  className={`relative w-full py-4 rounded-xl text-base font-black tracking-tight active:scale-95 shadow-xl transition-transform duration-150 ${
-                    expired
-                      ? "bg-white/10 text-white/30 cursor-not-allowed"
-                      : "cta-shimmer text-white shadow-orange-500/40 shadow-2xl"
-                  }`}
-                >
-                  {expired ? "Offre expirée" : courseData.ctaText}
-                </button>
-              </div>
-              <p className="text-center text-xs text-white/40 mt-3">
-                {courseData.ctaSubtext}
-              </p>
+                {/* Main CTA button */}
+                <div className="relative">
+                  {!expired && (
+                    <div
+                      className="absolute inset-0 rounded-xl bg-orange-500/40"
+                      style={{ animation: "pulse-ring 1.6s ease-out infinite" }}
+                    />
+                  )}
+                  <button
+                    onClick={() => { burstConfetti(); handleAccessClick(); }}
+                    disabled={expired}
+                    className={`relative w-full py-4 rounded-xl text-base font-black tracking-tight active:scale-95 shadow-xl transition-transform duration-150 ${expired
+                        ? "bg-white/10 text-white/30 cursor-not-allowed"
+                        : "cta-shimmer text-white shadow-orange-500/40 shadow-2xl"
+                      }`}
+                  >
+                    {expired ? "Offre expirée" : courseData.ctaText}
+                  </button>
+                </div>
+                <p className="text-center text-xs text-white/40 mt-3">
+                  {courseData.ctaSubtext}
+                </p>
               </div>{/* end inner cta */}
             </div>{/* end mobile cta wrapper */}
 
@@ -1115,17 +1111,17 @@ export default function StartPage() {
             <div className="mb-8">
               <h2 className="text-xl lg:text-2xl font-black mt-8 mb-5">✅ Ce que tu vas apprendre</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {courseData.benefits.map((b, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 hover:bg-white/[0.06] transition-colors"
-                >
-                  <span className="text-2xl shrink-0">{b.icon}</span>
-                  <p className="text-sm text-white/80 leading-relaxed">
-                    <Bold text={b.text} />
-                  </p>
-                </div>
-              ))}
+                {courseData.benefits.map((b, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 hover:bg-white/[0.06] transition-colors"
+                  >
+                    <span className="text-2xl shrink-0">{b.icon}</span>
+                    <p className="text-sm text-white/80 leading-relaxed">
+                      <Bold text={b.text} />
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -1133,30 +1129,30 @@ export default function StartPage() {
             <div className="mb-8">
               <h2 className="text-xl lg:text-2xl font-black mb-5">🏆 Ils ont déjà transformé leur vie</h2>
               <div className="space-y-4">
-            {testimonials && testimonials.map((t, i) => (
-                <div
-                  key={i}
-                  className="bg-white/[0.03] border border-white/8 rounded-2xl p-4 hover:bg-white/[0.05] transition-colors"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <img
-                      src={t.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.name || 'User')}&background=random`}
-                      alt={t.name}
-                      className="size-10 rounded-full object-cover border-2 border-white/10"
-                    />
-                    <div>
-                      <p className="text-sm font-bold text-white">{t.name}</p>
-                      <p className="text-xs text-white/40">{t.role}</p>
+                {testimonials && testimonials.map((t, i) => (
+                  <div
+                    key={i}
+                    className="bg-white/[0.03] border border-white/8 rounded-2xl p-4 hover:bg-white/[0.05] transition-colors"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <img
+                        src={t.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.name || 'User')}&background=random`}
+                        alt={t.name}
+                        className="size-10 rounded-full object-cover border-2 border-white/10"
+                      />
+                      <div>
+                        <p className="text-sm font-bold text-white">{t.name}</p>
+                        <p className="text-xs text-white/40">{t.role}</p>
+                      </div>
+                      <div className="ml-auto flex">
+                        {"★".repeat(t.stars).split("").map((s, si) => (
+                          <span key={si} className="text-amber-400 text-sm">{s}</span>
+                        ))}
+                      </div>
                     </div>
-                    <div className="ml-auto flex">
-                      {"★".repeat(t.stars).split("").map((s, si) => (
-                        <span key={si} className="text-amber-400 text-sm">{s}</span>
-                      ))}
-                    </div>
+                    <p className="text-sm text-white/70 italic leading-relaxed">"{t.text}"</p>
                   </div>
-                  <p className="text-sm text-white/70 italic leading-relaxed">"{t.text}"</p>
-                </div>
-              ))}
+                ))}
               </div>
             </div>{/* end testimonials */}
 
@@ -1177,17 +1173,18 @@ export default function StartPage() {
               {/* CTA Block desktop */}
               <div
                 ref={ctaRef}
-                className={`relative bg-gradient-to-b from-white/5 to-white/[0.02] rounded-2xl p-6 shadow-2xl overflow-visible transition-all duration-500 ${
-                  glowing
+                className={`relative bg-gradient-to-b from-white/5 to-white/[0.02] rounded-2xl p-6 shadow-2xl overflow-visible transition-all duration-500 ${glowing
                     ? "border-2 border-amber-400/80 shadow-amber-500/40 shadow-[0_0_40px_10px]"
                     : "border border-white/10"
-                }`}
+                  }`}
               >
                 {[...Array(6)].map((_, i) => (
                   <span key={i} className="absolute pointer-events-none select-none text-sm"
-                    style={{ left: `${10+i*15}%`, top: i%2===0?"-18px":"auto", bottom: i%2!==0?"-14px":"auto",
-                      animation:`float-sparkle ${1.8+i*0.4}s ease-in-out infinite`, animationDelay:`${i*0.3}s`, opacity:0.7 }}
-                  >{["✨","💫","⭐","🌟","✦","★"][i]}</span>
+                    style={{
+                      left: `${10 + i * 15}%`, top: i % 2 === 0 ? "-18px" : "auto", bottom: i % 2 !== 0 ? "-14px" : "auto",
+                      animation: `float-sparkle ${1.8 + i * 0.4}s ease-in-out infinite`, animationDelay: `${i * 0.3}s`, opacity: 0.7
+                    }}
+                  >{["✨", "💫", "⭐", "🌟", "✦", "★"][i]}</span>
                 ))}
                 <div className="flex items-center justify-center gap-4 mb-2">
                   <span className="text-white/40 text-xl font-bold line-through">{courseData.currency}{courseData.originalPrice}</span>
@@ -1202,9 +1199,8 @@ export default function StartPage() {
                   <button
                     onClick={() => { burstConfetti(); handleAccessClick(); }}
                     disabled={expired}
-                    className={`relative w-full py-4 rounded-xl text-base font-black tracking-tight active:scale-95 shadow-xl transition-transform duration-150 ${
-                      expired ? "bg-white/10 text-white/30 cursor-not-allowed" : "cta-shimmer text-white shadow-orange-500/40 shadow-2xl"
-                    }`}
+                    className={`relative w-full py-4 rounded-xl text-base font-black tracking-tight active:scale-95 shadow-xl transition-transform duration-150 ${expired ? "bg-white/10 text-white/30 cursor-not-allowed" : "cta-shimmer text-white shadow-orange-500/40 shadow-2xl"
+                      }`}
                   >{expired ? "Offre expirée" : courseData.ctaText}</button>
                 </div>
                 <p className="text-center text-xs text-white/40 mt-3">{courseData.ctaSubtext}</p>
@@ -1219,7 +1215,7 @@ export default function StartPage() {
               </div>
               {/* Trust badges desktop */}
               <div className="grid grid-cols-3 gap-2 text-center">
-                {[{icon:"🔒",label:"Paiement\nsécurisé"},{icon:"⚡",label:"Accès\nimmédiat"},{icon:"♾️",label:"Accès\nà vie"}].map((b) => (
+                {[{ icon: "🔒", label: "Paiement\nsécurisé" }, { icon: "⚡", label: "Accès\nimmédiat" }, { icon: "♾️", label: "Accès\nà vie" }].map((b) => (
                   <div key={b.label} className="bg-white/[0.03] border border-white/5 rounded-xl p-3">
                     <div className="text-xl mb-1">{b.icon}</div>
                     <p className="text-[10px] text-white/50 font-semibold whitespace-pre-line leading-tight">{b.label}</p>
@@ -1260,11 +1256,10 @@ export default function StartPage() {
             <button
               onClick={() => { burstConfetti(); handleAccessClick(); }}
               disabled={expired}
-              className={`relative w-full py-4 rounded-xl text-xs sm:text-sm font-black tracking-tight transition-all duration-200 active:scale-95 shadow-xl ${
-                expired
+              className={`relative w-full py-4 rounded-xl text-xs sm:text-sm font-black tracking-tight transition-all duration-200 active:scale-95 shadow-xl ${expired
                   ? "bg-white/10 text-white/30 cursor-not-allowed"
                   : "bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-white cta-shimmer"
-              }`}
+                }`}
             >
               {expired ? "Offre expirée" : `${courseData.ctaText} — ${courseData.currency}${courseData.currentPrice} ${courseData.priceGourdes ? `(${courseData.priceGourdes} HTG)` : ''} →`}
             </button>
@@ -1273,9 +1268,9 @@ export default function StartPage() {
       )}
 
       {showModal && courseData && (
-        <CheckoutModal 
-          isOpen={showModal} 
-          onClose={() => setShowModal(false)} 
+        <CheckoutModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
           product={{
             id: courseData.id || "",
             title: courseData.headline,
@@ -1290,7 +1285,7 @@ export default function StartPage() {
         />
       )}
 
-    
+
       {/* ── CONFETTI PARTICLES LAYER ─── */}
       <div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden">
         {particles.map((p) => (

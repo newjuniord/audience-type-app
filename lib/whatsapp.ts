@@ -6,7 +6,7 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const envWhatsApp = process.env.TWILIO_WHATSAPP_NUMBER;
 const twilioWhatsAppNumber = envWhatsApp 
   ? (envWhatsApp.startsWith('whatsapp:') ? envWhatsApp : `whatsapp:${envWhatsApp}`)
-  : 'whatsapp:+14155238886';
+  : 'whatsapp:+17157507852';
 
 // On initialise le client Twilio de manière globale pour le réutiliser
 const client = accountSid && authToken ? twilio(accountSid, authToken) : null;

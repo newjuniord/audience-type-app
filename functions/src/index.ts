@@ -297,7 +297,7 @@ export const lemonsqueezyrefund = onRequest({
 async function sendSmsViaFetch(toPhone: string, message: string) {
     const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
     const authToken = process.env.TWILIO_AUTH_TOKEN || "";
-    const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+14155238886";
+    const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+17157507852";
     const fromNumber = process.env.TWILIO_SMS_NUMBER || 
         process.env.TWILIO_PHONE_NUMBER || 
         twilioWhatsAppNumber.replace("whatsapp:", "");
@@ -477,4 +477,263 @@ export const onenrollmentcreated = onDocumentCreated({
 
     await generateAndSendNotification(userId, userName, productTitle, productType, isGift);
 });
+
+// ============================================================================
+// Helper: Send WhatsApp message via Twilio (WhatsApp channel)
+// ============================================================================
+async function sendWhatsAppViaFetch(toPhone: string, message: string) {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
+    const authToken = process.env.TWILIO_AUTH_TOKEN || "";
+    const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+17157507852";
+
+    if (!accountSid || !authToken) {
+        console.error("❌ [WA] Twilio credentials missing.");
+        return { success: false };
+    }
+
+    const cleanTo   = toPhone.startsWith("whatsapp:") ? toPhone : `whatsapp:${toPhone}`;
+    const cleanFrom = twilioWhatsAppNumber.startsWith("whatsapp:") ? twilioWhatsAppNumber : `whatsapp:${twilioWhatsAppNumber}`;
+
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const authString = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
+
+    const params = new URLSearchParams();
+    params.append("To",   cleanTo);
+    params.append("From", cleanFrom);
+    params.append("Body", message);
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Authorization": `Basic ${authString}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: params.toString()
+        });
+
+        if (response.ok) {
+            const data: any = await response.json();
+            console.log(`✅ [WA] Sent. SID: ${data.sid}`);
+            return { success: true, sid: data.sid };
+        } else {
+            const errText = await response.text();
+            console.error("❌ [WA] Twilio error:", errText);
+            return { success: false };
+        }
+    } catch (e: any) {
+        console.error("❌ [WA] Exception:", e.message);
+        return { success: false };
+    }
+}
+
+// ============================================================================
+// Cloud Function: webhookbotmessage
+// Bot WhatsApp DJR Akademi — metem | kod | bug | kontak | contact
+//
+// RÈGLE D'OR: phoneNumber provient UNIQUEMENT de `From` (Twilio).
+// Le Body n'est jamais utilisé pour identifier l'utilisateur.
+// ============================================================================
+export const webhookbotmessage = onRequest({
+    secrets: ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_WHATSAPP_NUMBER"],
+    region: "us-central1"
+}, async (req, res) => {
+    // Répondre 200 immédiatement à Twilio pour éviter les retries
+    res.status(200).send("OK");
+    if (req.method !== "POST") return;
+
+    try {
+        // ── Parse Twilio's URL-encoded body ──────────────────────────────────
+        const bodyParams  = new URLSearchParams(req.rawBody?.toString() || "");
+        const From        = bodyParams.get("From") || "";    // "whatsapp:+18296692914"
+        const Body        = bodyParams.get("Body") || "";
+        const ProfileName = bodyParams.get("ProfileName") || "Client";
+
+        if (!From || !Body) {
+            console.warn("⚠️ [BOT] Missing From or Body.");
+            return;
+        }
+
+        // ── Nettoyage — RÈGLE D'OR ────────────────────────────────────────────
+        const phoneNumber = From.replace("whatsapp:", "").trim(); // "+18296692914"
+        const otpDocId    = From.trim();                          // "whatsapp:+18296692914"
+        const userMessage = Body.trim().toLowerCase();
+
+        console.log(`📩 [BOT] "${userMessage}" from ${phoneNumber} (${ProfileName})`);
+
+        const MAX_PER_DAY = 10;
+
+        // ── Helper: vérifier le rate limit ───────────────────────────────────
+        const checkRateLimit = async (): Promise<{ blocked: boolean; count: number; expireAt: Date | null }> => {
+            const otpDoc = await db.collection("otp_code").doc(otpDocId).get();
+            const now = new Date();
+            if (otpDoc.exists) {
+                const data     = otpDoc.data()!;
+                const expireAt = data.expireAt?.toDate() as Date;
+                const count    = (data.count || 0) as number;
+                if (expireAt && expireAt > now && count >= MAX_PER_DAY) {
+                    return { blocked: true, count, expireAt };
+                }
+                return { blocked: false, count: (expireAt && expireAt > now) ? count : 0, expireAt: expireAt || null };
+            }
+            return { blocked: false, count: 0, expireAt: null };
+        };
+
+        // ── Helper: écrire le doc OTP (fenêtre 24h partagée) ─────────────────
+        const updateOtpDoc = async (uid: string, code: string, currentCount: number, existingExpireAt: Date | null) => {
+            const now = new Date();
+            const newExpireAt = (existingExpireAt && existingExpireAt > now)
+                ? existingExpireAt
+                : new Date(now.getTime() + 24 * 60 * 60 * 1000); // +24h
+            await db.collection("otp_code").doc(otpDocId).set(
+                { code, count: currentCount + 1, expireAt: newExpireAt, type: "whatsapp", userId: uid },
+                { merge: true }
+            );
+        };
+
+        const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
+
+        // ── Helper: trouver l'utilisateur par numéro ──────────────────────────
+        const findUserByPhone = async (): Promise<{ uid: string; displayName: string } | null> => {
+            const snap = await db.collection("users").where("phone", "==", phoneNumber).limit(1).get();
+            if (snap.empty) return null;
+            const d = snap.docs[0].data();
+            return { uid: snap.docs[0].id, displayName: d.displayName || "Client" };
+        };
+
+        // ── Helper: effacer tous les anciens temp_links non utilisés ──────────
+        const clearOldTempLinks = async (uid: string) => {
+            const old = await db.collection("temp_links").where("userId", "==", uid).where("used", "==", false).get();
+            if (!old.empty) {
+                const batch = db.batch();
+                old.docs.forEach(d => batch.delete(d.ref));
+                await batch.commit();
+                console.log(`🗑️ [BOT] Deleted ${old.size} old temp_link(s) for ${uid}`);
+            }
+        };
+
+        // ── Helper: créer un nouveau temp_link (10h) ──────────────────────────
+        const createTempLink = async (uid: string): Promise<string> => {
+            const token     = crypto.randomUUID();
+            const now       = new Date();
+            const expiresAt = new Date(now.getTime() + 10 * 60 * 60 * 1000); // +10h
+            await db.collection("temp_links").doc(token).set({ userId: uid, expiresAt, used: false, createdAt: now });
+            return token;
+        };
+
+        // ════════════════════════════════════════════════════════════════════════
+        // KEYWORD: metem — Inscription ou Reconnexion rapide
+        // ════════════════════════════════════════════════════════════════════════
+        if (userMessage === "metem") {
+            const rateLimit = await checkRateLimit();
+            if (rateLimit.blocked) {
+                await sendWhatsAppViaFetch(From, `🚫 Ou te mande twòp kòd jodi a.\nEsaye ankò demen (limit ${MAX_PER_DAY} fwa pou 24 tè).`);
+                return;
+            }
+
+            let uid = "";
+            let displayName = ProfileName;
+            let isNewUser = false;
+
+            const existingUser = await findUserByPhone();
+
+            if (existingUser) {
+                uid = existingUser.uid;
+                displayName = existingUser.displayName;
+                console.log(`✅ [BOT/metem] Existing user: ${uid}`);
+            } else {
+                isNewUser = true;
+                try {
+                    const newUser = await auth.createUser({ phoneNumber, displayName: ProfileName });
+                    uid = newUser.uid;
+                    console.log(`✅ [BOT/metem] Auth user created: ${uid}`);
+                } catch (authErr: any) {
+                    if (authErr.code === "auth/phone-number-already-exists") {
+                        // Auto-guérison : Auth existe mais doc Firestore manquant
+                        const existingAuthUser = await auth.getUserByPhoneNumber(phoneNumber);
+                        uid = existingAuthUser.uid;
+                        displayName = existingAuthUser.displayName || ProfileName;
+                        console.warn(`⚠️ [BOT/metem] Self-healing for uid: ${uid}`);
+                    } else {
+                        throw authErr;
+                    }
+                }
+
+                const now = new Date();
+                await db.collection("users").doc(uid).set({
+                    uid,
+                    phone:       phoneNumber,
+                    displayName: ProfileName,
+                    email:       `${uid}@audiencetype.com`,
+                    status:      "active",
+                    role:        "user",
+                    createdAt:   now,
+                    updatedAt:   now
+                });
+            }
+
+            await clearOldTempLinks(uid);
+            const token = await createTempLink(uid);
+            const link  = `https://audiencetype.com/login/temp?token=${token}`;
+            const code  = generateOtp();
+            await updateOtpDoc(uid, code, rateLimit.count, rateLimit.expireAt);
+
+            const msg = isNewUser
+                ? `🎉 Kont ou a kreye avèk suksè, ${displayName}!\n\nMen lyen sekirize ou pou w konekte an 1 klik (li ekspire nan 10 tè) :\n🔗 ${link}\n\nNou jenere yon kòd OTP pou ou tou si w vle konekte sou yon òdinatè :\n🔑 *${code}*\n\n⚠️ Pa pataje lyen sa a — li pou ou sèlman.`
+                : `Mèsi paske ou mande kont ou, li egziste deja 😊!\n\n🔐 Pou sekirite ou, tout ansyen lyen ou yo efase.\nMen nouvo lyen koneksyon rapid ou a (li ekspire nan 10 tè) :\n🔗 ${link}\n\nEpi men kòd OTP ou a si ou bezwen konekte sou yon lòt aparèy :\n🔑 *${code}*\n\n⚠️ Pa pataje lyen sa a — li pou ou sèlman.`;
+
+            await sendWhatsAppViaFetch(From, msg);
+            console.log(`📤 [BOT/metem] Done (isNew=${isNewUser})`);
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
+        // KEYWORD: kod — OTP pour autre appareil
+        // ════════════════════════════════════════════════════════════════════════
+        else if (userMessage === "kod") {
+            const rateLimit = await checkRateLimit();
+            if (rateLimit.blocked) {
+                await sendWhatsAppViaFetch(From, `🚫 Ou te mande twòp kòd jodi a.\nEsaye ankò demen (limit ${MAX_PER_DAY} fwa pou 24 tè).`);
+                return;
+            }
+
+            const existingUser = await findUserByPhone();
+            if (!existingUser) {
+                await sendWhatsAppViaFetch(From, `❌ Nou pa jwenn okenn kont pou nimewo sa a.\nTanpri, ekri mo sa a anvan : *metem*\npou w ka kreye kont ou.`);
+                return;
+            }
+
+            const { uid } = existingUser;
+            const code = generateOtp();
+            await updateOtpDoc(uid, code, rateLimit.count, rateLimit.expireAt);
+            await sendWhatsAppViaFetch(From, `🔑 KÒD OTP OU A\n\nVoici ton code de connexion :\n*${code}*\n\nCe code est valide 24 heures.\nEntre-le sur la page de connexion de DJR Akademi.`);
+            console.log(`📤 [BOT/kod] OTP sent to ${phoneNumber}`);
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
+        // KEYWORD: bug — Support technique
+        // ════════════════════════════════════════════════════════════════════════
+        else if (userMessage === "bug") {
+            await sendWhatsAppViaFetch(From, `⚠️ SIPÒ TEKNIK\n\nSi ou rankontre yon pwoblèm teknik oswa yon bug sou sit la, kontakte nou imedyatman nan imel sa a :\n📧 contact@audiencetype.com\n\noswa dirèkteman sou WhatsApp nan nimewo sa a :\n📞 3094848394`);
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
+        // KEYWORD: kontak / contact — Contact général
+        // ════════════════════════════════════════════════════════════════════════
+        else if (userMessage === "kontak" || userMessage === "contact") {
+            await sendWhatsAppViaFetch(From, `📞 KONTAKTE NOU\n\nPou nenpòt enfòmasyon, kesyon, oswa asistans jeneral, ou ka ekri nou dirèkteman sou WhatsApp nan nimewo sa a :\n👉 3094848394`);
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
+        // UNKNOWN — Menu d'aide
+        // ════════════════════════════════════════════════════════════════════════
+        else {
+            await sendWhatsAppViaFetch(From, `👋 Bonjou! Voici les commandes disponibles :\n\n• Tape *metem* pou konekte ou rapid an 1 klik\n• Tape *kod* pou jwenn yon kòd OTP (lòt aparèy)\n• Tape *bug* pou sipò teknik\n• Tape *kontak* pou kontakte nou`);
+        }
+
+    } catch (error: any) {
+        // 200 déjà envoyé à Twilio — on log seulement, pas de retry
+        console.error("🔥 [BOT ERROR]", error.message || error);
+    }
+});
+
 
