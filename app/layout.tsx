@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import ConnectionStatus from "@/components/ConnectionStatus";
 import AnnouncementBar from "@/components/AnnouncementBar";
+import BottomNav from "@/components/BottomNav";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -66,6 +67,7 @@ export default function RootLayout({
                     <AnnouncementBar />
                     <ConnectionStatus />
                     {children}
+                    <BottomNav />
                 </AuthProvider>
             </body>
         </html>
