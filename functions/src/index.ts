@@ -763,7 +763,7 @@ export const webhookbotmessage = onRequest({
             userMessage === "404" ||
             userMessage === "500"
         ) {
-            await sendWhatsAppViaFetch(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* pou konekte ou rapid an 1 klik\n• Tape *kod* pou jwenn yon kòd OTP (lòt aparèy)\n• Tape *bug* pou sipò teknik\n• Tape *kontak* pou kontakte nou`);
+            await sendWhatsAppViaFetch(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* ➜ kreye kont ou epi resevwa lyen koneksyon ou\n• Tape *kod* ➜ resevwa yon kòd koneksyon ' OTP '\n• Tape *bug* ➜ jwenn sipò teknik\n• Tape *kontak* ➜ kontakte ekip nou an.`);
         }
         // ════════════════════════════════════════════════════════════════════════
         // UNKNOWN — Ignorer silencieusement
