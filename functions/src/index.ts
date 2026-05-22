@@ -554,12 +554,12 @@ export const webhookbotmessage = onRequest({
             return;
         }
 
-        // ── Nettoyage — RÈGLE D'OR ────────────────────────────────────────────
         const phoneNumber = From.replace("whatsapp:", "").trim(); // "+18296692914"
         const otpDocId    = From.trim();                          // "whatsapp:+18296692914"
-        const userMessage = Body.trim().toLowerCase();
+        const rawMessage = Body.trim().toLowerCase();
+        const userMessage = rawMessage.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-        console.log(`📩 [BOT] "${userMessage}" from ${phoneNumber} (${ProfileName})`);
+        console.log(`📩 [BOT] "${rawMessage}" (normalized: "${userMessage}") from ${phoneNumber} (${ProfileName})`);
 
         const MAX_PER_DAY = 10;
 
@@ -689,7 +689,7 @@ export const webhookbotmessage = onRequest({
         // ════════════════════════════════════════════════════════════════════════
         // KEYWORD: kod — OTP pour autre appareil
         // ════════════════════════════════════════════════════════════════════════
-        else if (userMessage === "kod") {
+        else if (userMessage === "kod" || userMessage === "kòd" || rawMessage === "kod" || rawMessage === "kòd") {
             const rateLimit = await checkRateLimit();
             if (rateLimit.blocked) {
                 await sendWhatsAppViaFetch(From, `🚫 Ou te mande twòp kòd jodi a.\nEsaye ankò demen (limit ${MAX_PER_DAY} fwa pou 24 tè).`);
