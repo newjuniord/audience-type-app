@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
@@ -32,6 +32,37 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
     );
     const [invitationCode, setInvitationCode] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
+
+    // Drag-to-close state
+    const [isClosing, setIsClosing] = useState(false);
+    const [dragY, setDragY] = useState(0);
+    const dragStartY = useRef(0);
+    const isDragging = useRef(false);
+
+    const handleClose = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 350);
+    };
+
+    const onDragStart = (e: React.TouchEvent | React.PointerEvent) => {
+        isDragging.current = true;
+        dragStartY.current = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    };
+    
+    const onDragMove = (e: React.TouchEvent | React.PointerEvent) => {
+        if (!isDragging.current) return;
+        const currentY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        const delta = Math.max(0, currentY - dragStartY.current);
+        setDragY(delta);
+    };
+    
+    const onDragEnd = () => {
+        isDragging.current = false;
+        if (dragY > 80) handleClose();
+        else setDragY(0);
+    };
 
     const handleClaim = async () => {
         if (!user) {
@@ -140,17 +171,50 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
     // For better UX, let's show a confirmation step.
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4 animate-in fade-in duration-300">
-            <div className="bg-[#121212] border border-white/10 rounded-t-[2rem] md:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-300">
+            {/* Backdrop */}
+            <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+                style={{ opacity: isClosing ? 0 : dragY > 0 ? Math.max(0, 1 - dragY / 300) : 1 }}
+                onClick={handleClose}
+            />
+
+            <div 
+                className="bg-[#121212] border border-white/10 rounded-t-[2rem] md:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative"
+                style={{
+                    transform: isClosing
+                      ? 'translateY(100%)'
+                      : dragY > 0
+                      ? `translateY(${dragY}px)`
+                      : 'translateY(0)',
+                    opacity: isClosing ? 0 : dragY > 0 ? Math.max(0.3, 1 - dragY / 300) : 1,
+                    transition: isDragging.current ? 'none' : 'transform 0.35s cubic-bezier(0.32,0.72,0,1), opacity 0.35s ease',
+                  }}
+            >
                 {/* Drag handle for mobile */}
-                <div className="absolute top-0 left-0 w-full flex justify-center pt-3 z-20 md:hidden">
-                    <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+                <div 
+                    className="absolute top-0 left-0 w-full flex justify-center pt-4 pb-2 z-20 md:hidden cursor-grab active:cursor-grabbing touch-none"
+                    onTouchStart={onDragStart}
+                    onTouchMove={onDragMove}
+                    onTouchEnd={onDragEnd}
+                    onPointerDown={onDragStart}
+                    onPointerMove={onDragMove}
+                    onPointerUp={onDragEnd}
+                >
+                    <div 
+                        className="rounded-full bg-white/25 transition-all duration-150"
+                        style={{
+                            width: dragY > 20 ? '48px' : '40px',
+                            height: '4px',
+                            opacity: dragY > 0 ? 0.6 : 1,
+                        }}
+                    />
                 </div>
 
-                {/* Close button */}
+                {/* Close button - visible only on desktop */}
                 <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md text-white/70 hover:text-white transition-all z-20"
+                    onClick={handleClose}
+                    className="hidden md:flex absolute top-4 right-4 w-8 h-8 items-center justify-center rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md text-white/70 hover:text-white transition-all z-20"
                 >
                     <span className="material-symbols-outlined text-sm">close</span>
                 </button>
@@ -230,7 +294,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                                     Réessayer
                                 </button>
                                 <button
-                                    onClick={onClose}
+                                    onClick={handleClose}
                                     className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all"
                                 >
                                     Fermer
