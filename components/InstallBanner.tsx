@@ -1,8 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function InstallBanner() {
+    const { user } = useAuth();
+    const pathname = usePathname();
+
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showBanner, setShowBanner] = useState(false);
     const [isIos, setIsIos] = useState(false);
@@ -75,10 +80,18 @@ export default function InstallBanner() {
 
     if (isInstalled || !showBanner) return null;
 
+    const hasBottomNav = !!(user && 
+        pathname &&
+        !pathname.startsWith("/admin") && 
+        !pathname.startsWith("/course/") && 
+        !pathname.startsWith("/login"));
+
     return (
         <>
             {/* Bannière principale */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom duration-500">
+            <div className={`fixed left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom duration-500 ${
+                hasBottomNav ? "bottom-[76px] md:bottom-0" : "bottom-0"
+            }`}>
                 <div className="max-w-md mx-auto bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden">
                     {/* Barre décorative orange */}
                     <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-orange-500 to-transparent" />
