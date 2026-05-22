@@ -373,7 +373,31 @@ export async function generateMagicLinkAction(contact: string) {
 
     try {
         const adminDb = getAdminDb();
-        const contactClean = contact.trim();
+        let contactClean = contact.trim();
+        contactClean = contactClean.replace(/^whatsapp:/i, '');
+        if (!contactClean.startsWith('+')) {
+            contactClean = '+' + contactClean;
+        }
+
+        const otpDocId = `whatsapp:${contactClean}`;
+        const otpRef = adminDb.collection("otp_code").doc(otpDocId);
+        const otpDoc = await otpRef.get();
+        const now = new Date();
+
+        let is24hWindowOpen = false;
+        if (otpDoc.exists && otpDoc.data()?.expireAt?.toDate() > now) {
+            is24hWindowOpen = true;
+        }
+
+        if (!is24hWindowOpen) {
+            const businessPhone = process.env.NEXT_PUBLIC_TWILIO_NUMBER || "+17157507852";
+            const cleanBusinessPhone = businessPhone.replace('whatsapp:', '').replace(/\+/g, '');
+            return { 
+                success: true, 
+                action: "redirect_to_whatsapp",
+                businessPhone: cleanBusinessPhone
+            };
+        }
         
         // Nettoyage des anciens tokens pour ce numéro (optionnel, mais garde la DB propre)
         const oldLinksSnap = await adminDb.collection("magic_links")

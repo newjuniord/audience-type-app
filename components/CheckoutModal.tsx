@@ -298,8 +298,16 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
         const genData = await generateMagicLinkAction(contactToUse);
         if (genData.error) throw new Error(genData.error);
         
-        setMagicLinkToken(genData.token || null);
-        setWhatsappRedirect(null);
+        if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
+          setWhatsappRedirect({
+              url: `https://wa.me/${genData.businessPhone}?text=${encodeURIComponent("KÒD")}`,
+              businessPhone: `+${genData.businessPhone}`
+          });
+          setMagicLinkToken(null);
+        } else {
+          setMagicLinkToken(genData.token || null);
+          setWhatsappRedirect(null);
+        }
         setVerificationError(null);
         setVerificationCode("");
         setTempLink(null);
