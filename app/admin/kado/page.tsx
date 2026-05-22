@@ -13,10 +13,16 @@ export default function AdminKadoPage() {
         try {
             setLoading(true);
             const data = await getGifts();
-            data.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+            data.sort((a, b) => {
+                const timeA = typeof a.createdAt?.toMillis === 'function' ? a.createdAt.toMillis() : 0;
+                const timeB = typeof b.createdAt?.toMillis === 'function' ? b.createdAt.toMillis() : 0;
+                return timeB - timeA;
+            });
+            console.log("Fetched gifts:", data);
             setGifts(data);
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
+            alert("Erreur de chargement: " + e.message);
         } finally {
             setLoading(false);
         }
@@ -117,10 +123,10 @@ export default function AdminKadoPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                     {gifts.map(gift => {
-                        const isExpired = gift.expirationDate
+                        const isExpired = gift.expirationDate && typeof gift.expirationDate.toDate === 'function'
                             ? gift.expirationDate.toDate().getTime() < Date.now()
                             : false;
-
+                        
                         return (
                         <div key={gift.id} className={`bg-white border rounded-2xl overflow-hidden transition-all group flex flex-col ${
                             isExpired
@@ -175,12 +181,19 @@ export default function AdminKadoPage() {
                                             <span className="text-black/30">/ {gift.maxUses} max</span>
                                         )}
                                     </div>
-                                    {gift.expirationDate && (
-                                        <div className="flex items-center gap-2 text-xs text-orange-500">
-                                            <span className="material-symbols-outlined text-[13px]">schedule</span>
-                                            <span>Expire le {gift.expirationDate.toDate().toLocaleDateString("fr-FR")}</span>
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const isExpired = gift.expirationDate && typeof gift.expirationDate.toDate === 'function'
+                                            ? gift.expirationDate.toDate().getTime() < Date.now()
+                                            : false;
+                                        return (
+                                            gift.expirationDate && typeof gift.expirationDate.toDate === 'function' && (
+                                                <div className={`flex items-center gap-2 text-xs ${isExpired ? "text-red-500" : "text-orange-500"}`}>
+                                                    <span className="material-symbols-outlined text-[13px]">schedule</span>
+                                                    <span>{isExpired ? "Expiré le" : "Expire le"} {gift.expirationDate.toDate().toLocaleDateString("fr-FR")}</span>
+                                                </div>
+                                            )
+                                        );
+                                    })()}
                                     {gift.requiresInvitation && (
                                         <div className="flex items-center gap-2 text-xs text-purple-600">
                                             <span className="material-symbols-outlined text-[13px]">key</span>
@@ -207,11 +220,10 @@ export default function AdminKadoPage() {
                             <div className="border-t border-black/5 p-3 flex items-center justify-between bg-black/[0.01]">
                                 <button
                                     onClick={() => handleToggle(gift)}
-                                    className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full transition-all ${
-                                        gift.isActive
+                                    className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full transition-all ${gift.isActive
                                             ? "bg-emerald-50 text-emerald-600 hover:bg-red-50 hover:text-red-600"
                                             : "bg-black/5 text-black/40 hover:bg-emerald-50 hover:text-emerald-600"
-                                    }`}
+                                        }`}
                                 >
                                     {gift.isActive ? "✓ Actif" : "Inactif"}
                                 </button>
