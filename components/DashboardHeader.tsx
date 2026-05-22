@@ -87,92 +87,87 @@ export default function DashboardHeader() {
                                 </div>
                             </button>
 
-                            {/* Profile Dropdown */}
+                            {/* Profile Dropdown — Premium Design */}
                             <div
-                                className={`absolute right-0 mt-4 w-64 bg-white dark:bg-background-dark border border-black/5 dark:border-white/5 rounded-3xl shadow-2xl transition-all duration-300 transform origin-top-right ${isDropdownOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
-                                    }`}
+                                className={`absolute right-0 mt-4 w-72 bg-white dark:bg-[#141414] border border-black/5 dark:border-white/[0.07] rounded-3xl shadow-2xl shadow-black/20 transition-all duration-300 transform origin-top-right overflow-hidden ${isDropdownOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
                             >
-                                <div className="p-4 flex flex-col gap-1">
-                                    <p className="text-xs font-bold text-primary/50 dark:text-white/50 uppercase tracking-widest mb-1">
-                                        <span>Connecté en tant que</span>
-                                    </p>
-                                    <p className="text-sm font-black truncate">
-                                        <span>{user.displayName || user.email}</span>
-                                    </p>
+                                {/* Header utilisateur */}
+                                <div className="px-5 pt-5 pb-4 border-b border-black/5 dark:border-white/5">
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className="size-11 rounded-2xl bg-cover bg-center border-2 border-primary/20 dark:border-white/10 shadow-md shrink-0"
+                                            style={{ backgroundImage: `url("${user.photoURL || 'https://lh3.googleusercontent.com/a/default-user'}")` }}
+                                        />
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-black truncate leading-tight">{user.displayName || "Utilisateur"}</p>
+                                            <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{user.email}</p>
+                                        </div>
+                                    </div>
                                     {role === 'admin' && (
                                         <Link
                                             href="/admin"
                                             onClick={() => setIsDropdownOpen(false)}
-                                            className="flex items-center gap-3 p-3 rounded-2xl bg-primary/5 dark:bg-white/5 border border-primary/10 dark:border-white/10 hover:bg-primary/10 dark:hover:bg-white/10 transition-colors text-sm font-bold text-primary dark:text-white"
+                                            className="mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-primary dark:bg-white text-white dark:text-primary text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-lg shadow-primary/20"
                                         >
-                                            <span className="material-symbols-outlined text-lg notranslate">shield_person</span>
-                                            Admin Panel
+                                            <span className="material-symbols-outlined text-sm notranslate">shield_person</span>
+                                            Espace Administrateur
                                         </Link>
                                     )}
-                                    <Link
-                                        href="/products"
-                                        onClick={() => setIsDropdownOpen(false)}
-                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
-                                    >
-                                        <span className="material-symbols-outlined text-lg notranslate">storefront</span>
-                                        Produits
-                                    </Link>
-                                    <Link
-                                        href="/dashboard"
-                                        onClick={() => setIsDropdownOpen(false)}
-                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
-                                    >
-                                        <span className="material-symbols-outlined text-lg notranslate">grid_view</span>
-                                        Mon contenu
-                                    </Link>
-                                    <Link
-                                        href="/consultation"
-                                        onClick={() => setIsDropdownOpen(false)}
-                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
-                                    >
-                                        <span className="material-symbols-outlined text-lg notranslate">support_agent</span>
-                                        Konsiltasyon
-                                    </Link>
-                                    <Link
-                                        href="/coaching"
-                                        onClick={() => setIsDropdownOpen(false)}
-                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
-                                    >
-                                        <span className="material-symbols-outlined text-lg notranslate">psychology</span>
-                                        Coaching
-                                    </Link>
-                                    <Link
-                                        href="/services"
-                                        onClick={() => setIsDropdownOpen(false)}
-                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
-                                    >
-                                        <span className="material-symbols-outlined text-lg notranslate">design_services</span>
-                                        Sèvis
-                                    </Link>
+                                </div>
+
+                                {/* Navigation principale */}
+                                <div className="px-3 py-3 space-y-0.5">
+                                    <p className="px-2 text-[9px] font-black uppercase tracking-[0.15em] text-black/30 dark:text-white/30 mb-2">Navigation</p>
+
+                                    {[
+                                        { href: "/dashboard", icon: "grid_view", label: "Mon contenu" },
+                                        { href: "/products", icon: "storefront", label: "Produits" },
+                                        { href: "/kado", icon: "redeem", label: "Kado", highlight: true },
+                                        { href: "/consultation", icon: "support_agent", label: "Konsiltasyon" },
+                                        { href: "/coaching", icon: "psychology", label: "Coaching" },
+                                        { href: "/services", icon: "design_services", label: "Sèvis" },
+                                    ].map(({ href, icon, label, highlight }) => (
+                                        <Link
+                                            key={href}
+                                            href={href}
+                                            onClick={() => setIsDropdownOpen(false)}
+                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold group ${
+                                                highlight
+                                                    ? "text-orange-500 hover:bg-orange-500/10"
+                                                    : "text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white"
+                                            }`}
+                                        >
+                                            <span className={`material-symbols-outlined text-base notranslate ${highlight ? "text-orange-500" : "text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white"} transition-colors`}>{icon}</span>
+                                            {label}
+                                            {highlight && <span className="ml-auto text-[9px] font-black uppercase tracking-widest bg-orange-500/15 text-orange-500 px-2 py-0.5 rounded-full">Gratuit</span>}
+                                        </Link>
+                                    ))}
+                                </div>
+
+                                {/* Section profil + déconnexion */}
+                                <div className="px-3 pb-3 pt-1 border-t border-black/5 dark:border-white/5 space-y-0.5">
+                                    <p className="px-2 text-[9px] font-black uppercase tracking-[0.15em] text-black/30 dark:text-white/30 mb-2 pt-2">Compte</p>
                                     <Link
                                         href="/dashboard/transactions"
                                         onClick={() => setIsDropdownOpen(false)}
-                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold"
+                                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-sm font-semibold text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white group"
                                     >
-                                        <span className="material-symbols-outlined text-lg notranslate">receipt_long</span>
+                                        <span className="material-symbols-outlined text-base notranslate text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white transition-colors">receipt_long</span>
                                         Transactions
                                     </Link>
                                     <Link
                                         href="/dashboard/profile"
                                         onClick={() => setIsDropdownOpen(false)}
-                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold border-b border-black/5 dark:border-white/5"
+                                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-sm font-semibold text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white group"
                                     >
-                                        <span className="material-symbols-outlined text-lg notranslate">person</span>
-                                        Profil
+                                        <span className="material-symbols-outlined text-base notranslate text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white transition-colors">manage_accounts</span>
+                                        Mon Profil
                                     </Link>
                                     <button
-                                        onClick={() => {
-                                            setIsDropdownOpen(false);
-                                            signOutUser();
-                                        }}
-                                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-red-500/10 text-red-500 transition-colors text-sm font-bold w-full text-left mt-1"
+                                        onClick={() => { setIsDropdownOpen(false); signOutUser(); }}
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/8 text-red-500/70 hover:text-red-500 transition-all text-sm font-semibold text-left group"
                                     >
-                                        <span className="material-symbols-outlined text-lg notranslate">logout</span>
+                                        <span className="material-symbols-outlined text-base notranslate transition-colors">logout</span>
                                         Se déconnecter
                                     </button>
                                 </div>
