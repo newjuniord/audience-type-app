@@ -180,7 +180,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
             />
 
             <div 
-                className="bg-[#121212] border border-white/10 rounded-t-[2rem] md:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative"
+                className="bg-[#121212] border border-white/10 rounded-t-[2rem] md:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative min-h-[55vh] md:min-h-0 flex flex-col"
                 style={{
                     transform: isClosing
                       ? 'translateY(100%)'
@@ -220,18 +220,18 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                 </button>
 
                 {/* Header Image */}
-                <div className="relative h-40 md:h-48 w-full bg-white/5">
+                <div className="relative h-56 md:h-48 w-full bg-white/5 shrink-0">
                     <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/50 to-transparent" />
                     <div className="absolute bottom-4 left-6 right-6">
-                        <span className="inline-block px-3 py-1 bg-orange-500/90 text-white text-[10px] font-black uppercase tracking-wider rounded-full mb-2">
+                        <span className="inline-block px-3 py-1 bg-orange-500/90 text-white text-[10px] font-black uppercase tracking-wider rounded-full mb-2 shadow-lg">
                             Kado Spécial
                         </span>
-                        <h3 className="font-black text-xl md:text-2xl text-white leading-tight">{item.title}</h3>
+                        <h3 className="font-black text-2xl md:text-2xl text-white leading-tight drop-shadow-md">{item.title}</h3>
                     </div>
                 </div>
 
-                <div className="p-6 md:p-8 pb-8 md:pb-8">
+                <div className="p-6 md:p-8 pb-12 md:pb-8 flex-1 flex flex-col">
                     {/* States */}
                     {step === "initial" && (
                         <div className="space-y-6">
