@@ -1,13 +1,120 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithCustomToken } from "firebase/auth";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 // Importation des fonctions Firestore pour manipuler les documents
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import {
+    checkUserAction,
+    generateOtpAction,
+    verifyOtpAndLoginAction,
+    generateMagicLinkAction
+} from "@/app/actions/auth";
+
+// ─── COUNTRIES LIST ──────────────────────────────────────────────────────────
+const COUNTRIES = [
+  { code: 'HT', name: 'Haïti',              dial: '+509', flag: '🇭🇹' },
+  { code: 'DO', name: 'Rép. Dominicaine',    dial: '+1',   flag: '🇩🇴' },
+  { code: 'CU', name: 'Cuba',               dial: '+53',  flag: '🇨🇺' },
+  { code: 'JM', name: 'Jamaïque',           dial: '+1',   flag: '🇯🇲' },
+  { code: 'PR', name: 'Porto Rico',          dial: '+1',   flag: '🇵🇷' },
+  { code: 'TT', name: 'Trinidad & Tobago',   dial: '+1',   flag: '🇹🇹' },
+  { code: 'BB', name: 'Barbade',             dial: '+1',   flag: '🇧🇧' },
+  { code: 'US', name: 'États-Unis',          dial: '+1',   flag: '🇺🇸' },
+  { code: 'CA', name: 'Canada',              dial: '+1',   flag: '🇨🇦' },
+  { code: 'MX', name: 'Mexique',             dial: '+52',  flag: '🇲🇽' },
+  { code: 'GT', name: 'Guatemala',           dial: '+502', flag: '🇬🇹' },
+  { code: 'HN', name: 'Honduras',            dial: '+504', flag: '🇭🇳' },
+  { code: 'SV', name: 'El Salvador',         dial: '+503', flag: '🇸🇻' },
+  { code: 'NI', name: 'Nicaragua',           dial: '+505', flag: '🇳🇮' },
+  { code: 'CR', name: 'Costa Rica',          dial: '+506', flag: '🇨🇷' },
+  { code: 'PA', name: 'Panama',              dial: '+507', flag: '🇵🇦' },
+  { code: 'CO', name: 'Colombie',            dial: '+57',  flag: '🇨🇴' },
+  { code: 'VE', name: 'Venezuela',           dial: '+58',  flag: '🇻🇪' },
+  { code: 'EC', name: 'Équateur',            dial: '+593', flag: '🇪🇨' },
+  { code: 'PE', name: 'Pérou',              dial: '+51',  flag: '🇵🇪' },
+  { code: 'BO', name: 'Bolivie',             dial: '+591', flag: '🇧🇴' },
+  { code: 'CL', name: 'Chili',              dial: '+56',  flag: '🇨🇱' },
+  { code: 'AR', name: 'Argentine',           dial: '+54',  flag: '🇦🇷' },
+  { code: 'UY', name: 'Uruguay',             dial: '+598', flag: '🇺🇾' },
+  { code: 'PY', name: 'Paraguay',            dial: '+595', flag: '🇵🇾' },
+  { code: 'BR', name: 'Brésil',             dial: '+55',  flag: '🇧🇷' },
+  { code: 'FR', name: 'France',              dial: '+33',  flag: '🇫🇷' },
+  { code: 'BE', name: 'Belgique',            dial: '+32',  flag: '🇧🇪' },
+  { code: 'CH', name: 'Suisse',              dial: '+41',  flag: '🇨🇭' },
+  { code: 'GP', name: 'Guadeloupe',          dial: '+590', flag: '🇬🇵' },
+  { code: 'MQ', name: 'Martinique',          dial: '+596', flag: '🇲🇶' },
+  { code: 'GF', name: 'Guyane',             dial: '+594', flag: '🇬🇫' },
+  { code: 'RE', name: 'La Réunion',         dial: '+262', flag: '🇷🇪' },
+  { code: 'GB', name: 'Royaume-Uni',         dial: '+44',  flag: '🇬🇧' },
+  { code: 'DE', name: 'Allemagne',           dial: '+49',  flag: '🇩🇪' },
+  { code: 'ES', name: 'Espagne',             dial: '+34',  flag: '🇪🇸' },
+  { code: 'PT', name: 'Portugal',            dial: '+351', flag: '🇵🇹' },
+  { code: 'IT', name: 'Italie',              dial: '+39',  flag: '🇮🇹' },
+  { code: 'NL', name: 'Pays-Bas',           dial: '+31',  flag: '🇳🇱' },
+  { code: 'CN', name: 'Chine',              dial: '+86',  flag: '🇨🇳' },
+  { code: 'KR', name: 'Corée du Sud',        dial: '+82',  flag: '🇰🇷' },
+  { code: 'JP', name: 'Japon',              dial: '+81',  flag: '🇯🇵' },
+];
+
+const TIMEZONE_MAP: Record<string, string> = {
+  'America/Port-au-Prince': 'HT', 'America/Santo_Domingo': 'DO',
+  'America/New_York': 'US', 'America/Chicago': 'US', 'America/Denver': 'US',
+  'America/Los_Angeles': 'US', 'America/Phoenix': 'US', 'America/Anchorage': 'US',
+  'America/Toronto': 'CA', 'America/Vancouver': 'CA', 'America/Winnipeg': 'CA',
+  'America/Montreal': 'CA', 'America/Halifax': 'CA',
+  'Europe/Paris': 'FR', 'Europe/Brussels': 'BE', 'Europe/Zurich': 'CH',
+  'America/Guadeloupe': 'GP', 'America/Martinique': 'MQ',
+  'America/Cayenne': 'GF', 'Indian/Reunion': 'RE',
+  'America/Havana': 'CU', 'America/Jamaica': 'JM', 'America/Puerto_Rico': 'PR',
+  'America/Port_of_Spain': 'TT', 'America/Barbados': 'BB',
+  'America/Mexico_City': 'MX', 'America/Cancun': 'MX', 'America/Monterrey': 'MX',
+  'America/Guatemala': 'GT', 'America/Tegucigalpa': 'HN', 'America/El_Salvador': 'SV',
+  'America/Managua': 'NI', 'America/Costa_Rica': 'CR', 'America/Panama': 'PA',
+  'America/Bogota': 'CO', 'America/Caracas': 'VE', 'America/Guayaquil': 'EC',
+  'America/Lima': 'PE', 'America/La_Paz': 'BO', 'America/Santiago': 'CL',
+  'America/Argentina/Buenos_Aires': 'AR', 'America/Montevideo': 'UY', 'America/Asuncion': 'PY',
+  'America/Sao_Paulo': 'BR', 'America/Manaus': 'BR', 'America/Fortaleza': 'BR',
+  'Europe/London': 'GB', 'Europe/Berlin': 'DE', 'Europe/Madrid': 'ES',
+  'Europe/Lisbon': 'PT', 'Europe/Rome': 'IT', 'Europe/Amsterdam': 'NL',
+  'Asia/Shanghai': 'CN', 'Asia/Chongqing': 'CN', 'Asia/Beijing': 'CN',
+  'Asia/Seoul': 'KR', 'Asia/Tokyo': 'JP',
+};
+
+function detectCountry(): (typeof COUNTRIES)[0] {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const code = TIMEZONE_MAP[tz];
+    if (code) { const found = COUNTRIES.find(c => c.code === code); if (found) return found; }
+  } catch {}
+  return COUNTRIES[0]; // fallback Haïti
+}
+
+function formatPhone(digits: string, countryCode: string): string {
+  if (!digits) return '';
+  if (countryCode === 'HT') {
+    const d = digits.slice(0, 8);
+    if (d.length <= 4) return d;
+    return `${d.slice(0, 4)} ${d.slice(4)}`;
+  }
+  const plusOne = ['US','CA','DO','JM','PR','TT','BB'];
+  if (plusOne.includes(countryCode)) {
+    const d = digits.slice(0, 10);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
+    return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
+  }
+  const d = digits.slice(0, 12);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
+  return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 9)} ${d.slice(9)}`;
+}
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -20,6 +127,96 @@ export default function LoginPage() {
     const router = useRouter();
     const { user, role, loading: authLoading } = useAuth();
 
+    // Connexion sans mot de passe
+    const [loginMethod, setLoginMethod] = useState<'whatsapp' | 'phone' | 'email' | 'password'>('whatsapp');
+    const [step, setStep] = useState<'input' | 'verify'>('input');
+    const [phone, setPhone] = useState("");
+    const [verifiedPhone, setVerifiedPhone] = useState("");
+    const [selectedCountry, setSelectedCountry] = useState(() => detectCountry());
+    const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, above: false });
+    const [countrySearch, setCountrySearch] = useState('');
+    const countryBtnRef = useRef<HTMLButtonElement>(null);
+    const countryDropdownRef = useRef<HTMLDivElement>(null);
+
+    const [verificationCode, setVerificationCode] = useState("");
+    const [verificationError, setVerificationError] = useState<string | null>(null);
+    const [magicLinkToken, setMagicLinkToken] = useState<string | null>(null);
+    const [cooldownSeconds, setCooldownSeconds] = useState(0);
+
+    // Effet pour fermer le dropdown des pays au clic extérieur
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
+                setShowCountryDropdown(false);
+                setCountrySearch('');
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    // Ouvrir le dropdown des pays au bon endroit
+    const openCountryDropdown = () => {
+        if (!countryBtnRef.current) return;
+        const rect = countryBtnRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const above = spaceBelow < 260;
+        setDropdownPos({
+            top: above ? rect.top - 8 : rect.bottom + 4,
+            left: rect.left,
+            above,
+        });
+        setShowCountryDropdown(true);
+        setCountrySearch('');
+    };
+
+    // Cooldown du code de vérification
+    useEffect(() => {
+        if (cooldownSeconds > 0) {
+            const timer = setTimeout(() => setCooldownSeconds(prev => prev - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [cooldownSeconds]);
+
+    // Écoute du Magic Link en temps réel
+    useEffect(() => {
+        if (!magicLinkToken) return;
+
+        let timeoutId: NodeJS.Timeout;
+
+        const unsubscribe = onSnapshot(doc(db, "magic_links", magicLinkToken), async (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+                if (data.status === "used" && data.customToken) {
+                    try {
+                        await signInWithCustomToken(auth, data.customToken);
+                        setMagicLinkToken(null);
+                    } catch (err) {
+                        console.error("Erreur de connexion via magic link", err);
+                        setVerificationError("Échec de la connexion automatique.");
+                    }
+                } else if (data.status === "expired") {
+                    setVerificationError("Le lien a expiré. Veuillez recommencer.");
+                    setMagicLinkToken(null);
+                }
+            }
+        });
+
+        // Timeout local de 10 minutes
+        timeoutId = setTimeout(() => {
+            unsubscribe();
+            setVerificationError("Délai d'attente dépassé (10 minutes).");
+            setMagicLinkToken(null);
+        }, 10 * 60 * 1000);
+
+        return () => {
+            unsubscribe();
+            clearTimeout(timeoutId);
+        };
+    }, [magicLinkToken]);
+
+    // Redirection automatique après connexion
     useEffect(() => {
         if (!authLoading && user) {
             if (role?.trim().toLowerCase() === "admin") {
@@ -29,6 +226,111 @@ export default function LoginPage() {
             }
         }
     }, [user, role, authLoading, router]);
+
+    // Envoi du Magic Link ou OTP
+    const handlePasswordlessSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setIsLoading(true);
+
+        if (loginMethod === 'email' && !email) {
+            setIsLoading(false);
+            return;
+        }
+
+        let cleanPhone = "";
+        if (loginMethod === 'whatsapp' || loginMethod === 'phone') {
+            if (!phone) {
+                setIsLoading(false);
+                return;
+            }
+            let cleanNumber = phone.replace(/\D/g, "");
+            const dialDigits = selectedCountry.dial.replace(/\D/g, "");
+            if (cleanNumber.startsWith(dialDigits)) cleanNumber = cleanNumber.substring(dialDigits.length);
+            if (cleanNumber.startsWith("0")) cleanNumber = cleanNumber.substring(1);
+
+            const getExpectedDigitsLength = (code: string) => {
+                switch (code) {
+                    case 'HT': return 8;
+                    case 'FR': case 'BE': case 'CH': case 'GP': case 'MQ': case 'GF': case 'RE': return 9;
+                    case 'US': case 'CA': case 'DO': case 'PR': case 'JM': case 'TT': case 'BB': case 'MX': case 'CO': return 10;
+                    default: return 8;
+                }
+            };
+
+            const expectedLength = getExpectedDigitsLength(selectedCountry.code);
+            if (cleanNumber.length !== expectedLength) {
+                setError(
+                    selectedCountry.code === 'HT'
+                        ? `Le numéro pour Haïti doit comporter exactement 8 chiffres (ex: 34567890). Tu as saisi ${cleanNumber.length} chiffre(s).`
+                        : `Le numéro pour ${selectedCountry.name} doit comporter exactement ${expectedLength} chiffres. Tu as saisi ${cleanNumber.length} chiffre(s).`
+                );
+                setIsLoading(false);
+                return;
+            }
+            cleanPhone = `${selectedCountry.dial}${cleanNumber}`;
+            setVerifiedPhone(cleanPhone);
+        }
+
+        try {
+            const contactToUse = (loginMethod === 'whatsapp' || loginMethod === 'phone') ? cleanPhone : email;
+
+            if (loginMethod === 'whatsapp') {
+                const genData = await generateMagicLinkAction(contactToUse);
+                if (genData.error) throw new Error(genData.error);
+                
+                setMagicLinkToken(genData.token || null);
+                setVerificationError(null);
+                setVerificationCode("");
+                setCooldownSeconds(0);
+                setStep('verify');
+            } else {
+                const genData = await generateOtpAction(contactToUse, loginMethod === 'phone' ? 'phone' : 'email');
+                if (genData.error) throw new Error(genData.error);
+
+                if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
+                    window.open(`https://wa.me/${genData.businessPhone}?text=${encodeURIComponent("Bonjour, je souhaite recevoir mon code de vérification.")}`, "_blank");
+                }
+
+                setVerificationError(null);
+                setVerificationCode("");
+                setCooldownSeconds(60);
+                setStep('verify');
+            }
+        } catch (err: any) {
+            console.error("Erreur de connexion sans mot de passe :", err);
+            setError(err.message || "Une erreur est survenue. Veuillez réessayer.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Validation du code OTP (SMS / E-mail)
+    const handleVerifyOtpSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!verificationCode || verificationCode.length !== 4) {
+            setVerificationError("Le code doit comporter exactement 4 chiffres.");
+            return;
+        }
+        setIsLoading(true);
+        setVerificationError(null);
+
+        try {
+            const contactToUse = (loginMethod === 'phone' || loginMethod === 'whatsapp') ? verifiedPhone : email;
+            const typeParam = loginMethod === 'phone' ? 'phone' : 'email';
+            const data = await verifyOtpAndLoginAction(contactToUse, verificationCode.trim(), typeParam);
+
+            if (data.error) throw new Error(data.error);
+
+            if (data.customToken) {
+                await signInWithCustomToken(auth, data.customToken);
+            }
+        } catch (err: any) {
+            setVerificationError(err.message || "Code de vérification invalide.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleResetPassword = async () => {
         if (!email) {
@@ -212,81 +514,350 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Adresse e-mail</label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
-                                        placeholder="nom@exemple.com"
-                                        required
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                    <div className="flex justify-between items-center">
-                                        <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Mot de passe</label>
-                                        {isLoginView && (
+                        {step === 'verify' ? (
+                            <div className="flex flex-col gap-4">
+                                {loginMethod === 'whatsapp' ? (
+                                    <div className="flex flex-col items-center text-center p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+                                        <div className="size-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+                                            <span className="material-symbols-outlined notranslate text-3xl text-emerald-400 animate-pulse">chat</span>
+                                        </div>
+                                        <h3 className="font-bold text-lg mb-1 text-white">Vérifie ton WhatsApp</h3>
+                                        <p className="text-xs text-white/50 mb-4 max-w-xs leading-relaxed">
+                                            Nous avons envoyé un lien de connexion magique au <span className="text-emerald-400 font-bold">{verifiedPhone}</span>.
+                                        </p>
+                                        
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-[11px] text-white/60 mb-6">
+                                            <div className="size-2 rounded-full bg-primary animate-ping" />
+                                            En attente de connexion automatique...
+                                        </div>
+
+                                        {verificationError && (
+                                            <div className="p-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium w-full">
+                                                {verificationError}
+                                            </div>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setStep('input');
+                                                setMagicLinkToken(null);
+                                                setError(null);
+                                            }}
+                                            className="text-xs text-white/40 hover:text-white transition-colors py-1 underline"
+                                        >
+                                            Modifier le numéro / Retour
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleVerifyOtpSubmit} className="flex flex-col gap-4 p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
+                                        <div className="flex flex-col items-center text-center mb-2">
+                                            <div className="size-12 rounded-full bg-primary/15 flex items-center justify-center mb-3 text-primary">
+                                                <span className="material-symbols-outlined notranslate text-2xl">{loginMethod === 'phone' ? 'sms' : 'mail'}</span>
+                                            </div>
+                                            <h3 className="font-bold text-base text-white">Saisis le code de vérification</h3>
+                                            <p className="text-xs text-white/50 max-w-xs leading-relaxed mt-1">
+                                                Entre le code à 4 chiffres envoyé à : <br />
+                                                <span className="text-white font-bold">{loginMethod === 'phone' ? verifiedPhone : email}</span>
+                                            </p>
+                                        </div>
+
+                                        <div className="flex flex-col gap-1.5">
+                                            <input
+                                                type="text"
+                                                maxLength={4}
+                                                value={verificationCode}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, "");
+                                                    setVerificationCode(val);
+                                                }}
+                                                placeholder="0000"
+                                                className="w-full text-center tracking-[1em] pl-[1em] py-3.5 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-lg font-black text-white placeholder:text-white/10"
+                                                required
+                                                autoFocus
+                                            />
+                                        </div>
+
+                                        {verificationError && (
+                                            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium text-center">
+                                                {verificationError}
+                                            </div>
+                                        )}
+
+                                        <button
+                                            type="submit"
+                                            disabled={isLoading || verificationCode.length !== 4}
+                                            className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                                        >
+                                            {isLoading ? (
+                                                <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                            ) : (
+                                                "Valider le code"
+                                            )}
+                                        </button>
+
+                                        <div className="flex justify-between items-center mt-2 px-1 text-xs">
                                             <button
                                                 type="button"
-                                                onClick={handleResetPassword}
-                                                className="text-xs text-white/40 hover:text-primary transition-colors"
+                                                onClick={() => {
+                                                    setStep('input');
+                                                    setError(null);
+                                                }}
+                                                className="text-white/40 hover:text-white transition-colors"
                                             >
-                                                Mot de passe oublié ?
+                                                Retour
                                             </button>
+                                            {cooldownSeconds > 0 ? (
+                                                <span className="text-white/30">
+                                                    Renvoyer dans {cooldownSeconds}s
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={handlePasswordlessSubmit}
+                                                    className="text-primary hover:underline font-semibold"
+                                                >
+                                                    Renvoyer le code
+                                                </button>
+                                            )}
+                                        </div>
+                                    </form>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-4">
+                                {/* TABS SELECTOR */}
+                                <div className="grid grid-cols-4 gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-2">
+                                    {(['whatsapp', 'phone', 'email', 'password'] as const).map((method) => {
+                                        const labels = {
+                                            whatsapp: 'WhatsApp',
+                                            phone: 'SMS',
+                                            email: 'Code',
+                                            password: 'Passe'
+                                        };
+                                        const icons = {
+                                            whatsapp: 'chat',
+                                            phone: 'sms',
+                                            email: 'mail',
+                                            password: 'lock'
+                                        };
+                                        const isActive = loginMethod === method;
+                                        return (
+                                            <button
+                                                key={method}
+                                                type="button"
+                                                onClick={() => {
+                                                    setLoginMethod(method);
+                                                    setError(null);
+                                                    setMessage(null);
+                                                }}
+                                                className={`flex flex-col items-center justify-center py-2 rounded-lg transition-all duration-200 ${
+                                                    isActive
+                                                        ? 'bg-primary text-white font-bold shadow-md'
+                                                        : 'text-white/40 hover:text-white/80 hover:bg-white/5'
+                                                }`}
+                                            >
+                                                <span className="material-symbols-outlined notranslate text-lg mb-0.5">{icons[method]}</span>
+                                                <span className="text-[10px] uppercase tracking-wider font-semibold">{labels[method]}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {loginMethod === 'password' ? (
+                                    <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Adresse e-mail</label>
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
+                                                placeholder="nom@exemple.com"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Mot de passe</label>
+                                                {isLoginView && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleResetPassword}
+                                                        className="text-xs text-white/40 hover:text-primary transition-colors"
+                                                    >
+                                                        Mot de passe oublié ?
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <input
+                                                type="password"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
+                                                placeholder="••••••••"
+                                                required
+                                                minLength={isLoginView ? undefined : 6}
+                                            />
+                                        </div>
+                                        {!isLoginView && (
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Confirmer le mot de passe</label>
+                                                <input
+                                                    type="password"
+                                                    value={confirmPassword}
+                                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
+                                                    placeholder="••••••••"
+                                                    required
+                                                    minLength={6}
+                                                />
+                                            </div>
                                         )}
-                                    </div>
+                                        <button
+                                            type="submit"
+                                            disabled={isLoading}
+                                            className="w-full py-3 mt-1 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                                        >
+                                            {isLoading ? (
+                                                <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                            ) : (
+                                                isLoginView ? "Se connecter" : "S'inscrire"
+                                            )}
+                                        </button>
+
+                                        <div className="text-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsLoginView(!isLoginView);
+                                                    setError(null);
+                                                    setMessage(null);
+                                                }}
+                                                className="text-sm text-white/40 hover:text-white transition-colors"
+                                            >
+                                                {isLoginView ? "Pas encore de compte ? S'inscrire" : "Déjà un compte ? Se connecter"}
+                                            </button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <form onSubmit={handlePasswordlessSubmit} className="flex flex-col gap-4 p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
+                                        {(loginMethod === 'whatsapp' || loginMethod === 'phone') ? (
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-xs font-bold text-white/50 uppercase tracking-wider">
+                                                    Numéro de téléphone
+                                                </label>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        ref={countryBtnRef}
+                                                        type="button"
+                                                        onClick={openCountryDropdown}
+                                                        className="flex items-center gap-1.5 px-3 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm text-white"
+                                                    >
+                                                        <span className="text-base leading-none">{selectedCountry.flag}</span>
+                                                        <span className="font-bold">{selectedCountry.dial}</span>
+                                                        <span className="material-symbols-outlined notranslate text-xs text-white/40">keyboard_arrow_down</span>
+                                                    </button>
+                                                    <input
+                                                        type="tel"
+                                                        value={phone}
+                                                        onChange={(e) => {
+                                                            const digits = e.target.value.replace(/\D/g, "");
+                                                            setPhone(formatPhone(digits, selectedCountry.code));
+                                                        }}
+                                                        placeholder={selectedCountry.code === 'HT' ? "3456 7890" : "06 12 34 56 78"}
+                                                        className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Adresse e-mail</label>
+                                                <input
+                                                    type="email"
+                                                    value={email}
+                                                    onChange={(e) => setEmail(e.target.value)}
+                                                    placeholder="nom@exemple.com"
+                                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
+                                                    required
+                                                />
+                                            </div>
+                                        )}
+
+                                        <button
+                                            type="submit"
+                                            disabled={isLoading}
+                                            className="w-full py-3 mt-1 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                                        >
+                                            {isLoading ? (
+                                                <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                            ) : loginMethod === 'whatsapp' ? (
+                                                "Se connecter par WhatsApp"
+                                            ) : loginMethod === 'phone' ? (
+                                                "Recevoir le code par SMS"
+                                            ) : (
+                                                "Recevoir le code par E-mail"
+                                            )}
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Country Dropdown (rendered via Portal) */}
+                        {showCountryDropdown && typeof window !== "undefined" && createPortal(
+                            <div 
+                                ref={countryDropdownRef}
+                                style={{
+                                    position: 'fixed',
+                                    top: dropdownPos.top,
+                                    left: dropdownPos.left,
+                                    zIndex: 9999,
+                                }}
+                                className="w-64 max-h-60 overflow-y-auto bg-zinc-900 border border-white/10 rounded-xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-150"
+                            >
+                                <div className="sticky top-0 bg-zinc-900 pb-2 mb-2 border-b border-white/5">
                                     <input
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
-                                        placeholder="••••••••"
-                                        required
-                                        minLength={isLoginView ? undefined : 6}
+                                        type="text"
+                                        value={countrySearch}
+                                        onChange={(e) => setCountrySearch(e.target.value)}
+                                        placeholder="Rechercher un pays..."
+                                        className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-primary/50"
+                                        autoFocus
                                     />
                                 </div>
-                                {!isLoginView && (
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Confirmer le mot de passe</label>
-                                        <input
-                                            type="password"
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
-                                            placeholder="••••••••"
-                                            required
-                                            minLength={6}
-                                        />
-                                    </div>
-                                )}
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="w-full py-3 mt-1 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:pointer-events-none"
-                                >
-                                    {isLoading ? (
-                                        <div className="h-5 w-5 mx-auto border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                    ) : (
-                                        isLoginView ? "Se connecter" : "S'inscrire"
-                                    )}
-                                </button>
-
-                                <div className="text-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setIsLoginView(!isLoginView);
-                                            setError(null);
-                                            setMessage(null);
-                                        }}
-                                        className="text-sm text-white/40 hover:text-white transition-colors"
-                                    >
-                                        {isLoginView ? "Pas encore de compte ? S'inscrire" : "Déjà un compte ? Se connecter"}
-                                    </button>
+                                <div className="space-y-0.5">
+                                    {COUNTRIES.filter(c => 
+                                        c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+                                        c.dial.includes(countrySearch)
+                                    ).map((c) => (
+                                        <button
+                                            key={c.code}
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedCountry(c);
+                                                setShowCountryDropdown(false);
+                                                setCountrySearch('');
+                                                setPhone('');
+                                            }}
+                                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left text-xs transition-colors ${
+                                                selectedCountry.code === c.code 
+                                                    ? 'bg-primary text-white font-bold' 
+                                                    : 'text-white/60 hover:bg-white/5 hover:text-white'
+                                            }`}
+                                        >
+                                            <span className="flex items-center gap-2 truncate">
+                                                <span>{c.flag}</span>
+                                                <span className="truncate">{c.name}</span>
+                                            </span>
+                                            <span className="text-white/40 font-mono text-[10px]">{c.dial}</span>
+                                        </button>
+                                    ))}
                                 </div>
-                            </form>
+                            </div>,
+                            document.body
+                        )}
 
 
                         <p className="text-center text-xs text-white/30">
