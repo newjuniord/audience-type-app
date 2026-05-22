@@ -116,8 +116,17 @@ export default function AdminKadoPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                    {gifts.map(gift => (
-                        <div key={gift.id} className="bg-white border border-black/5 rounded-2xl overflow-hidden hover:border-primary/30 transition-all group flex flex-col">
+                    {gifts.map(gift => {
+                        const isExpired = gift.expirationDate
+                            ? gift.expirationDate.toDate().getTime() < Date.now()
+                            : false;
+
+                        return (
+                        <div key={gift.id} className={`bg-white border rounded-2xl overflow-hidden transition-all group flex flex-col ${
+                            isExpired
+                                ? "border-red-200 opacity-80"
+                                : "border-black/5 hover:border-primary/30"
+                        }`}>
                             {/* Image */}
                             <div className="relative h-40 bg-black/5 overflow-hidden">
                                 {gift.photoLink ? (
@@ -132,8 +141,19 @@ export default function AdminKadoPage() {
                                     <span className="material-symbols-outlined text-[10px]">{typeIcons[gift.type]}</span>
                                     {gift.type}
                                 </span>
+                                {/* Badge Expiré */}
+                                {isExpired && (
+                                    <div className="absolute inset-0 bg-red-50/70 flex items-center justify-center">
+                                        <span className="flex items-center gap-1.5 bg-red-500 text-white text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg">
+                                            <span className="material-symbols-outlined text-[13px]">timer_off</span>
+                                            Expiré
+                                        </span>
+                                    </div>
+                                )}
                                 {/* Status dot */}
-                                <span className={`absolute top-3 right-3 w-2.5 h-2.5 rounded-full border-2 border-white ${gift.isActive ? "bg-emerald-500" : "bg-red-400"}`} title={gift.isActive ? "Actif" : "Inactif"} />
+                                <span className={`absolute top-3 right-3 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                                    isExpired ? "bg-red-400" : gift.isActive ? "bg-emerald-500" : "bg-red-400"
+                                }`} title={isExpired ? "Expiré" : gift.isActive ? "Actif" : "Inactif"} />
                             </div>
 
                             {/* Content */}
@@ -213,7 +233,8 @@ export default function AdminKadoPage() {
                                 </div>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>
