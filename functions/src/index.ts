@@ -752,10 +752,24 @@ export const webhookbotmessage = onRequest({
         }
 
         // ════════════════════════════════════════════════════════════════════════
-        // UNKNOWN — Menu d'aide
+        // HELP MENU: info | enfo | enfomasyon | information | edem | 404 | 500
+        // ════════════════════════════════════════════════════════════════════════
+        else if (
+            userMessage === "info" ||
+            userMessage === "enfo" ||
+            userMessage === "enfomasyon" ||
+            userMessage === "information" ||
+            userMessage === "edem" ||
+            userMessage === "404" ||
+            userMessage === "500"
+        ) {
+            await sendWhatsAppViaFetch(From, `👋 Bonjou! Voici les commandes disponibles :\n\n• Tape *metem* pou konekte ou rapid an 1 klik\n• Tape *kod* pou jwenn yon kòd OTP (lòt aparèy)\n• Tape *bug* pou sipò teknik\n• Tape *kontak* pou kontakte nou`);
+        }
+        // ════════════════════════════════════════════════════════════════════════
+        // UNKNOWN — Ignorer silencieusement
         // ════════════════════════════════════════════════════════════════════════
         else {
-            await sendWhatsAppViaFetch(From, `👋 Bonjou! Voici les commandes disponibles :\n\n• Tape *metem* pou konekte ou rapid an 1 klik\n• Tape *kod* pou jwenn yon kòd OTP (lòt aparèy)\n• Tape *bug* pou sipò teknik\n• Tape *kontak* pou kontakte nou`);
+            console.log(`ℹ️ [BOT] Ignored unknown message: "${userMessage}" from ${phoneNumber}`);
         }
 
     } catch (error: any) {
