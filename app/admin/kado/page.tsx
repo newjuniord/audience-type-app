@@ -13,16 +13,10 @@ export default function AdminKadoPage() {
         try {
             setLoading(true);
             const data = await getGifts();
-            data.sort((a, b) => {
-                const timeA = typeof a.createdAt?.toMillis === 'function' ? a.createdAt.toMillis() : 0;
-                const timeB = typeof b.createdAt?.toMillis === 'function' ? b.createdAt.toMillis() : 0;
-                return timeB - timeA;
-            });
-            console.log("Fetched gifts:", data);
+            data.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
             setGifts(data);
-        } catch (e: any) {
+        } catch (e) {
             console.error(e);
-            alert("Erreur de chargement: " + e.message);
         } finally {
             setLoading(false);
         }
@@ -122,17 +116,8 @@ export default function AdminKadoPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                    {gifts.map(gift => {
-                        const isExpired = gift.expirationDate && typeof gift.expirationDate.toDate === 'function'
-                            ? gift.expirationDate.toDate().getTime() < Date.now()
-                            : false;
-                        
-                        return (
-                        <div key={gift.id} className={`bg-white border rounded-2xl overflow-hidden transition-all group flex flex-col ${
-                            isExpired
-                                ? "border-red-200 opacity-80"
-                                : "border-black/5 hover:border-primary/30"
-                        }`}>
+                    {gifts.map(gift => (
+                        <div key={gift.id} className="bg-white border border-black/5 rounded-2xl overflow-hidden hover:border-primary/30 transition-all group flex flex-col">
                             {/* Image */}
                             <div className="relative h-40 bg-black/5 overflow-hidden">
                                 {gift.photoLink ? (
@@ -147,19 +132,8 @@ export default function AdminKadoPage() {
                                     <span className="material-symbols-outlined text-[10px]">{typeIcons[gift.type]}</span>
                                     {gift.type}
                                 </span>
-                                {/* Badge Expiré */}
-                                {isExpired && (
-                                    <div className="absolute inset-0 bg-red-50/70 flex items-center justify-center">
-                                        <span className="flex items-center gap-1.5 bg-red-500 text-white text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg">
-                                            <span className="material-symbols-outlined text-[13px]">timer_off</span>
-                                            Expiré
-                                        </span>
-                                    </div>
-                                )}
                                 {/* Status dot */}
-                                <span className={`absolute top-3 right-3 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                                    isExpired ? "bg-red-400" : gift.isActive ? "bg-emerald-500" : "bg-red-400"
-                                }`} title={isExpired ? "Expiré" : gift.isActive ? "Actif" : "Inactif"} />
+                                <span className={`absolute top-3 right-3 w-2.5 h-2.5 rounded-full border-2 border-white ${gift.isActive ? "bg-emerald-500" : "bg-red-400"}`} title={gift.isActive ? "Actif" : "Inactif"} />
                             </div>
 
                             {/* Content */}
@@ -181,19 +155,12 @@ export default function AdminKadoPage() {
                                             <span className="text-black/30">/ {gift.maxUses} max</span>
                                         )}
                                     </div>
-                                    {(() => {
-                                        const isExpired = gift.expirationDate && typeof gift.expirationDate.toDate === 'function'
-                                            ? gift.expirationDate.toDate().getTime() < Date.now()
-                                            : false;
-                                        return (
-                                            gift.expirationDate && typeof gift.expirationDate.toDate === 'function' && (
-                                                <div className={`flex items-center gap-2 text-xs ${isExpired ? "text-red-500" : "text-orange-500"}`}>
-                                                    <span className="material-symbols-outlined text-[13px]">schedule</span>
-                                                    <span>{isExpired ? "Expiré le" : "Expire le"} {gift.expirationDate.toDate().toLocaleDateString("fr-FR")}</span>
-                                                </div>
-                                            )
-                                        );
-                                    })()}
+                                    {gift.expirationDate && (
+                                        <div className="flex items-center gap-2 text-xs text-orange-500">
+                                            <span className="material-symbols-outlined text-[13px]">schedule</span>
+                                            <span>Expire le {gift.expirationDate.toDate().toLocaleDateString("fr-FR")}</span>
+                                        </div>
+                                    )}
                                     {gift.requiresInvitation && (
                                         <div className="flex items-center gap-2 text-xs text-purple-600">
                                             <span className="material-symbols-outlined text-[13px]">key</span>
@@ -221,8 +188,8 @@ export default function AdminKadoPage() {
                                 <button
                                     onClick={() => handleToggle(gift)}
                                     className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full transition-all ${gift.isActive
-                                            ? "bg-emerald-50 text-emerald-600 hover:bg-red-50 hover:text-red-600"
-                                            : "bg-black/5 text-black/40 hover:bg-emerald-50 hover:text-emerald-600"
+                                        ? "bg-emerald-50 text-emerald-600 hover:bg-red-50 hover:text-red-600"
+                                        : "bg-black/5 text-black/40 hover:bg-emerald-50 hover:text-emerald-600"
                                         }`}
                                 >
                                     {gift.isActive ? "✓ Actif" : "Inactif"}
@@ -245,8 +212,7 @@ export default function AdminKadoPage() {
                                 </div>
                             </div>
                         </div>
-                        );
-                    })}
+                    ))}
                 </div>
             )}
         </div>

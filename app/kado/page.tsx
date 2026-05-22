@@ -3,6 +3,8 @@ import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
 import { getCourses } from "@/lib/courses";
 import { getEbooks } from "@/lib/ebooks";
+import { getGifts } from "@/lib/gifts";
+import { Gift } from "@/lib/types";
 
 export const revalidate = 3600;
 
@@ -16,12 +18,14 @@ type FreeItem = {
     title: string;
     description: string;
     image: string;
-    type: "Ebook" | "Kou";
+    type: "Ebook" | "Kou" | "Bonus";
     fileUrl?: string;
+    isKado?: boolean;
+    kadoId?: string;
 };
 
 export default async function KadoPage() {
-    const [courses, ebooks] = await Promise.all([getCourses(), getEbooks()]);
+    const [courses, ebooks, gifts] = await Promise.all([getCourses(), getEbooks(), getGifts()]);
 
     const freeItems: FreeItem[] = [
         ...ebooks
@@ -42,6 +46,17 @@ export default async function KadoPage() {
                 description: c.description,
                 image: c.thumbnail || "/logo.png",
                 type: "Kou" as const,
+            })),
+        ...gifts
+            .filter((g) => g.isActive && (!g.expirationDate || g.expirationDate.toDate().getTime() > Date.now()))
+            .map((g) => ({
+                id: g.giftProductId, // On redirige vers le produit cadeau
+                title: g.title, // On affiche le titre du Kado au lieu du produit original
+                description: g.description || `Cadeau exclusif : ${g.giftProductTitle}`,
+                image: g.photoLink || g.giftProductThumbnailUrl || "/logo.png",
+                type: "Bonus" as const,
+                isKado: true,
+                kadoId: g.id,
             })),
     ];
 
@@ -172,6 +187,12 @@ function KadoCard({ item }: { item: FreeItem }) {
                     <span className="px-3 py-1 bg-black/60 backdrop-blur text-white/70 text-[10px] font-bold uppercase tracking-wider rounded-full border border-white/10">
                         {item.type}
                     </span>
+                    {item.isKado && (
+                        <span className="px-3 py-1 bg-orange-500/90 backdrop-blur text-white text-[10px] font-black uppercase tracking-wider rounded-full flex items-center gap-1 shadow-lg">
+                            <span className="material-symbols-outlined text-[10px]">redeem</span>
+                            Kado Spécial
+                        </span>
+                    )}
                 </div>
             </div>
 
