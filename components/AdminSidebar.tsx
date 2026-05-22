@@ -23,6 +23,7 @@ export default function AdminSidebar() {
             title: "Marketing & Com",
             items: [
                 { label: "Funnels", icon: "filter_alt", href: "/admin/funnels" },
+                { label: "Kado 🎁", icon: "redeem", href: "/admin/kado" },
                 { label: "Announcement", icon: "campaign", href: "/admin/announcement" },
                 { label: "Reviews", icon: "reviews", href: "/admin/reviews" },
                 { label: "Messages", icon: "mail", href: "/admin/messages" },

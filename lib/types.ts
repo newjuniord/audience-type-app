@@ -363,3 +363,28 @@ export interface FunnelData {
     updatedAt?: Timestamp;
     isActive: boolean;
 }
+
+/**
+ * Interface représentant un Cadeau/Bonus (Kado).
+ * Correspond à la collection `gifts` dans Firestore.
+ * Un Kado est un produit offert gratuitement (enrollment) lié à un produit déclencheur.
+ */
+export interface Gift {
+    id?: string;
+    title: string;
+    description: string;
+    photoLink: string;
+    type: 'course' | 'ebook' | 'consultation';
+    triggerProductId: string;           // Produit acheté qui déclenche ce cadeau
+    giftProductId: string;              // Produit (cours/ebook/service) à débloquer
+    giftProductTitle: string;           // Dénormalisé pour affichage rapide
+    giftProductType: 'course' | 'ebook' | 'service';
+    giftProductThumbnailUrl?: string;
+    isActive: boolean;
+    expirationDate: Timestamp | null;
+    maxUses: number | null;
+    currentUsesCount: number;
+    requiresInvitation: boolean;
+    invitationCode: string | null;
+    createdAt: Timestamp;
+}

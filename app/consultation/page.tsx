@@ -420,8 +420,8 @@ export default function ConsultationPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
               {[
                 { n: "1", t: "Choisissez votre créneau", d: "Sélectionnez la date et l'heure qui vous conviennent dans votre fuseau horaire.", icon: "calendar_month" },
-                { n: "2", t: "Confirmez par SMS / Téléphone", d: "Recevez la confirmation et les instructions de paiement directement par SMS / Téléphone.", icon: "chat" },
-                { n: "3", t: "Connectez-vous", d: "Rejoignez votre session privée en ligne à l'heure convenue. 1h de coaching intensif.", icon: "video_camera_front" },
+                { n: "2", t: "Vérifiez vos informations", d: "Confirmez les détails ci-dessous avant d'envoyer votre demande.", icon: "chat" },
+                { n: "3", t: "Confirmer et payer", d: "Procédez au paiement sécurisé pour valider définitivement votre session.", icon: "credit_card" },
               ].map((s) => (
                 <div key={s.n} className="flex flex-col items-center text-center group">
                   <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 relative group-hover:border-primary/50 transition-colors">
@@ -462,7 +462,7 @@ export default function ConsultationPage() {
                 </div>
               ))}
             </div>
-            <p className="mt-6 text-xs text-center text-white/30 font-medium">* Les horaires peuvent varier selon l'heure d'été. Confirmez par SMS / Téléphone.</p>
+            <p className="mt-6 text-xs text-center text-white/30 font-medium">* Les horaires peuvent varier selon l'heure d'été. Confirmez par WhatsApp.</p>
           </div>
         </section>
 
@@ -506,7 +506,7 @@ export default function ConsultationPage() {
                 <p className="text-[10px] font-black tracking-[0.3em] uppercase text-primary mb-4">Réservation</p>
                 <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-4 text-white">Réservez votre séance</h2>
                 <p className="text-sm leading-relaxed text-white/50">
-                Remplissez le formulaire. Vous recevrez une confirmation par SMS avec les instructions de paiement.
+                Remplissez le formulaire ci-dessous, puis procédez au paiement sécurisé pour confirmer définitivement votre créneau.
                 </p>
             </div>
 
@@ -557,7 +557,7 @@ export default function ConsultationPage() {
                   <div className="rounded-2xl p-5 mb-8 bg-primary/10 border border-primary/20 flex items-center justify-between">
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Montant à régler</p>
-                        <p className="text-xs text-white/60">Payable après confirmation par SMS</p>
+                        <p className="text-xs text-white/60">Confirmer et payer</p>
                     </div>
                     <div className="text-2xl font-black text-white">${service.price}</div>
                   </div>
