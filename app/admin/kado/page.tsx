@@ -128,8 +128,8 @@ export default function AdminKadoPage() {
                                     </div>
                                 )}
                                 {/* Badge type */}
-                                <span className={`absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg ${typeColors[gift.type] || "bg-gray-100 text-gray-600"}`}>
-                                    <span className="material-symbols-outlined text-[10px] mr-1">{typeIcons[gift.type]}</span>
+                                <span className={`absolute top-3 left-3 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg ${typeColors[gift.type] || "bg-gray-100 text-gray-600"}`}>
+                                    <span className="material-symbols-outlined text-[10px]">{typeIcons[gift.type]}</span>
                                     {gift.type}
                                 </span>
                                 {/* Status dot */}
@@ -175,10 +175,10 @@ export default function AdminKadoPage() {
                                         <div className="h-1.5 bg-black/5 rounded-full overflow-hidden">
                                             <div
                                                 className="h-full bg-gradient-to-r from-primary to-orange-500 rounded-full transition-all"
-                                                style={{ width: `${Math.min(100, (gift.currentUsesCount / gift.maxUses) * 100)}%` }}
+                                                style={{ width: `${Math.min(100, ((gift.currentUsesCount || 0) / gift.maxUses) * 100)}%` }}
                                             />
                                         </div>
-                                        <p className="text-[10px] text-black/30 mt-1">{Math.round((gift.currentUsesCount / gift.maxUses) * 100)}% utilisé</p>
+                                        <p className="text-[10px] text-black/30 mt-1">{Math.round(((gift.currentUsesCount || 0) / gift.maxUses) * 100)}% utilisé</p>
                                     </div>
                                 )}
                             </div>
