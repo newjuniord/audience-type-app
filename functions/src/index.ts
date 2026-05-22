@@ -689,7 +689,7 @@ export const webhookbotmessage = onRequest({
         // ════════════════════════════════════════════════════════════════════════
         // KEYWORD: kod — OTP pour autre appareil
         // ════════════════════════════════════════════════════════════════════════
-        else if (userMessage === "kod" || userMessage === "kòd" || rawMessage === "kod" || rawMessage === "kòd") {
+        else if (userMessage === "kod" || userMessage === "kòd" || userMessage === "kód" || rawMessage === "kod" || rawMessage === "kòd" || rawMessage === "kód") {
             const rateLimit = await checkRateLimit();
             if (rateLimit.blocked) {
                 await sendWhatsAppViaFetch(From, `🚫 Ou te mande twòp kòd jodi a.\nEsaye ankò demen (limit ${MAX_PER_DAY} fwa pou 24 tè).`);
