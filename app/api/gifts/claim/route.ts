@@ -36,14 +36,27 @@ export async function POST(req: Request) {
                 return "max_uses_reached";
             }
 
-            if (gift.requiresInvitation && gift.invitationCode) {
-                if (!invitationCode || invitationCode.trim().toUpperCase() !== gift.invitationCode.trim().toUpperCase()) {
+            // 2. Vérifier si l'utilisateur possède le produit déclencheur
+            let hasTriggerProduct = false;
+            const enrollmentsRef = adminDb.collection("enrollments");
+            
+            if (gift.triggerProductId) {
+                const triggerSnap = await txn.get(enrollmentsRef.where("userId", "==", userId).where("productId", "==", gift.triggerProductId));
+                if (!triggerSnap.empty) {
+                    hasTriggerProduct = true;
+                }
+            }
+
+            if (gift.requiresInvitation && gift.invitationCode && !hasTriggerProduct) {
+                if (!invitationCode || invitationCode.trim() === "") {
+                    return "missing_code";
+                }
+                if (invitationCode.trim().toUpperCase() !== gift.invitationCode.trim().toUpperCase()) {
                     return "invalid_code";
                 }
             }
 
-            // 2. Vérifier si l'utilisateur est déjà inscrit
-            const enrollmentsRef = adminDb.collection("enrollments");
+            // 3. Vérifier si l'utilisateur est déjà inscrit à ce cadeau
             const qString = enrollmentsRef.where("userId", "==", userId).where("productId", "==", gift.giftProductId);
             const existingSnap = await txn.get(qString);
             if (!existingSnap.empty) return "already_enrolled";

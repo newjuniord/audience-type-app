@@ -27,7 +27,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
     const router = useRouter();
 
     const [step, setStep] = useState<"initial" | "code" | "loading" | "success" | "error">(
-        item.requiresInvitation ? "code" : "initial"
+        "initial"
     );
     const [invitationCode, setInvitationCode] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
@@ -38,7 +38,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
             return;
         }
 
-        if (item.requiresInvitation && !invitationCode.trim()) {
+        if (step === "code" && item.requiresInvitation && !invitationCode.trim()) {
             setErrorMessage("Veuillez entrer un code d'invitation.");
             setStep("error");
             return;
@@ -77,6 +77,10 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                 case "invalid_code":
                     setErrorMessage("Code d'invitation incorrect.");
                     setStep("error");
+                    break;
+                case "missing_code":
+                    // L'utilisateur n'a pas le produit déclencheur, on demande le code
+                    setStep("code");
                     break;
                 case "inactive":
                 case "expired":
