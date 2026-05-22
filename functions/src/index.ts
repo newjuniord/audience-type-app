@@ -733,7 +733,7 @@ export const webhookbotmessage = onRequest({
             const { uid } = existingUser;
             const code = generateOtp();
             await updateOtpDoc(uid, code, rateLimit.count, rateLimit.expireAt);
-            await sendWhatsAppViaFetch(From, `🔑 KÒD OTP OU A\n\nVoici ton code de connexion :\n*${code}*\n\nCe code est valide 24 heures.\nEntre-le sur la page de connexion de DJR Akademi.`);
+            await sendWhatsAppViaFetch(From, `🔑 KÒD OTP OU A\n\nMen kòd koneksyon ou an :\n*${code}*\n\nKòd sa a valab pou 24 èdtan.\nAntre li sou paj koneksyon DJR Akademi an.`);
             console.log(`📤 [BOT/kod] OTP sent to ${phoneNumber}`);
         }
 
@@ -741,7 +741,7 @@ export const webhookbotmessage = onRequest({
         // KEYWORD: bug — Support technique
         // ════════════════════════════════════════════════════════════════════════
         else if (userMessage === "bug") {
-            await sendWhatsAppViaFetch(From, `⚠️ SIPÒ TEKNIK\n\nSi ou rankontre yon pwoblèm teknik oswa yon bug sou sit la, kontakte nou imedyatman nan imel sa a :\n📧 contact@audiencetype.com\n\noswa dirèkteman sou WhatsApp nan nimewo sa a :\n📞 3094848394`);
+            await sendWhatsAppViaFetch(From, `⚠️ SIPÒ TEKNIK\n\nSi w jwenn yon pwoblèm teknik oswa yon ensèk (bug) sou sit la, kontakte nou imedyatman nan imel sa a :\n📧 contact@audiencetype.com\n\noswa dirèkteman sou WhatsApp nan nimewo sa a :\n📞 3094848394`);
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -763,7 +763,7 @@ export const webhookbotmessage = onRequest({
             userMessage === "404" ||
             userMessage === "500"
         ) {
-            await sendWhatsAppViaFetch(From, `👋 Bonjou! Voici les commandes disponibles :\n\n• Tape *metem* pou konekte ou rapid an 1 klik\n• Tape *kod* pou jwenn yon kòd OTP (lòt aparèy)\n• Tape *bug* pou sipò teknik\n• Tape *kontak* pou kontakte nou`);
+            await sendWhatsAppViaFetch(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* pou konekte ou rapid an 1 klik\n• Tape *kod* pou jwenn yon kòd OTP (lòt aparèy)\n• Tape *bug* pou sipò teknik\n• Tape *kontak* pou kontakte nou`);
         }
         // ════════════════════════════════════════════════════════════════════════
         // UNKNOWN — Ignorer silencieusement
