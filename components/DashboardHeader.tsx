@@ -87,8 +87,8 @@ export default function DashboardHeader() {
                     )}
                     {/* Bell icon — alerts */}
                     {user && (
-                        <Link href="/dashboard/alerts" className="relative flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm border border-black/5 dark:bg-[#1a1a1a] dark:border-white/10 hover:shadow-md transition-all">
-                            <span className="material-symbols-outlined text-[22px] text-black/50 dark:text-white/50">notifications</span>
+                        <Link href="/dashboard/alerts" className="relative flex items-center justify-center w-10 h-10 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-all text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white">
+                            <span className="material-symbols-outlined text-[24px]">notifications</span>
                             {unreadCount > 0 && (
                                 <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-md animate-pulse">
                                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -100,19 +100,9 @@ export default function DashboardHeader() {
                         <div className="relative" ref={dropdownRef}>
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-full bg-white shadow-sm border border-black/5 dark:bg-[#1a1a1a] dark:border-white/10 hover:shadow-md transition-all focus:outline-none"
+                                className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-all focus:outline-none text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white"
                             >
-                                <span className="material-symbols-outlined text-[22px] text-black/50 dark:text-white/50">menu</span>
-                                {user.photoURL ? (
-                                    <div
-                                        className="h-8 w-8 rounded-full bg-cover bg-center border border-black/5 dark:border-white/10"
-                                        style={{ backgroundImage: `url("${user.photoURL}")` }}
-                                    />
-                                ) : (
-                                    <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
-                                        <span className="material-symbols-outlined text-lg">person</span>
-                                    </div>
-                                )}
+                                <span className="material-symbols-outlined text-[26px]">menu</span>
                             </button>
 
                             {/* Profile Dropdown — Premium Design */}
