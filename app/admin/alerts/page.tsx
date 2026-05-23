@@ -52,6 +52,10 @@ export default function AdminAlertsPage() {
     const [actionUrl, setActionUrl] = useState(ALERT_PRESETS[0].defaultActionUrl || "");
     const [actionLabel, setActionLabel] = useState(ALERT_PRESETS[0].defaultActionLabel || "");
 
+    // Search and Dropdown state for Custom Combobox
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
     useEffect(() => {
         if (role !== "admin") return;
         // Load users for dropdown
@@ -181,19 +185,82 @@ export default function AdminAlertsPage() {
                                 ))}
                             </div>
                             {targetMode === "specific" && (
-                                <select value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}
-                                    className="mt-3 w-full h-11 px-4 bg-black/5 border border-black/10 rounded-xl text-sm outline-none focus:border-primary transition-all"
-                                >
-                                    <option value="">— Chwazi yon itilizatè —</option>
-                                    {users.map((u) => {
-                                        const contactInfo = [u.email, u.phone].filter(Boolean).join(" / ");
-                                        return (
-                                            <option key={u.uid} value={u.uid}>
-                                                {u.displayName} {contactInfo ? `(${contactInfo})` : ""}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
+                                <div className="relative mt-3">
+                                    <div 
+                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                        className="w-full min-h-[52px] py-2 px-4 bg-black/5 border border-black/10 rounded-xl flex items-center justify-between cursor-pointer hover:bg-black/[0.08] transition-all"
+                                    >
+                                        {selectedUserId ? (
+                                            (() => {
+                                                const u = users.find(user => user.uid === selectedUserId);
+                                                if (!u) return <span className="text-black/30 text-sm">— Chwazi yon itilizatè —</span>;
+                                                const contactInfo = [u.email, u.phone].filter(Boolean).join(" / ");
+                                                return (
+                                                    <div className="flex flex-col text-left">
+                                                        <span className="font-bold text-sm text-black leading-tight">{u.displayName}</span>
+                                                        {contactInfo && <span className="text-[12px] text-black/40 mt-0.5">{contactInfo}</span>}
+                                                    </div>
+                                                );
+                                            })()
+                                        ) : (
+                                            <span className="text-black/30 text-sm">— Chwazi yon itilizatè —</span>
+                                        )}
+                                        <span className="material-symbols-outlined text-black/40">unfold_more</span>
+                                    </div>
+
+                                    {isDropdownOpen && (
+                                        <>
+                                            {/* Click outside overlay */}
+                                            <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
+                                            
+                                            {/* Dropdown list */}
+                                            <div className="absolute z-50 w-full mt-2 bg-white border border-black/10 rounded-2xl shadow-xl overflow-hidden p-2 space-y-1">
+                                                <div className="flex items-center gap-2 px-3 py-2 border-b border-black/5 mb-1">
+                                                    <span className="material-symbols-outlined text-black/30 text-sm">search</span>
+                                                    <input 
+                                                        type="text" 
+                                                        value={searchQuery} 
+                                                        onChange={(e) => setSearchQuery(e.target.value)} 
+                                                        placeholder="Chèche pa non, imel oswa telefòn..." 
+                                                        className="w-full bg-transparent outline-none text-sm placeholder:text-black/30 text-black"
+                                                        autoFocus
+                                                    />
+                                                </div>
+                                                <div className="max-h-60 overflow-y-auto space-y-0.5">
+                                                    {users.filter(u => 
+                                                        u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                                        u.email.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                                        u.phone.includes(searchQuery)
+                                                    ).map((u) => {
+                                                        const contactInfo = [u.email, u.phone].filter(Boolean).join(" / ");
+                                                        return (
+                                                            <button
+                                                                key={u.uid}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedUserId(u.uid);
+                                                                    setIsDropdownOpen(false);
+                                                                    setSearchQuery("");
+                                                                }}
+                                                                className={`w-full text-left px-3 py-2 rounded-xl flex flex-col transition-all ${selectedUserId === u.uid ? 'bg-primary/10 border-primary' : 'hover:bg-black/5'}`}
+                                                            >
+                                                                <span className="font-bold text-sm text-black leading-tight">{u.displayName}</span>
+                                                                {contactInfo && <span className="text-[12px] text-black/40 mt-0.5">{contactInfo}</span>}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                    {users.filter(u => 
+                                                        u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                                        u.email.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                                        u.phone.includes(searchQuery)
+                                                    ).length === 0 && (
+                                                        <p className="text-center py-6 text-xs text-black/40 font-bold uppercase tracking-wider">Okenn rezilta jwenn</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             )}
                         </div>
 
