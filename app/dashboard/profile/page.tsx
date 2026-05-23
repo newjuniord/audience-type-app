@@ -9,80 +9,6 @@ import { updateProfile } from "firebase/auth";
 import { db } from '@/lib/firebase';
 import { doc as firestoreDoc } from "firebase/firestore";
 
-const COUNTRIES = [
-    // Caraïbes & Haïti
-    { code: 'HT', name: 'Haïti',              dial: '+509', flag: '🇭🇹' },
-    { code: 'DO', name: 'Rép. Dominicaine',    dial: '+1',   flag: '🇩🇴' },
-    { code: 'CU', name: 'Cuba',               dial: '+53',  flag: '🇨🇺' },
-    { code: 'JM', name: 'Jamaïque',           dial: '+1',   flag: '🇯🇲' },
-    { code: 'PR', name: 'Porto Rico',          dial: '+1',   flag: '🇵🇷' },
-    { code: 'TT', name: 'Trinidad & Tobago',   dial: '+1',   flag: '🇹🇹' },
-    { code: 'BB', name: 'Barbade',             dial: '+1',   flag: '🇧🇧' },
-    // Amérique du Nord
-    { code: 'US', name: 'États-Unis',          dial: '+1',   flag: '🇺🇸' },
-    { code: 'CA', name: 'Canada',              dial: '+1',   flag: '🇨🇦' },
-    { code: 'MX', name: 'Mexique',             dial: '+52',  flag: '🇲🇽' },
-    // Amérique Centrale
-    { code: 'GT', name: 'Guatemala',           dial: '+502', flag: '🇬🇹' },
-    { code: 'HN', name: 'Honduras',            dial: '+504', flag: '🇲🇳' },
-    { code: 'SV', name: 'El Salvador',         dial: '+503', flag: '🇸🇻' },
-    { code: 'NI', name: 'Nicaragua',           dial: '+505', flag: '🇳🇮' },
-    { code: 'CR', name: 'Costa Rica',          dial: '+506', flag: '🇨🇷' },
-    { code: 'PA', name: 'Panama',              dial: '+507', flag: '🇵🇦' },
-    // Amérique du Sud
-    { code: 'CO', name: 'Colombie',            dial: '+57',  flag: '🇨🇴' },
-    { code: 'VE', name: 'Venezuela',           dial: '+58',  flag: '🇻🇪' },
-    { code: 'EC', name: 'Équateur',            dial: '+593', flag: '🇪🇨' },
-    { code: 'PE', name: 'Pérou',              dial: '+51',  flag: '🇵🇪' },
-    { code: 'BO', name: 'Bolivie',             dial: '+591', flag: '🇧🇴' },
-    { code: 'CL', name: 'Chili',              dial: '+56',  flag: '🇨🇱' },
-    { code: 'AR', name: 'Argentine',           dial: '+54',  flag: '🇦🇷' },
-    { code: 'UY', name: 'Uruguay',             dial: '+598', flag: '🇺🇾' },
-    { code: 'PY', name: 'Paraguay',            dial: '+595', flag: '🇵🇾' },
-    { code: 'BR', name: 'Brésil',             dial: '+55',  flag: '🇧🇷' },
-    // Europe francophone
-    { code: 'FR', name: 'France',              dial: '+33',  flag: '🇫🇷' },
-    { code: 'BE', name: 'Belgique',            dial: '+32',  flag: '🇧🇪' },
-    { code: 'CH', name: 'Suisse',              dial: '+41',  flag: '🇨🇭' },
-    { code: 'GP', name: 'Guadeloupe',          dial: '+590', flag: '🇬🇵' },
-    { code: 'MQ', name: 'Martinique',          dial: '+596', flag: '🇲🇶' },
-    { code: 'GF', name: 'Guyane',             dial: '+594', flag: '🇬🇫' },
-    { code: 'RE', name: 'La Réunion',         dial: '+262', flag: '🇷🇪' },
-    // Europe
-    { code: 'GB', name: 'Royaume-Uni',         dial: '+44',  flag: '🇬🇧' },
-    { code: 'DE', name: 'Allemagne',           dial: '+49',  flag: '🇩🇪' },
-    { code: 'ES', name: 'Espagne',             dial: '+34',  flag: '🇪🇸' },
-    { code: 'PT', name: 'Portugal',            dial: '+351', flag: '🇵🇹' },
-    { code: 'IT', name: 'Italie',              dial: '+39',  flag: '🇮🇹' },
-    { code: 'NL', name: 'Pays-Bas',           dial: '+31',  flag: '🇳🇱' },
-    // Asie
-    { code: 'CN', name: 'Chine',              dial: '+86',  flag: '🇨🇳' },
-    { code: 'KR', name: 'Corée du Sud',        dial: '+82',  flag: '🇰🇷' },
-    { code: 'JP', name: 'Japon',              dial: '+81',  flag: '🇯🇵' },
-];
-
-function formatPhone(digits: string, countryCode: string): string {
-    if (!digits) return '';
-    if (countryCode === 'HT') {
-        const d = digits;
-        if (d.length <= 2) return d;
-        if (d.length <= 4) return `${d.slice(0, 2)} ${d.slice(2)}`;
-        return `${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4)}`;
-    }
-    const plusOne = ['US','CA','DO','JM','PR','TT','BB'];
-    if (plusOne.includes(countryCode)) {
-        const d = digits;
-        if (d.length <= 3) return d;
-        if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
-        return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
-    }
-    const d = digits;
-    if (d.length <= 3) return d;
-    if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
-    if (d.length <= 9) return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
-    return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 9)} ${d.slice(9)}`;
-}
-
 export default function ProfilePage() {
     const { user, loading: authLoading, signOutUser } = useAuth();
     const [loading, setLoading] = useState(true);
@@ -90,21 +16,13 @@ export default function ProfilePage() {
 
     // Form State
     const [displayName, setDisplayName] = useState("");
-    const [phoneNumber, setPhoneNumber] = useState("");
-    const [phoneState, setPhoneState] = useState("");
+    const [phoneDisplay, setPhoneDisplay] = useState(""); // read-only unified phone
     const [photoURL, setPhotoURL] = useState("");
     const [memberSince, setMemberSince] = useState("");
-    const [email, setEmail] = useState("");
-    const [copied, setCopied] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
 
-    // Phone Country selector state
-    const [phone, setPhone] = useState("");
-    const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
-    const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-    const [countrySearch, setCountrySearch] = useState('');
-    const [phoneError, setPhoneError] = useState<string | null>(null);
-
-    const countryDropdownRef = useRef<HTMLDivElement>(null);
+    // Stats State
+    const [stats, setStats] = useState({ coursesRaw: 0, ebooks: 0, bookings: 0 });
 
     // Temp Link states
     const [canGenerateTempLinks, setCanGenerateTempLinks] = useState(false);
@@ -113,181 +31,67 @@ export default function ProfilePage() {
     const [generatingLink, setGeneratingLink] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
 
-    // Stats State
-    const [stats, setStats] = useState({
-        coursesRaw: 0,
-        ebooks: 0,
-        bookings: 0
-    });
-
-    const [showSuccess, setShowSuccess] = useState(false);
-
-    useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
-                setShowCountryDropdown(false);
-            }
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, []);
-
     useEffect(() => {
         async function fetchProfileData() {
             if (!user) return;
-
             try {
-                console.log("🔍 Fetching profile data for:", user.uid);
-                // 1. Fetch User Document from Firestore
                 const userDoc = await getUserById(user.uid);
-                console.log("✅ User Doc status:", userDoc ? "Found" : "Not Found");
-
                 if (userDoc) {
                     setDisplayName(userDoc.displayName || user.displayName || "");
-                    setPhoneNumber(userDoc.phoneNumber || "");
-                    const fullPhone = userDoc.phone || "";
-                    setPhoneState(fullPhone);
                     setPhotoURL(userDoc.photoURL || user.photoURL || "");
-                    setEmail(userDoc.email || user.email || "");
                     setCanGenerateTempLinks(userDoc.canGenerateTempLinks || false);
                     setTempLinksCount(userDoc.tempLinksCount || 0);
 
-                    // Parse country dial code and phone digits from phone field
-                    if (fullPhone) {
-                        const matchingCountry = COUNTRIES.find(c => fullPhone.startsWith(c.dial));
-                        if (matchingCountry) {
-                            setSelectedCountry(matchingCountry);
-                            setPhone(fullPhone.substring(matchingCountry.dial.length));
-                        } else {
-                            setPhone(fullPhone.replace(/\D/g, ''));
-                        }
-                    }
+                    // Unified phone: prefer phone (WhatsApp), fallback to phoneNumber or Firebase auth
+                    const rawPhone = userDoc.phone || userDoc.phoneNumber || user.phoneNumber || "";
+                    const cleanPhone = rawPhone
+                        .replace("whatsapp:", "")
+                        .replace(/"/g, "")
+                        .replace(/'/g, "")
+                        .trim();
+                    setPhoneDisplay(cleanPhone || "");
 
                     if (userDoc.createdAt) {
                         setMemberSince(userDoc.createdAt.toDate().toLocaleDateString('fr-FR', {
-                            month: 'short',
-                            year: 'numeric'
+                            month: 'long', year: 'numeric'
                         }));
                     }
                 } else {
-                    // Fallback to Auth data if Firestore doc missing
                     setDisplayName(user.displayName || "");
                     setPhotoURL(user.photoURL || "");
-                    setEmail(user.email || "");
                 }
 
-                // 2. Fetch Stats
-                console.log("🔍 Fetching stats (enrollments & bookings)...");
                 const userRef = firestoreDoc(db, "users", user.uid);
-                
-                try {
-                    const [enrollments, bookings] = await Promise.all([
-                        getEnrollmentsByUser(user.uid).catch(e => {
-                            console.warn("⚠️ Failed to fetch enrollments:", e.message);
-                            return [];
-                        }),
-                        getBookingApplicationsByUser(userRef).catch(e => {
-                            console.warn("⚠️ Failed to fetch bookings:", e.message);
-                            return [];
-                        })
-                    ]);
-                    console.log("✅ Stats fetched:", { enrollments: enrollments.length, bookings: bookings.length });
+                const [enrollments, bookings] = await Promise.all([
+                    getEnrollmentsByUser(user.uid).catch(() => []),
+                    getBookingApplicationsByUser(userRef).catch(() => [])
+                ]);
 
-                    const coursesCount = enrollments.filter(e => e.productType === 'Course' || e.productType === 'course').length;
-                    const ebooksCount = enrollments.filter(e => e.productType === 'Ebook' || e.productType === 'ebook').length;
-                    const activeBookings = bookings.filter(b => b.status === 'pending' || b.status === 'accepted').length;
-
-                    setStats({
-                        coursesRaw: coursesCount,
-                        ebooks: ebooksCount,
-                        bookings: activeBookings
-                    });
-                } catch (statsError) {
-                    console.error("⚠️ Global stats error:", statsError);
-                }
-
-            } catch (error: any) {
-                console.error("❌ PROFILE ERROR DETECTED:");
-                console.error("Type:", error?.name || "Unknown");
-                console.error("Message:", error?.message || "No message");
-                console.error("Full Error:", error);
-                setLoading(false);
+                setStats({
+                    coursesRaw: enrollments.filter(e => e.productType === 'Course' || e.productType === 'course').length,
+                    ebooks: enrollments.filter(e => e.productType === 'Ebook' || e.productType === 'ebook').length,
+                    bookings: bookings.filter(b => b.status === 'pending' || b.status === 'accepted').length,
+                });
+            } catch (error) {
+                console.error("Profile error:", error);
             } finally {
                 setLoading(false);
             }
         }
-
-        if (!authLoading) {
-            fetchProfileData().catch(e => {
-                console.error("Unhandled promise rejection in fetchProfileData:", e);
-            });
-        }
+        if (!authLoading) fetchProfileData();
     }, [user, authLoading]);
 
     const handleSave = async () => {
         if (!user) return;
-        setPhoneError(null);
-
-        // Validation of Phone
-        let cleanNumber = phone.replace(/\D/g, "");
-        const dialDigits = selectedCountry.dial.replace(/\D/g, "");
-        if (cleanNumber.startsWith(dialDigits)) {
-            cleanNumber = cleanNumber.substring(dialDigits.length);
-        }
-        if (cleanNumber.startsWith("0")) {
-            cleanNumber = cleanNumber.substring(1);
-        }
-
-        const getExpectedLength = (code: string): number => {
-            if (code === 'HT') return 8;
-            if (['FR','BE','CH','GP','MQ','GF','RE'].includes(code)) return 9;
-            if (['US','CA','DO','PR','JM','TT','BB','MX','CO'].includes(code)) return 10;
-            return 0;
-        };
-
-        const expectedLength = getExpectedLength(selectedCountry.code);
-        if (phone.trim()) {
-            if (expectedLength > 0 && cleanNumber.length !== expectedLength) {
-                const errorMsg = selectedCountry.code === 'HT'
-                    ? "Le numéro pour Haïti doit comporter 8 chiffres (ex: 34567890)."
-                    : `Le numéro doit comporter exactement ${expectedLength} chiffres.`;
-                setPhoneError(errorMsg);
-                alert(errorMsg);
-                return;
-            } else if (expectedLength === 0 && (cleanNumber.length < 7 || cleanNumber.length > 15)) {
-                const errorMsg = "Le numéro de téléphone doit comporter entre 7 et 15 chiffres.";
-                setPhoneError(errorMsg);
-                alert(errorMsg);
-                return;
-            }
-        }
-
-        const finalPhone = phone.trim() ? `${selectedCountry.dial}${cleanNumber}` : "";
-
         setSaving(true);
         try {
-            // 1. Update Firestore
-            await updateUser(user.uid, {
-                displayName,
-                phoneNumber,
-                phone: finalPhone,
-                email
-            });
-
-            setPhoneState(finalPhone);
-
-            // 2. Update Auth Profile (optional but good for consistency)
-            await updateProfile(user, {
-                displayName: displayName
-            });
-
-            // Show success popup
+            await updateUser(user.uid, { displayName });
+            await updateProfile(user, { displayName });
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
-
         } catch (error) {
             console.error("Error updating profile", error);
-            alert("Erreur lors de la mise à jour du profil.");
+            alert("Erreur lors de la mise à jour.");
         } finally {
             setSaving(false);
         }
@@ -298,12 +102,6 @@ export default function ProfilePage() {
         window.location.href = "/login";
     };
 
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
     const handleGenerateTempLink = async () => {
         if (!user) return;
         setGeneratingLink(true);
@@ -311,22 +109,13 @@ export default function ProfilePage() {
             const token = await user.getIdToken();
             const res = await fetch("/api/auth/temp-link/generate", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                }
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }
             });
-
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || "Erreur lors de la génération");
-            }
-
+            if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Erreur"); }
             const { link } = await res.json();
             setGeneratedLink(link);
             setTempLinksCount(prev => prev + 1);
         } catch (error: any) {
-            console.error("Error generating temp link", error);
             alert(error.message || "Erreur lors de la génération du lien.");
         } finally {
             setGeneratingLink(false);
@@ -340,303 +129,257 @@ export default function ProfilePage() {
     };
 
     if (authLoading || loading) {
-        return <div className="min-h-screen flex items-center justify-center">N ap chaje...</div>;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background-dark">
+                <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
     }
 
     if (!user) {
-        return <div className="min-h-screen flex items-center justify-center">Tanpri konekte w.</div>;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background-dark text-white/50 text-sm">
+                Tanpri konekte w.
+            </div>
+        );
     }
 
-    const getPlaceholder = () => {
-        if (selectedCountry.code === 'HT') return '34 56 7890';
-        if (['US','CA','DO','PR','JM','TT','BB'].includes(selectedCountry.code)) return '809 484 2020';
-        return '6 12 34 56';
-    };
+    const initials = (displayName || user.email || "?")
+        .split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
 
     return (
-        <div className="relative flex h-auto flex-col w-full bg-background-light dark:bg-background-dark text-primary min-h-screen group/design-root overflow-x-hidden font-display">
-            <div className="layout-container flex h-full grow flex-col">
-                {/* Success Popup */}
-                {showSuccess && (
-                    <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-5 duration-300">
-                        <div className="bg-green-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
-                            <span className="material-symbols-outlined text-xl">check_circle</span>
-                            <span className="font-bold text-sm">Pwofil ou mete ajou avèk siksè !</span>
-                        </div>
+        <div className="min-h-screen bg-background-dark text-white font-display overflow-x-hidden">
+            {/* Success Toast */}
+            {showSuccess && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="flex items-center gap-3 bg-emerald-500 text-white px-6 py-3 rounded-full shadow-2xl shadow-emerald-500/30 font-bold text-sm">
+                        <span className="material-symbols-outlined text-lg">check_circle</span>
+                        Pwofil ou mete ajou avèk siksè !
                     </div>
-                )}
+                </div>
+            )}
 
-                <main className="flex flex-1 justify-center py-10 px-4 md:px-10">
-                    <div className="layout-content-container flex flex-col max-w-[800px] flex-1">
-                        {/* Profile Hero */}
-                        <section className="flex flex-col items-center mb-12">
-                            <div className="relative group">
-                                <div
-                                    className="bg-center bg-no-repeat aspect-square bg-cover rounded-full border-4 border-white dark:border-primary/20 shadow-sm min-h-32 w-32 mb-4"
-                                    style={{ backgroundImage: `url("${photoURL || 'https://lh3.googleusercontent.com/a/default-user'}")` }}
-                                >
+            <main className="flex flex-col items-center px-4 pt-10 pb-24">
+                <div className="w-full max-w-[680px] flex flex-col gap-6">
+
+                    {/* ── Hero Card ── */}
+                    <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-white/[0.03] p-8 flex flex-col items-center text-center">
+                        {/* Top gradient bar */}
+                        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
+                        {/* Background radial glow */}
+                        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_center,rgba(242,140,40,0.08),transparent_60%)]" />
+
+                        {/* Avatar */}
+                        <div className="relative mb-5 z-10">
+                            {photoURL ? (
+                                <img
+                                    src={photoURL}
+                                    alt={displayName}
+                                    className="w-24 h-24 rounded-full object-cover border-2 border-primary/30 shadow-xl shadow-primary/20"
+                                />
+                            ) : (
+                                <div className="w-24 h-24 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center text-3xl font-black text-primary shadow-xl shadow-primary/20">
+                                    {initials}
                                 </div>
-                            </div>
-                            <div className="flex flex-col items-center justify-center">
-                                <h1 className="text-primary dark:text-white text-3xl font-bold leading-tight tracking-[-0.015em] text-center">{displayName || "Itilizatè"}</h1>
-                                {memberSince && (
-                                    <p className="text-primary/60 dark:text-white/60 text-base font-normal leading-normal text-center mt-1">Manm depi {memberSince}</p>
-                                )}
-                            </div>
-                        </section>
-
-                        <div className="grid grid-cols-1 gap-12">
-                            {/* Personal Information Form */}
-                            <section>
-                                <h2 className="text-primary dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] mb-6">Enfòmasyon pèsonèl</h2>
-                                <div className="space-y-4">
-                                    <div className="flex flex-col w-full">
-                                        <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-2">Non konplè</p>
-                                        <input
-                                            className="form-input flex w-full rounded-xl text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-primary/10 bg-white dark:bg-background-dark/50 h-12 px-4 text-base font-normal"
-                                            type="text"
-                                            value={displayName}
-                                            onChange={(e) => setDisplayName(e.target.value)}
-                                        />
-                                    </div>
-                                    {user.email ? (
-                                        <div className="flex flex-col w-full">
-                                            <div className="flex items-center justify-between pb-2">
-                                                <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Adrès e-mail</p>
-                                                <span className="text-[10px] uppercase tracking-wider text-primary/40 dark:text-white/40 font-bold">Lekti sèlman</span>
-                                            </div>
-                                            <div className="relative">
-                                                <input
-                                                    className="form-input flex w-full rounded-xl text-primary/50 dark:text-white/50 border border-primary/5 bg-primary/5 dark:bg-white/5 h-12 px-4 text-base font-normal cursor-not-allowed"
-                                                    readOnly
-                                                    type="email"
-                                                    value={user.email}
-                                                />
-                                                <span className="material-symbols-outlined absolute right-4 top-3 text-sm text-primary/30">lock</span>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col w-full">
-                                            <div className="flex items-center justify-between pb-2">
-                                                <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Nimewo telefòn</p>
-                                                <span className="text-[10px] uppercase tracking-wider text-primary/40 dark:text-white/40 font-bold">Lekti sèlman</span>
-                                            </div>
-                                            <div className="relative">
-                                                <input
-                                                    className="form-input flex w-full rounded-xl text-primary/50 dark:text-white/50 border border-primary/5 bg-primary/5 dark:bg-white/5 h-12 px-4 text-base font-normal cursor-not-allowed"
-                                                    readOnly
-                                                    type="tel"
-                                                    value={user.phoneNumber || ""}
-                                                />
-                                                <span className="material-symbols-outlined absolute right-4 top-3 text-sm text-primary/30">lock</span>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {user.email && (
-                                        <div className="flex flex-col w-full">
-                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-2">Nimewo telefòn (Kontak)</p>
-                                            <input
-                                                className="form-input flex w-full rounded-xl text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-primary/10 bg-white dark:bg-background-dark/50 h-12 px-4 text-base font-normal"
-                                                type="tel"
-                                                value={phoneNumber}
-                                                onChange={(e) => setPhoneNumber(e.target.value)}
-                                                placeholder="+1 (555) 000-0000"
-                                            />
-                                        </div>
-                                    )}
-
-                                    <div className="flex flex-col w-full">
-                                        <div className="flex items-center gap-2 pb-2">
-                                            <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Nimewo telefòn</p>
-                                            <span className="material-symbols-outlined text-emerald-500 text-sm">smartphone</span>
-                                        </div>
-
-                                        <div className="flex gap-2 relative w-full text-left" ref={countryDropdownRef}>
-                                            {/* Country selector */}
-                                            <div className="relative shrink-0">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                                                    className="h-12 px-4 bg-white/5 border border-primary/10 dark:border-white/10 rounded-xl flex items-center gap-1.5 hover:bg-white/10 text-primary dark:text-white transition-all text-sm font-bold whitespace-nowrap"
-                                                >
-                                                    <span className="text-base">{selectedCountry.flag}</span>
-                                                    <span className="text-primary/70 dark:text-white/70">{selectedCountry.dial}</span>
-                                                    <svg className={`size-3 text-primary/40 dark:text-white/40 transition-transform ${showCountryDropdown ? '-rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
-                                                </button>
-
-                                                {showCountryDropdown && (
-                                                    <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-[#18181b] border border-primary/10 dark:border-white/10 rounded-2xl shadow-xl z-50 py-2 max-h-60 overflow-y-auto">
-                                                        <div className="px-3 pb-2 pt-1 border-b border-black/5 dark:border-white/5 sticky top-0 bg-white dark:bg-[#18181b] z-10">
-                                                            <input
-                                                                type="text"
-                                                                placeholder="Chache..."
-                                                                value={countrySearch}
-                                                                onChange={(e) => setCountrySearch(e.target.value)}
-                                                                className="w-full h-10 px-3 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-xl text-xs font-bold text-zinc-900 dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30 focus:outline-none"
-                                                            />
-                                                        </div>
-                                                        {COUNTRIES.filter(c => 
-                                                            c.name.toLowerCase().includes(countrySearch.toLowerCase()) || 
-                                                            c.dial.includes(countrySearch)
-                                                        ).map((c) => (
-                                                            <button
-                                                                key={c.code}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setSelectedCountry(c);
-                                                                    setShowCountryDropdown(false);
-                                                                    setCountrySearch('');
-                                                                }}
-                                                                className={`w-full px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-3 text-left transition-colors ${
-                                                                    selectedCountry.code === c.code ? 'bg-green-500/10 text-green-500' : 'text-zinc-700 dark:text-white/80'
-                                                                }`}
-                                                            >
-                                                                <span className="text-xl">{c.flag}</span>
-                                                                <span className="flex-1 font-bold text-xs">{c.name}</span>
-                                                                <span className="text-xs text-black/40 dark:text-white/40">{c.dial}</span>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Phone input */}
-                                            <input
-                                                className="flex-1 min-w-0 w-full h-12 px-4 bg-white dark:bg-background-dark/50 border border-primary/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-primary dark:text-white placeholder:text-primary/30 dark:placeholder:text-white/30 rounded-xl text-base font-normal transition-all"
-                                                type="tel"
-                                                value={formatPhone(phone, selectedCountry.code)}
-                                                onChange={(e) => {
-                                                    setPhone(e.target.value.replace(/\D/g, ''));
-                                                    setPhoneError(null);
-                                                }}
-                                                placeholder={getPlaceholder()}
-                                            />
-                                        </div>
-                                        {phoneError && (
-                                            <p className="text-[10px] font-black uppercase text-red-500 tracking-widest mt-2">
-                                                {phoneError}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* Section Accès Partagé (Magic Link) */}
-                            {canGenerateTempLinks === true && (
-                                <section className="bg-primary/5 dark:bg-white/5 p-8 rounded-2xl border border-primary/10 transition-all">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="p-2 bg-primary/10 rounded-lg">
-                                            <span className="material-symbols-outlined text-primary text-xl">share_reviews</span>
-                                        </div>
-                                        <div>
-                                            <h2 className="text-primary dark:text-white text-xl font-bold leading-tight">Aksè Pataje</h2>
-                                            <p className="text-[10px] text-primary/40 dark:text-white/40 uppercase font-black tracking-widest mt-1">Lyen koneksyon tanporè</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="space-y-6">
-                                        <div className="bg-white dark:bg-background-dark/50 p-6 rounded-xl border border-primary/5 shadow-sm">
-                                            <p className="text-sm text-primary/70 dark:text-white/70 leading-relaxed mb-6">
-                                                Ou ka kreye yon lyen espesyal pou pèmèt yon lòt moun gen aksè ak kour ou yo <span className="font-bold text-primary dark:text-white">san ou pa pataje modpas ou</span>.
-                                            </p>
-                                            
-                                            <ul className="space-y-3 mb-8">
-                                                <li className="flex items-start gap-2 text-xs text-primary/60 dark:text-white/60">
-                                                    <span className="material-symbols-outlined text-sm text-green-500">check_circle</span>
-                                                    <span>Li bon pou 24 èdtan sèlman.</span>
-                                                </li>
-                                                <li className="flex items-start gap-2 text-xs text-primary/60 dark:text-white/60">
-                                                    <span className="material-symbols-outlined text-sm text-green-500">check_circle</span>
-                                                    <span>Li sèvi yon sèl fwa (li ekspire apre premye koneksyon an).</span>
-                                                </li>
-                                                <li className="flex items-start gap-2 text-xs text-primary/60 dark:text-white/60">
-                                                    <span className="material-symbols-outlined text-sm text-primary/40">info</span>
-                                                    <span>Kota : {2 - tempLinksCount} lyen ki rete.</span>
-                                                </li>
-                                            </ul>
-
-                                            {generatedLink ? (
-                                                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                                    <p className="text-[10px] uppercase font-bold text-primary/40 dark:text-white/40 tracking-widest">Lyen ou kreye a :</p>
-                                                    <div className="relative group">
-                                                        <input
-                                                            readOnly
-                                                            className="w-full bg-primary/5 dark:bg-white/5 border-2 border-primary/10 rounded-xl px-4 py-3 text-xs font-mono text-primary/70 dark:text-white/70 pr-24"
-                                                            value={generatedLink}
-                                                        />
-                                                        <button 
-                                                            onClick={() => copyLinkToClipboard(generatedLink)}
-                                                            className="absolute right-2 top-2 h-8 px-4 bg-primary text-white text-[10px] font-bold rounded-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2 shadow-sm"
-                                                        >
-                                                            <span className="material-symbols-outlined text-xs">{linkCopied ? 'check' : 'content_copy'}</span>
-                                                            <span>{linkCopied ? 'Kopye' : 'Kopye'}</span>
-                                                        </button>
-                                                    </div>
-                                                    <p className="text-[10px] text-red-500 italic">Atansyon : ou ka sèvi ak lyen sa a yon sèl fwa sèlman.</p>
-                                                </div>
-                                            ) : (
-                                                <button
-                                                    onClick={handleGenerateTempLink}
-                                                    disabled={generatingLink || tempLinksCount >= 2}
-                                                    className="w-full h-14 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-3 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed shadow-md"
-                                                >
-                                                    {generatingLink ? (
-                                                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                                                    ) : (
-                                                        <span className="material-symbols-outlined">add_link</span>
-                                                    )}
-                                                    <span>{tempLinksCount >= 2 ? 'Kota lyen yo rive nan limit' : 'Kreye yon lyen aksè espesyal'}</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </section>
                             )}
+                            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-background-dark flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-white" />
+                            </div>
+                        </div>
 
-                            {/* Activity Summary */}
-                            <section>
-                                <h2 className="text-primary dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] mb-6">Rezime aktivite</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="bg-white dark:bg-background-dark/50 border border-primary/10 p-5 rounded-xl">
-                                        <span className="material-symbols-outlined text-primary/40 mb-2">menu_book</span>
-                                        <p className="text-2xl font-bold text-primary dark:text-white">{stats.coursesRaw}</p>
-                                        <p className="text-sm text-primary/60 dark:text-white/60">Kou ou genyen</p>
-                                    </div>
-                                    <div className="bg-white dark:bg-background-dark/50 border border-primary/10 p-5 rounded-xl">
-                                        <span className="material-symbols-outlined text-primary/40 mb-2">auto_stories</span>
-                                        <p className="text-2xl font-bold text-primary dark:text-white">{stats.ebooks}</p>
-                                        <p className="text-sm text-primary/60 dark:text-white/60">Ebook ou genyen</p>
-                                    </div>
-                                    <div className="bg-white dark:bg-background-dark/50 border border-primary/10 p-5 rounded-xl">
-                                        <span className="material-symbols-outlined text-primary/40 mb-2">event_available</span>
-                                        <p className="text-2xl font-bold text-primary dark:text-white">{stats.bookings}</p>
-                                        <p className="text-sm text-primary/60 dark:text-white/60">Rezèvasyon ki aktif</p>
-                                    </div>
+                        <h1 className="text-2xl font-black text-white z-10 relative">{displayName || "Itilizatè"}</h1>
+                        {memberSince && (
+                            <p className="text-xs text-white/40 font-bold uppercase tracking-widest mt-1 z-10 relative">
+                                Manm depi {memberSince}
+                            </p>
+                        )}
+
+                        {/* Stats Row */}
+                        <div className="grid grid-cols-3 gap-3 w-full mt-8 z-10 relative">
+                            {[
+                                { icon: "menu_book", label: "Kou", value: stats.coursesRaw, color: "text-blue-400" },
+                                { icon: "auto_stories", label: "Ebook", value: stats.ebooks, color: "text-purple-400" },
+                                { icon: "event_available", label: "Rezèvasyon", value: stats.bookings, color: "text-emerald-400" },
+                            ].map((s) => (
+                                <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-1">
+                                    <span className={`material-symbols-outlined text-xl ${s.color}`}>{s.icon}</span>
+                                    <span className="text-2xl font-black text-white">{s.value}</span>
+                                    <span className="text-[10px] uppercase tracking-wider font-bold text-white/40">{s.label}</span>
                                 </div>
-                            </section>
-
-                            {/* Footer Actions */}
-                            <section className="pt-6 border-t border-primary/10 flex flex-col md:flex-row items-center justify-between gap-6">
-                                <button
-                                    onClick={handleSave}
-                                    disabled={saving}
-                                    className="w-full md:w-auto flex min-w-[160px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-8 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity disabled:opacity-50"
-                                >
-                                    <span>{saving ? 'N ap sove...' : 'Sove chanjman yo'}</span>
-                                </button>
-                                <button
-                                    onClick={handleLogout}
-                                    className="flex items-center gap-2 text-[#d32f2f] hover:text-red-700 font-semibold text-sm transition-colors group"
-                                >
-                                    <span className="material-symbols-outlined text-lg">logout</span>
-                                    <span>Dekonekte</span>
-                                </button>
-                            </section>
+                            ))}
                         </div>
                     </div>
-                </main>
-            </div>
+
+                    {/* ── Personal Info Card ── */}
+                    <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 sm:p-8 relative overflow-hidden">
+                        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+                        <h2 className="text-sm font-black uppercase tracking-widest text-white/50 mb-6">
+                            Enfòmasyon pèsonèl
+                        </h2>
+
+                        <div className="flex flex-col gap-5">
+                            {/* Display Name */}
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-bold text-white/40 uppercase tracking-wider">Non konplè</label>
+                                <input
+                                    type="text"
+                                    value={displayName}
+                                    onChange={(e) => setDisplayName(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
+                                    placeholder="Jean Ronald"
+                                />
+                            </div>
+
+                            {/* Email or Phone (read-only) */}
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-white/40 uppercase tracking-wider">
+                                        {user.email ? "Adrès e-mail" : "Nimewo telefòn"}
+                                    </label>
+                                    <span className="flex items-center gap-1 text-[10px] font-bold text-white/30 uppercase tracking-wider">
+                                        <span className="material-symbols-outlined text-xs">lock</span>
+                                        Lekti sèlman
+                                    </span>
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        readOnly
+                                        type={user.email ? "email" : "tel"}
+                                        value={user.email || phoneDisplay || ""}
+                                        className="w-full px-4 py-3 pr-10 rounded-xl bg-white/[0.03] border border-white/5 text-sm text-white/50 cursor-not-allowed"
+                                    />
+                                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-white/20">
+                                        {user.email ? "alternate_email" : "phone"}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* WhatsApp phone (read-only) — only shown if email user also has a phone */}
+                            {user.email && phoneDisplay && (
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                                            <span className="text-emerald-400 text-sm material-symbols-outlined">phone_iphone</span>
+                                            Nimewo WhatsApp
+                                        </label>
+                                        <span className="flex items-center gap-1 text-[10px] font-bold text-white/30 uppercase tracking-wider">
+                                            <span className="material-symbols-outlined text-xs">lock</span>
+                                            Lekti sèlman
+                                        </span>
+                                    </div>
+                                    <div className="relative">
+                                        <input
+                                            readOnly
+                                            type="tel"
+                                            value={phoneDisplay}
+                                            className="w-full px-4 py-3 pr-10 rounded-xl bg-white/[0.03] border border-white/5 text-sm text-white/50 cursor-not-allowed font-mono tracking-widest"
+                                        />
+                                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-white/20">
+                                            lock
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Save Button */}
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="mt-8 w-full py-3.5 rounded-xl bg-primary text-white font-black text-sm uppercase tracking-wide hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+                        >
+                            {saving ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    N ap sove...
+                                </span>
+                            ) : "Sove chanjman yo"}
+                        </button>
+                    </div>
+
+                    {/* ── Magic Link Card ── */}
+                    {canGenerateTempLinks && (
+                        <div className="rounded-3xl border border-primary/20 bg-primary/5 p-6 sm:p-8 relative overflow-hidden">
+                            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-primary">share_reviews</span>
+                                </div>
+                                <div>
+                                    <h2 className="text-sm font-black uppercase tracking-widest text-white/70">Aksè Pataje</h2>
+                                    <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mt-0.5">Lyen koneksyon tanporè</p>
+                                </div>
+                            </div>
+
+                            <p className="text-sm text-white/60 leading-relaxed mb-5">
+                                Kreye yon lyen espesyal pou pèmèt yon lòt moun gen aksè ak kour ou yo{" "}
+                                <strong className="text-white">san ou pa pataje modpas ou</strong>.
+                            </p>
+
+                            <div className="flex flex-col gap-2 mb-6">
+                                {[
+                                    { icon: "check_circle", color: "text-emerald-500", text: "Bon pou 24 èdtan sèlman." },
+                                    { icon: "check_circle", color: "text-emerald-500", text: "Yon sèl fwa itilizasyon (li ekspire apre premye koneksyon an)." },
+                                    { icon: "info", color: "text-white/30", text: `Kota : ${2 - tempLinksCount} lyen ki rete.` },
+                                ].map((item) => (
+                                    <div key={item.text} className="flex items-start gap-2 text-xs text-white/50">
+                                        <span className={`material-symbols-outlined text-sm mt-0.5 ${item.color}`}>{item.icon}</span>
+                                        <span>{item.text}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {generatedLink ? (
+                                <div className="flex flex-col gap-3 animate-in fade-in duration-300">
+                                    <p className="text-[10px] uppercase font-black text-white/30 tracking-widest">Lyen ou kreye a :</p>
+                                    <div className="relative">
+                                        <input
+                                            readOnly
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs font-mono text-white/60 pr-24"
+                                            value={generatedLink}
+                                        />
+                                        <button
+                                            onClick={() => copyLinkToClipboard(generatedLink)}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-4 bg-primary text-white text-[10px] font-bold rounded-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-1.5"
+                                        >
+                                            <span className="material-symbols-outlined text-xs">{linkCopied ? 'check' : 'content_copy'}</span>
+                                            {linkCopied ? 'Kopye' : 'Kopye'}
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] text-red-400 italic">Atansyon : ou ka sèvi ak lyen sa a yon sèl fwa sèlman.</p>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleGenerateTempLink}
+                                    disabled={generatingLink || tempLinksCount >= 2}
+                                    className="w-full py-3.5 rounded-xl bg-primary text-white font-black text-sm flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+                                >
+                                    {generatingLink ? (
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <span className="material-symbols-outlined text-xl">add_link</span>
+                                    )}
+                                    {tempLinksCount >= 2 ? 'Kota lyen yo rive nan limit' : 'Kreye yon lyen aksè espesyal'}
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ── Logout ── */}
+                    <div className="flex justify-center pt-2">
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 text-red-400 hover:text-red-300 font-bold text-sm transition-colors group"
+                        >
+                            <span className="material-symbols-outlined text-lg group-hover:translate-x-0.5 transition-transform">logout</span>
+                            Dekonekte
+                        </button>
+                    </div>
+
+                </div>
+            </main>
         </div>
     );
 }
