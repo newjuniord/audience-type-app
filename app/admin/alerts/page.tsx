@@ -28,6 +28,7 @@ const ALERT_PRESETS: {
     { category: "marketing", type: "free_ebook", icon: "auto_stories", iconColor: "text-purple-400", iconBg: "bg-purple-400/10", defaultTitle: "Ebook gratis pou ou!", defaultBody: "Ou gen aksè ak yon ebook gratis. Telechaje li kounye a.", defaultActionLabel: "Telechaje", defaultActionUrl: "/products" },
     { category: "marketing", type: "webinar", icon: "live_tv", iconColor: "text-red-400", iconBg: "bg-red-400/10", defaultTitle: "Webinar an dirèk jodi a!", defaultBody: "Rantre nan sesyon an dirèk la kounye a. Plas yo limite!", defaultActionLabel: "Rantre", defaultActionUrl: "/consultation" },
     { category: "marketing", type: "reactivation", icon: "campaign", iconColor: "text-orange-400", iconBg: "bg-orange-400/10", defaultTitle: "Nou regrèt ou manke w!", defaultBody: "Sa gen lontan depi nou wè ou. Gen kontni nouvo ki tann ou.", defaultActionLabel: "Retounen", defaultActionUrl: "/dashboard" },
+    { category: "utility", type: "maintenance", icon: "build", iconColor: "text-yellow-400", iconBg: "bg-yellow-400/10", defaultTitle: "🔧 Antretyen pwograme jodi a a 11PM", defaultBody: "Platfòm nan ka pa disponib pou anviwon 30 minit.", defaultActionLabel: "", defaultActionUrl: "" },
 ];
 
 interface UserOption { uid: string; displayName: string; email: string; }

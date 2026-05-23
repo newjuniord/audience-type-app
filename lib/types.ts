@@ -404,6 +404,7 @@ export type AlertType =
     | 'free_ebook'
     | 'webinar'
     | 'reactivation'
+    | 'maintenance'
     | 'custom';
 
 export interface Alert {
