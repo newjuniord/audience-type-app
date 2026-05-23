@@ -67,7 +67,7 @@ function fmtUX(raw: string) {
   const m = match[2] ? match[2] : null;
   const period = match[3];
   const timePart = m ? `${h}h${m}` : `${h}h`;
-  const label = period === "AM" ? "nan maten" : "nan aswè";
+  const label = period === "AM" ? (h === "12" ? "nan minwi" : "nan maten") : "nan aswè";
   return `${timePart} ${label} (${period})`;
 }
 
