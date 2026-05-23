@@ -79,7 +79,7 @@ function baseToLocal(baseH: number, baseM: number, baseOffset: number) {
 
 const DAYS_FR = ["Len", "Mad", "Mèk", "Jèd", "Van", "Sam", "Dim"];
 const MONTHS_FR = ["Janye", "Fevriye", "Mas", "Avril", "Me", "Jen", "Jiyè", "Out", "Septanm", "Oktòb", "Novanm", "Desanm"];
-const DAYS_MAP = ["Dimanch", "Lendi", "Madi", "Mèkredi", "Jedi", "Vandredi", "Samdi"];
+const DAYS_MAP = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 
 function CalendarPicker({ value, onChange, isDateAvailable }: { value: string; onChange: (v: string) => void; isDateAvailable?: (y: number, m: number, d: number) => boolean }) {
   const minDate = new Date();
