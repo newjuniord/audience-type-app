@@ -205,13 +205,13 @@ export default function ProfilePage() {
                         )}
 
                         {/* Stats Row */}
-                        <div className="grid grid-cols-3 gap-3 w-full mt-8 z-10 relative">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full mt-8 z-10 relative">
                             {[
                                 { icon: "menu_book", label: "Kou", value: stats.coursesRaw, color: "text-blue-400" },
                                 { icon: "auto_stories", label: "Ebook", value: stats.ebooks, color: "text-purple-400" },
                                 { icon: "event_available", label: "Rezèvasyon", value: stats.bookings, color: "text-emerald-400" },
-                            ].map((s) => (
-                                <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-1">
+                            ].map((s, index) => (
+                                <div key={s.label} className={`bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-1 ${index === 2 ? 'col-span-2 sm:col-span-1' : ''}`}>
                                     <span className={`material-symbols-outlined text-xl ${s.color}`}>{s.icon}</span>
                                     <span className="text-2xl font-black text-white">{s.value}</span>
                                     <span className="text-[10px] uppercase tracking-wider font-bold text-white/40">{s.label}</span>
