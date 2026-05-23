@@ -43,6 +43,7 @@ export default function BookingsManagementPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all');
     const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'pending' | 'unpaid'>('all');
+    const [timeFilter, setTimeFilter] = useState<'all' | 'active' | 'past'>('active');
     
     // View Management
     const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'day'>('list');
@@ -361,6 +362,7 @@ export default function BookingsManagementPage() {
     };
 
     const filteredApps = useMemo(() => {
+        const todayStr = new Date().toISOString().split('T')[0];
         return applications.filter(app => {
             const matchesSearch = (
                 (app.userName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
@@ -369,9 +371,17 @@ export default function BookingsManagementPage() {
             );
             const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
             const matchesPayment = paymentFilter === 'all' || app.paymentStatus === paymentFilter;
-            return matchesSearch && matchesStatus && matchesPayment;
+
+            let matchesTime = true;
+            if (timeFilter === 'active') {
+                matchesTime = !app.bookingDate || app.bookingDate >= todayStr;
+            } else if (timeFilter === 'past') {
+                matchesTime = !!app.bookingDate && app.bookingDate < todayStr;
+            }
+
+            return matchesSearch && matchesStatus && matchesPayment && matchesTime;
         });
-    }, [applications, searchTerm, statusFilter, paymentFilter]);
+    }, [applications, searchTerm, statusFilter, paymentFilter, timeFilter]);
 
     // Stats
     const stats = useMemo(() => {
@@ -571,7 +581,7 @@ export default function BookingsManagementPage() {
                         />
                     </div>
                     
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-6 flex-wrap lg:flex-nowrap">
                         {/* Paiement Status Filter */}
                         <div className="flex flex-col gap-1.5">
                             <span className="text-[9px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">Statut Paiement</span>
@@ -590,6 +600,20 @@ export default function BookingsManagementPage() {
                                     </button>
                                 ))}
                             </div>
+                        </div>
+
+                        {/* Sessions Période Filter Dropdown */}
+                        <div className="flex flex-col gap-1.5">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">Période</span>
+                            <select
+                                value={timeFilter}
+                                onChange={(e) => setTimeFilter(e.target.value as any)}
+                                className="h-8 px-4 rounded-full text-[10px] font-bold bg-white dark:bg-black/20 border border-black/5 dark:border-white/10 outline-none transition-all cursor-pointer text-black dark:text-white hover:border-black/20 dark:hover:border-white/20"
+                            >
+                                <option value="all">Toutes les Sessions</option>
+                                <option value="active">Sessions Actives</option>
+                                <option value="past">Sessions Passées</option>
+                            </select>
                         </div>
                     </div>
                 </div>
