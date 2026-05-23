@@ -134,5 +134,18 @@ service cloud.firestore {
       allow read, delete: if isAdmin();
       allow create: if true;
     }
+
+    // Alertes / Notifications
+    match /alerts/{alertId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow list: if isAdmin() || isAuthenticated();
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead'])
+      );
+    }
   }
 }
