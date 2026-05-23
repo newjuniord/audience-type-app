@@ -169,10 +169,21 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
 
   const { openCheckout, hasExpiredSession } = useLemonSqueezyOverlay();
 
-  // Handle modal mount & routing logic
+  // Manage scroll lock on body
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  // Handle modal mount & routing logic
+  useEffect(() => {
+    if (isOpen) {
       // Auto-skip contact step if logged in
       if (currentUser) {
         setModalStep('payment');
@@ -188,12 +199,10 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
       }, 50);
       return () => clearTimeout(timer);
     } else {
-      document.body.style.overflow = '';
       setIsClosing(false);
       setAnimate(false);
       setDragY(0);
     }
-    return () => { document.body.style.overflow = ''; };
   }, [isOpen, currentUser]);
 
   // Close country dropdown on outside click
