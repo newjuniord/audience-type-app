@@ -310,7 +310,11 @@ export default function LoginPage() {
             }
         } catch (err: any) {
             console.error("Erreur de connexion sans mot de passe :", err);
-            setError(err.message || "Gen yon erè ki fèt. Tanpri reyezi ankò.");
+            if (err.message && err.message.toLowerCase().includes("server action")) {
+                setError("Tanpri refrechi paj la konplètman (F5 oswa glise desann). Gen yon mizajou ki fèk fèt sou sit la.");
+            } else {
+                setError(err.message || "Gen yon erè ki fèt. Tanpri reyezi ankò.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -337,7 +341,11 @@ export default function LoginPage() {
                 await signInWithCustomToken(auth, data.customToken);
             }
         } catch (err: any) {
-            setVerificationError(err.message || "Kòd verifikasyon sa a pa bon.");
+            if (err.message && err.message.toLowerCase().includes("server action")) {
+                setVerificationError("Tanpri refrechi paj la konplètman (F5). Gen yon mizajou ki fèk fèt sou sit la.");
+            } else {
+                setVerificationError(err.message || "Kòd verifikasyon sa a pa bon.");
+            }
         } finally {
             setIsLoading(false);
         }
