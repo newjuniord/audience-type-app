@@ -203,7 +203,7 @@ function CalendarPicker({ value, onChange, isDateAvailable }: { value: string; o
 }
 
 export default function ConsultationPage() {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
   const [service, setService] = useState<Service | null>(null);
@@ -224,6 +224,47 @@ export default function ConsultationPage() {
   const [submitted, setSubmitted] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [usZone, setUsZone] = useState("");
+
+  // Prefill user data if logged in
+  useEffect(() => {
+    if (userData) {
+      const rawPhone = userData.phone || userData.phoneNumber || "";
+      const cleanPhone = rawPhone.replace("whatsapp:", "").replace(/"/g, "").replace(/'/g, "").trim();
+      
+      let detectedPays = "";
+      if (cleanPhone) {
+        const digitsOnly = cleanPhone.replace(/\D/g, "");
+        if (digitsOnly.startsWith("509")) {
+          detectedPays = "haiti";
+        } else if (digitsOnly.startsWith("33")) {
+          detectedPays = "france";
+        } else if (digitsOnly.startsWith("52")) {
+          detectedPays = "mexique";
+        } else if (digitsOnly.startsWith("55")) {
+          detectedPays = "bresil";
+        } else if (digitsOnly.startsWith("56")) {
+          detectedPays = "chili";
+        } else if (digitsOnly.startsWith("1")) {
+          if (digitsOnly.startsWith("1809") || digitsOnly.startsWith("1829") || digitsOnly.startsWith("1849")) {
+            detectedPays = "rd";
+          } else {
+            detectedPays = "usa"; // default to USA for +1
+          }
+        }
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        nomPrenom: prev.nomPrenom || userData.fullName || userData.displayName || "",
+        pays: prev.pays || detectedPays,
+        phone: prev.phone || cleanPhone
+      }));
+      
+      if (detectedPays === "usa") {
+        setUsZone("usa_east");
+      }
+    }
+  }, [userData]);
 
   const effectivePays = formData.pays === "usa" && usZone ? usZone : formData.pays;
   const selectedCountry = COUNTRY_OFFSETS[effectivePays];
