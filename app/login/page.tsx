@@ -637,7 +637,7 @@ export default function LoginPage() {
                                         </div>
                                     )
                                 ) : (
-                                    <form onSubmit={handleVerifyOtpSubmit} className="flex flex-col gap-4 p-1 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
+                                    <form onSubmit={handleVerifyOtpSubmit} className="flex flex-col gap-4 py-5 px-4 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
                                         <div className="flex flex-col items-center text-center mb-2">
                                             <div className="size-12 rounded-full bg-primary/15 flex items-center justify-center mb-3 text-primary">
                                                 <span className="material-symbols-outlined notranslate text-2xl">{loginMethod === 'phone' ? 'sms' : 'mail'}</span>
@@ -758,7 +758,7 @@ export default function LoginPage() {
                                 </div>
 
                                 {loginMethod === 'password' ? (
-                                    <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 p-1 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
+                                    <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 py-5 px-4 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
                                         <div className="flex flex-col gap-1.5">
                                             <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Adrès imel</label>
                                             <input
@@ -834,7 +834,7 @@ export default function LoginPage() {
                                         </div>
                                     </form>
                                 ) : (
-                                    <form onSubmit={handlePasswordlessSubmit} className="flex flex-col gap-4 p-1 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
+                                    <form onSubmit={handlePasswordlessSubmit} className="flex flex-col gap-4 py-5 px-4 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
                                         {(loginMethod === 'whatsapp' || loginMethod === 'phone') ? (
                                             <div className="flex flex-col gap-1.5">
                                                 <label className="text-xs font-bold text-white/50 uppercase tracking-wider">
