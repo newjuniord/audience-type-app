@@ -8,7 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { subscribeToAlerts } from "@/lib/alerts";
 
 export default function DashboardHeader() {
-    const { user, loading, role, signOutUser } = useAuth();
+    const { user, userData, loading, role, signOutUser } = useAuth();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -133,8 +133,8 @@ export default function DashboardHeader() {
                                             </div>
                                         )}
                                         <div className="min-w-0">
-                                            <p className="text-sm font-black truncate leading-tight">{user.displayName || "Itilizatè"}</p>
-                                            <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{user.email}</p>
+                                            <p className="text-sm font-black truncate leading-tight">{userData?.displayName || user.displayName || "Client"}</p>
+                                            <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{userData?.email || user.email || userData?.phone}</p>
                                         </div>
                                     </div>
                                     {role === 'admin' && (

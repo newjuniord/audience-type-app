@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function AdminSidebar() {
     const pathname = usePathname();
-    const { user } = useAuth();
+    const { user, userData } = useAuth();
 
     const menuSections = [
         {
@@ -86,8 +86,8 @@ export default function AdminSidebar() {
                         )}
                     </div>
                     <div className="overflow-hidden">
-                        <p className="text-xs font-bold truncate max-w-[120px]">{user?.displayName || "Admin User"}</p>
-                        <p className="text-[10px] text-black/50 dark:text-white/50 truncate max-w-[120px]">{user?.email}</p>
+                        <p className="text-xs font-bold truncate max-w-[120px]">{userData?.displayName || user?.displayName || "Admin User"}</p>
+                        <p className="text-[10px] text-black/50 dark:text-white/50 truncate max-w-[120px]">{userData?.email || user?.email || userData?.phone}</p>
                     </div>
                 </div>
             </div>
