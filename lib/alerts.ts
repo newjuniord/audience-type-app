@@ -19,7 +19,7 @@ import { Alert } from "@/lib/types";
  * Subscribe to a user's alerts in real-time.
  * Returns an unsubscribe function.
  */
-export function subscribeToAlerts(userId: string, callback: (alerts: Alert[]) => void) {
+export function subscribeToAlerts(userId: string, callback: (alerts: Alert[]) => void, onError?: (error: any) => void) {
     const q = query(
         collection(db, "alerts"),
         where("userId", "==", userId),
@@ -28,6 +28,9 @@ export function subscribeToAlerts(userId: string, callback: (alerts: Alert[]) =>
     return onSnapshot(q, (snapshot) => {
         const alerts = snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Alert[];
         callback(alerts);
+    }, (error) => {
+        console.error("Error subscribing to alerts:", error);
+        if (onError) onError(error);
     });
 }
 

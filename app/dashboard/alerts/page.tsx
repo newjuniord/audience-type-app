@@ -29,6 +29,9 @@ export default function AlertsPage() {
         const unsub = subscribeToAlerts(user.uid, (data) => {
             setAlerts(data);
             setLoading(false);
+        }, (error) => {
+            console.error(error);
+            setLoading(false);
         });
         return () => unsub();
     }, [user]);
