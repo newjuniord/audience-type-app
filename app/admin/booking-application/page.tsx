@@ -700,14 +700,6 @@ export default function BookingsManagementPage() {
                                         <div className="flex-1 min-w-0 w-full">
                                             {/* 1. Header Row (Badges) */}
                                             <div className="flex flex-wrap items-center gap-2 mb-4 border-b border-black/5 dark:border-white/5 pb-3">
-                                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide border ${
-                                                    app.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20' :
-                                                    app.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20' :
-                                                    'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20'
-                                                }`}>
-                                                    {app.status === 'confirmed' ? 'Confirmé' : app.status === 'cancelled' ? 'Annulé' : 'En attente'}
-                                                </span>
-                                                
                                                 {/* Payment status badge */}
                                                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide border flex items-center gap-1 ${
                                                     app.paymentStatus === 'paid' ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' :
@@ -717,9 +709,10 @@ export default function BookingsManagementPage() {
                                                     <span className="material-symbols-outlined text-[10px]">
                                                         {app.paymentStatus === 'paid' ? 'check_circle' : app.paymentStatus === 'pending' ? 'hourglass_empty' : 'cancel'}
                                                     </span>
-                                                    Paiement: {
-                                                        app.paymentStatus === 'paid' ? `Payé (${app.paymentAmount} ${app.paymentCurrency?.toUpperCase()} - ${app.paymentMethod})` :
-                                                        app.paymentStatus === 'pending' ? 'En attente' : 'Non payé'
+                                                    Paiement : {
+                                                        app.paymentStatus === 'paid' ? `Payé (${app.paymentAmount} ${app.paymentCurrency?.toUpperCase() === 'HTG' ? 'Gourdes (HTG)' : 'USD ($)'} - ${app.paymentMethod === 'moncash' ? 'MonCash' : 'Kat / PayPal'})` :
+                                                        app.paymentStatus === 'pending' ? `En attente (${app.paymentAmount || app.servicePrice || '—'} ${app.paymentCurrency?.toUpperCase() === 'HTG' ? 'Gourdes (HTG)' : 'USD ($)'})` :
+                                                        `Non payé (${app.servicePrice || '—'} USD)`
                                                     }
                                                 </span>
 
@@ -733,11 +726,6 @@ export default function BookingsManagementPage() {
                                                     <span className="material-symbols-outlined text-xs">event_seat</span>
                                                     {app.serviceName}
                                                 </span>
-                                                {app.servicePrice && (
-                                                    <span className="text-[10px] font-bold text-black/40 dark:text-white/40 border-l border-black/10 dark:border-white/10 px-2">
-                                                        {app.servicePrice}
-                                                    </span>
-                                                )}
 
                                                 {/* Platform badge */}
                                                 <span className="ml-auto flex items-center gap-1 text-[10px] font-bold text-black/50 dark:text-white/40 bg-black/[0.03] dark:bg-white/[0.03] px-2 py-0.5 rounded border border-black/5 dark:border-white/5">
