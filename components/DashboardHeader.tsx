@@ -80,11 +80,16 @@ export default function DashboardHeader() {
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 className="flex items-center focus:outline-none"
                             >
-                                <div
-                                    className="h-10 w-10 rounded-full bg-cover bg-center border border-primary/10 hover:opacity-80 transition-opacity cursor-pointer"
-                                    style={{ backgroundImage: `url("${user.photoURL || 'https://lh3.googleusercontent.com/a/default-user'}")` }}
-                                >
-                                </div>
+                                {user.photoURL ? (
+                                    <div
+                                        className="h-10 w-10 rounded-full bg-cover bg-center border border-primary/10 hover:opacity-80 transition-opacity cursor-pointer"
+                                        style={{ backgroundImage: `url("${user.photoURL}")` }}
+                                    />
+                                ) : (
+                                    <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary cursor-pointer hover:bg-primary/20 transition-colors">
+                                        <span className="material-symbols-outlined text-xl">person</span>
+                                    </div>
+                                )}
                             </button>
 
                             {/* Profile Dropdown — Premium Design */}
@@ -94,10 +99,16 @@ export default function DashboardHeader() {
                                 {/* Header utilisateur */}
                                 <div className="px-5 pt-5 pb-4 border-b border-black/5 dark:border-white/5">
                                     <div className="flex items-center gap-3">
-                                        <div
-                                            className="size-11 rounded-2xl bg-cover bg-center border-2 border-primary/20 dark:border-white/10 shadow-md shrink-0"
-                                            style={{ backgroundImage: `url("${user.photoURL || 'https://lh3.googleusercontent.com/a/default-user'}")` }}
-                                        />
+                                        {user.photoURL ? (
+                                            <div
+                                                className="size-11 rounded-2xl bg-cover bg-center border-2 border-primary/20 dark:border-white/10 shadow-md shrink-0"
+                                                style={{ backgroundImage: `url("${user.photoURL}")` }}
+                                            />
+                                        ) : (
+                                            <div className="size-11 rounded-2xl bg-primary/10 border-2 border-primary/20 dark:border-white/10 flex items-center justify-center text-primary shadow-md shrink-0">
+                                                <span className="material-symbols-outlined text-xl">person</span>
+                                            </div>
+                                        )}
                                         <div className="min-w-0">
                                             <p className="text-sm font-black truncate leading-tight">{user.displayName || "Itilizatè"}</p>
                                             <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{user.email}</p>
