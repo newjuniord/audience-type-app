@@ -138,6 +138,7 @@ function formatPhone(digits: string, countryCode: string): string {
 export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymentRedirect }: CheckoutModalProps) {
   const { user: currentUser } = useAuth();
   const [isClosing, setIsClosing] = useState(false);
+  const [animate, setAnimate] = useState(false); // Controls opening animation
   const [dragY, setDragY] = useState(0);
   const dragStartY = useRef(0);
   const isDragging = useRef(false);
@@ -178,9 +179,18 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
       } else {
         setModalStep('contact');
       }
+
+      setIsClosing(false);
+      setDragY(0);
+      // Small timeout to allow element to mount, triggering the slide up
+      const timer = setTimeout(() => {
+        setAnimate(true);
+      }, 50);
+      return () => clearTimeout(timer);
     } else {
       document.body.style.overflow = '';
       setIsClosing(false);
+      setAnimate(false);
       setDragY(0);
     }
     return () => { document.body.style.overflow = ''; };
@@ -511,20 +521,20 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
     <>
       <div
         className={`fixed inset-0 z-[150] flex items-end lg:items-center justify-center p-0 lg:p-6 transition-colors duration-300 ${
-          isClosing ? 'bg-black/0 backdrop-blur-none' : 'bg-black/70 backdrop-blur-sm'
+          isClosing || !animate ? 'bg-black/0 backdrop-blur-none' : 'bg-black/70 backdrop-blur-sm'
         }`}
         onClick={(e) => e.target === e.currentTarget && handleClose()}
       >
         <div
           className="w-full lg:max-w-lg bg-[#141414] border border-white/10 rounded-t-3xl lg:rounded-3xl shadow-2xl overflow-visible text-white"
           style={{
-            transform: isClosing
+            transform: isClosing || !animate
               ? 'translateY(100%)'
               : dragY > 0
               ? `translateY(${dragY}px)`
               : 'translateY(0)',
-            opacity: isClosing ? 0 : dragY > 0 ? Math.max(0.3, 1 - dragY / 300) : 1,
-            transition: isDragging.current ? 'none' : 'transform 0.35s cubic-bezier(0.32,0.72,0,1), opacity 0.35s ease',
+            opacity: isClosing ? 0 : !animate ? 0 : dragY > 0 ? Math.max(0.3, 1 - dragY / 300) : 1,
+            transition: isDragging.current ? 'none' : 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.35s ease',
           }}
         >
           <div
