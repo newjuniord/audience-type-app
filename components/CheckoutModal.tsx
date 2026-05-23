@@ -515,6 +515,16 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
     }
   };
 
+  const shouldShowMonCash = 
+    selectedCountry.code === 'HT' ||
+    selectedCountry.code === 'DO' ||
+    selectedCountry.code === 'KR' ||
+    phone.startsWith('+509') ||
+    phone.startsWith('509') ||
+    verifiedPhone.startsWith('+509') ||
+    verifiedPhone.startsWith('509') ||
+    (currentUser?.phoneNumber && (currentUser.phoneNumber.startsWith('+509') || currentUser.phoneNumber.startsWith('509')));
+
   if (!isOpen) return null;
 
   return (
@@ -754,12 +764,24 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                 <p className="text-xs text-white/40 text-center mb-4 font-semibold uppercase tracking-widest">Kijan ou vle peye ?</p>
 
                 <div className="space-y-3">
-                  {(selectedCountry.code === 'HT' || product.priceHTG > 0) && (
-                    <button onClick={() => handlePurchase('moncash')} disabled={isLoading || product.priceHTG <= 0} className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-[#e30713]/20 to-[#e30713]/5 border-2 border-[#e30713]/50 hover:border-[#e30713] rounded-2xl transition-all active:scale-95 disabled:opacity-30 disabled:grayscale group">
+                  {shouldShowMonCash && (
+                    <button 
+                      onClick={() => handlePurchase('moncash')} 
+                      disabled={isLoading || product.priceHTG <= 0} 
+                      className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-[#e30713]/20 to-[#e30713]/5 border-2 border-[#e30713]/50 hover:border-[#e30713] rounded-2xl transition-all active:scale-95 disabled:opacity-50 disabled:grayscale group text-left"
+                    >
                       <img src="/images/moncash-logo.png" alt="MonCash" className="size-12 object-contain rounded-xl shadow-lg shrink-0" />
-                      <div className="text-left flex-1">
-                        <p className="font-black text-sm">MonCash ({product.priceHTG} HTG)</p>
-                        <p className="text-xs text-white/50">Peman mobil ayisyen</p>
+                      <div className="flex-1">
+                        <p className="font-black text-sm">
+                          MonCash {product.priceHTG > 0 ? `(${product.priceHTG} HTG)` : ''}
+                        </p>
+                        {product.priceHTG > 0 ? (
+                          <p className="text-xs text-white/50 font-medium">Peman mobil ayisyen</p>
+                        ) : (
+                          <p className="text-xs text-red-400 font-semibold mt-0.5">
+                            Pwodui sa a pa disponib pou peman MonCash
+                          </p>
+                        )}
                       </div>
                     </button>
                   )}
