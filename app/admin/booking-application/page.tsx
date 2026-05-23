@@ -38,6 +38,7 @@ const AVATAR_PALETTE = [
 ];
 
 export default function BookingsManagementPage() {
+    const todayStr = new Date().toISOString().split('T')[0];
     const [applications, setApplications] = useState<ExtendedApplication[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -362,7 +363,6 @@ export default function BookingsManagementPage() {
     };
 
     const filteredApps = useMemo(() => {
-        const todayStr = new Date().toISOString().split('T')[0];
         return applications.filter(app => {
             const matchesSearch = (
                 (app.userName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
@@ -793,6 +793,12 @@ export default function BookingsManagementPage() {
                                                             <span className="material-symbols-outlined text-sm text-black/30 dark:text-white/30">calendar_month</span>
                                                             <span className="font-bold text-black/40 dark:text-white/40">Date :</span>
                                                             <span className="capitalize font-semibold">{formatBookingDateUX(app.bookingDate)}</span>
+                                                            {app.bookingDate && app.bookingDate < todayStr && (
+                                                                <span className="ml-auto px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-red-500/10 text-red-600 border border-red-500/20 flex items-center gap-0.5">
+                                                                    <span className="material-symbols-outlined text-[10px]">warning</span>
+                                                                    Dépassée
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div className="flex items-center gap-1 text-black/70 dark:text-white/70">
                                                             <span className="material-symbols-outlined text-sm text-black/30 dark:text-white/30">schedule</span>
@@ -916,6 +922,13 @@ export default function BookingsManagementPage() {
                                                 {app.transactionId && (
                                                     <span className="text-[10px] text-black/40 dark:text-white/30 font-medium px-2 py-0.5 border border-black/5 dark:border-white/5 rounded-md bg-black/[0.02] dark:bg-white/[0.02] font-mono">
                                                         TXID: {app.transactionId}
+                                                    </span>
+                                                )}
+
+                                                {app.bookingDate && app.bookingDate < todayStr && (
+                                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide border flex items-center gap-1 bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">
+                                                        <span className="material-symbols-outlined text-[10px]">warning</span>
+                                                        Date Dépassée
                                                     </span>
                                                 )}
                                             </div>
