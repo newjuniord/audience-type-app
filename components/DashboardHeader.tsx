@@ -87,7 +87,7 @@ export default function DashboardHeader() {
                     )}
                     {/* Bell icon — alerts */}
                     {user && (
-                        <Link href="/dashboard/alerts" className="relative flex items-center justify-center transition-all focus:outline-none text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white hover:scale-110">
+                        <Link href="/dashboard/alerts" className="relative flex items-center justify-center transition-all focus:outline-none text-white hover:text-white/80 hover:scale-110">
                             <span className="material-symbols-outlined text-[26px]">notifications</span>
                             {unreadCount > 0 && (
                                 <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-md animate-pulse">
@@ -100,7 +100,7 @@ export default function DashboardHeader() {
                         <div className="relative" ref={dropdownRef}>
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center justify-center transition-all focus:outline-none text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white hover:scale-110"
+                                className="flex items-center justify-center transition-all focus:outline-none text-white hover:text-white/80 hover:scale-110"
                             >
                                 <span className="material-symbols-outlined text-[28px]">menu</span>
                             </button>

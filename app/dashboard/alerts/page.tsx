@@ -64,7 +64,7 @@ export default function AlertsPage() {
             <div className="relative overflow-hidden border-b border-white/5 bg-white/[0.02] px-4 sm:px-8 pt-10 pb-8">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(242,140,40,0.07),transparent_60%)] pointer-events-none" />
                 <div className="max-w-3xl mx-auto">
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                         <div>
                             <div className="flex items-center gap-2.5 mb-2">
                                 <span className="material-symbols-outlined text-primary text-2xl">notifications</span>
