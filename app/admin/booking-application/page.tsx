@@ -116,6 +116,85 @@ export default function BookingsManagementPage() {
         return { name: "Google Meet", icon: "video_chat" };
     };
 
+    const getCountryInfo = (phone?: string) => {
+        if (!phone) return { name: "Non spécifié", flag: "🌐" };
+        const clean = phone.replace(/\D/g, '');
+        if (clean.startsWith('509')) return { name: "Haïti", flag: "🇭🇹" };
+        if (clean.startsWith('82')) return { name: "Corée du Sud", flag: "🇰🇷" };
+        if (clean.startsWith('1809') || clean.startsWith('1829') || clean.startsWith('1849')) {
+            return { name: "République Dominicaine", flag: "🇩🇴" };
+        }
+        if (clean.startsWith('1')) return { name: "États-Unis / Canada", flag: "🇺🇸" };
+        return { name: "Autre", flag: "🌐" };
+    };
+
+    const formatPhoneUX = (phone?: string) => {
+        if (!phone) return "Pas de numéro";
+        let clean = phone.trim();
+        if (!clean.startsWith('+') && clean.length > 5) {
+            if (clean.startsWith('509') || clean.startsWith('82') || clean.startsWith('1')) {
+                clean = '+' + clean;
+            }
+        }
+        if (clean.startsWith('+509')) {
+            const num = clean.replace('+509', '').trim();
+            if (num.length === 8) {
+                return `+509 ${num.slice(0, 4)} ${num.slice(4)}`;
+            }
+        }
+        if (clean.startsWith('+82')) {
+            const num = clean.replace('+82', '').trim();
+            if (num.length === 9 || num.length === 10) {
+                return `+82 ${num.slice(0, 2)} ${num.slice(2, 6)} ${num.slice(6)}`;
+            }
+        }
+        if (clean.startsWith('+1')) {
+            const num = clean.replace('+1', '').trim();
+            if (num.length === 10) {
+                return `+1 (${num.slice(0, 3)}) ${num.slice(3, 6)}-${num.slice(6)}`;
+            }
+        }
+        return clean;
+    };
+
+    const parseMessage = (msg?: string) => {
+        const result = {
+            kategori: "",
+            sujet: "",
+            creneau: ""
+        };
+        if (!msg) return result;
+        const lines = msg.split('\n');
+        for (const line of lines) {
+            const lower = line.toLowerCase();
+            if (lower.startsWith('kategori:') || lower.startsWith('catégorie:')) {
+                result.kategori = line.substring(line.indexOf(':') + 1).trim();
+            } else if (lower.startsWith('sijè:') || lower.startsWith('sujet:')) {
+                result.sujet = line.substring(line.indexOf(':') + 1).trim();
+            } else if (lower.startsWith('créneau souhaité:') || lower.startsWith('creneau souhaité:')) {
+                result.creneau = line.substring(line.indexOf(':') + 1).trim();
+            }
+        }
+        return result;
+    };
+
+    const formatBookingDateUX = (dateStr?: string) => {
+        if (!dateStr) return "Non planifiée";
+        try {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1;
+                const day = parseInt(parts[2], 10);
+                const date = new Date(year, month, day);
+                return date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            }
+            return dateStr;
+        } catch (e) {
+            return dateStr;
+        }
+    };
+
     // Live Clock Effect
     useEffect(() => {
         const updateClocks = () => {
@@ -594,28 +673,33 @@ export default function BookingsManagementPage() {
                     {loading ? (
                         <div className="text-center py-20 text-black/40 dark:text-white/40 font-medium">Loading applications...</div>
                     ) : filteredApps.length === 0 ? (
-                        <div className="text-center py-20 text-black/40 dark:text-white/40 font-medium">No applications found matching your criteria.</div>
+                        <div className="text-center py-20 text-black/40 dark:text-white/40 font-medium">Aucune demande trouvée.</div>
                     ) : (
                         filteredApps.map((app) => {
                             const { initials, styleClass } = getAvatarInfo(app.userName);
                             const kstTimeStr = getBookingTimeKST(app);
                             const { timeEST } = convertKSTtoEST(kstTimeStr);
                             const platform = getPlatformInfo(app.message);
+                            const country = getCountryInfo(app.userPhone);
+                            const parsed = parseMessage(app.message);
 
                             return (
-                                <div key={app.id} className="bg-white dark:bg-black/20 border border-black/5 dark:border-white/10 p-6 rounded-[1.5rem] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:border-black/20 dark:hover:border-white/20 transition-all shadow-sm shadow-black/5">
+                                <div key={app.id} className="bg-white dark:bg-black/20 border border-black/5 dark:border-white/10 p-6 rounded-[1.5rem] flex flex-col md:flex-row items-start justify-between gap-6 hover:border-black/20 dark:hover:border-white/20 transition-all shadow-sm shadow-black/5 animate-in fade-in duration-300">
                                     <div className="flex items-start gap-6 flex-1 w-full">
-                                        <div className="hidden md:flex flex-col items-center justify-center w-16 h-16 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shrink-0">
-                                            <span className="text-xs font-black uppercase text-black/40 dark:text-white/40">
-                                                {app.createdAt ? app.createdAt.toDate().toLocaleString('en-US', { month: 'short' }) : 'N/A'}
+                                        {/* Left Date created badge */}
+                                        <div className="hidden md:flex flex-col items-center justify-center w-16 h-16 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shrink-0" title="Demande reçue le">
+                                            <span className="text-[9px] font-black uppercase text-black/40 dark:text-white/40">Reçue</span>
+                                            <span className="text-xs font-black uppercase text-black/50 dark:text-white/50">
+                                                {app.createdAt ? app.createdAt.toDate().toLocaleString('fr-FR', { month: 'short' }) : 'N/A'}
                                             </span>
-                                            <span className="text-xl font-black text-primary dark:text-white">
+                                            <span className="text-lg font-black text-primary dark:text-white -mt-0.5">
                                                 {app.createdAt ? app.createdAt.toDate().getDate() : '--'}
                                             </span>
                                         </div>
 
                                         <div className="flex-1 min-w-0 w-full">
-                                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                            {/* 1. Header Row (Badges) */}
+                                            <div className="flex flex-wrap items-center gap-2 mb-4 border-b border-black/5 dark:border-white/5 pb-3">
                                                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide border ${
                                                     app.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20' :
                                                     app.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20' :
@@ -645,7 +729,8 @@ export default function BookingsManagementPage() {
                                                     </span>
                                                 )}
 
-                                                <span className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest px-2 border-l border-black/10 dark:border-white/10">
+                                                <span className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest px-2 border-l border-black/10 dark:border-white/10 flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-xs">event_seat</span>
                                                     {app.serviceName}
                                                 </span>
                                                 {app.servicePrice && (
@@ -653,39 +738,83 @@ export default function BookingsManagementPage() {
                                                         {app.servicePrice}
                                                     </span>
                                                 )}
-                                            </div>
-
-                                            <h3 className="text-sm font-medium text-black/60 dark:text-white/60 mb-3 whitespace-pre-line leading-relaxed">
-                                                {app.message}
-                                            </h3>
-
-                                            <div className="flex flex-wrap items-center gap-3">
-                                                {/* Client Info */}
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`size-7 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${styleClass}`}>
-                                                        {initials}
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-bold text-primary dark:text-white">{app.userName}</span>
-                                                        <span className="text-[10px] text-black/40 dark:text-white/40">{app.customerEmail} • {app.userPhone}</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="border-l border-black/10 dark:border-white/10 h-5 hidden sm:block" />
-
-                                                {/* USA / Korea Times */}
-                                                <div className="flex items-center gap-2 text-[10px] font-bold text-black/50 dark:text-white/40">
-                                                    <span className="flex items-center gap-0.5">🇺🇸 {timeEST}</span>
-                                                    <span>•</span>
-                                                    <span className="flex items-center gap-0.5">🇰🇷 {format12h(kstTimeStr)}</span>
-                                                </div>
-
-                                                <div className="border-l border-black/10 dark:border-white/10 h-5 hidden sm:block" />
 
                                                 {/* Platform badge */}
-                                                <div className="flex items-center gap-1 text-[10px] font-bold text-black/50 dark:text-white/40 bg-black/[0.03] dark:bg-white/[0.03] px-2.5 py-1 rounded-md border border-black/5 dark:border-white/5">
+                                                <span className="ml-auto flex items-center gap-1 text-[10px] font-bold text-black/50 dark:text-white/40 bg-black/[0.03] dark:bg-white/[0.03] px-2 py-0.5 rounded border border-black/5 dark:border-white/5">
                                                     <span className="material-symbols-outlined text-[12px]">{platform.icon}</span>
                                                     <span>{platform.name}</span>
+                                                </span>
+                                            </div>
+
+                                            {/* 2. Structured Layout */}
+                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                {/* Client Info Card */}
+                                                <div className="bg-black/[0.01] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-2xl p-4 flex gap-4">
+                                                    <div className={`size-12 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-inner ${styleClass}`}>
+                                                        {initials}
+                                                    </div>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <div className="text-sm font-black text-primary dark:text-white truncate mb-1">
+                                                            {app.userName}
+                                                        </div>
+                                                        <div className="flex flex-col gap-1 text-xs text-black/60 dark:text-white/60">
+                                                            <span className="flex items-center gap-1">
+                                                                <span className="text-base">{country.flag}</span>
+                                                                <span className="font-semibold text-black/40 dark:text-white/40">Pays :</span> {country.name}
+                                                            </span>
+                                                            <span className="flex items-center gap-1">
+                                                                <span className="material-symbols-outlined text-xs text-black/30 dark:text-white/30">call</span>
+                                                                <span className="font-semibold text-black/40 dark:text-white/40">Tél :</span> {formatPhoneUX(app.userPhone)}
+                                                            </span>
+                                                            <span className="flex items-center gap-1 truncate">
+                                                                <span className="material-symbols-outlined text-xs text-black/30 dark:text-white/30">mail</span>
+                                                                <span className="font-semibold text-black/40 dark:text-white/40">Email :</span> {app.customerEmail}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Session Details Card */}
+                                                <div className="bg-black/[0.01] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-2xl p-4 flex flex-col justify-between gap-2.5">
+                                                    <div className="flex flex-col gap-1.5 text-xs">
+                                                        {parsed.sujet || parsed.kategori ? (
+                                                            <>
+                                                                {parsed.sujet && (
+                                                                    <div className="flex items-start gap-1">
+                                                                        <span className="font-bold text-black/40 dark:text-white/40 whitespace-nowrap">Sujet :</span>
+                                                                        <span className="text-black/80 dark:text-white/80 font-medium">{parsed.sujet}</span>
+                                                                    </div>
+                                                                )}
+                                                                {parsed.kategori && (
+                                                                    <div className="flex items-start gap-1">
+                                                                        <span className="font-bold text-black/40 dark:text-white/40 whitespace-nowrap">Catégorie :</span>
+                                                                        <span className="text-black/80 dark:text-white/80 font-medium">{parsed.kategori}</span>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <div className="text-black/60 dark:text-white/60 italic leading-relaxed whitespace-pre-line">
+                                                                {app.message}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="border-t border-black/5 dark:border-white/5 pt-2 flex flex-col gap-1 text-xs">
+                                                        <div className="flex items-center gap-1 text-black/70 dark:text-white/70">
+                                                            <span className="material-symbols-outlined text-sm text-black/30 dark:text-white/30">calendar_month</span>
+                                                            <span className="font-bold text-black/40 dark:text-white/40">Date :</span>
+                                                            <span className="capitalize font-semibold">{formatBookingDateUX(app.bookingDate)}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 text-black/70 dark:text-white/70">
+                                                            <span className="material-symbols-outlined text-sm text-black/30 dark:text-white/30">schedule</span>
+                                                            <span className="font-bold text-black/40 dark:text-white/40">Horaire :</span>
+                                                            <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold">
+                                                                <span className="flex items-center gap-0.5">🇺🇸 {timeEST}</span>
+                                                                <span>•</span>
+                                                                <span className="flex items-center gap-0.5">🇰🇷 {format12h(kstTimeStr)}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
