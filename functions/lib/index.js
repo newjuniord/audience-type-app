@@ -509,6 +509,7 @@ exports.webhookbotmessage = (0, https_1.onRequest)({
     res.status(200).send("OK");
     if (req.method !== "POST")
         return;
+    let lockId = null;
     try {
         // ── Parse Twilio's URL-encoded body ──────────────────────────────────
         const bodyParams = new URLSearchParams(req.rawBody?.toString() || "");
@@ -519,11 +520,34 @@ exports.webhookbotmessage = (0, https_1.onRequest)({
             console.warn("⚠️ [BOT] Missing From or Body.");
             return;
         }
-        // ── Nettoyage — RÈGLE D'OR ────────────────────────────────────────────
         const phoneNumber = From.replace("whatsapp:", "").trim(); // "+18296692914"
         const otpDocId = From.trim(); // "whatsapp:+18296692914"
-        const userMessage = Body.trim().toLowerCase();
-        console.log(`📩 [BOT] "${userMessage}" from ${phoneNumber} (${ProfileName})`);
+        const rawMessage = Body.trim().toLowerCase();
+        const userMessage = rawMessage.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        lockId = `${phoneNumber}_${userMessage}`;
+        // ── Verrou de sécurité contre les requêtes identiques concurrentes ─────
+        const lockRef = db.collection("bot_locks").doc(lockId);
+        const isLocked = await db.runTransaction(async (transaction) => {
+            const doc = await transaction.get(lockRef);
+            if (doc.exists) {
+                const data = doc.data();
+                const now = Date.now();
+                if (data && data.isProcessing && (now - data.lockedAt < 15000)) {
+                    return true;
+                }
+            }
+            transaction.set(lockRef, {
+                isProcessing: true,
+                lockedAt: Date.now()
+            });
+            return false;
+        });
+        if (isLocked) {
+            console.warn(`🔒 [BOT] Duplicate request blocked by isProcessing lock: ${phoneNumber} -> ${userMessage}`);
+            lockId = null;
+            return;
+        }
+        console.log(`📩 [BOT] "${rawMessage}" (normalized: "${userMessage}") from ${phoneNumber} (${ProfileName})`);
         const MAX_PER_DAY = 10;
         // ── Helper: vérifier le rate limit ───────────────────────────────────
         const checkRateLimit = async () => {
@@ -638,7 +662,7 @@ exports.webhookbotmessage = (0, https_1.onRequest)({
         // ════════════════════════════════════════════════════════════════════════
         // KEYWORD: kod — OTP pour autre appareil
         // ════════════════════════════════════════════════════════════════════════
-        else if (userMessage === "kod") {
+        else if (userMessage === "kod" || userMessage === "kòd" || userMessage === "kód" || rawMessage === "kod" || rawMessage === "kòd" || rawMessage === "kód") {
             const rateLimit = await checkRateLimit();
             if (rateLimit.blocked) {
                 await sendWhatsAppViaFetch(From, `🚫 Ou te mande twòp kòd jodi a.\nEsaye ankò demen (limit ${MAX_PER_DAY} fwa pou 24 tè).`);
@@ -652,14 +676,14 @@ exports.webhookbotmessage = (0, https_1.onRequest)({
             const { uid } = existingUser;
             const code = generateOtp();
             await updateOtpDoc(uid, code, rateLimit.count, rateLimit.expireAt);
-            await sendWhatsAppViaFetch(From, `🔑 KÒD OTP OU A\n\nVoici ton code de connexion :\n*${code}*\n\nCe code est valide 24 heures.\nEntre-le sur la page de connexion de DJR Akademi.`);
+            await sendWhatsAppViaFetch(From, `🔑 KÒD OTP OU A\n\nMen kòd koneksyon ou an :\n*${code}*\n\nKòd sa a valab pou 24 èdtan.\nAntre li sou paj koneksyon DJR Akademi an.`);
             console.log(`📤 [BOT/kod] OTP sent to ${phoneNumber}`);
         }
         // ════════════════════════════════════════════════════════════════════════
         // KEYWORD: bug — Support technique
         // ════════════════════════════════════════════════════════════════════════
         else if (userMessage === "bug") {
-            await sendWhatsAppViaFetch(From, `⚠️ SIPÒ TEKNIK\n\nSi ou rankontre yon pwoblèm teknik oswa yon bug sou sit la, kontakte nou imedyatman nan imel sa a :\n📧 contact@audiencetype.com\n\noswa dirèkteman sou WhatsApp nan nimewo sa a :\n📞 3094848394`);
+            await sendWhatsAppViaFetch(From, `⚠️ SIPÒ TEKNIK\n\nSi w jwenn yon pwoblèm teknik oswa yon ensèk (bug) sou sit la, kontakte nou imedyatman nan imel sa a :\n📧 contact@audiencetype.com\n\noswa dirèkteman sou WhatsApp nan nimewo sa a :\n📞 3094848394`);
         }
         // ════════════════════════════════════════════════════════════════════════
         // KEYWORD: kontak / contact — Contact général
@@ -668,15 +692,39 @@ exports.webhookbotmessage = (0, https_1.onRequest)({
             await sendWhatsAppViaFetch(From, `📞 KONTAKTE NOU\n\nPou nenpòt enfòmasyon, kesyon, oswa asistans jeneral, ou ka ekri nou dirèkteman sou WhatsApp nan nimewo sa a :\n👉 3094848394`);
         }
         // ════════════════════════════════════════════════════════════════════════
-        // UNKNOWN — Menu d'aide
+        // HELP MENU: info | enfo | enfomasyon | information | edem | 404 | 500
+        // ════════════════════════════════════════════════════════════════════════
+        else if (userMessage === "info" ||
+            userMessage === "enfo" ||
+            userMessage === "enfomasyon" ||
+            userMessage === "information" ||
+            userMessage === "edem" ||
+            userMessage === "problem" ||
+            userMessage === "help" ||
+            userMessage === "404" ||
+            userMessage === "500") {
+            await sendWhatsAppViaFetch(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* ➜ kreye kont ou epi resevwa lyen koneksyon ou\n• Tape *kod* ➜ resevwa yon kòd koneksyon ' OTP '\n• Tape *bug* ➜ jwenn sipò teknik\n• Tape *kontak* ➜ kontakte ekip nou an.\n Tanpri tann 5 minit pou resevwa repons! avan tape yon lòt kòmand...`);
+        }
+        // ════════════════════════════════════════════════════════════════════════
+        // UNKNOWN — Ignorer silencieusement
         // ════════════════════════════════════════════════════════════════════════
         else {
-            await sendWhatsAppViaFetch(From, `👋 Bonjou! Voici les commandes disponibles :\n\n• Tape *metem* pou konekte ou rapid an 1 klik\n• Tape *kod* pou jwenn yon kòd OTP (lòt aparèy)\n• Tape *bug* pou sipò teknik\n• Tape *kontak* pou kontakte nou`);
+            console.log(`ℹ️ [BOT] Ignored unknown message: "${userMessage}" from ${phoneNumber}`);
         }
     }
     catch (error) {
         // 200 déjà envoyé à Twilio — on log seulement, pas de retry
         console.error("🔥 [BOT ERROR]", error.message || error);
+    }
+    finally {
+        if (lockId) {
+            try {
+                await db.collection("bot_locks").doc(lockId).delete();
+            }
+            catch (lockError) {
+                console.error("❌ Failed to release lock:", lockError);
+            }
+        }
     }
 });
 //# sourceMappingURL=index.js.map

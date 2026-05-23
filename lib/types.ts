@@ -388,3 +388,37 @@ export interface Gift {
     invitationCode: string | null;
     createdAt: Timestamp;
 }
+
+// ─── Alert / Notification ───────────────────────────────────────────────────
+
+export type AlertCategory = 'utility' | 'marketing';
+
+export type AlertType =
+    | 'payment_success'
+    | 'otp_login'
+    | 'booking_reminder'
+    | 'account_security'
+    | 'course_access'
+    | 'new_course'
+    | 'promotion'
+    | 'free_ebook'
+    | 'webinar'
+    | 'reactivation'
+    | 'custom';
+
+export interface Alert {
+    id?: string;
+    userId: string;
+    category: AlertCategory;
+    type: AlertType;
+    title: string;
+    body: string;
+    isRead: boolean;
+    icon: string;
+    iconColor: string;
+    iconBg: string;
+    actionUrl?: string;
+    actionLabel?: string;
+    createdAt: Timestamp;
+    expiresAt?: Timestamp;
+}

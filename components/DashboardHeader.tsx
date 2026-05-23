@@ -5,11 +5,13 @@ import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { useState, useEffect, useRef } from "react";
+import { subscribeToAlerts } from "@/lib/alerts";
 
 export default function DashboardHeader() {
     const { user, loading, role, signOutUser } = useAuth();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [unreadCount, setUnreadCount] = useState(0);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -21,6 +23,15 @@ export default function DashboardHeader() {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    // Subscribe to unread alerts count
+    useEffect(() => {
+        if (!user) return;
+        const unsub = subscribeToAlerts(user.uid, (alerts) => {
+            setUnreadCount(alerts.filter((a) => !a.isRead).length);
+        });
+        return () => unsub();
+    }, [user]);
 
     if (loading) return null;
 
@@ -72,6 +83,17 @@ export default function DashboardHeader() {
                         <Link href="/admin" className="flex items-center gap-2 bg-primary text-white dark:bg-white dark:text-primary px-4 md:px-5 h-10 rounded-full text-xs font-bold tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg border border-black/5 dark:border-white/10">
                             <span className="material-symbols-outlined text-sm">security</span>
                             <span className="hidden md:inline uppercase">Espas Admin</span>
+                        </Link>
+                    )}
+                    {/* Bell icon — alerts */}
+                    {user && (
+                        <Link href="/dashboard/alerts" className="relative flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm border border-black/5 dark:bg-[#1a1a1a] dark:border-white/10 hover:shadow-md transition-all">
+                            <span className="material-symbols-outlined text-[22px] text-black/50 dark:text-white/50">notifications</span>
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-md animate-pulse">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
                         </Link>
                     )}
                     {user ? (

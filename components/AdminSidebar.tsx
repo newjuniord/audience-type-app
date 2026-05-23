@@ -25,6 +25,7 @@ export default function AdminSidebar() {
                 { label: "Funnels", icon: "filter_alt", href: "/admin/funnels" },
                 { label: "Kado 🎁", icon: "redeem", href: "/admin/kado" },
                 { label: "Announcement", icon: "campaign", href: "/admin/announcement" },
+                { label: "Notifikasyon 🔔", icon: "notifications", href: "/admin/alerts" },
                 { label: "Reviews", icon: "reviews", href: "/admin/reviews" },
                 { label: "Messages", icon: "mail", href: "/admin/messages" },
             ]
