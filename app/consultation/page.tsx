@@ -8,7 +8,7 @@ import CheckoutModal from "@/components/CheckoutModal";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
 import { createBookingApplication } from "@/lib/booking-applications";
-import { doc, Timestamp, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const SLOTS_KST = [
@@ -266,45 +266,20 @@ export default function ConsultationPage() {
   const [reviewing, setReviewing] = useState(false);
   const [usZone, setUsZone] = useState("");
 
-  const [existingBookings, setExistingBookings] = useState<any[]>([]);
-  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [occupiedSlots, setOccupiedSlots] = useState<any[]>([]);
   const [checkingReservations, setCheckingReservations] = useState(false);
 
   useEffect(() => {
     if (!formData.date || !service?.id) {
-      setExistingBookings([]);
+      setOccupiedSlots([]);
       return;
     }
     setCheckingReservations(true);
 
-    const qApps = query(
-      collection(db, "bookingApplications"),
-      where("bookingDate", "==", formData.date),
-      where("bookingsId", "==", service.id)
-    );
-
-    const qOrders = query(
-      collection(db, "orders"),
-      where("status", "==", "pending")
-    );
-
-    Promise.all([getDocs(qApps), getDocs(qOrders)])
-      .then(([snapApps, snapOrders]) => {
-        const appsList = snapApps.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const ordersList = snapOrders.docs.map(doc => {
-          const data = doc.data();
-          const userIdStr = typeof data.userId === 'string' ? data.userId : data.userId?.id;
-          const productIdStr = typeof data.productId === 'string' ? data.productId : data.productId?.id;
-          return {
-            id: doc.id,
-            ...data,
-            userIdStr,
-            productIdStr
-          };
-        });
-
-        setExistingBookings(appsList);
-        setPendingOrders(ordersList);
+    fetch(`/api/consultation/check-availability?date=${formData.date}&serviceId=${service.id}`)
+      .then(res => res.json())
+      .then(data => {
+        setOccupiedSlots(data.occupiedSlots || []);
         setCheckingReservations(false);
       })
       .catch((err) => {
@@ -314,46 +289,9 @@ export default function ConsultationPage() {
   }, [formData.date, service?.id]);
 
   const getSlotReservationStatus = useCallback((slotTime: string) => {
-    const booking = existingBookings.find(b => b.bookingTime === slotTime);
-    if (!booking) return "available";
-
-    const status = (booking.status || "").toLowerCase();
-
-    if (["canceled", "cancelled", "refused", "rejected", "failed"].includes(status)) {
-      return "available";
-    }
-
-    if (["approved", "confirmed", "paid", "success", "active"].includes(status)) {
-      return "booked";
-    }
-
-    if (status === "pending") {
-      let createdAtMs = 0;
-      if (booking.createdAt) {
-        if (typeof booking.createdAt.toMillis === "function") {
-          createdAtMs = booking.createdAt.toMillis();
-        } else if (booking.createdAt instanceof Date) {
-          createdAtMs = booking.createdAt.getTime();
-        } else if (booking.createdAt.seconds) {
-          createdAtMs = booking.createdAt.seconds * 1000;
-        }
-      }
-      const isRecent = createdAtMs && (Date.now() - createdAtMs < 20 * 60 * 1000);
-
-      const bookingUserId = typeof booking.usersId === 'string' ? booking.usersId : booking.usersId?.id;
-      const hasPendingOrder = pendingOrders.some(o => 
-        o.userIdStr === bookingUserId && 
-        o.productIdStr === service?.id &&
-        (o.productType || "").toLowerCase() === "service"
-      );
-
-      if (isRecent || hasPendingOrder) {
-        return "pending_payment";
-      }
-    }
-
-    return "available";
-  }, [existingBookings, pendingOrders, service?.id]);
+    const occ = occupiedSlots.find(o => o.time === slotTime);
+    return occ ? occ.status : "available";
+  }, [occupiedSlots]);
 
   // Prefill user data if logged in
   useEffect(() => {
@@ -471,7 +409,7 @@ export default function ConsultationPage() {
         setSelectedSlot(null);
       }
     }
-  }, [existingBookings, pendingOrders, selectedSlot, localSlots, getSlotReservationStatus]);
+  }, [occupiedSlots, selectedSlot, localSlots, getSlotReservationStatus]);
 
   const countryTimes = useMemo(() =>
     COUNTRIES.map((c) => {
