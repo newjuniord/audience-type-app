@@ -7,9 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import CheckoutModal from "@/components/CheckoutModal";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
-import { createBookingApplication } from "@/lib/booking-applications";
-import { doc, Timestamp, runTransaction } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 
 const SLOTS_KST = [
   { h: 10, m: 0 }, { h: 11, m: 30 }, { h: 13, m: 0 }, { h: 14, m: 30 },
@@ -468,64 +466,40 @@ export default function ConsultationPage() {
     if (!service || !service.id) return;
     try {
       const slot = localSlots[selectedSlot!];
+      const token = await auth.currentUser?.getIdToken();
 
-      // Document ID unique composé pour éviter les doublons simultanés (condition de concurrence)
-      const bookingDocId = `${service.id}_${formData.date}_${slot.baseStr}`;
-      const bookingDocRef = doc(db, "bookingApplications", bookingDocId);
+      if (!token) {
+        alert("Koneksyon obligatwa pou w ka rezève.");
+        return;
+      }
 
-      await runTransaction(db, async (transaction) => {
-        const sfDoc = await transaction.get(bookingDocRef);
-        if (sfDoc.exists()) {
-          const data = sfDoc.data();
-          const status = (data?.status || "").toLowerCase();
-
-          const isBooked = ["approved", "confirmed", "paid", "success", "active"].includes(status);
-
-          let createdAtMs = 0;
-          if (data?.createdAt) {
-            if (typeof data.createdAt.toMillis === "function") {
-              createdAtMs = data.createdAt.toMillis();
-            } else if (data.createdAt instanceof Date) {
-              createdAtMs = data.createdAt.getTime();
-            } else if (data.createdAt.seconds) {
-              createdAtMs = data.createdAt.seconds * 1000;
-            }
-          }
-          const isRecent = createdAtMs && (Date.now() - createdAtMs < 20 * 60 * 1000);
-          const isPendingPayment = status === "pending" && isRecent;
-
-          if (isBooked || isPendingPayment) {
-            throw new Error("ALREADY_TAKEN");
-          }
-        }
-
-        const newApp = {
-          bookingsId: service.id,
-          createdAt: Timestamp.now(),
-          message: `Kategori: ${formData.kategori}\nSijè: ${formData.sujet}\nKreyo: ${slot.baseStr} (Lè admin) / ${fmtUX(slot.local)} lè lokal`,
-          status: "pending",
-          userName: formData.nomPrenom,
-          userPhone: formData.phone,
-          usersId: userId,
-          title: service.title,
-          serviceName: service.title,
-          bookingDate: formData.date,
-          bookingTime: slot.baseStr
-        };
-
-        transaction.set(bookingDocRef, newApp);
+      const res = await fetch("/api/consultation/book", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          serviceId: service.id,
+          serviceTitle: service.title,
+          date: formData.date,
+          slotTime: slot.baseStr,
+          localTimeFmt: fmtUX(slot.local),
+          formData
+        })
       });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Gen yon erè ki fèt nan sistèm lan.");
+      }
 
       setSubmitted(true);
     } catch (err: any) {
-      if (err.message === "ALREADY_TAKEN") {
-        alert("Lè sa a ap rezève pa yon lòt moun kounye a. Chwazi yon lòt lè oswa reyezi nan 20 minit.");
-        setSelectedSlot(null);
-        setReviewing(false);
-        setIsCheckoutModalOpen(false);
-      } else {
-        console.error("Error submitting booking application:", err);
-      }
+      alert(err.message || "Echèk nan anrejistreman kreyolo a. Tanpri reyezi.");
+      setSelectedSlot(null);
+      setReviewing(false);
+      setIsCheckoutModalOpen(false);
     }
   }
 
