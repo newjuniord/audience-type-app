@@ -119,7 +119,7 @@ export default function BookingsManagementPage() {
     });
 
     return (
-        <main className="max-w-6xl animate-in fade-in duration-700 relative pb-20">
+        <main className="max-w-6xl mx-auto animate-in fade-in duration-700 relative pb-20">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                 <div>

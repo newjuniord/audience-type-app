@@ -275,7 +275,7 @@ export default function CourseSyllabusPage({ params }: { params: Promise<{ cours
     if (!course) return <div className="flex h-screen items-center justify-center text-xl font-bold opacity-50">Course not found.</div>;
 
     return (
-        <main className="max-w-6xl animate-in fade-in duration-700 pb-20">
+        <main className="max-w-6xl mx-auto animate-in fade-in duration-700 pb-20">
             {/* Header / Nav */}
             <div className="flex items-center gap-4 mb-8 text-sm font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">
                 <Link href="/admin/courses" className="hover:text-primary dark:hover:text-white transition-colors flex items-center gap-1">

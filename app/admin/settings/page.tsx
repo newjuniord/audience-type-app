@@ -72,7 +72,7 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="max-w-4xl space-y-8 animate-fade-in pb-20">
+        <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-20">
             {/* Header */}
             <div>
                 <h1 className="text-4xl font-black tracking-tighter uppercase">Paramètres</h1>
