@@ -139,6 +139,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
   const { user: currentUser } = useAuth();
   const [isClosing, setIsClosing] = useState(false);
   const [animate, setAnimate] = useState(false); // Controls opening animation
+  const [isMobile, setIsMobile] = useState(false); // Mobile screen check
   const [dragY, setDragY] = useState(0);
   const dragStartY = useRef(0);
   const isDragging = useRef(false);
@@ -206,6 +207,16 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Detect mobile viewport for transition duration
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsMobile(window.innerWidth < 1024);
+      const handleResize = () => setIsMobile(window.innerWidth < 1024);
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
   }, []);
 
   const openCountryDropdown = () => {
@@ -544,7 +555,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
               ? `translateY(${dragY}px)`
               : 'translateY(0)',
             opacity: isClosing ? 0 : !animate ? 0 : dragY > 0 ? Math.max(0.3, 1 - dragY / 300) : 1,
-            transition: isDragging.current ? 'none' : 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.35s ease',
+            transition: isDragging.current ? 'none' : `transform ${isMobile ? '0.4s' : '0.35s'} cubic-bezier(0.32, 0.72, 0, 1), opacity 0.35s ease`,
           }}
         >
           <div
