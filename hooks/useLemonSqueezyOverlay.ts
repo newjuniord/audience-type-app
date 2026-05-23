@@ -110,7 +110,8 @@ export function useLemonSqueezyOverlay(): UseLemonSqueezyOverlayReturn {
             await openCheckout({ checkoutUrl, orderId });
             
             if (expiresAtMs) {
-                const msLeft = expiresAtMs - Date.now();
+                // Affiche le popup et ferme l'overlay 1 minute (60 000 ms) après l'expiration
+                const msLeft = (expiresAtMs + 60000) - Date.now();
                 if (msLeft > 0) {
                     setTimeout(() => {
                         closeCheckout();
