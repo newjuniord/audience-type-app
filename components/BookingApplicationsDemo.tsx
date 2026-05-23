@@ -27,18 +27,14 @@ export default function BookingApplicationsDemo() {
     };
 
     const handleAddTestApplication = async () => {
-        // Refs fictives pour l'exemple
-        const fakeBookingRef = doc(db, "bookings", "some-booking-id");
-        const fakeUserRef = doc(db, "users", "some-user-id");
-
         const newApp: Omit<BookingApplication, "id"> = {
-            bookingsId: fakeBookingRef,
+            bookingsId: "some-booking-id",
             createdAt: Timestamp.now(),
             message: "Je suis très intéressé par ce coaching.",
             status: "pending",
             userName: "Alice Merveille",
             userPhone: "+33612345678",
-            usersId: fakeUserRef
+            usersId: "some-user-id"
         };
 
         await createBookingApplication(newApp);

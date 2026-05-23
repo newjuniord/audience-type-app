@@ -174,7 +174,7 @@ export interface Review {
  */
 export interface BookingApplication {
     id?: string;
-    bookingsId: DocumentReference; // Référence à l'objet Booking (champ: bookingsId)
+    bookingsId: DocumentReference | string; // Référence à l'objet Booking ou son ID en string
     createdAt: Timestamp;
     message: string;
     serviceName?: string; // Nom du service (explicitly requested)
@@ -182,7 +182,7 @@ export interface BookingApplication {
     status: string; // "pending", "accepted", "rejected", etc.
     userName: string;
     userPhone?: string;
-    usersId: DocumentReference; // Référence à l'utilisateur (path: /users/{uid})
+    usersId: DocumentReference | string; // Référence à l'utilisateur ou son ID en string
 }
 
 /**

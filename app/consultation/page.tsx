@@ -380,13 +380,13 @@ export default function ConsultationPage() {
       const serviceRef = doc(db, "services", service.id);
 
       const newApp = {
-        bookingsId: serviceRef,
+        bookingsId: service.id,
         createdAt: Timestamp.now(),
         message: `Kategori: ${formData.kategori}\nSijè: ${formData.sujet}\nKreyo: ${slot.baseStr} (Lè admin) / ${fmtUX(slot.local)} lè lokal`,
         status: "pending",
         userName: formData.nomPrenom,
         userPhone: formData.phone,
-        usersId: userRef,
+        usersId: userId,
         title: service.title,
         serviceName: service.title,
         bookingDate: formData.date,

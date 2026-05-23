@@ -235,10 +235,11 @@ export default function BookingsManagementPage() {
                 let customerImage = "";
 
                 const bookingRef = app.bookingsId || (app as any).bookingId;
+                const serviceId = typeof bookingRef === 'string' ? bookingRef : bookingRef?.id;
 
-                if (bookingRef) {
+                if (serviceId) {
                     try {
-                        const service = await getServiceById(bookingRef.id);
+                        const service = await getServiceById(serviceId);
                         if (service) {
                             if (!app.serviceName && !app.title) {
                                 serviceName = service.title;
@@ -249,17 +250,13 @@ export default function BookingsManagementPage() {
                     } catch (e) { console.error("Error fetching service", e); }
                 }
 
-                if (app.usersId) {
+                const userIdStr = typeof app.usersId === 'string' ? app.usersId : app.usersId?.id;
+                const altUserIdStr = (app as any).userId ? (typeof (app as any).userId === 'string' ? (app as any).userId : (app as any).userId?.id) : "";
+                const finalUserIdStr = userIdStr || altUserIdStr;
+
+                if (finalUserIdStr) {
                     try {
-                        const user = await getUserById(app.usersId.id);
-                        if (user) {
-                            customerEmail = user.email;
-                            customerImage = user.photoURL || "";
-                        }
-                    } catch (e) { console.error("Error fetching user", e); }
-                } else if ((app as any).userId) {
-                    try {
-                        const user = await getUserById((app as any).userId.id);
+                        const user = await getUserById(finalUserIdStr);
                         if (user) {
                             customerEmail = user.email;
                             customerImage = user.photoURL || "";
@@ -271,14 +268,13 @@ export default function BookingsManagementPage() {
                 const appOrderId = (app as any).orderId;
                 let matchingOrder = appOrderId ? orders.find(o => o.id === appOrderId) : null;
 
-                if (!matchingOrder && app.usersId) {
-                    const userIdStr = app.usersId.id;
-                    const serviceIdStr = bookingRef?.id || "";
+                if (!matchingOrder && finalUserIdStr) {
+                    const serviceIdStr = serviceId || "";
 
                     const matches = orders.filter(o => {
                         const oUserId = typeof o.userId === 'string' ? o.userId : o.userId?.id;
                         const oProductId = typeof o.productId === 'string' ? o.productId : o.productId?.id;
-                        return oUserId === userIdStr &&
+                        return oUserId === finalUserIdStr &&
                                oProductId === serviceIdStr &&
                                o.productType === 'service';
                     });

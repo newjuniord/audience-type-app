@@ -58,7 +58,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
         setIsApplying(true);
         try {
             await createBookingApplication({
-                bookingsId: doc(db, "services", product.id), // Or "products" depending on where services are stored
+                bookingsId: product.id,
                 createdAt: Timestamp.now(),
                 message: applicationMessage,
                 serviceName: product.title,
@@ -66,7 +66,7 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                 status: "pending", // Default to pending
                 userName: user.displayName || "Utilisateur",
                 userPhone: userPhone,
-                usersId: doc(db, "users", user.uid)
+                usersId: user.uid
             });
 
             // Show success modal instead of alert

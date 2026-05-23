@@ -37,12 +37,23 @@ import { query, where, getDocs, updateDoc, deleteDoc } from "firebase/firestore"
 
 export const getBookingApplicationsByUser = async (userRef: DocumentReference | string): Promise<BookingApplication[]> => {
     try {
-        const q = query(
-            collection(db, COLLECTION_NAME),
-            where("usersId", "==", userRef)
-        );
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BookingApplication));
+        const refObj = typeof userRef === 'string' ? doc(db, "users", userRef) : userRef;
+        const refStr = typeof userRef === 'string' ? userRef : userRef.id;
+
+        const [snapRef, snapStr] = await Promise.all([
+            getDocs(query(collection(db, COLLECTION_NAME), where("usersId", "==", refObj))),
+            getDocs(query(collection(db, COLLECTION_NAME), where("usersId", "==", refStr)))
+        ]);
+
+        const merged: { [id: string]: BookingApplication } = {};
+        snapRef.docs.forEach(d => {
+            merged[d.id] = { id: d.id, ...d.data() } as BookingApplication;
+        });
+        snapStr.docs.forEach(d => {
+            merged[d.id] = { id: d.id, ...d.data() } as BookingApplication;
+        });
+
+        return Object.values(merged);
     } catch (error) {
         console.error("Erreur récupération booking applications:", error);
         return [];
