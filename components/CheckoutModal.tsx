@@ -169,18 +169,6 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
 
   const { openCheckout, hasExpiredSession } = useLemonSqueezyOverlay();
 
-  // Manage scroll lock on body
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
   // Handle modal mount & routing logic
   useEffect(() => {
     if (isOpen) {
