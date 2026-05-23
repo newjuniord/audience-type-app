@@ -29,25 +29,7 @@ export async function GET(req: Request) {
       } as any;
     });
 
-    // 2. Fetch pending orders
-    const ordersSnap = await db
-      .collection("orders")
-      .where("status", "==", "pending")
-      .get();
-
-    const pendingOrders = ordersSnap.docs.map(doc => {
-      const data = doc.data() as any;
-      const userIdStr = typeof data.userId === 'string' ? data.userId : data.userId?.id;
-      const productIdStr = typeof data.productId === 'string' ? data.productId : data.productId?.id;
-      return {
-        id: doc.id,
-        ...data,
-        userIdStr,
-        productIdStr
-      } as any;
-    });
-
-    // 3. Evaluate availability for each booking application
+    // 2. Evaluate availability for each booking application
     const occupiedSlots = apps.map(booking => {
       const time = booking.bookingTime;
       const status = (booking.status || "").toLowerCase();
@@ -63,14 +45,7 @@ export async function GET(req: Request) {
       if (status === "pending") {
         const isRecent = booking.createdAtMs && (Date.now() - booking.createdAtMs < 20 * 60 * 1000);
 
-        const bookingUserId = typeof booking.usersId === 'string' ? booking.usersId : booking.usersId?.id;
-        const hasPendingOrder = pendingOrders.some(o => 
-          o.userIdStr === bookingUserId && 
-          o.productIdStr === serviceId &&
-          ["service", "consultation"].includes((o.productType || "").toLowerCase())
-        );
-
-        if (isRecent || hasPendingOrder) {
+        if (isRecent) {
           return { time, status: "pending_payment" };
         }
       }
