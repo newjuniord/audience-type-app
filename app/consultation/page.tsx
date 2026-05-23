@@ -811,7 +811,7 @@ export default function ConsultationPage() {
                             subText = "Lè sa a deja rezève";
                           } else if (isPendingPayment) {
                             btnClass = "bg-yellow-500/5 border-yellow-500/20 text-yellow-400/50 cursor-not-allowed opacity-40";
-                            subText = "Ap peye kounye a (20 min)";
+                            subText = "Gen moun k ap peye";
                           }
 
                           return (
