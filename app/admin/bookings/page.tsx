@@ -27,6 +27,23 @@ const AVAILABLE_ZONES = [
     { name: "🇺🇸 Pacifique (LA)", offset: -8 },
 ];
 
+const DAY_TRANSLATIONS: Record<string, string> = {
+    "monday": "Lundi",
+    "tuesday": "Mardi",
+    "wednesday": "Mercredi",
+    "thursday": "Jeudi",
+    "friday": "Vendredi",
+    "saturday": "Samedi",
+    "sunday": "Dimanche",
+    "lundi": "Lundi",
+    "mardi": "Mardi",
+    "mercredi": "Mercredi",
+    "jeudi": "Jeudi",
+    "vendredi": "Vendredi",
+    "samedi": "Samedi",
+    "dimanche": "Dimanche"
+};
+
 export default function BookingsPage() {
     const [services, setServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
@@ -200,7 +217,7 @@ export default function BookingsPage() {
                                         <div className="space-y-2">
                                             {Object.entries(service.availability || {}).filter(([_, avail]: any) => avail.enabled).map(([day, avail]: any) => (
                                                 <div key={day} className="flex items-center justify-between text-sm">
-                                                    <span className="font-medium">{day}</span>
+                                                    <span className="font-medium">{DAY_TRANSLATIONS[day.toLowerCase()] || day}</span>
                                                     <span className="text-black/50 dark:text-white/50 font-mono text-[11px] bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
                                                         {avail.startTime} - {avail.endTime}
                                                     </span>

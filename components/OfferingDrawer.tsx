@@ -8,14 +8,50 @@ import ConfirmModal from "./ui/ConfirmModal";
 type Availability = Service['availability'];
 
 const initialAvailability: Availability = {
-    "Lundi": { enabled: true, startTime: "09:00", endTime: "17:00" },
-    "Mardi": { enabled: true, startTime: "09:00", endTime: "17:00" },
-    "Mercredi": { enabled: true, startTime: "09:00", endTime: "17:00" },
-    "Jeudi": { enabled: true, startTime: "09:00", endTime: "17:00" },
-    "Vendredi": { enabled: true, startTime: "09:00", endTime: "17:00" },
-    "Samedi": { enabled: false, startTime: "09:00", endTime: "17:00" },
-    "Dimanche": { enabled: false, startTime: "09:00", endTime: "17:00" },
+    "Monday": { enabled: true, startTime: "09:00", endTime: "17:00" },
+    "Tuesday": { enabled: true, startTime: "09:00", endTime: "17:00" },
+    "Wednesday": { enabled: true, startTime: "09:00", endTime: "17:00" },
+    "Thursday": { enabled: true, startTime: "09:00", endTime: "17:00" },
+    "Friday": { enabled: true, startTime: "09:00", endTime: "17:00" },
+    "Saturday": { enabled: false, startTime: "09:00", endTime: "17:00" },
+    "Sunday": { enabled: false, startTime: "09:00", endTime: "17:00" },
 };
+
+const DAY_TRANSLATIONS: Record<string, string> = {
+    "Monday": "Lundi",
+    "Tuesday": "Mardi",
+    "Wednesday": "Mercredi",
+    "Thursday": "Jeudi",
+    "Friday": "Vendredi",
+    "Saturday": "Samedi",
+    "Sunday": "Dimanche"
+};
+
+export function normalizeAvailability(avail: any): Availability {
+    if (!avail) return initialAvailability;
+    const normalized: Availability = { ...initialAvailability };
+    const mapping: Record<string, string> = {
+        "lundi": "Monday", "monday": "Monday",
+        "mardi": "Tuesday", "tuesday": "Tuesday",
+        "mercredi": "Wednesday", "wednesday": "Wednesday",
+        "jeudi": "Thursday", "thursday": "Thursday",
+        "vendredi": "Friday", "friday": "Friday",
+        "samedi": "Saturday", "saturday": "Saturday",
+        "dimanche": "Sunday", "sunday": "Sunday"
+    };
+
+    Object.entries(avail).forEach(([key, val]: [string, any]) => {
+        const englishKey = mapping[key.toLowerCase()];
+        if (englishKey) {
+            normalized[englishKey] = {
+                enabled: val.enabled ?? false,
+                startTime: val.startTime ?? "09:00",
+                endTime: val.endTime ?? "17:00"
+            };
+        }
+    });
+    return normalized;
+}
 
 interface OfferingDrawerProps {
     isOpen: boolean;
@@ -64,7 +100,7 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                 setImageUrl(initialData.imageUrl || "");
                 setDescription(initialData.description);
                 setIncludedItems(initialData.includedItems || []);
-                setAvailability(initialData.availability || initialAvailability);
+                setAvailability(normalizeAvailability(initialData.availability));
                 setAvailabilityTimezoneOffset(initialData.availabilityTimezoneOffset ?? 9);
                 setStatus((initialData.status as 'published' | 'draft' | 'archived') || (initialData.active ? 'published' : 'draft'));
                 setIsInvitationOnly(initialData.isInvitationOnly || false);
@@ -415,7 +451,7 @@ export default function OfferingDrawer({ isOpen, onClose, initialData, onSave }:
                                         >
                                             {data.enabled && <span className="material-symbols-outlined text-white dark:text-primary text-[16px] font-black">check</span>}
                                         </div>
-                                        <span className="text-sm font-black uppercase tracking-tight">{day}</span>
+                                        <span className="text-sm font-black uppercase tracking-tight">{DAY_TRANSLATIONS[day] || day}</span>
                                     </div>
 
                                     {data.enabled ? (

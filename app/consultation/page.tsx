@@ -79,7 +79,7 @@ function baseToLocal(baseH: number, baseM: number, baseOffset: number) {
 
 const DAYS_FR = ["Len", "Mad", "Mèk", "Jèd", "Van", "Sam", "Dim"];
 const MONTHS_FR = ["Janye", "Fevriye", "Mas", "Avril", "Me", "Jen", "Jiyè", "Out", "Septanm", "Oktòb", "Novanm", "Desanm"];
-const DAYS_MAP = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+const DAYS_MAP = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function CalendarPicker({ value, onChange, isDateAvailable }: { value: string; onChange: (v: string) => void; isDateAvailable?: (y: number, m: number, d: number) => boolean }) {
   const minDate = new Date();
@@ -202,6 +202,42 @@ function CalendarPicker({ value, onChange, isDateAvailable }: { value: string; o
   );
 }
 
+function normalizeAvailability(avail: any) {
+  const initialAvailability: any = {
+    "Monday": { enabled: true, startTime: "09:00", endTime: "17:00" },
+    "Tuesday": { enabled: true, startTime: "09:00", endTime: "17:00" },
+    "Wednesday": { enabled: true, startTime: "09:00", endTime: "17:00" },
+    "Thursday": { enabled: true, startTime: "09:00", endTime: "17:00" },
+    "Friday": { enabled: true, startTime: "09:00", endTime: "17:00" },
+    "Saturday": { enabled: false, startTime: "09:00", endTime: "17:00" },
+    "Sunday": { enabled: false, startTime: "09:00", endTime: "17:00" },
+  };
+
+  if (!avail) return initialAvailability;
+  const normalized = { ...initialAvailability };
+  const mapping: Record<string, string> = {
+    "lundi": "Monday", "monday": "Monday",
+    "mardi": "Tuesday", "tuesday": "Tuesday",
+    "mercredi": "Wednesday", "wednesday": "Wednesday",
+    "jeudi": "Thursday", "thursday": "Thursday",
+    "vendredi": "Friday", "friday": "Friday",
+    "samedi": "Saturday", "saturday": "Saturday",
+    "dimanche": "Sunday", "sunday": "Sunday"
+  };
+
+  Object.entries(avail).forEach(([key, val]: [string, any]) => {
+    const englishKey = mapping[key.toLowerCase()];
+    if (englishKey) {
+      normalized[englishKey] = {
+        enabled: val.enabled ?? false,
+        startTime: val.startTime ?? "09:00",
+        endTime: val.endTime ?? "17:00"
+      };
+    }
+  });
+  return normalized;
+}
+
 export default function ConsultationPage() {
   const { user, userData } = useAuth();
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
@@ -212,7 +248,12 @@ export default function ConsultationPage() {
   useEffect(() => {
     getServices().then(services => {
       const published = services.find(s => s.status === 'published' || s.active);
-      setService(published || null);
+      if (published) {
+        published.availability = normalizeAvailability(published.availability);
+        setService(published);
+      } else {
+        setService(null);
+      }
       setLoading(false);
     }).catch(console.error);
   }, []);
