@@ -560,6 +560,29 @@ export default function LoginPage() {
                                                 </div>
                                             )}
 
+                                            <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 mb-4">
+                                                <p className="text-xs text-white/50 mb-3 text-center">
+                                                    Si lyen an pa mache, antre kòd 4 chif nou voye w la :
+                                                </p>
+                                                <form onSubmit={handleVerifyOtpSubmit} className="flex flex-col gap-3">
+                                                    <input
+                                                        type="text"
+                                                        maxLength={4}
+                                                        value={verificationCode}
+                                                        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").substring(0, 4))}
+                                                        placeholder="0000"
+                                                        className="w-full text-center tracking-[1em] pl-[1em] py-3 rounded-xl bg-black/20 border border-white/10 focus:outline-none focus:border-primary/60 text-lg font-black text-white placeholder:text-white/10"
+                                                    />
+                                                    <button
+                                                        type="submit"
+                                                        disabled={isLoading || verificationCode.length !== 4}
+                                                        className="w-full py-3 bg-primary/20 text-primary border border-primary/30 rounded-xl font-bold text-sm hover:bg-primary/30 transition-all disabled:opacity-50 flex items-center justify-center"
+                                                    >
+                                                        {isLoading ? <div className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : "Valide kòd la"}
+                                                    </button>
+                                                </form>
+                                            </div>
+
                                             <button
                                                 type="button"
                                                 onClick={() => {

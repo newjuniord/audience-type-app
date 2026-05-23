@@ -422,16 +422,25 @@ export async function generateMagicLinkAction(contact: string) {
             expiresAt: Timestamp.fromDate(expiresAt),
         });
 
+        // Génération d'un code OTP de secours (4 chiffres)
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        batch.set(otpRef, {
+            code,
+            expireAt: Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+            type: "whatsapp",
+            count: FieldValue.increment(1)
+        }, { merge: true });
+
         await batch.commit();
 
         // Envoi via WhatsApp
         const domain = process.env.NEXT_PUBLIC_BASE_URL || "https://audiencetype.com";
         const verifyUrl = `${domain}/verify?token=${token}`;
         
-        const message = `✨ *CONNEXION SANS MOT DE PASSE*\n\nClique sur le lien ci-dessous pour te connecter automatiquement sur ton ordinateur :\n\n🔗 ${verifyUrl}\n\n⏳ _Ce lien expire dans 10 minutes._`;
+        const message = `✨ *CONNEXION SANS MOT DE PASSE*\n\nClique sur le lien ci-dessous pour te connecter automatiquement sur ton ordinateur :\n\n🔗 ${verifyUrl}\n\nNou jenere yon kòd OTP pou ou tou si w vle konekte sou yon òdinatè oswa si lyen an pa mache :\n🔑 *${code}*\n\n⏳ _Ce lien expire dans 10 minutes._`;
         
         await sendWhatsAppMessage(contactClean, message);
-        console.log(`🔗 [WhatsApp] Magic Link envoyé à ${contactClean} : ${verifyUrl}`);
+        console.log(`🔗 [WhatsApp] Magic Link et OTP (${code}) envoyés à ${contactClean} : ${verifyUrl}`);
 
         return { success: true, token };
     } catch (error: any) {
