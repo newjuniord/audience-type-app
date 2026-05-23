@@ -280,7 +280,7 @@ export default function ProfilePage() {
                                         className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20 font-mono"
                                     />
                                     <p className="text-[10px] text-white/30 leading-relaxed">
-                                        Ajoute nimewo sa a si ou vle resevwa kòd koneksyon pa WhatsApp tou.
+                                        Ajoute nimewo sa a si ou vle resevwa kòd koneksyon pa mesaj (WhatsApp oswa SMS) tou.
                                     </p>
                                 </div>
                             )}
