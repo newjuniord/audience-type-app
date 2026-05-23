@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMessaging, getToken, isSupported, onMessage } from 'firebase/messaging';
+import { getMessaging, getToken, isSupported } from 'firebase/messaging';
 import { doc, updateDoc } from 'firebase/firestore';
 import { app, db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -13,21 +13,7 @@ export function usePushNotifications() {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             setPermissionStatus(Notification.permission);
-            isSupported().then(supported => {
-                setIsSupportedBrowser(supported);
-                if (supported && Notification.permission === 'granted') {
-                    const messaging = getMessaging(app);
-                    onMessage(messaging, (payload) => {
-                        console.log('Foreground message received. ', payload);
-                        if (Notification.permission === 'granted') {
-                            new Notification(payload.notification?.title || 'Notifikasyon', {
-                                body: payload.notification?.body,
-                                icon: '/logo.png'
-                            });
-                        }
-                    });
-                }
-            });
+            isSupported().then(supported => setIsSupportedBrowser(supported));
         }
     }, []);
 

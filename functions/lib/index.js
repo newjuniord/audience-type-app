@@ -33,12 +33,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.webhookbotmessage = exports.onenrollmentcreated = exports.lemonsqueezyrefund = exports.lemonsqueezywebhook = void 0;
+exports.sendAlertPushNotification = exports.webhookbotmessage = exports.onenrollmentcreated = exports.lemonsqueezyrefund = exports.lemonsqueezywebhook = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const app_1 = require("firebase-admin/app");
 const firestore_2 = require("firebase-admin/firestore");
 const auth_1 = require("firebase-admin/auth");
+const messaging_1 = require("firebase-admin/messaging");
 const crypto = __importStar(require("crypto"));
 // Initialize Firebase Admin
 (0, app_1.initializeApp)();
@@ -703,7 +704,7 @@ exports.webhookbotmessage = (0, https_1.onRequest)({
             userMessage === "help" ||
             userMessage === "404" ||
             userMessage === "500") {
-            await sendWhatsAppViaFetch(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* ➜ kreye kont ou epi resevwa lyen koneksyon ou\n• Tape *kod* ➜ resevwa yon kòd koneksyon ' OTP '\n• Tape *bug* ➜ jwenn sipò teknik\n• Tape *kontak* ➜ kontakte ekip nou an.\n Tanpri tann 5 minit pou resevwa repons! avan tape yon lòt kòmand...`);
+            await sendWhatsAppViaFetch(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* ➜ kreye kont ou epi resevwa lyen koneksyon ou\n• Tape *kod* ➜ resevwa yon kòd koneksyon ' OTP '\n• Tape *bug* ➜ jwenn sipò teknik\n• Tape *kontak* ➜ kontakte ekip nou an.\n \n Tanpri🙏🏽🥺  tann 5 minit pou resevwa repons! avan tape yon lòt kòmand...`);
         }
         // ════════════════════════════════════════════════════════════════════════
         // UNKNOWN — Ignorer silencieusement
@@ -725,6 +726,46 @@ exports.webhookbotmessage = (0, https_1.onRequest)({
                 console.error("❌ Failed to release lock:", lockError);
             }
         }
+    }
+});
+/**
+ * Cloud Function: sendAlertPushNotification
+ * Triggered when a new alert is created in users/{userId}/alerts/{alertId}
+ */
+exports.sendAlertPushNotification = (0, firestore_1.onDocumentCreated)({ document: "users/{userId}/alerts/{alertId}", region: "us-central1" }, async (event) => {
+    const snapshot = event.data;
+    if (!snapshot)
+        return;
+    const alertData = snapshot.data();
+    const userId = event.params.userId;
+    try {
+        // Get the user's FCM token
+        const userRef = db.collection("users").doc(userId);
+        const userSnap = await userRef.get();
+        if (!userSnap.exists) {
+            console.log(`[PUSH] User ${userId} not found`);
+            return;
+        }
+        const userData = userSnap.data();
+        const fcmToken = userData?.fcmToken;
+        if (!fcmToken) {
+            console.log(`[PUSH] No FCM token for user ${userId}. Skipping push notification.`);
+            return;
+        }
+        // Construct payload
+        const payload = {
+            notification: {
+                title: alertData.title || 'Notifikasyon',
+                body: alertData.body || 'Ou gen yon nouvo alèt nan kont ou.',
+            },
+            token: fcmToken,
+        };
+        // Send via FCM Admin
+        const response = await (0, messaging_1.getMessaging)().send(payload);
+        console.log(`✅ [PUSH] Successfully sent message:`, response);
+    }
+    catch (error) {
+        console.error(`❌ [PUSH] Error sending message:`, error);
     }
 });
 //# sourceMappingURL=index.js.map
