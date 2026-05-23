@@ -78,16 +78,17 @@ export default function DashboardHeader() {
                         <div className="relative" ref={dropdownRef}>
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center focus:outline-none"
+                                className="flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-full bg-white shadow-sm border border-black/5 dark:bg-[#1a1a1a] dark:border-white/10 hover:shadow-md transition-all focus:outline-none"
                             >
+                                <span className="material-symbols-outlined text-[22px] text-black/50 dark:text-white/50">menu</span>
                                 {user.photoURL ? (
                                     <div
-                                        className="h-10 w-10 rounded-full bg-cover bg-center border border-primary/10 hover:opacity-80 transition-opacity cursor-pointer"
+                                        className="h-8 w-8 rounded-full bg-cover bg-center border border-black/5 dark:border-white/10"
                                         style={{ backgroundImage: `url("${user.photoURL}")` }}
                                     />
                                 ) : (
-                                    <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary cursor-pointer hover:bg-primary/20 transition-colors">
-                                        <span className="material-symbols-outlined text-xl">person</span>
+                                    <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
+                                        <span className="material-symbols-outlined text-lg">person</span>
                                     </div>
                                 )}
                             </button>
