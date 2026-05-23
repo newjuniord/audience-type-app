@@ -18,6 +18,7 @@ export default function BubbleButton({ children, onClick, className = "", varian
 
     const handleMouseMove = (e: MouseEvent<HTMLButtonElement>) => {
         if (!buttonRef.current || disabled) return;
+        if (typeof window !== "undefined" && !window.matchMedia('(hover: hover)').matches) return;
         const rect = buttonRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -26,7 +27,9 @@ export default function BubbleButton({ children, onClick, className = "", varian
     };
 
     const handleMouseEnter = () => {
-        if (!disabled) setIsHovered(true);
+        if (typeof window !== "undefined" && window.matchMedia('(hover: hover)').matches) {
+            if (!disabled) setIsHovered(true);
+        }
     };
 
     const handleMouseLeave = () => {
