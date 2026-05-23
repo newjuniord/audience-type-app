@@ -8,7 +8,7 @@ import CheckoutModal from "@/components/CheckoutModal";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
 import { createBookingApplication } from "@/lib/booking-applications";
-import { doc, Timestamp } from "firebase/firestore";
+import { doc, Timestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const SLOTS_KST = [
@@ -266,6 +266,95 @@ export default function ConsultationPage() {
   const [reviewing, setReviewing] = useState(false);
   const [usZone, setUsZone] = useState("");
 
+  const [existingBookings, setExistingBookings] = useState<any[]>([]);
+  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [checkingReservations, setCheckingReservations] = useState(false);
+
+  useEffect(() => {
+    if (!formData.date || !service?.id) {
+      setExistingBookings([]);
+      return;
+    }
+    setCheckingReservations(true);
+
+    const qApps = query(
+      collection(db, "bookingApplications"),
+      where("bookingDate", "==", formData.date),
+      where("bookingsId", "==", service.id)
+    );
+
+    const qOrders = query(
+      collection(db, "orders"),
+      where("status", "==", "pending")
+    );
+
+    Promise.all([getDocs(qApps), getDocs(qOrders)])
+      .then(([snapApps, snapOrders]) => {
+        const appsList = snapApps.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const ordersList = snapOrders.docs.map(doc => {
+          const data = doc.data();
+          const userIdStr = typeof data.userId === 'string' ? data.userId : data.userId?.id;
+          const productIdStr = typeof data.productId === 'string' ? data.productId : data.productId?.id;
+          return {
+            id: doc.id,
+            ...data,
+            userIdStr,
+            productIdStr
+          };
+        });
+
+        setExistingBookings(appsList);
+        setPendingOrders(ordersList);
+        setCheckingReservations(false);
+      })
+      .catch((err) => {
+        console.error("Error checking slot reservations:", err);
+        setCheckingReservations(false);
+      });
+  }, [formData.date, service?.id]);
+
+  const getSlotReservationStatus = useCallback((slotTime: string) => {
+    const booking = existingBookings.find(b => b.bookingTime === slotTime);
+    if (!booking) return "available";
+
+    const status = (booking.status || "").toLowerCase();
+
+    if (["canceled", "cancelled", "refused", "rejected", "failed"].includes(status)) {
+      return "available";
+    }
+
+    if (["approved", "confirmed", "paid", "success", "active"].includes(status)) {
+      return "booked";
+    }
+
+    if (status === "pending") {
+      let createdAtMs = 0;
+      if (booking.createdAt) {
+        if (typeof booking.createdAt.toMillis === "function") {
+          createdAtMs = booking.createdAt.toMillis();
+        } else if (booking.createdAt instanceof Date) {
+          createdAtMs = booking.createdAt.getTime();
+        } else if (booking.createdAt.seconds) {
+          createdAtMs = booking.createdAt.seconds * 1000;
+        }
+      }
+      const isRecent = createdAtMs && (Date.now() - createdAtMs < 20 * 60 * 1000);
+
+      const bookingUserId = typeof booking.usersId === 'string' ? booking.usersId : booking.usersId?.id;
+      const hasPendingOrder = pendingOrders.some(o => 
+        o.userIdStr === bookingUserId && 
+        o.productIdStr === service?.id &&
+        (o.productType || "").toLowerCase() === "service"
+      );
+
+      if (isRecent || hasPendingOrder) {
+        return "pending_payment";
+      }
+    }
+
+    return "available";
+  }, [existingBookings, pendingOrders, service?.id]);
+
   // Prefill user data if logged in
   useEffect(() => {
     if (userData) {
@@ -373,6 +462,17 @@ export default function ConsultationPage() {
     return slots;
   }, [service, formData.date, selectedCountry]);
 
+  // Auto-deselect slot if it is no longer available
+  useEffect(() => {
+    if (selectedSlot !== null && localSlots[selectedSlot]) {
+      const slotTime = localSlots[selectedSlot].baseStr;
+      const resStatus = getSlotReservationStatus(slotTime);
+      if (resStatus === "booked" || resStatus === "pending_payment") {
+        setSelectedSlot(null);
+      }
+    }
+  }, [existingBookings, pendingOrders, selectedSlot, localSlots, getSlotReservationStatus]);
+
   const countryTimes = useMemo(() =>
     COUNTRIES.map((c) => {
       const start = convertTime(10, 0, 9, c.offset);
@@ -409,6 +509,20 @@ export default function ConsultationPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isFormValid) return;
+
+    // Double check availability to prevent race conditions
+    const slot = localSlots[selectedSlot!];
+    const resStatus = getSlotReservationStatus(slot.baseStr);
+    if (resStatus === "booked") {
+      alert("Lè sa a deja rezève pa yon lòt moun. Tanpri chwazi yon lòt lè.");
+      setSelectedSlot(null);
+      return;
+    } else if (resStatus === "pending_payment") {
+      alert("Lè sa a ap rezève pa yon lòt moun kounye a. Chwazi yon lòt lè oswa reyezi nan 20 minit.");
+      setSelectedSlot(null);
+      return;
+    }
+
     setReviewing(true);
   }
 
@@ -416,6 +530,22 @@ export default function ConsultationPage() {
     if (!service || !service.id) return;
     try {
       const slot = localSlots[selectedSlot!];
+
+      // Triple check availability before final redirection/pending creation
+      const resStatus = getSlotReservationStatus(slot.baseStr);
+      if (resStatus === "booked") {
+        alert("Lè sa a deja rezève pa yon lòt moun. Tanpri chwazi yon lòt lè.");
+        setSelectedSlot(null);
+        setReviewing(false);
+        setIsCheckoutModalOpen(false);
+        return;
+      } else if (resStatus === "pending_payment") {
+        alert("Lè sa a ap rezève pa yon lòt moun kounye a. Chwazi yon lòt lè oswa reyezi nan 20 minit.");
+        setSelectedSlot(null);
+        setReviewing(false);
+        setIsCheckoutModalOpen(false);
+        return;
+      }
       
       const userRef = doc(db, "users", userId);
       const serviceRef = doc(db, "services", service.id);
@@ -712,8 +842,14 @@ export default function ConsultationPage() {
                   </div>
 
                   <div className="flex flex-col gap-2 mb-6">
-                    <label className="text-[10px] font-black tracking-widest uppercase text-white/50">
-                        Lè konsiltasyon * 
+                    <label className="text-[10px] font-black tracking-widest uppercase text-white/50 flex items-center justify-between">
+                        <span>Lè konsiltasyon *</span> 
+                        {checkingReservations && (
+                          <span className="text-[9px] font-semibold text-primary/80 lowercase flex items-center gap-1">
+                            <span className="inline-block w-2.5 h-2.5 border border-primary border-t-transparent rounded-full animate-spin"></span>
+                            n ap verifye disponiblite...
+                          </span>
+                        )}
                         {(!formData.pays || (formData.pays === "usa" && !usZone)) && 
                         <span className="normal-case tracking-normal font-medium text-primary ml-2 lowercase">
                             (chwazi peyi w anvan)
@@ -721,15 +857,33 @@ export default function ConsultationPage() {
                     </label>
                     {(formData.pays && (formData.pays !== "usa" || usZone)) ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {localSlots.map((s, i) => (
-                          <button key={i} type="button" onClick={() => setSelectedSlot(i)}
-                            className={`p-3 rounded-xl text-center transition-all border ${
-                                selectedSlot === i ? 'bg-primary/20 border-primary text-white shadow-md shadow-primary/10' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20'
-                            }`}>
-                            <div className="font-bold text-sm leading-tight">{fmtUX(s.local)}</div>
-                            <div className="text-[10px] mt-1 opacity-50 uppercase tracking-widest">1 èdtan</div>
-                          </button>
-                        ))}
+                        {localSlots.map((s, i) => {
+                          const resStatus = getSlotReservationStatus(s.baseStr);
+                          const isBooked = resStatus === "booked";
+                          const isPendingPayment = resStatus === "pending_payment";
+                          const isDisabled = isBooked || isPendingPayment;
+
+                          let btnClass = "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20";
+                          let subText = "1 èdtan";
+
+                          if (selectedSlot === i) {
+                            btnClass = "bg-primary/20 border-primary text-white shadow-md shadow-primary/10";
+                          } else if (isBooked) {
+                            btnClass = "bg-red-500/5 border-red-500/20 text-red-400/50 cursor-not-allowed opacity-40";
+                            subText = "Lè sa a deja rezève";
+                          } else if (isPendingPayment) {
+                            btnClass = "bg-yellow-500/5 border-yellow-500/20 text-yellow-400/50 cursor-not-allowed opacity-40";
+                            subText = "Ap peye kounye a (20 min)";
+                          }
+
+                          return (
+                            <button key={i} type="button" onClick={() => !isDisabled && setSelectedSlot(i)} disabled={isDisabled}
+                              className={`p-3 rounded-xl text-center transition-all border ${btnClass}`}>
+                              <div className="font-bold text-sm leading-tight">{fmtUX(s.local)}</div>
+                              <div className="text-[10px] mt-1 uppercase tracking-widest font-semibold">{subText}</div>
+                            </button>
+                          );
+                        })}
                       </div>
                     ) : !formData.date ? (
                       <div className="p-6 rounded-xl text-center text-xs font-medium border border-dashed border-white/20 bg-white/5 text-white/40">
