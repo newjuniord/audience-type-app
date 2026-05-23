@@ -827,14 +827,6 @@ export default function BookingsManagementPage() {
                                                 </button>
                                             </>
                                         )}
-
-                                        <button
-                                            onClick={() => app.id && setDeleteId(app.id)}
-                                            className="size-10 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/5 text-black/40 dark:text-white/40 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all border border-transparent"
-                                            title="Supprimer la demande"
-                                        >
-                                            <span className="material-symbols-outlined text-lg">delete</span>
-                                        </button>
                                     </div>
                                 </div>
                             );
