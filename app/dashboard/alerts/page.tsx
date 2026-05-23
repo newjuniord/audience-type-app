@@ -115,12 +115,61 @@ export default function AlertsPage() {
             {/* List */}
             <div className="max-w-3xl mx-auto px-4 sm:px-8 mt-6 space-y-3">
                 {filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 text-center">
-                        <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-5">
-                            <span className="material-symbols-outlined text-3xl text-white/20">notifications_off</span>
+                    <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+                        {/* Animated icon ring */}
+                        <div className="relative mb-8">
+                            <div className="w-24 h-24 rounded-3xl bg-white/[0.03] border border-white/10 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-5xl text-white/10">
+                                    {tab === "utility" ? "notifications_off" : "campaign"}
+                                </span>
+                            </div>
+                            {/* Floating decorative dots */}
+                            <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-primary/20 border border-primary/30" />
+                            <div className="absolute -bottom-1 -left-3 w-3 h-3 rounded-full bg-white/10" />
                         </div>
-                        <p className="text-white/40 font-bold text-sm">Okenn notifikasyon pou kounye a.</p>
-                        <p className="text-white/20 text-xs mt-1">Retounen pi ta pou wè nouvo mesaj.</p>
+
+                        {tab === "utility" ? (
+                            <>
+                                <h3 className="text-lg font-black text-white/60 mb-2">Pa gen notifikasyon pou kounye a</h3>
+                                <p className="text-sm text-white/30 leading-relaxed max-w-xs">
+                                    Lè ou fè yon peman, konekte, oswa gen yon konsiltasyon, ou pral wè yon mesaj isit la.
+                                </p>
+                                <div className="mt-8 flex flex-col gap-2 w-full max-w-xs">
+                                    {[
+                                        { icon: "payments", color: "text-emerald-400", bg: "bg-emerald-400/10", text: "Peman réisi" },
+                                        { icon: "event", color: "text-orange-400", bg: "bg-orange-400/10", text: "Rapèl konsiltasyon" },
+                                        { icon: "shield", color: "text-blue-400", bg: "bg-blue-400/10", text: "Aktivite kont" },
+                                    ].map((item) => (
+                                        <div key={item.text} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.02] border border-white/5 opacity-40">
+                                            <div className={`w-8 h-8 rounded-lg ${item.bg} flex items-center justify-center shrink-0`}>
+                                                <span className={`material-symbols-outlined text-base ${item.color}`}>{item.icon}</span>
+                                            </div>
+                                            <div className="flex-1 text-left">
+                                                <div className="h-2 rounded-full bg-white/20 w-3/4 mb-1.5" />
+                                                <div className="h-1.5 rounded-full bg-white/10 w-1/2" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest mt-6">
+                                    Notifikasyon ou yo pral parèt isit la
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <h3 className="text-lg font-black text-white/60 mb-2">Okenn pwomosyon pou kounye a</h3>
+                                <p className="text-sm text-white/30 leading-relaxed max-w-xs">
+                                    Siveye espas sa a — nou voye ofèt espesyal, fòmasyon ak kontni gratis isit la.
+                                </p>
+                                <Link
+                                    href="/products"
+                                    className="mt-8 flex items-center gap-2 px-6 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm font-black hover:bg-primary/20 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-lg">storefront</span>
+                                    Wè tout pwodui yo
+                                </Link>
+                            </>
+                        )}
                     </div>
                 ) : (
                     filtered.map((alert) => (
