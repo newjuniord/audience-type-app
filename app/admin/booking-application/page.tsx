@@ -765,6 +765,23 @@ export default function BookingsManagementPage() {
                                                 {/* Session Details Card */}
                                                 <div className="bg-black/[0.01] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-2xl p-4 flex flex-col justify-between gap-2.5">
                                                     <div className="flex flex-col gap-1.5 text-xs">
+                                                        <div className="flex items-center gap-1 text-black/70 dark:text-white/70 pb-1 border-b border-black/5 dark:border-white/5">
+                                                            <span className="material-symbols-outlined text-sm text-black/30 dark:text-white/30">calendar_month</span>
+                                                            <span className="font-bold text-black/40 dark:text-white/40">Date :</span>
+                                                            <span className="capitalize font-semibold">{formatBookingDateUX(app.bookingDate)}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 text-black/70 dark:text-white/70">
+                                                            <span className="material-symbols-outlined text-sm text-black/30 dark:text-white/30">schedule</span>
+                                                            <span className="font-bold text-black/40 dark:text-white/40">Horaire :</span>
+                                                            <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold">
+                                                                <span className="flex items-center gap-0.5">🇺🇸 {timeEST}</span>
+                                                                <span>•</span>
+                                                                <span className="flex items-center gap-0.5">🇰🇷 {format12h(kstTimeStr)}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="border-t border-black/5 dark:border-white/5 pt-2 flex flex-col gap-1 text-xs">
                                                         {parsed.sujet || parsed.kategori ? (
                                                             <>
                                                                 {parsed.sujet && (
@@ -785,23 +802,6 @@ export default function BookingsManagementPage() {
                                                                 {app.message}
                                                             </div>
                                                         )}
-                                                    </div>
-
-                                                    <div className="border-t border-black/5 dark:border-white/5 pt-2 flex flex-col gap-1 text-xs">
-                                                        <div className="flex items-center gap-1 text-black/70 dark:text-white/70">
-                                                            <span className="material-symbols-outlined text-sm text-black/30 dark:text-white/30">calendar_month</span>
-                                                            <span className="font-bold text-black/40 dark:text-white/40">Date :</span>
-                                                            <span className="capitalize font-semibold">{formatBookingDateUX(app.bookingDate)}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1 text-black/70 dark:text-white/70">
-                                                            <span className="material-symbols-outlined text-sm text-black/30 dark:text-white/30">schedule</span>
-                                                            <span className="font-bold text-black/40 dark:text-white/40">Horaire :</span>
-                                                            <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold">
-                                                                <span className="flex items-center gap-0.5">🇺🇸 {timeEST}</span>
-                                                                <span>•</span>
-                                                                <span className="flex items-center gap-0.5">🇰🇷 {format12h(kstTimeStr)}</span>
-                                                            </div>
-                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
