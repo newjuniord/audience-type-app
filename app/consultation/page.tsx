@@ -454,7 +454,7 @@ export default function ConsultationPage() {
       setSelectedSlot(null);
       return;
     } else if (resStatus === "pending_payment") {
-      alert("Lè sa a ap rezève pa yon lòt moun kounye a. Chwazi yon lòt lè oswa reyezi nan 20 minit.");
+      alert("Lè sa a ap rezève pa yon lòt moun kounye a. Chwazi yon lòt lè oswa re-eseye nan 20 minit.");
       setSelectedSlot(null);
       return;
     }
@@ -496,7 +496,7 @@ export default function ConsultationPage() {
 
       setSubmitted(true);
     } catch (err: any) {
-      alert(err.message || "Echèk nan anrejistreman kreyolo a. Tanpri reyezi.");
+      alert(err.message || "Echèk nan anrejistreman kreyòl la. Tanpri re-eseye.");
       setSelectedSlot(null);
       setReviewing(false);
       setIsCheckoutModalOpen(false);

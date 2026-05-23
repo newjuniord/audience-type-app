@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     });
 
     if (!success) {
-      return NextResponse.json({ error: "Lè sa a ap rezève pa yon lòt moun kounye a. Chwazi yon lòt lè oswa reyezi nan 20 minit." }, { status: 409 });
+      return NextResponse.json({ error: "Lè sa a ap rezève pa yon lòt moun kounye a. Chwazi yon lòt lè oswa re-eseye nan 20 minit." }, { status: 409 });
     }
 
     return NextResponse.json({ success: true, bookingId: bookingDocId });
