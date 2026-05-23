@@ -730,14 +730,18 @@ exports.webhookbotmessage = (0, https_1.onRequest)({
 });
 /**
  * Cloud Function: sendAlertPushNotification
- * Triggered when a new alert is created in users/{userId}/alerts/{alertId}
+ * Triggered when a new alert is created in alerts/{alertId}
  */
-exports.sendAlertPushNotification = (0, firestore_1.onDocumentCreated)({ document: "users/{userId}/alerts/{alertId}", region: "us-central1" }, async (event) => {
+exports.sendAlertPushNotification = (0, firestore_1.onDocumentCreated)({ document: "alerts/{alertId}", region: "us-central1" }, async (event) => {
     const snapshot = event.data;
     if (!snapshot)
         return;
     const alertData = snapshot.data();
-    const userId = event.params.userId;
+    const userId = alertData.userId;
+    if (!userId) {
+        console.log(`[PUSH] Alert document ${event.params.alertId} has no userId`);
+        return;
+    }
     try {
         // Get the user's FCM token
         const userRef = db.collection("users").doc(userId);
