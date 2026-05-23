@@ -8,7 +8,7 @@ import CheckoutModal from "@/components/CheckoutModal";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
 import { createBookingApplication } from "@/lib/booking-applications";
-import { doc, Timestamp } from "firebase/firestore";
+import { doc, Timestamp, runTransaction } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const SLOTS_KST = [
@@ -469,43 +469,63 @@ export default function ConsultationPage() {
     try {
       const slot = localSlots[selectedSlot!];
 
-      // Triple check availability before final redirection/pending creation
-      const resStatus = getSlotReservationStatus(slot.baseStr);
-      if (resStatus === "booked") {
-        alert("Lè sa a deja rezève pa yon lòt moun. Tanpri chwazi yon lòt lè.");
-        setSelectedSlot(null);
-        setReviewing(false);
-        setIsCheckoutModalOpen(false);
-        return;
-      } else if (resStatus === "pending_payment") {
+      // Document ID unique composé pour éviter les doublons simultanés (condition de concurrence)
+      const bookingDocId = `${service.id}_${formData.date}_${slot.baseStr}`;
+      const bookingDocRef = doc(db, "bookingApplications", bookingDocId);
+
+      await runTransaction(db, async (transaction) => {
+        const sfDoc = await transaction.get(bookingDocRef);
+        if (sfDoc.exists()) {
+          const data = sfDoc.data();
+          const status = (data?.status || "").toLowerCase();
+
+          const isBooked = ["approved", "confirmed", "paid", "success", "active"].includes(status);
+
+          let createdAtMs = 0;
+          if (data?.createdAt) {
+            if (typeof data.createdAt.toMillis === "function") {
+              createdAtMs = data.createdAt.toMillis();
+            } else if (data.createdAt instanceof Date) {
+              createdAtMs = data.createdAt.getTime();
+            } else if (data.createdAt.seconds) {
+              createdAtMs = data.createdAt.seconds * 1000;
+            }
+          }
+          const isRecent = createdAtMs && (Date.now() - createdAtMs < 20 * 60 * 1000);
+          const isPendingPayment = status === "pending" && isRecent;
+
+          if (isBooked || isPendingPayment) {
+            throw new Error("ALREADY_TAKEN");
+          }
+        }
+
+        const newApp = {
+          bookingsId: service.id,
+          createdAt: Timestamp.now(),
+          message: `Kategori: ${formData.kategori}\nSijè: ${formData.sujet}\nKreyo: ${slot.baseStr} (Lè admin) / ${fmtUX(slot.local)} lè lokal`,
+          status: "pending",
+          userName: formData.nomPrenom,
+          userPhone: formData.phone,
+          usersId: userId,
+          title: service.title,
+          serviceName: service.title,
+          bookingDate: formData.date,
+          bookingTime: slot.baseStr
+        };
+
+        transaction.set(bookingDocRef, newApp);
+      });
+
+      setSubmitted(true);
+    } catch (err: any) {
+      if (err.message === "ALREADY_TAKEN") {
         alert("Lè sa a ap rezève pa yon lòt moun kounye a. Chwazi yon lòt lè oswa reyezi nan 20 minit.");
         setSelectedSlot(null);
         setReviewing(false);
         setIsCheckoutModalOpen(false);
-        return;
+      } else {
+        console.error("Error submitting booking application:", err);
       }
-      
-      const userRef = doc(db, "users", userId);
-      const serviceRef = doc(db, "services", service.id);
-
-      const newApp = {
-        bookingsId: service.id,
-        createdAt: Timestamp.now(),
-        message: `Kategori: ${formData.kategori}\nSijè: ${formData.sujet}\nKreyo: ${slot.baseStr} (Lè admin) / ${fmtUX(slot.local)} lè lokal`,
-        status: "pending",
-        userName: formData.nomPrenom,
-        userPhone: formData.phone,
-        usersId: userId,
-        title: service.title,
-        serviceName: service.title,
-        bookingDate: formData.date,
-        bookingTime: slot.baseStr
-      };
-
-      await createBookingApplication(newApp as any);
-      setSubmitted(true);
-    } catch (err) {
-      console.error("Error submitting booking application:", err);
     }
   }
 
