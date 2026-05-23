@@ -53,7 +53,7 @@ export async function POST(req: Request) {
             createdAtMs = data.createdAt.seconds * 1000;
           }
         }
-        const isRecent = createdAtMs && (Date.now() - createdAtMs < 20 * 60 * 1000);
+        const isRecent = createdAtMs && (Date.now() - createdAtMs < 30 * 60 * 1000);
         const isPendingPayment = status === "pending" && isRecent;
 
         if (isBooked || isPendingPayment) {
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     });
 
     if (!success) {
-      return NextResponse.json({ error: "Lè sa a ap rezève pa yon lòt moun kounye a. Chwazi yon lòt lè oswa re-eseye nan 20 minit." }, { status: 409 });
+      return NextResponse.json({ error: "Lè sa a ap rezève pa yon lòt moun kounye a. Chwazi yon lòt lè oswa re-eseye nan 30 minit." }, { status: 409 });
     }
 
     return NextResponse.json({ success: true, bookingId: bookingDocId });

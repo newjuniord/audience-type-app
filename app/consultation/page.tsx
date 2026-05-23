@@ -454,7 +454,7 @@ export default function ConsultationPage() {
       setSelectedSlot(null);
       return;
     } else if (resStatus === "pending_payment") {
-      alert("Lè sa a ap rezève pa yon lòt moun kounye a. Chwazi yon lòt lè oswa re-eseye nan 20 minit.");
+      alert("Lè sa a ap rezève pa yon lòt moun kounye a. Chwazi yon lòt lè oswa re-eseye nan 30 minit.");
       setSelectedSlot(null);
       return;
     }

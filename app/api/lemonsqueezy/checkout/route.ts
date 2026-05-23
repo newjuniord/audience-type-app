@@ -143,8 +143,8 @@ export async function POST(req: Request) {
             console.log(`📧 [CHECKOUT] Aucun e-mail valide trouvé, utilisation du repli par défaut.`);
         }
 
-        // Expiration de la session : 20 minutes pour les consultations (services), 60 minutes pour le reste
-        const expirationMinutes = productCollection === "services" ? 20 : 60;
+        // Expiration de la session : 30 minutes pour les consultations (services), 60 minutes pour le reste
+        const expirationMinutes = productCollection === "services" ? 30 : 60;
         const sessionExpiresAtMs = Date.now() + expirationMinutes * 60 * 1000;
 
         const payload = {

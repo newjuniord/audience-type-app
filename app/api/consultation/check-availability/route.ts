@@ -43,7 +43,7 @@ export async function GET(req: Request) {
       }
 
       if (status === "pending") {
-        const isRecent = booking.createdAtMs && (Date.now() - booking.createdAtMs < 20 * 60 * 1000);
+        const isRecent = booking.createdAtMs && (Date.now() - booking.createdAtMs < 30 * 60 * 1000);
 
         if (isRecent) {
           return { time, status: "pending_payment" };
