@@ -120,7 +120,7 @@ export async function POST(req: Request) {
         // 2. Créer l'ordre (order) en attente (pending) de manière sécurisée (Server-side) uniquement pour MonCash (car Lemon Squeezy le fait déjà lui-même)
         let orderId = "";
         if (paymentMethod === 'moncash') {
-            const collectionName = productType === 'ebook' ? 'ebooks' : 'courses';
+            const collectionName = productType === 'ebook' ? 'ebooks' : (productType === 'service' ? 'services' : 'courses');
             const productRef = adminDb.collection(collectionName).doc(targetProductId);
 
             const orderData = {

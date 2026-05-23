@@ -388,7 +388,9 @@ export default function ConsultationPage() {
         userPhone: formData.phone,
         usersId: userRef,
         title: service.title,
-        serviceName: service.title
+        serviceName: service.title,
+        bookingDate: formData.date,
+        bookingTime: slot.baseStr
       };
 
       await createBookingApplication(newApp as any);
