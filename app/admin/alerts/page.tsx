@@ -31,7 +31,7 @@ const ALERT_PRESETS: {
     { category: "utility", type: "maintenance", icon: "build", iconColor: "text-yellow-400", iconBg: "bg-yellow-400/10", defaultTitle: "🔧 Antretyen pwograme jodi a a 11PM", defaultBody: "Platfòm nan ka pa disponib pou anviwon 30 minit.", defaultActionLabel: "", defaultActionUrl: "" },
 ];
 
-interface UserOption { uid: string; displayName: string; email: string; }
+interface UserOption { uid: string; displayName: string; email: string; phone: string; }
 
 interface SentAlert extends Alert { id: string; userEmail?: string; }
 
@@ -56,7 +56,15 @@ export default function AdminAlertsPage() {
         if (role !== "admin") return;
         // Load users for dropdown
         getDocs(collection(db, "users")).then((snap) => {
-            setUsers(snap.docs.map((d) => ({ uid: d.id, displayName: d.data().displayName || "", email: d.data().email || d.data().phone || "" })));
+            setUsers(snap.docs.map((d) => {
+                const data = d.data();
+                return { 
+                    uid: d.id, 
+                    displayName: data.displayName || data.name || "Itilizatè", 
+                    email: data.email || "", 
+                    phone: data.phone || "" 
+                };
+            }));
         });
         // Real-time sent alerts history
         const q = query(collection(db, "alerts"), orderBy("createdAt", "desc"));
@@ -177,9 +185,14 @@ export default function AdminAlertsPage() {
                                     className="mt-3 w-full h-11 px-4 bg-black/5 border border-black/10 rounded-xl text-sm outline-none focus:border-primary transition-all"
                                 >
                                     <option value="">— Chwazi yon itilizatè —</option>
-                                    {users.map((u) => (
-                                        <option key={u.uid} value={u.uid}>{u.displayName || u.email}</option>
-                                    ))}
+                                    {users.map((u) => {
+                                        const contactInfo = [u.email, u.phone].filter(Boolean).join(" / ");
+                                        return (
+                                            <option key={u.uid} value={u.uid}>
+                                                {u.displayName} {contactInfo ? `(${contactInfo})` : ""}
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                             )}
                         </div>
