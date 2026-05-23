@@ -3,6 +3,7 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
+import { getMessaging } from "firebase-admin/messaging";
 import * as crypto from "crypto";
 
 // Initialize Firebase Admin
@@ -787,5 +788,54 @@ export const webhookbotmessage = onRequest({
         }
     }
 });
+
+/**
+ * Cloud Function: sendAlertPushNotification
+ * Triggered when a new alert is created in users/{userId}/alerts/{alertId}
+ */
+export const sendAlertPushNotification = onDocumentCreated(
+    { document: "users/{userId}/alerts/{alertId}", region: "us-central1" },
+    async (event) => {
+        const snapshot = event.data;
+        if (!snapshot) return;
+
+        const alertData = snapshot.data();
+        const userId = event.params.userId;
+
+        try {
+            // Get the user's FCM token
+            const userRef = db.collection("users").doc(userId);
+            const userSnap = await userRef.get();
+
+            if (!userSnap.exists) {
+                console.log(`[PUSH] User ${userId} not found`);
+                return;
+            }
+
+            const userData = userSnap.data();
+            const fcmToken = userData?.fcmToken;
+
+            if (!fcmToken) {
+                console.log(`[PUSH] No FCM token for user ${userId}. Skipping push notification.`);
+                return;
+            }
+
+            // Construct payload
+            const payload = {
+                notification: {
+                    title: alertData.title || 'Notifikasyon',
+                    body: alertData.body || 'Ou gen yon nouvo alèt nan kont ou.',
+                },
+                token: fcmToken,
+            };
+
+            // Send via FCM Admin
+            const response = await getMessaging().send(payload);
+            console.log(`✅ [PUSH] Successfully sent message:`, response);
+        } catch (error) {
+            console.error(`❌ [PUSH] Error sending message:`, error);
+        }
+    }
+);
 
 

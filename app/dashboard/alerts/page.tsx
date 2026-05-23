@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { subscribeToAlerts, markAlertAsRead, markAllAlertsAsRead } from "@/lib/alerts";
 import { Alert, AlertCategory } from "@/lib/types";
 import Link from "next/link";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 function timeAgo(timestamp: any): string {
     if (!timestamp) return "";
@@ -23,6 +24,7 @@ export default function AlertsPage() {
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState<AlertCategory>("utility");
     const [markingAll, setMarkingAll] = useState(false);
+    const { permissionStatus, requestPermissionAndGetToken, isSupportedBrowser } = usePushNotifications();
 
     useEffect(() => {
         if (!user) return;
@@ -60,6 +62,24 @@ export default function AlertsPage() {
 
     return (
         <div className="min-h-screen bg-background-dark text-white font-display pb-24">
+            {/* Push Notification Request Banner */}
+            {isSupportedBrowser && permissionStatus === 'default' && (
+                <div className="bg-primary/20 border-b border-primary/30 px-4 sm:px-8 py-3 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-primary">notifications_active</span>
+                        <p className="text-sm text-primary-light font-medium">
+                            Aktive notifikasyon pou ou pa rate okenn mesaj!
+                        </p>
+                    </div>
+                    <button
+                        onClick={requestPermissionAndGetToken}
+                        className="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-full hover:bg-primary/90 transition-colors whitespace-nowrap shadow-md"
+                    >
+                        Aktive
+                    </button>
+                </div>
+            )}
+            
             {/* Hero */}
             <div className="relative overflow-hidden border-b border-white/5 bg-white/[0.02] px-4 sm:px-8 pt-10 pb-8">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(242,140,40,0.07),transparent_60%)] pointer-events-none" />
