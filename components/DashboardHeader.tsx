@@ -87,8 +87,8 @@ export default function DashboardHeader() {
                     )}
                     {/* Bell icon — alerts */}
                     {user && (
-                        <Link href="/dashboard/alerts" className="relative flex items-center justify-center w-10 h-10 rounded-full border border-black/10 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 transition-all text-black hover:text-black dark:text-white/60 dark:hover:text-white">
-                            <span className="material-symbols-outlined text-[24px]">notifications</span>
+                        <Link href="/dashboard/alerts" className="relative flex items-center justify-center w-10 h-10 rounded-full bg-transparent border border-white hover:bg-white/10 transition-all focus:outline-none text-white">
+                            <span className="material-symbols-outlined text-[22px]">notifications</span>
                             {unreadCount > 0 && (
                                 <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-md animate-pulse">
                                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -100,9 +100,9 @@ export default function DashboardHeader() {
                         <div className="relative" ref={dropdownRef}>
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center justify-center w-10 h-10 rounded-full border border-black/10 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 transition-all focus:outline-none text-black hover:text-black dark:text-white/60 dark:hover:text-white"
+                                className="flex items-center justify-center w-10 h-10 rounded-full bg-transparent border border-white hover:bg-white/10 transition-all focus:outline-none text-white"
                             >
-                                <span className="material-symbols-outlined text-[26px]">menu</span>
+                                <span className="material-symbols-outlined text-[24px]">menu</span>
                             </button>
 
                             {/* Profile Dropdown — Premium Design */}
@@ -155,11 +155,10 @@ export default function DashboardHeader() {
                                             key={href}
                                             href={href}
                                             onClick={() => setIsDropdownOpen(false)}
-                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold group ${
-                                                highlight
+                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold group ${highlight
                                                     ? "text-orange-500 hover:bg-orange-500/10"
                                                     : "text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white"
-                                            }`}
+                                                }`}
                                         >
                                             <span className={`material-symbols-outlined text-base notranslate ${highlight ? "text-orange-500" : "text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white"} transition-colors`}>{icon}</span>
                                             {label}
