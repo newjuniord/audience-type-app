@@ -585,7 +585,9 @@ export default function LoginPage() {
                                                     <strong className="text-white">Lòt aparèy ?</strong> Si ou pa gen WhatsApp sou aparèy sa a, voye mo <strong className="text-[#25D366]">KÒD</strong> nan nimewo <strong className="text-white">WhatsApp</strong> nou an anba a depi sou telefòn ou :
                                                 </p>
                                                 <p className="text-lg font-black text-white tracking-widest font-mono mt-2 text-center bg-black/20 rounded-lg p-2.5 border border-white/5">
-                                                    {whatsappRedirect.businessPhone}
+                                                    {whatsappRedirect.businessPhone.length === 12 && whatsappRedirect.businessPhone.startsWith('+1')
+                                                        ? whatsappRedirect.businessPhone.replace(/(\+\d{1})(\d{3})(\d{3})(\d{4})/, '$1 $2 $3 $4')
+                                                        : whatsappRedirect.businessPhone}
                                                 </p>
                                             </div>
 
