@@ -16,7 +16,8 @@ export default function ProfilePage() {
 
     // Form State
     const [displayName, setDisplayName] = useState("");
-    const [phoneDisplay, setPhoneDisplay] = useState(""); // read-only unified phone
+    const [phoneDisplay, setPhoneDisplay] = useState(""); // read-only for WhatsApp users
+    const [phoneEditable, setPhoneEditable] = useState(""); // editable for email users
     const [photoURL, setPhotoURL] = useState("");
     const [memberSince, setMemberSince] = useState("");
     const [showSuccess, setShowSuccess] = useState(false);
@@ -42,14 +43,18 @@ export default function ProfilePage() {
                     setCanGenerateTempLinks(userDoc.canGenerateTempLinks || false);
                     setTempLinksCount(userDoc.tempLinksCount || 0);
 
-                    // Unified phone: prefer phone (WhatsApp), fallback to phoneNumber or Firebase auth
-                    const rawPhone = userDoc.phone || userDoc.phoneNumber || user.phoneNumber || "";
+                    // For WhatsApp users: read-only display
+                    const rawPhone = userDoc.phone || user.phoneNumber || "";
                     const cleanPhone = rawPhone
                         .replace("whatsapp:", "")
                         .replace(/"/g, "")
                         .replace(/'/g, "")
                         .trim();
                     setPhoneDisplay(cleanPhone || "");
+
+                    // For email users: editable phone field (phoneNumber field)
+                    const editablePhone = userDoc.phoneNumber || "";
+                    setPhoneEditable(editablePhone.replace("whatsapp:", "").replace(/"/g, "").trim());
 
                     if (userDoc.createdAt) {
                         setMemberSince(userDoc.createdAt.toDate().toLocaleDateString('fr-FR', {
@@ -85,7 +90,12 @@ export default function ProfilePage() {
         if (!user) return;
         setSaving(true);
         try {
-            await updateUser(user.uid, { displayName });
+            const updates: any = { displayName };
+            // Save phone number for email users
+            if (user.email && phoneEditable.trim()) {
+                updates.phoneNumber = phoneEditable.trim();
+            }
+            await updateUser(user.uid, updates);
             await updateProfile(user, { displayName });
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
@@ -255,30 +265,23 @@ export default function ProfilePage() {
                                 </div>
                             </div>
 
-                            {/* WhatsApp phone (read-only) — only shown if email user also has a phone */}
-                            {user.email && phoneDisplay && (
+                            {/* Phone field — editable for email users */}
+                            {user.email && (
                                 <div className="flex flex-col gap-2">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5">
-                                            <span className="text-emerald-400 text-sm material-symbols-outlined">phone_iphone</span>
-                                            Nimewo WhatsApp
-                                        </label>
-                                        <span className="flex items-center gap-1 text-[10px] font-bold text-white/30 uppercase tracking-wider">
-                                            <span className="material-symbols-outlined text-xs">lock</span>
-                                            Lekti sèlman
-                                        </span>
-                                    </div>
-                                    <div className="relative">
-                                        <input
-                                            readOnly
-                                            type="tel"
-                                            value={phoneDisplay}
-                                            className="w-full px-4 py-3 pr-10 rounded-xl bg-white/[0.03] border border-white/5 text-sm text-white/50 cursor-not-allowed font-mono tracking-widest"
-                                        />
-                                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-white/20">
-                                            lock
-                                        </span>
-                                    </div>
+                                    <label className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                                        <span className="text-emerald-400 text-sm material-symbols-outlined">phone_iphone</span>
+                                        Nimewo telefòn (opsyonèl)
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        value={phoneEditable}
+                                        onChange={(e) => setPhoneEditable(e.target.value)}
+                                        placeholder="+509 48 48 0000 oswa +1 829 000 0000"
+                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20 font-mono"
+                                    />
+                                    <p className="text-[10px] text-white/30 leading-relaxed">
+                                        Ajoute nimewo sa a si ou vle resevwa kòd koneksyon pa WhatsApp tou.
+                                    </p>
                                 </div>
                             )}
                         </div>
