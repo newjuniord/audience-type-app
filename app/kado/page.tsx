@@ -47,7 +47,7 @@ export default async function KadoPage() {
                 return {
                     id: g.giftProductId, // On redirige vers le produit cadeau
                     title: g.title, // On affiche le titre du Kado au lieu du produit original
-                    description: g.description || `Cadeau exclusif : ${g.giftProductTitle}`,
+                    description: g.description || `Kado eksklizif : ${g.giftProductTitle}`,
                     image: g.photoLink || g.giftProductThumbnailUrl || "/logo.png",
                     type: "Bonus" as const,
                     isKado: true,
@@ -77,7 +77,7 @@ export default async function KadoPage() {
                             <span className="text-primary">w yo.</span>
                         </h1>
                         <p className="text-white/50 text-lg leading-relaxed max-w-lg">
-                            Ebooks, gid ak resous pratik que Jean Ronald kreye espesyalman pou ede w kòmanse — gratis, san kondisyon.
+                            Ebook, gid ak resous pratik ke Jean Ronald kreye espesyalman pou ede w kòmanse — gratis, san kondisyon.
                         </p>
                     </div>
 
@@ -141,7 +141,7 @@ export default async function KadoPage() {
                             href="/products"
                             className="relative shrink-0 px-8 py-4 bg-primary text-white rounded-full font-black uppercase tracking-wide text-sm hover:bg-primary/90 transition-all active:scale-95 shadow-xl shadow-primary/30"
                         >
-                            Wè Catalogue Konplè
+                            Wè Katalòg Konplè
                         </Link>
                     </div>
                 </section>

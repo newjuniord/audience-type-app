@@ -69,7 +69,7 @@ function KadoCard({ item, onClickKado }: { item: FreeItem, onClickKado: (item: F
                     {isExpired && (
                         <span className="px-3 py-1 bg-red-500/90 backdrop-blur text-white text-[10px] font-black uppercase tracking-wider rounded-full flex items-center gap-1 shadow-lg">
                             <span className="material-symbols-outlined text-[10px]">timer_off</span>
-                            Expiré
+                            Ekspire
                         </span>
                     )}
                 </div>
@@ -92,7 +92,7 @@ function KadoCard({ item, onClickKado }: { item: FreeItem, onClickKado: (item: F
                         <span className="text-xs text-white/30 font-medium">100% gratis</span>
                     </div>
                     <div className={`flex items-center gap-1.5 ${isExpired ? "text-red-500" : "text-white/40 group-hover:text-primary"} transition-colors text-xs font-bold uppercase tracking-wider`}>
-                        <span>{isExpired ? "Expiré" : "Jwenn li"}</span>
+                        <span>{isExpired ? "Ekspire" : "Jwenn li"}</span>
                         {!isExpired && (
                             <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
