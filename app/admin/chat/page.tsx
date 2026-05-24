@@ -8,6 +8,8 @@ import {
 } from "firebase/firestore";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { uploadChatMedia, compressImage } from "@/lib/chatMedia";
+import UserEnrollmentsModal from "@/components/UserEnrollmentsModal";
+import GiftProductModal from "@/components/GiftProductModal";
 
 interface ChatThread {
     id: string; // userId
@@ -37,6 +39,8 @@ export default function AdminChatPage() {
     const { user, userData } = useAuth();
     const [threads, setThreads] = useState<ChatThread[]>([]);
     const [selectedThread, setSelectedThread] = useState<ChatThread | null>(null);
+    const [isEnrollmentsOpen, setIsEnrollmentsOpen] = useState(false);
+    const [isGiftOpen, setIsGiftOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState("");
     const [sending, setSending] = useState(false);
@@ -272,6 +276,24 @@ export default function AdminChatPage() {
                                         Email: {selectedThread.userEmail || "N/A"} | Tél: {selectedThread.userPhone || "N/A"}
                                     </p>
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setIsEnrollmentsOpen(true)}
+                                        className="h-9 px-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all active:scale-95 border border-gray-200"
+                                        title="Voir les inscriptions"
+                                    >
+                                        <span className="material-symbols-outlined text-base">school</span>
+                                        <span className="hidden sm:inline">Inscriptions</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setIsGiftOpen(true)}
+                                        className="h-9 px-3.5 bg-primary text-white hover:bg-primary/95 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all active:scale-95 shadow-sm shadow-primary/20"
+                                        title="Donner l'accès à un produit"
+                                    >
+                                        <span className="material-symbols-outlined text-base">redeem</span>
+                                        <span className="hidden sm:inline">Donner l'accès</span>
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Chat history */}
@@ -340,6 +362,32 @@ export default function AdminChatPage() {
                 type="alert"
                 isDanger={true}
             />
+
+            {/* User Access and Gifting Modals */}
+            {selectedThread && (
+                <>
+                    <UserEnrollmentsModal
+                        isOpen={isEnrollmentsOpen}
+                        onClose={() => setIsEnrollmentsOpen(false)}
+                        user={{
+                            uid: selectedThread.userId || selectedThread.id,
+                            email: selectedThread.userEmail,
+                            displayName: selectedThread.userName,
+                            phone: selectedThread.userPhone
+                        } as any}
+                    />
+                    <GiftProductModal
+                        isOpen={isGiftOpen}
+                        onClose={() => setIsGiftOpen(false)}
+                        user={{
+                            uid: selectedThread.userId || selectedThread.id,
+                            email: selectedThread.userEmail,
+                            displayName: selectedThread.userName,
+                            phone: selectedThread.userPhone
+                        } as any}
+                    />
+                </>
+            )}
         </div>
     );
 }
