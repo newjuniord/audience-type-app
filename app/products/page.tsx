@@ -53,7 +53,7 @@ export default async function ProductCatalog() {
             <DashboardHeader />
 
             <main className="flex flex-col items-center pt-0 pb-20">
-                <FeaturedProducts title="Catalogue de Produits" showBorder={false} initialProducts={initialProducts} />
+                <FeaturedProducts title="Katalòg Pwodui" showBorder={false} initialProducts={initialProducts} />
             </main>
 
             <DashboardFooter />

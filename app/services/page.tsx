@@ -61,7 +61,7 @@ export default function ServicesPage() {
         <section id="katalòg" className="py-24 px-5 border-b border-white/5 bg-white/[0.02]">
           <div className="max-w-[1200px] mx-auto">
             <div className="text-center mb-16 max-w-[700px] mx-auto">
-              <p className="text-[10px] font-black tracking-[0.3em] uppercase text-primary mb-4">Ekskizite Nou</p>
+              <p className="text-[10px] font-black tracking-[0.3em] uppercase text-primary mb-4">Espesyalite Nou</p>
               <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-6 text-white">Delege Avèk Konfyans</h2>
               <p className="text-white/50 text-sm leading-relaxed">
                 Chwazi sèvis ou bezwen an epi kite nou fè rès la ak nivo pèfeksyon ki fè repitasyon DJR Akademi.
@@ -97,7 +97,7 @@ export default function ServicesPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a href="https://wa.me/821012345678" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto px-10 py-5 bg-primary text-white rounded-full font-black uppercase tracking-wide text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/30 flex items-center justify-center gap-3">
                 <span className="material-symbols-outlined">chat</span>
-                Mande Yon Devis
+                Mande Yon Pri
               </a>
             </div>
           </div>
