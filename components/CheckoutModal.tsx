@@ -722,9 +722,17 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                     <>
                       <div className="size-16 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20"><span className="text-3xl">🔑</span></div>
                       <h2 className="text-xl font-black mb-2 leading-tight uppercase">Kòd verifikasyon</h2>
-                      <div className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm mx-auto">
-                        Nou voye yon kòd 4 chif ba ou. Antre li anba a pou nou ka konfime se ou menm :
+                       <div className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm mx-auto">
+                        {contactMethod === 'email'
+                          ? "Nou voye yon kòd 4 chif nan imel ou. Antre li anba a pou nou ka konfime se ou menm :"
+                          : "Nou voye yon kòd ba ou. Antre li anba a pou nou ka konfime se ou menm :"
+                        }
                       </div>
+                      {contactMethod === 'email' && (
+                        <div className="p-3 mb-6 rounded-xl bg-amber-500/5 border border-amber-500/10 text-amber-400/80 text-xs font-semibold max-w-sm mx-auto text-center leading-relaxed">
+                          ⚠️ Si ou pa resevwa kòd la, tanpri verifye dosye <strong>Spam (Kourye vle di)</strong> ou an.
+                        </div>
+                      )}
                     </>
                   )}
 

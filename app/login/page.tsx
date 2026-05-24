@@ -685,6 +685,11 @@ export default function LoginPage() {
                                                 {loginMethod === 'phone' ? "Antre kòd nou voye nan :" : "Antre kòd 4 chif nou voye nan :"} <br />
                                                 <span className="text-white font-bold">{loginMethod === 'phone' ? verifiedPhone : email}</span>
                                             </p>
+                                            {loginMethod === 'email' && (
+                                                <p className="text-[11px] text-amber-400/80 font-medium mt-2 max-w-xs leading-relaxed bg-amber-500/5 px-3 py-1.5 rounded-lg border border-amber-500/10">
+                                                    ⚠️ Si ou pa resevwa kòd la, tanpri verifye dosye <strong>Spam (Kourye vle di)</strong> ou an.
+                                                </p>
+                                            )}
                                         </div>
 
                                         <div className="flex flex-col gap-1.5">
