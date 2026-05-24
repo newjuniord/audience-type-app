@@ -1,29 +1,25 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-    doc,
-    setDoc,
-    addDoc,
-    collection,
-    query,
-    orderBy,
-    onSnapshot,
-    Timestamp,
-    getDocs,
-    where
+    doc, setDoc, addDoc, collection, query, orderBy,
+    onSnapshot, Timestamp, getDocs, where
 } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import { uploadChatMedia, compressImage } from "@/lib/chatMedia";
 
 interface Message {
     id: string;
     senderId: string;
     senderName: string;
     text: string;
+    type?: "text" | "image" | "voice";
+    mediaUrl?: string;
+    voiceDuration?: number;
     createdAt: any;
 }
 
@@ -37,161 +33,289 @@ export default function StudentChatPage() {
     const [loadingAccess, setLoadingAccess] = useState(true);
     const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
-    
+
+    // Voice recording state
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingTime, setRecordingTime] = useState(0);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Image preview state
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // 1. Verify user purchase access (enrollments or bookings)
+    // ──── Access check ────
     useEffect(() => {
         if (!user) return;
         const uid = user.uid;
-
         async function checkAccess() {
             try {
-                // Query enrollments
-                const enrollmentsRef = collection(db, "enrollments");
-                const qEnroll = query(enrollmentsRef, where("userId", "==", uid));
-                const snapEnroll = await getDocs(qEnroll);
-
-                // Query booking applications
-                const bookingsRef = collection(db, "bookingApplications");
-                const qBook = query(bookingsRef, where("usersId", "==", uid));
-                const snapBook = await getDocs(qBook);
-
-                // Access granted if has at least one enrollment or booking
-                const totalAccessCount = snapEnroll.size + snapBook.size;
-                setHasAccess(totalAccessCount > 0);
-            } catch (err) {
-                console.error("Error checking support chat access:", err);
-                setHasAccess(false);
-            } finally {
-                setLoadingAccess(false);
-            }
+                const snapEnroll = await getDocs(query(collection(db, "enrollments"), where("userId", "==", uid)));
+                const snapBook = await getDocs(query(collection(db, "bookingApplications"), where("usersId", "==", uid)));
+                setHasAccess(snapEnroll.size + snapBook.size > 0);
+            } catch { setHasAccess(false); }
+            finally { setLoadingAccess(false); }
         }
-
         checkAccess();
     }, [user]);
 
-    // 2. Load messages and clear unread indicator for student
+    // ──── Messages listener ────
     useEffect(() => {
         if (!user || !hasAccess) return;
         const uid = user.uid;
-
-        const chatRef = doc(db, "chats", uid);
-        const messagesRef = collection(db, "chats", uid, "messages");
-        const q = query(messagesRef, orderBy("createdAt", "asc"));
-
-        // Subscribe to messages
-        const unsubMessages = onSnapshot(q, (snapshot) => {
+        const q = query(collection(db, "chats", uid, "messages"), orderBy("createdAt", "asc"));
+        const unsub = onSnapshot(q, (snap) => {
             const msgs: Message[] = [];
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                msgs.push({
-                    id: doc.id,
-                    senderId: data.senderId,
-                    senderName: data.senderName || "",
-                    text: data.text || "",
-                    createdAt: data.createdAt
-                });
+            snap.forEach((d) => {
+                const data = d.data();
+                msgs.push({ id: d.id, senderId: data.senderId, senderName: data.senderName || "", text: data.text || "", type: data.type || "text", mediaUrl: data.mediaUrl || "", voiceDuration: data.voiceDuration || 0, createdAt: data.createdAt });
             });
             setMessages(msgs);
-            
-            // Auto scroll to bottom
-            setTimeout(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-            }, 100);
+            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
         });
-
-        // Set unreadByUser to false when viewing the chat
-        setDoc(chatRef, { unreadByUser: false }, { merge: true }).catch((err) => {
-            console.error("Error resetting unread count:", err);
-        });
-
-        return () => {
-            unsubMessages();
-        };
+        setDoc(doc(db, "chats", uid), { unreadByUser: false }, { merge: true }).catch(() => {});
+        return () => unsub();
     }, [user, hasAccess]);
 
-    const handleSendMessage = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!user || !inputText.trim() || sending) return;
-
+    // ──── Send helper (text, image, voice) ────
+    const sendMessage = useCallback(async (type: "text" | "image" | "voice", mediaBlob?: Blob, mediaName?: string, duration?: number) => {
+        if (!user) return;
         setSending(true);
-        const textToSend = inputText.trim();
-        setInputText("");
-
         try {
             const uid = user.uid;
             const userName = userData?.displayName || user.displayName || "Etidyan";
             const userEmail = userData?.email || user.email || "";
             const userPhone = userData?.phone || user.phoneNumber || "";
-
             const chatRef = doc(db, "chats", uid);
             const messagesRef = collection(db, "chats", uid, "messages");
-
             const now = Timestamp.now();
 
-            // 1. Add message doc
-            await addDoc(messagesRef, {
-                senderId: uid,
-                senderName: userName,
-                text: textToSend,
-                createdAt: now
-            });
+            let mediaUrl = "";
+            let textContent = inputText.trim();
 
-            // 2. Update chat metadata
-            await setDoc(chatRef, {
-                userId: uid,
-                userName,
-                userEmail,
-                userPhone,
-                lastMessage: textToSend,
-                lastMessageSenderId: uid,
-                lastMessageAt: now,
-                unreadByAdmin: true,
-                unreadByUser: false
-            }, { merge: true });
+            if (type === "image" && mediaBlob) {
+                mediaUrl = await uploadChatMedia(uid, mediaBlob, mediaName || "image.jpg");
+                textContent = "📷 Imaj";
+            } else if (type === "voice" && mediaBlob) {
+                mediaUrl = await uploadChatMedia(uid, mediaBlob, mediaName || "voice.webm");
+                textContent = "🎤 Mesaj vokal";
+            }
 
-            // Auto scroll
+            const msgData: any = { senderId: uid, senderName: userName, text: textContent, type, createdAt: now };
+            if (mediaUrl) msgData.mediaUrl = mediaUrl;
+            if (duration) msgData.voiceDuration = duration;
+
+            await addDoc(messagesRef, msgData);
+            await setDoc(chatRef, { userId: uid, userName, userEmail, userPhone, lastMessage: textContent, lastMessageSenderId: uid, lastMessageAt: now, unreadByAdmin: true, unreadByUser: false }, { merge: true });
+
+            setInputText("");
+            setImagePreview(null);
+            setImageFile(null);
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         } catch (err) {
-            console.error("Error sending support message:", err);
+            console.error("Error sending message:", err);
             setErrorMessage("Echèk nan voye mesaj la. Tanpri re-eseye.");
             setIsErrorModalOpen(true);
-        } finally {
-            setSending(false);
+        } finally { setSending(false); }
+    }, [user, userData, inputText]);
+
+    // ──── Text send ────
+    const handleSendText = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!inputText.trim() || sending) return;
+        sendMessage("text");
+    };
+
+    // ──── Image pick ────
+    const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) { setErrorMessage("Sèlman imaj ki aksepte."); setIsErrorModalOpen(true); return; }
+        if (file.size > 10 * 1024 * 1024) { setErrorMessage("Imaj la twò gwo (max 10MB)."); setIsErrorModalOpen(true); return; }
+        setImageFile(file);
+        setImagePreview(URL.createObjectURL(file));
+    };
+
+    const handleSendImage = async () => {
+        if (!imageFile || sending) return;
+        const compressed = await compressImage(imageFile);
+        await sendMessage("image", compressed, imageFile.name);
+    };
+
+    const cancelImage = () => { setImagePreview(null); setImageFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; };
+
+    // ──── Voice recording ────
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4" });
+            audioChunksRef.current = [];
+            recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+            recorder.onstop = () => { stream.getTracks().forEach((t) => t.stop()); };
+            recorder.start();
+            mediaRecorderRef.current = recorder;
+            setIsRecording(true);
+            setRecordingTime(0);
+            recordingTimerRef.current = setInterval(() => {
+                setRecordingTime((t) => {
+                    if (t >= 59) { stopRecording(true); return 60; }
+                    return t + 1;
+                });
+            }, 1000);
+        } catch {
+            setErrorMessage("Pa ka aksede nan mikwofòn ou. Tanpri bay pèmisyon.");
+            setIsErrorModalOpen(true);
         }
     };
 
-    const formatTime = (timestamp: any) => {
-        if (!timestamp) return "";
-        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-        return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const stopRecording = (autoSend = false) => {
+        if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+        const recorder = mediaRecorderRef.current;
+        if (!recorder || recorder.state === "inactive") { setIsRecording(false); return; }
+        const finalDuration = recordingTime;
+        recorder.onstop = () => {
+            recorder.stream.getTracks().forEach((t) => t.stop());
+            const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType });
+            if (autoSend || blob.size > 0) {
+                sendMessage("voice", blob, "voice.webm", finalDuration);
+            }
+        };
+        recorder.stop();
+        setIsRecording(false);
+        setRecordingTime(0);
     };
 
-    if (loadingAccess) {
+    const cancelRecording = () => {
+        if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+        const recorder = mediaRecorderRef.current;
+        if (recorder && recorder.state !== "inactive") {
+            recorder.onstop = () => { recorder.stream.getTracks().forEach((t) => t.stop()); };
+            recorder.stop();
+        }
+        audioChunksRef.current = [];
+        setIsRecording(false);
+        setRecordingTime(0);
+    };
+
+    const formatTime = (ts: any) => { if (!ts) return ""; const d = ts.toDate ? ts.toDate() : new Date(ts); return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); };
+    const formatDuration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+    // ──── Message bubble renderer (shared between mobile & desktop) ────
+    const renderBubble = (msg: Message, isMe: boolean, mobile: boolean) => {
+        const bubbleClass = isMe
+            ? `bg-primary text-white ${mobile ? "rounded-2xl rounded-tr-sm" : "rounded-2xl rounded-tr-none"} font-medium`
+            : mobile
+                ? "bg-[#1a1a1a] text-white/90 border border-white/[0.06] rounded-2xl rounded-tl-sm"
+                : "bg-[#1f1f1f] text-white/90 border border-white/5 rounded-2xl rounded-tl-none";
+
         return (
-            <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                <div className={`${mobile ? "max-w-[82%]" : "max-w-[70%]"} shadow-${mobile ? "sm" : "md"} overflow-hidden ${bubbleClass}`}>
+                    {msg.type === "image" && msg.mediaUrl ? (
+                        <div>
+                            <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">
+                                <img src={msg.mediaUrl} alt="Image" className="w-full max-w-[280px] rounded-xl object-cover" loading="lazy" />
+                            </a>
+                            {msg.text && msg.text !== "📷 Imaj" && <p className="px-3.5 py-1.5 text-[13px] whitespace-pre-wrap break-words">{msg.text}</p>}
+                        </div>
+                    ) : msg.type === "voice" && msg.mediaUrl ? (
+                        <div className="px-3.5 py-2.5 flex items-center gap-3 min-w-[180px]">
+                            <button onClick={() => { const a = document.getElementById(`audio-${msg.id}`) as HTMLAudioElement; a?.paused ? a?.play() : a?.pause(); }} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 hover:bg-white/30 transition-colors">
+                                <span className="material-symbols-outlined text-sm">play_arrow</span>
+                            </button>
+                            <div className="flex-1 flex flex-col gap-1">
+                                <div className="h-1 bg-white/20 rounded-full overflow-hidden"><div className="h-full bg-white/60 rounded-full w-0 transition-all" /></div>
+                                <span className="text-[10px] opacity-60">{formatDuration(msg.voiceDuration || 0)}</span>
+                            </div>
+                            <audio id={`audio-${msg.id}`} src={msg.mediaUrl} preload="none" />
+                        </div>
+                    ) : (
+                        <div className="px-3.5 py-2">
+                            <p className="text-[13px] whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
+                        </div>
+                    )}
+                    {mobile ? (
+                        <span className={`text-[9px] block px-3.5 pb-1.5 text-right ${isMe ? "text-white/50" : "text-white/30"}`}>{formatTime(msg.createdAt)}</span>
+                    ) : null}
+                </div>
+                {!mobile && <span className="text-[9px] opacity-40 mt-1 px-1">{formatTime(msg.createdAt)}</span>}
             </div>
         );
-    }
+    };
+
+    // ──── Input bar renderer (shared) ────
+    const renderInputBar = (mobile: boolean) => {
+        // Image preview overlay
+        if (imagePreview) {
+            return (
+                <div className={`${mobile ? "px-3 py-2.5 pb-[84px]" : "p-4"} bg-${mobile ? "[#0e0e0e]" : "black/5 dark:bg-white/[0.01]"} border-t border-${mobile ? "white/[0.06]" : "black/5 dark:border-white/5"} shrink-0`}>
+                    <div className="flex items-end gap-3">
+                        <div className="relative">
+                            <img src={imagePreview} alt="preview" className="w-20 h-20 rounded-xl object-cover border border-white/10" />
+                            <button onClick={cancelImage} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs">✕</button>
+                        </div>
+                        <button onClick={handleSendImage} disabled={sending} className={`h-10 px-4 bg-primary text-white rounded-full flex items-center gap-2 text-xs font-bold active:scale-95 transition-all ${sending ? "opacity-50" : ""}`}>
+                            {sending ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> : <><span className="material-symbols-outlined text-sm">send</span> Voye</>}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Voice recording bar
+        if (isRecording) {
+            return (
+                <div className={`${mobile ? "px-3 py-2.5 pb-[84px]" : "p-4"} bg-${mobile ? "[#0e0e0e]" : "black/5 dark:bg-white/[0.01]"} border-t border-${mobile ? "white/[0.06]" : "black/5 dark:border-white/5"} flex items-center gap-3 shrink-0`}>
+                    <button onClick={cancelRecording} className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center shrink-0 active:scale-90"><span className="material-symbols-outlined text-lg">delete</span></button>
+                    <div className="flex-1 flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+                        <span className="text-sm font-bold text-red-400">{formatDuration(recordingTime)}</span>
+                        <span className="text-[10px] text-white/40">/ 1:00 max</span>
+                    </div>
+                    <button onClick={() => stopRecording(true)} className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center shrink-0 active:scale-90 shadow-lg shadow-primary/30"><span className="material-symbols-outlined text-lg">send</span></button>
+                </div>
+            );
+        }
+
+        // Normal text input
+        return (
+            <form onSubmit={handleSendText} className={`${mobile ? "px-3 py-2.5 pb-[84px]" : "p-4"} bg-${mobile ? "[#0e0e0e]" : "black/5 dark:bg-white/[0.01]"} border-t border-${mobile ? "white/[0.06]" : "black/5 dark:border-white/5"} flex items-center gap-2 shrink-0`}>
+                <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleImagePick} />
+                <button type="button" onClick={() => fileInputRef.current?.click()} className={`${mobile ? "w-9 h-9" : "w-10 h-10"} rounded-full bg-white/[0.06] text-white/50 hover:text-white hover:bg-white/10 flex items-center justify-center shrink-0 transition-colors active:scale-90`}>
+                    <span className="material-symbols-outlined text-lg">image</span>
+                </button>
+                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Ekri mesaj ou a la..." className={`flex-1 bg-white/[0.06] border border-white/[0.08] ${mobile ? "rounded-full px-4 py-2.5" : "rounded-2xl px-5 py-3"} text-sm text-white placeholder-white/25 focus:outline-none focus:border-primary/40 transition-colors`} />
+                {inputText.trim() ? (
+                    <button type="submit" disabled={sending} className={`${mobile ? "w-10 h-10" : "h-11 px-5"} bg-primary text-white ${mobile ? "rounded-full" : "rounded-2xl"} flex items-center justify-center ${mobile ? "" : "gap-2"} active:scale-90 transition-all shrink-0 ${sending ? "opacity-40" : "shadow-lg shadow-primary/30"}`}>
+                        {!mobile && <span className="text-xs uppercase tracking-wider">Voye</span>}
+                        <span className="material-symbols-outlined text-lg">send</span>
+                    </button>
+                ) : (
+                    <button type="button" onClick={startRecording} className={`${mobile ? "w-10 h-10" : "w-10 h-10"} rounded-full bg-white/[0.06] text-white/50 hover:text-white hover:bg-white/10 flex items-center justify-center shrink-0 transition-colors active:scale-90`}>
+                        <span className="material-symbols-outlined text-lg">mic</span>
+                    </button>
+                )}
+            </form>
+        );
+    };
+
+    // ──── Loading / Access denied ────
+    if (loadingAccess) return <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
     if (hasAccess === false) {
         return (
-            <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-primary dark:text-white px-6 py-20 flex items-center justify-center">
+            <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-primary dark:text-white px-6 py-20 items-center justify-center">
                 <div className="max-w-md w-full bg-white/5 border border-white/10 rounded-[2.5rem] p-8 text-center backdrop-blur-lg">
                     <span className="material-symbols-outlined text-6xl text-primary mb-4">lock</span>
                     <h3 className="text-xl font-bold mb-3">Sèvis Chat Sipo Bloke</h3>
-                    <p className="text-sm opacity-75 mb-8">
-                        Ou dwe genyen omwen yon kou oswa yon rezèvasyon konsiltasyon pou w ka kontakte ekip admin nan chat la.
-                    </p>
+                    <p className="text-sm opacity-75 mb-8">Ou dwe genyen omwen yon kou oswa yon rezèvasyon konsiltasyon pou w ka kontakte ekip admin nan chat la.</p>
                     <div className="flex flex-col gap-3">
-                        <Link href="/products" className="h-12 w-full bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl flex items-center justify-center transition-all shadow-lg shadow-primary/25">
-                            Gade kou ak pwodui yo
-                        </Link>
-                        <Link href="/consultation" className="h-12 w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center transition-all">
-                            Pran yon randevou
-                        </Link>
+                        <Link href="/products" className="h-12 w-full bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl flex items-center justify-center transition-all shadow-lg shadow-primary/25">Gade kou ak pwodui yo</Link>
+                        <Link href="/consultation" className="h-12 w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center transition-all">Pran yon randevou</Link>
                     </div>
                 </div>
             </div>
@@ -200,174 +324,42 @@ export default function StudentChatPage() {
 
     return (
         <>
-            {/* ===== MOBILE: Full-screen WhatsApp-style layout ===== */}
+            {/* ===== MOBILE ===== */}
             <div className="md:hidden fixed inset-0 z-40 flex flex-col bg-background-dark text-white">
-                
-                {/* Sticky header bar */}
                 <div className="px-4 py-3 bg-[#0e0e0e] border-b border-white/[0.06] flex items-center gap-3 shrink-0 safe-area-pt">
-                    <Link href="/dashboard" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 transition-colors shrink-0 active:scale-90">
-                        <span className="material-symbols-outlined text-lg">arrow_back</span>
-                    </Link>
-                    <div className="relative shrink-0">
-                        <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center text-primary">
-                            <span className="material-symbols-outlined text-base">support_agent</span>
-                        </div>
-                        <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-[#0e0e0e]"></div>
-                    </div>
-                    <div className="min-w-0">
-                        <div className="text-sm font-bold truncate leading-tight">Admin DJR Akademi</div>
-                        <div className="text-[10px] text-green-400 font-semibold leading-tight">Enliy</div>
-                    </div>
+                    <Link href="/dashboard" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 transition-colors shrink-0 active:scale-90"><span className="material-symbols-outlined text-lg">arrow_back</span></Link>
+                    <div className="relative shrink-0"><div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center text-primary"><span className="material-symbols-outlined text-base">support_agent</span></div><div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-[#0e0e0e]" /></div>
+                    <div className="min-w-0"><div className="text-sm font-bold truncate leading-tight">Admin DJR Akademi</div><div className="text-[10px] text-green-400 font-semibold leading-tight">Enliy</div></div>
                 </div>
-
-                {/* Messages area — fills all remaining space */}
                 <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 select-text">
-                    {messages.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-4">
-                            <span className="material-symbols-outlined text-4xl mb-2 animate-bounce">forum</span>
-                            <p className="text-sm font-bold">Ekri premye mesaj ou a pou kòmanse diskisyon an.</p>
-                            <p className="text-xs mt-1">Ekip admin la ap reponn ou trè vit.</p>
-                        </div>
-                    ) : (
-                        messages.map((msg) => {
-                            const isMe = msg.senderId === user?.uid;
-                            return (
-                                <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                                    <div className={`px-3.5 py-2 text-[13px] max-w-[82%] shadow-sm ${
-                                        isMe
-                                            ? "bg-primary text-white rounded-2xl rounded-tr-sm font-medium"
-                                            : "bg-[#1a1a1a] text-white/90 border border-white/[0.06] rounded-2xl rounded-tl-sm"
-                                    }`}>
-                                        <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
-                                        <span className={`text-[9px] block mt-1 text-right ${isMe ? "text-white/50" : "text-white/30"}`}>
-                                            {formatTime(msg.createdAt)}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })
-                    )}
+                    {messages.length === 0 ? <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-4"><span className="material-symbols-outlined text-4xl mb-2 animate-bounce">forum</span><p className="text-sm font-bold">Ekri premye mesaj ou a pou kòmanse diskisyon an.</p><p className="text-xs mt-1">Ekip admin la ap reponn ou trè vit.</p></div> : messages.map((m) => renderBubble(m, m.senderId === user?.uid, true))}
                     <div ref={messagesEndRef} />
                 </div>
-
-                {/* Sticky input bar at the bottom — above BottomNav (pb-20 for safe area) */}
-                <form onSubmit={handleSendMessage} className="px-3 py-2.5 pb-[84px] bg-[#0e0e0e] border-t border-white/[0.06] flex items-center gap-2 shrink-0">
-                    <input
-                        type="text"
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        placeholder="Ekri mesaj ou a la..."
-                        className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-full px-4 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-primary/40 transition-colors"
-                    />
-                    <button
-                        type="submit"
-                        disabled={!inputText.trim() || sending}
-                        className={`w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center active:scale-90 transition-all shrink-0 ${
-                            (!inputText.trim() || sending) ? "opacity-40" : "shadow-lg shadow-primary/30"
-                        }`}
-                    >
-                        <span className="material-symbols-outlined text-lg">send</span>
-                    </button>
-                </form>
+                {renderInputBar(true)}
             </div>
 
-            {/* ===== DESKTOP: Card-style layout ===== */}
+            {/* ===== DESKTOP ===== */}
             <div className="hidden md:flex relative min-h-[calc(100vh-80px)] w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-primary dark:text-white px-10 py-8">
                 <div className="max-w-[800px] w-full mx-auto flex flex-col flex-1">
-                    
-                    {/* Header Info */}
                     <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <h1 className="text-2xl font-black uppercase tracking-tight">Asistans Teknik</h1>
-                            <p className="text-xs text-white/50">Poze admin nenpòt kesyon sou kou ou yo.</p>
-                        </div>
-                        <Link href="/dashboard" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold transition-all">
-                            <span className="material-symbols-outlined text-sm">arrow_back</span>
-                            Retounen
-                        </Link>
+                        <div><h1 className="text-2xl font-black uppercase tracking-tight">Asistans Teknik</h1><p className="text-xs text-white/50">Poze admin nenpòt kesyon sou kou ou yo.</p></div>
+                        <Link href="/dashboard" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold transition-all"><span className="material-symbols-outlined text-sm">arrow_back</span>Retounen</Link>
                     </div>
-
-                    {/* Chat window card */}
                     <div className="bg-white dark:bg-[#121212]/80 border border-black/5 dark:border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[620px] backdrop-blur-md">
-                        
-                        {/* Active support details */}
                         <div className="px-6 py-4 border-b border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/[0.02] flex items-center gap-3 shrink-0">
-                            <div className="relative">
-                                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                                    <span className="material-symbols-outlined text-lg">support_agent</span>
-                                </div>
-                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#121212] animate-pulse"></div>
-                            </div>
-                            <div>
-                                <div className="text-sm font-bold">Admin DJR Akademi</div>
-                                <div className="text-[10px] text-green-400 font-semibold uppercase tracking-wider flex items-center gap-1">
-                                    Enliy kounye a
-                                </div>
-                            </div>
+                            <div className="relative"><div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary"><span className="material-symbols-outlined text-lg">support_agent</span></div><div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#121212] animate-pulse" /></div>
+                            <div><div className="text-sm font-bold">Admin DJR Akademi</div><div className="text-[10px] text-green-400 font-semibold uppercase tracking-wider">Enliy kounye a</div></div>
                         </div>
-
-                        {/* Messages list */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-4 select-text">
-                            {messages.length === 0 ? (
-                                <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-6 py-10">
-                                    <span className="material-symbols-outlined text-5xl mb-3 animate-bounce">forum</span>
-                                    <p className="text-sm font-bold">Ekri premye mesaj ou a pou kòmanse diskisyon an.</p>
-                                    <p className="text-xs mt-1">Ekip admin la ap reponn ou trè vit.</p>
-                                </div>
-                            ) : (
-                                messages.map((msg) => {
-                                    const isMe = msg.senderId === user?.uid;
-                                    return (
-                                        <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                                            <div className={`px-4 py-2.5 text-sm max-w-[70%] shadow-md ${
-                                                isMe 
-                                                    ? "bg-primary text-white rounded-2xl rounded-tr-none font-medium" 
-                                                    : "bg-[#1f1f1f] text-white/90 border border-white/5 rounded-2xl rounded-tl-none"
-                                            }`}>
-                                                <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
-                                            </div>
-                                            <span className="text-[9px] opacity-40 mt-1 px-1">
-                                                {formatTime(msg.createdAt)}
-                                            </span>
-                                        </div>
-                                    );
-                                })
-                            )}
+                            {messages.length === 0 ? <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-6 py-10"><span className="material-symbols-outlined text-5xl mb-3 animate-bounce">forum</span><p className="text-sm font-bold">Ekri premye mesaj ou a pou kòmanse diskisyon an.</p><p className="text-xs mt-1">Ekip admin la ap reponn ou trè vit.</p></div> : messages.map((m) => renderBubble(m, m.senderId === user?.uid, false))}
                             <div ref={messagesEndRef} />
                         </div>
-
-                        {/* Form Input */}
-                        <form onSubmit={handleSendMessage} className="p-4 border-t border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/[0.01] flex items-center gap-3 shrink-0">
-                            <input
-                                type="text"
-                                value={inputText}
-                                onChange={(e) => setInputText(e.target.value)}
-                                placeholder="Ekri mesaj ou a la..."
-                                className="flex-1 bg-black/10 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl px-5 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 transition-colors"
-                            />
-                            <button
-                                type="submit"
-                                disabled={!inputText.trim() || sending}
-                                className={`h-11 px-5 bg-primary hover:bg-primary/95 text-white font-bold rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shrink-0 ${
-                                    (!inputText.trim() || sending) ? "opacity-50 cursor-not-allowed" : ""
-                                }`}
-                            >
-                                <span className="text-xs uppercase tracking-wider">Voye</span>
-                                <span className="material-symbols-outlined text-sm">send</span>
-                            </button>
-                        </form>
+                        {renderInputBar(false)}
                     </div>
                 </div>
             </div>
 
-            <ConfirmModal
-                isOpen={isErrorModalOpen}
-                onClose={() => setIsErrorModalOpen(false)}
-                title="Echèk"
-                message={errorMessage}
-                type="alert"
-                isDanger={true}
-            />
+            <ConfirmModal isOpen={isErrorModalOpen} onClose={() => setIsErrorModalOpen(false)} title="Echèk" message={errorMessage} type="alert" isDanger={true} />
         </>
     );
 }

@@ -1,19 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-    doc,
-    setDoc,
-    addDoc,
-    collection,
-    query,
-    orderBy,
-    onSnapshot,
-    Timestamp
+    doc, setDoc, addDoc, collection, query, orderBy, onSnapshot, Timestamp
 } from "firebase/firestore";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import { uploadChatMedia, compressImage } from "@/lib/chatMedia";
 
 interface ChatThread {
     id: string; // userId
@@ -33,6 +27,9 @@ interface Message {
     senderId: string;
     senderName: string;
     text: string;
+    type?: "text" | "image" | "voice";
+    mediaUrl?: string;
+    voiceDuration?: number;
     createdAt: any;
 }
 
@@ -46,6 +43,9 @@ export default function AdminChatPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -98,6 +98,9 @@ export default function AdminChatPage() {
                     senderId: data.senderId,
                     senderName: data.senderName || "",
                     text: data.text || "",
+                    type: data.type || "text",
+                    mediaUrl: data.mediaUrl || "",
+                    voiceDuration: data.voiceDuration || 0,
                     createdAt: data.createdAt
                 });
             });
@@ -118,47 +121,61 @@ export default function AdminChatPage() {
         return () => unsub();
     }, [selectedThread]);
 
-    const handleSendMessage = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedThread || !inputText.trim() || sending) return;
-
+    const sendAdminMessage = useCallback(async (type: "text" | "image", mediaBlob?: Blob, mediaName?: string) => {
+        if (!selectedThread) return;
         setSending(true);
-        const textToSend = inputText.trim();
-        setInputText("");
-
         try {
             const adminName = userData?.displayName || user?.displayName || "Admin";
             const messagesRef = collection(db, "chats", selectedThread.id, "messages");
             const chatRef = doc(db, "chats", selectedThread.id);
-
             const now = Timestamp.now();
 
-            // 1. Add message to subcollection
-            await addDoc(messagesRef, {
-                senderId: "admin",
-                senderName: adminName,
-                text: textToSend,
-                createdAt: now
-            });
+            let mediaUrl = "";
+            let textContent = inputText.trim();
 
-            // 2. Update chat thread metadata
-            await setDoc(chatRef, {
-                lastMessage: textToSend,
-                lastMessageSenderId: "admin",
-                lastMessageAt: now,
-                unreadByAdmin: false,
-                unreadByUser: true
-            }, { merge: true });
+            if (type === "image" && mediaBlob) {
+                mediaUrl = await uploadChatMedia(selectedThread.id, mediaBlob, mediaName || "admin_image.jpg");
+                textContent = "📷 Image";
+            }
 
+            const msgData: any = { senderId: "admin", senderName: adminName, text: textContent, type, createdAt: now };
+            if (mediaUrl) msgData.mediaUrl = mediaUrl;
+
+            await addDoc(messagesRef, msgData);
+            await setDoc(chatRef, { lastMessage: textContent, lastMessageSenderId: "admin", lastMessageAt: now, unreadByAdmin: false, unreadByUser: true }, { merge: true });
+
+            setInputText("");
+            setImagePreview(null);
+            setImageFile(null);
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         } catch (err) {
             console.error("Error sending response message:", err);
             setErrorMessage("Erreur lors de l'envoi du message. Veuillez réessayer.");
             setIsErrorModalOpen(true);
-        } finally {
-            setSending(false);
-        }
+        } finally { setSending(false); }
+    }, [selectedThread, user, userData, inputText]);
+
+    const handleSendText = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!inputText.trim() || sending) return;
+        sendAdminMessage("text");
     };
+
+    const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !file.type.startsWith("image/")) return;
+        if (file.size > 10 * 1024 * 1024) { setErrorMessage("Image trop volumineuse (max 10MB)."); setIsErrorModalOpen(true); return; }
+        setImageFile(file);
+        setImagePreview(URL.createObjectURL(file));
+    };
+
+    const handleSendImage = async () => {
+        if (!imageFile || sending) return;
+        const compressed = await compressImage(imageFile);
+        await sendAdminMessage("image", compressed, imageFile.name);
+    };
+
+    const cancelImage = () => { setImagePreview(null); setImageFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; };
 
     const formatTime = (timestamp: any) => {
         if (!timestamp) return "";
@@ -166,6 +183,8 @@ export default function AdminChatPage() {
         return date.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + 
                date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     };
+
+    const formatDuration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
     const filteredThreads = threads.filter(t => 
         t.userName.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -259,18 +278,25 @@ export default function AdminChatPage() {
                             <div className="flex-1 overflow-y-auto p-6 space-y-4">
                                 {messages.map((msg) => {
                                     const isAdminMsg = msg.senderId === "admin";
+                                    const bubbleCls = isAdminMsg
+                                        ? "bg-primary text-white rounded-2xl rounded-tr-none font-medium"
+                                        : "bg-white text-gray-900 border border-gray-200 rounded-2xl rounded-tl-none";
                                     return (
                                         <div key={msg.id} className={`flex flex-col ${isAdminMsg ? "items-end" : "items-start"}`}>
-                                            <div className={`px-4 py-2.5 text-sm max-w-[85%] md:max-w-[70%] shadow-sm ${
-                                                isAdminMsg 
-                                                    ? "bg-primary text-white rounded-2xl rounded-tr-none font-medium" 
-                                                    : "bg-white text-gray-900 border border-gray-200 rounded-2xl rounded-tl-none"
-                                            }`}>
-                                                <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
+                                            <div className={`max-w-[70%] shadow-sm overflow-hidden ${bubbleCls}`}>
+                                                {msg.type === "image" && msg.mediaUrl ? (
+                                                    <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer"><img src={msg.mediaUrl} alt="Image" className="w-full max-w-[280px] rounded-xl object-cover" loading="lazy" /></a>
+                                                ) : msg.type === "voice" && msg.mediaUrl ? (
+                                                    <div className="px-4 py-2.5 flex items-center gap-3 min-w-[180px]">
+                                                        <button onClick={() => { const a = document.getElementById(`audio-${msg.id}`) as HTMLAudioElement; a?.paused ? a?.play() : a?.pause(); }} className={`w-8 h-8 rounded-full ${isAdminMsg ? "bg-white/20" : "bg-gray-100"} flex items-center justify-center shrink-0`}><span className="material-symbols-outlined text-sm">play_arrow</span></button>
+                                                        <div className="flex-1 flex flex-col gap-1"><div className={`h-1 ${isAdminMsg ? "bg-white/20" : "bg-gray-200"} rounded-full`} /><span className="text-[10px] opacity-60">{formatDuration(msg.voiceDuration || 0)}</span></div>
+                                                        <audio id={`audio-${msg.id}`} src={msg.mediaUrl} preload="none" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="px-4 py-2.5"><p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p></div>
+                                                )}
                                             </div>
-                                            <span className="text-[9px] text-gray-400 mt-1 px-1">
-                                                {formatTime(msg.createdAt)}
-                                            </span>
+                                            <span className="text-[9px] text-gray-400 mt-1 px-1">{formatTime(msg.createdAt)}</span>
                                         </div>
                                     );
                                 })}
@@ -278,25 +304,21 @@ export default function AdminChatPage() {
                             </div>
 
                             {/* Send input area */}
-                            <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 bg-white flex items-center gap-3 shrink-0">
-                                <input
-                                    type="text"
-                                    value={inputText}
-                                    onChange={(e) => setInputText(e.target.value)}
-                                    placeholder="Répondre à l'étudiant..."
-                                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={!inputText.trim() || sending}
-                                    className={`h-11 px-5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shrink-0 ${
-                                        (!inputText.trim() || sending) ? "opacity-50 cursor-not-allowed" : ""
-                                    }`}
-                                >
-                                    <span className="text-xs uppercase tracking-wider">Envoyer</span>
-                                    <span className="material-symbols-outlined text-sm">send</span>
-                                </button>
-                            </form>
+                            {imagePreview ? (
+                                <div className="p-4 border-t border-gray-200 bg-white shrink-0">
+                                    <div className="flex items-end gap-3">
+                                        <div className="relative"><img src={imagePreview} alt="preview" className="w-20 h-20 rounded-xl object-cover border border-gray-200" /><button onClick={cancelImage} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs">✕</button></div>
+                                        <button onClick={handleSendImage} disabled={sending} className={`h-10 px-4 bg-primary text-white rounded-xl flex items-center gap-2 text-xs font-bold active:scale-95 transition-all ${sending ? "opacity-50" : ""}`}>{sending ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> : <><span className="material-symbols-outlined text-sm">send</span>Envoyer</>}</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <form onSubmit={handleSendText} className="p-4 border-t border-gray-200 bg-white flex items-center gap-3 shrink-0">
+                                    <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleImagePick} />
+                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center shrink-0 transition-colors"><span className="material-symbols-outlined text-lg">image</span></button>
+                                    <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Répondre à l'étudiant..." className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors" />
+                                    <button type="submit" disabled={!inputText.trim() || sending} className={`h-11 px-5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shrink-0 ${(!inputText.trim() || sending) ? "opacity-50 cursor-not-allowed" : ""}`}><span className="text-xs uppercase tracking-wider">Envoyer</span><span className="material-symbols-outlined text-sm">send</span></button>
+                                </form>
+                            )}
                         </>
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
