@@ -687,7 +687,7 @@ export default function LoginPage() {
                                             </p>
                                             {loginMethod === 'email' && (
                                                 <p className="text-[11px] text-amber-400/80 font-medium mt-2 max-w-xs leading-relaxed bg-amber-500/5 px-3 py-1.5 rounded-lg border border-amber-500/10">
-                                                    ⚠️ Si ou pa resevwa kòd la, tanpri verifye dosye <strong>Spam (Kourye vle di)</strong> ou an.
+                                                    ⚠️ Si ou pa resevwa kòd la, tanpri verifye dosye <strong>Spam</strong> ou an.
                                                 </p>
                                             )}
                                         </div>
