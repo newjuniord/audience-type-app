@@ -16,7 +16,7 @@ import Link from "next/link";
 export default function Dashboard() {
     const { user } = useAuth();
     const router = useRouter();
-    const [activeFilter, setActiveFilter] = useState("Tous");
+    const [activeFilter, setActiveFilter] = useState("Tout");
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -86,11 +86,11 @@ export default function Dashboard() {
                         } else {
                             setErrorModal({
                                 isOpen: true,
-                                title: "Fichier non disponible",
+                                title: "Fichye a pa disponib",
                                 message: (
                                     <>
-                                        Le fichier n'est pas disponible pour le moment. 
-                                        Veuillez <Link href="/support" className="text-primary dark:text-white font-bold underline">contacter le support</Link> si vous avez besoin d'aide.
+                                        Fichye a pa disponib pou kounye a. 
+                                        Tanpri <Link href="/support" className="text-primary dark:text-white font-bold underline">kontakte sipò a</Link> si w bezwen èd.
                                     </>
                                 )
                             });
@@ -101,8 +101,8 @@ export default function Dashboard() {
                 console.error("Error handling ebook click", error);
                 setErrorModal({
                     isOpen: true,
-                    title: "Erreur",
-                    message: "Une erreur est survenue lors du téléchargement. Veuillez réessayer plus tard."
+                    title: "Erè",
+                    message: "Gen yon erè ki rive pandan telechajman an. Tanpri eseye ankò pita."
                 });
             }
         } else if (enrollment.productType.toLowerCase().includes('course')) {
@@ -121,10 +121,10 @@ export default function Dashboard() {
 
     // Filter Logic
     const filteredEnrollments = enrollments.filter(item => {
-        if (activeFilter === "Tous") return true;
-        if (activeFilter === "Cours") return item.productType.toLowerCase().includes('course');
+        if (activeFilter === "Tout") return true;
+        if (activeFilter === "Kou") return item.productType.toLowerCase().includes('course');
         if (activeFilter === "Ebooks") return item.productType.toLowerCase().includes('ebook');
-        if (activeFilter === "Réservations") return !item.productType.toLowerCase().includes('course') && !item.productType.toLowerCase().includes('ebook');
+        if (activeFilter === "Rezèvasyon") return !item.productType.toLowerCase().includes('course') && !item.productType.toLowerCase().includes('ebook');
         return true;
     });
 
@@ -146,8 +146,8 @@ export default function Dashboard() {
                         ) : filteredEnrollments.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
                                 <span className="material-symbols-outlined text-6xl mb-4">folder_open</span>
-                                <h3 className="text-xl font-bold"><span>Aucun produit trouvé</span></h3>
-                                <p className="text-sm mt-2"><span>Vous n'avez pas encore de produits dans cette catégorie.</span></p>
+                                <h3 className="text-xl font-bold"><span>Nou pa jwenn okenn pwodwi</span></h3>
+                                <p className="text-sm mt-2"><span>Ou pa gen okenn pwodwi nan kategori sa a ankò.</span></p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-8">
@@ -187,7 +187,7 @@ export default function Dashboard() {
                                                 {item.productType.toLowerCase().includes('course') ? (
                                                     <div className="flex flex-col w-full gap-2">
                                                         <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider opacity-60">
-                                                            <span>Progression</span>
+                                                            <span>Pwogrè</span>
                                                             <span>{item.progress || 0}%</span>
                                                         </div>
                                                         <div className="w-full h-1.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
@@ -199,13 +199,13 @@ export default function Dashboard() {
                                                         <span className="material-symbols-outlined text-sm notranslate">
                                                             {item.productType.toLowerCase().includes('ebook') ? 'download' : 'calendar_month'}
                                                         </span>
-                                                        <span>{item.productType.toLowerCase().includes('ebook') ? 'Télécharger' : 'Détails'}</span>
+                                                        <span>{item.productType.toLowerCase().includes('ebook') ? 'Telechaje' : 'Detay'}</span>
                                                     </span>
                                                 )}
 
                                                 {item.productType.toLowerCase().includes('ebook') && item.downloadCount !== undefined && (
                                                     <span className="text-[10px] opacity-40">
-                                                        <span>{item.downloadCount}</span> <span>downloads</span>
+                                                        <span>{item.downloadCount}</span> <span>telechajman</span>
                                                     </span>
                                                 )}
                                             </div>
@@ -221,14 +221,14 @@ export default function Dashboard() {
 
                             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                                 <div className="text-center md:text-left">
-                                    <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic mb-3"><span>Envie d'aller plus loin ?</span></h2>
-                                    <p className="text-sm md:text-base opacity-80 max-w-md"><span>Découvrez notre catalogue complet. De nouveaux cours, ebooks et consultations sont disponibles pour vous.</span></p>
+                                    <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic mb-3"><span>Ou vle ale pi lwen ?</span></h2>
+                                    <p className="text-sm md:text-base opacity-80 max-w-md"><span>Dekouvri tout katalòg nou an. Nouvo kou, liv (ebook) ak konsiltasyon disponib pou ou.</span></p>
                                 </div>
                                 <button
                                     onClick={() => router.push('/products')}
                                     className="h-14 px-10 bg-white dark:bg-primary text-primary dark:text-white font-black uppercase tracking-widest text-xs rounded-full hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10 dark:shadow-white/5"
                                 >
-                                    <span>Voir les produits</span>
+                                    <span>Gade pwodwi yo</span>
                                 </button>
                             </div>
                         </div>

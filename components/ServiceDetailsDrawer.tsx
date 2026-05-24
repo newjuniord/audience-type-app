@@ -41,9 +41,9 @@ export default function ServiceDetailsDrawer({ isOpen, onClose, enrollment }: Se
                 <div className={`px-8 py-8 border-b border-black/5 dark:border-white/5 transition-all duration-700 delay-100 ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
                     <div className="flex items-start justify-between">
                         <div>
-                            <h2 className="text-2xl font-black tracking-tight">{enrollment?.productTitle || "Service Details"}</h2>
+                            <h2 className="text-2xl font-black tracking-tight">{enrollment?.productTitle || "Detay Sèvis la"}</h2>
                             <p className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mt-1">
-                                {enrollment?.enrolledAt ? `Enrolled on ${enrollment.enrolledAt.toDate().toLocaleDateString()}` : 'Active Service'}
+                                {enrollment?.enrolledAt ? `Enskri nan dat ${enrollment.enrolledAt.toDate().toLocaleDateString()}` : 'Sèvis Aktif'}
                             </p>
                         </div>
                         <button
@@ -64,7 +64,7 @@ export default function ServiceDetailsDrawer({ isOpen, onClose, enrollment }: Se
                                 enrollment?.status === 'completed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
                                     'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
                             }`}>
-                            {enrollment?.status || 'Unknown Status'}
+                            {enrollment?.status === 'active' ? 'Aktif' : enrollment?.status === 'completed' ? 'Fini' : enrollment?.status || 'Estati Enkoni'}
                         </span>
                         <span className="text-xs text-black/40 dark:text-white/40 font-medium ml-auto">
                             ID: {enrollment?.id}
@@ -84,20 +84,20 @@ export default function ServiceDetailsDrawer({ isOpen, onClose, enrollment }: Se
 
                     {/* Description / Info Placeholder */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-black uppercase text-black/40 dark:text-white/40 tracking-widest">About this Service</h3>
+                        <h3 className="text-sm font-black uppercase text-black/40 dark:text-white/40 tracking-widest">Konsènan Sèvis sa a</h3>
                         <p className="text-sm leading-relaxed text-black/60 dark:text-white/60">
-                            This is an active service enrollment. Please contact support if you need to schedule sessions or have questions about your service.
+                            Sa a se yon sèvis aktif ou enskri. Tanpri kontakte sipò a si w bezwen planifye yon sesyon oswa si w gen kesyon sou sèvis ou a.
                         </p>
                     </div>
 
                     {/* Additional Info */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-black uppercase text-black/40 dark:text-white/40 tracking-widest">Included Items</h3>
+                        <h3 className="text-sm font-black uppercase text-black/40 dark:text-white/40 tracking-widest">Sa ki enkli</h3>
                         {/* We don't have includedItems on enrollment object directly, would need to fetch product doc. 
                              For now, showing generic info or we can fetch. */}
                         <div className="bg-black/[0.03] dark:bg-white/[0.03] p-4 rounded-2xl">
                             <p className="text-xs font-medium text-black/50 dark:text-white/50 italic">
-                                Specific details about included items are available on the service page.
+                                Detay presi sou sa ki enkli yo disponib sou paj sèvis la.
                             </p>
                         </div>
                     </div>
@@ -111,7 +111,7 @@ export default function ServiceDetailsDrawer({ isOpen, onClose, enrollment }: Se
                         onClick={onClose}
                         className="w-full py-5 bg-black/5 dark:bg-white/10 text-black dark:text-white rounded-full font-black text-xs uppercase tracking-widest hover:bg-black/10 dark:hover:bg-white/20 transition-all"
                     >
-                        Close Details
+                        Fèmen detay yo
                     </button>
                 </div>
             </div>
