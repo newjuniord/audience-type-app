@@ -26,7 +26,7 @@ interface Message {
 }
 
 export default function StudentChatPage() {
-    const { user, userData } = useAuth();
+    const { user, userData, role } = useAuth();
     const router = useRouter();
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState("");
@@ -73,7 +73,9 @@ export default function StudentChatPage() {
                 const platformSnap = await getDoc(platformRef);
                 const chatRule = platformSnap.exists() ? platformSnap.data().chatAccessRule : "enrolled_only";
 
-                if (chatRule === "closed") {
+                if (role === "admin") {
+                    setHasAccess(true);
+                } else if (chatRule === "closed") {
                     setHasAccess("closed");
                 } else if (chatRule === "all") {
                     setHasAccess(true);
@@ -453,6 +455,11 @@ export default function StudentChatPage() {
                     <h3 className="text-xl font-bold mb-3">Chat la Fèmen pou Kounye a</h3>
                     <p className="text-sm opacity-75 mb-8">Administratè a fèmen sèvis chat la pou kounye a. Tanpri re-eseye pita oswa kontakte nou si se yon ijans.</p>
                     <div className="flex flex-col gap-3">
+                        {role === "admin" && (
+                            <Link href="/admin" className="h-12 w-full bg-white text-primary font-bold rounded-2xl flex items-center justify-center transition-all shadow-lg hover:bg-white/90">
+                                Espas Admin
+                            </Link>
+                        )}
                         <Link href="/dashboard" className="h-12 w-full bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl flex items-center justify-center transition-all shadow-lg shadow-primary/25">Retounen nan dashboard</Link>
                     </div>
                 </div>
