@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithCustomToken } from "firebase/auth";
+import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithCustomToken, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 // Importation des fonctions Firestore pour manipuler les documents
@@ -143,6 +143,7 @@ export default function LoginPage() {
     const [verificationError, setVerificationError] = useState<string | null>(null);
     const [magicLinkToken, setMagicLinkToken] = useState<string | null>(null);
     const [whatsappRedirect, setWhatsappRedirect] = useState<{ url: string; businessPhone: string; isNewUser?: boolean } | null>(null);
+    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
     // Effet pour fermer le dropdown des pays au clic extérieur
@@ -298,17 +299,28 @@ export default function LoginPage() {
                 setCooldownSeconds(0);
                 setStep('verify');
             } else {
-                const genData = await generateOtpAction(contactToUse, loginMethod === 'phone' ? 'phone' : 'email');
-                if (genData.error) throw new Error(genData.error);
+                if (loginMethod === 'phone') {
+                    if (!(window as any).recaptchaVerifier) {
+                        (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                            size: 'invisible'
+                        });
+                    }
+                    const appVerifier = (window as any).recaptchaVerifier;
+                    const confirmation = await signInWithPhoneNumber(auth, contactToUse, appVerifier);
+                    setConfirmationResult(confirmation);
+                    setVerificationError(null);
+                    setVerificationCode("");
+                    setCooldownSeconds(60);
+                    setStep('verify');
+                } else {
+                    const genData = await generateOtpAction(contactToUse, 'email');
+                    if (genData.error) throw new Error(genData.error);
 
-                if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
-                    window.open(`https://wa.me/${genData.businessPhone}?text=${encodeURIComponent("Bonjou, mwen ta renmen resevwa kòd verifikasyon mwen an.")}`, "_blank");
+                    setVerificationError(null);
+                    setVerificationCode("");
+                    setCooldownSeconds(60);
+                    setStep('verify');
                 }
-
-                setVerificationError(null);
-                setVerificationCode("");
-                setCooldownSeconds(60);
-                setStep('verify');
             }
         } catch (err: any) {
             console.error("Erreur de connexion sans mot de passe :", err);
@@ -333,14 +345,36 @@ export default function LoginPage() {
         setVerificationError(null);
 
         try {
-            const contactToUse = (loginMethod === 'phone' || loginMethod === 'whatsapp') ? verifiedPhone : email;
-            const typeParam = loginMethod === 'phone' ? 'phone' : (loginMethod === 'whatsapp' ? 'whatsapp' : 'email');
-            const data = await verifyOtpAndLoginAction(contactToUse, verificationCode.trim(), typeParam);
+            if (loginMethod === 'phone') {
+                if (!confirmationResult) {
+                    throw new Error("Erreur : Aucun code envoyé.");
+                }
+                const result = await confirmationResult.confirm(verificationCode.trim());
+                if (result.user) {
+                    const userRef = doc(db, "users", result.user.uid);
+                    const userSnap = await getDoc(userRef);
+                    if (!userSnap.exists()) {
+                        await setDoc(userRef, {
+                            uid: result.user.uid,
+                            phone: verifiedPhone,
+                            name: "Client",
+                            role: "customer",
+                            createdAt: serverTimestamp(),
+                            status: "active",
+                            enrollmentCount: 0
+                        });
+                    }
+                }
+            } else {
+                const contactToUse = loginMethod === 'whatsapp' ? verifiedPhone : email;
+                const typeParam = loginMethod === 'whatsapp' ? 'whatsapp' : 'email';
+                const data = await verifyOtpAndLoginAction(contactToUse, verificationCode.trim(), typeParam);
 
-            if (data.error) throw new Error(data.error);
+                if (data.error) throw new Error(data.error);
 
-            if (data.customToken) {
-                await signInWithCustomToken(auth, data.customToken);
+                if (data.customToken) {
+                    await signInWithCustomToken(auth, data.customToken);
+                }
             }
         } catch (err: any) {
             if (err.message && err.message.toLowerCase().includes("server action")) {
@@ -1006,6 +1040,7 @@ export default function LoginPage() {
                         "Mond lan Gen ase richès pou tout moun jwenn epi viv byen."
                     </p>
                 </div>
+                <div id="recaptcha-container"></div>
             </div>
 
             {/* Right Side: Sleek Designer Panel */}
