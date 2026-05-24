@@ -42,12 +42,12 @@ export default function ReviewsSection() {
             <div className="container mx-auto px-4 max-w-6xl relative z-10">
                 {/* Header */}
                 <div className="mb-16 text-center max-w-3xl mx-auto space-y-4">
-                    <span className="text-primary text-xs font-black uppercase tracking-[0.3em]">Témoignages</span>
+                    <span className="text-primary text-xs font-black uppercase tracking-[0.3em]">Temwayaj</span>
                     <h2 className="text-4xl md:text-5xl font-black tracking-tight text-white">
-                        Ce que disent nos clients
+                        Sa Kliyan Nou Yo Di
                     </h2>
                     <p className="text-white/50 leading-relaxed font-medium">
-                        Ils ont testé, ils ont adoré, et ils recommandent nos consultations, cours et ebooks pour apprendre plus vite et réussir plus vite.
+                        Yo teste l, yo renmen l, epi yo rekòmande konsiltasyon, kou ak ebook nou yo pou w ka aprann pi vit epi reyisi pi vit.
                     </p>
                 </div>
 
@@ -85,8 +85,8 @@ export default function ReviewsSection() {
                                     />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white text-sm">{review.userName || "Anonyme"}</h4>
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Client Vérifié ✓</p>
+                                    <h4 className="font-bold text-white text-sm">{review.userName || "Anonim"}</h4>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Kliyan Verifye ✓</p>
                                 </div>
                             </div>
                         </div>
@@ -99,7 +99,7 @@ export default function ReviewsSection() {
                             onClick={handleLoadMore}
                             className="group flex items-center gap-2 px-8 py-3 border border-white/20 rounded-full font-bold text-white/70 hover:text-white hover:border-primary/60 hover:bg-primary/10 transition-all text-sm"
                         >
-                            Voir plus d'avis
+                            Gade Plis Temwayaj
                             <span className="material-symbols-outlined transition-transform group-hover:translate-y-0.5 text-base">expand_more</span>
                         </button>
                     </div>

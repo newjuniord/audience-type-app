@@ -25,7 +25,7 @@ export default function DashboardFooter() {
                     {/* Links grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                         <div className="space-y-3">
-                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Plateforme</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Platfòm</p>
                             <Link href="/products" className="block text-sm text-white/50 hover:text-white transition-colors">Pwodui</Link>
                             <Link href="/dashboard" className="block text-sm text-white/50 hover:text-white transition-colors">Kontni mwen</Link>
                             <Link href="/consultation" className="block text-sm text-white/50 hover:text-white transition-colors">Konsiltasyon</Link>
@@ -39,7 +39,7 @@ export default function DashboardFooter() {
                             <Link href="/dashboard/transactions" className="block text-sm text-white/50 hover:text-white transition-colors">Tranzaksyon</Link>
                         </div>
                         <div className="space-y-3">
-                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Légal</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Legal</p>
                             <Link href="/privacy" className="block text-sm text-white/50 hover:text-white transition-colors">Konfidansyalite</Link>
                             <Link href="/terms" className="block text-sm text-white/50 hover:text-white transition-colors">Kondisyon yo</Link>
                             <Link href="/support" className="block text-sm text-white/50 hover:text-white transition-colors">Sipò</Link>

@@ -85,8 +85,8 @@ export default function FeaturedProducts({
 
     const displayCategories = [
         { id: "All", label: "Tout" },
-        { id: "Course", label: "Cours" },
-        { id: "Ebook", label: "Ebooks" }
+        { id: "Course", label: "Kou" },
+        { id: "Ebook", label: "Ebook" }
     ];
 
     const mainProducts = products.filter(p => p.type !== "Service");
