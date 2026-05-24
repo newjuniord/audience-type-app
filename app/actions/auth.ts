@@ -110,6 +110,50 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
                 contactClean = '+' + contactClean;
             }
         }
+
+        if (type === 'phone') {
+            const preludeApiKey = process.env.PRELUDE_API_KEY;
+            if (!preludeApiKey) {
+                console.error("PRELUDE_API_KEY is missing from environment variables.");
+                return { error: "Erreur: Konfigirasyon Prelude la pa kòrèk sou sèvè a." };
+            }
+
+            try {
+                const response = await fetch("https://api.prelude.dev/v2/verification", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${preludeApiKey}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        target: {
+                            type: "phone_number",
+                            value: contactClean
+                        },
+                        options: {
+                            preferred_channel: "sms"
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("Prelude verification error:", errorText);
+                    return { error: "Erè nan voye SMS la. Tanpri eseye avèk WhatsApp pito." };
+                }
+
+                const resData = await response.json();
+                if (resData.status === "success") {
+                    return { success: true };
+                } else {
+                    return { error: "Erè nan voye SMS la. Tanpri eseye avèk WhatsApp pito." };
+                }
+            } catch (err) {
+                console.error("Error calling Prelude API:", err);
+                return { error: "Erè nan voye SMS la. Tanpri eseye avèk WhatsApp pito." };
+            }
+        }
+
         const contactId = type === 'whatsapp' ? `whatsapp:${contactClean}` : contactClean;
         const otpRef = adminDb.collection("otp_code").doc(contactId);
         
@@ -281,21 +325,60 @@ export async function verifyOtpAndLoginAction(contact: string, code: string, typ
                 contactClean = '+' + contactClean;
             }
         }
-        const contactId = type === 'whatsapp' ? `whatsapp:${contactClean}` : contactClean;
-        const otpRef = adminDb.collection("otp_code").doc(contactId);
+        if (type === 'phone') {
+            const preludeApiKey = process.env.PRELUDE_API_KEY;
+            if (!preludeApiKey) {
+                console.error("PRELUDE_API_KEY is missing from environment variables.");
+                return { error: "Erreur: Konfigirasyon Prelude la pa kòrèk ou pa jwenn kle API a." };
+            }
 
-        const otpDoc = await otpRef.get();
-        if (!otpDoc.exists) {
-            return { error: "Aucun code demandé pour ce contact." };
+            try {
+                const response = await fetch("https://api.prelude.dev/v2/verification/check", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${preludeApiKey}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        target: {
+                            type: "phone_number",
+                            value: contactClean
+                        },
+                        code: code.trim()
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("Prelude check error:", errorText);
+                    return { error: "Kòd la ekspire oswa li pa korèk." };
+                }
+
+                const resData = await response.json();
+                if (resData.status !== "success") {
+                    return { error: "Kòd la ekspire oswa li pa korèk." };
+                }
+            } catch (err) {
+                console.error("Error calling Prelude API check:", err);
+                return { error: "Kòd la ekspire oswa li pa korèk." };
+            }
+        } else {
+            const contactId = type === 'whatsapp' ? `whatsapp:${contactClean}` : contactClean;
+            const otpRef = adminDb.collection("otp_code").doc(contactId);
+
+            const otpDoc = await otpRef.get();
+            if (!otpDoc.exists) {
+                return { error: "Aucun code demandé pour ce contact." };
+            }
+
+            const otpData = otpDoc.data();
+            if (!otpData?.code || otpData.code !== code.trim()) {
+                return { error: "Le code saisi est incorrect." };
+            }
+
+            // Le code est bon ! On l'efface immédiatement pour des raisons de sécurité
+            await otpRef.update({ code: "" });
         }
-
-        const otpData = otpDoc.data();
-        if (!otpData?.code || otpData.code !== code.trim()) {
-            return { error: "Le code saisi est incorrect." };
-        }
-
-        // Le code est bon ! On l'efface immédiatement pour des raisons de sécurité
-        await otpRef.update({ code: "" });
 
         // Recherche ou création de l'utilisateur
         const usersRef = adminDb.collection("users");
@@ -361,7 +444,11 @@ export async function verifyOtpAndLoginAction(contact: string, code: string, typ
         }
 
         // Lier l'ID utilisateur au document otp_code pour un éventuel suivi futur
-        await otpRef.update({ userId: userId });
+        if (type !== 'phone') {
+            const contactId = type === 'whatsapp' ? `whatsapp:${contactClean}` : contactClean;
+            const otpRef = adminDb.collection("otp_code").doc(contactId);
+            await otpRef.update({ userId: userId });
+        }
 
         // Génération du Custom Token sécurisé
         const customToken = await adminAuth.createCustomToken(userId);
