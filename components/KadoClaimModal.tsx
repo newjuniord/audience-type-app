@@ -171,7 +171,7 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
     // For better UX, let's show a confirmation step.
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-300">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
