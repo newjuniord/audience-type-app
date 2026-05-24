@@ -346,6 +346,8 @@ export default function LoginPage() {
                         if (container) container.innerHTML = "";
                     } catch (e) {}
                 }
+            } else if (err.message && err.message.includes("auth/too-many-requests")) {
+                setError("Ou fè twòp demand an menm tan. Tanpri tann kèk minit epi reyezi, oswa chwazi WhatsApp pito.");
             } else {
                 setError(err.message || "Gen yon erè ki fèt. Tanpri reyezi ankò.");
             }
@@ -402,6 +404,8 @@ export default function LoginPage() {
                 setVerificationError("Tanpri refrechi paj la konplètman (F5). Gen yon mizajou ki fèk fèt sou sit la.");
             } else if (err.message && err.message.includes("auth/invalid-verification-code")) {
                 setVerificationError("Kòd ou antre a pa bon. Tanpri verifye l epi reyezi.");
+            } else if (err.message && err.message.includes("auth/too-many-requests")) {
+                setVerificationError("Ou eseye twòp fwa. Tanpri tann kèk minit anvan ou eseye ankò.");
             } else {
                 setVerificationError(err.message || "Kòd verifikasyon sa a pa bon.");
             }
