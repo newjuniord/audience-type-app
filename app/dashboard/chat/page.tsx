@@ -267,20 +267,59 @@ export default function StudentChatPage() {
         setRecordingTime(0);
     };
 
-    const formatTime = (ts: any) => { if (!ts) return ""; const d = ts.toDate ? ts.toDate() : new Date(ts); return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); };
-    const formatDuration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    // 12-hour AM/PM format
+    const formatTime = (ts: any) => {
+        if (!ts) return "";
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    };
 
-    // ──── Message bubble renderer (shared between mobile & desktop) ────
-    const renderBubble = (msg: Message, isMe: boolean, mobile: boolean) => {
+    const formatDuration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "00")}`;
+
+    // Day separator helpers
+    const getDateKey = (ts: any): string => {
+        if (!ts) return "";
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    };
+
+    const DAY_NAMES_FR = ["Dimanch", "Lendi", "Madi", "Mèkredi", "Jedi", "Vandredi", "Samdi"];
+
+    const getDateLabel = (ts: any): string => {
+        if (!ts) return "";
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        const today = new Date();
+        const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+        const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+        if (sameDay(d, today)) return "Jodi a";
+        if (sameDay(d, yesterday)) return "Yè";
+        const day = DAY_NAMES_FR[d.getDay()];
+        const dd = String(d.getDate()).padStart(2, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        return `${day} • ${dd}/${mm}`;
+    };
+
+    const renderDaySeparator = (label: string, mobile: boolean) => (
+        <div className="flex items-center gap-3 py-2">
+            <div className={`flex-1 h-px ${mobile ? "bg-white/[0.06]" : "bg-black/[0.06] dark:bg-white/[0.06]"}`} />
+            <span className={`text-[10px] font-bold px-3 py-1 rounded-full border ${
+                mobile
+                    ? "text-white/30 bg-white/[0.04] border-white/[0.06]"
+                    : "text-black/35 dark:text-white/30 bg-black/[0.03] dark:bg-white/[0.03] border-black/[0.06] dark:border-white/[0.06]"
+            } uppercase tracking-wider`}>{label}</span>
+            <div className={`flex-1 h-px ${mobile ? "bg-white/[0.06]" : "bg-black/[0.06] dark:bg-white/[0.06]"}`} />
+        </div>
+    );
+
+    // ──── Message bubble renderer (mobile only — desktop renders inline) ────
+    const renderBubble = (msg: Message, isMe: boolean) => {
         const bubbleClass = isMe
-            ? `bg-primary text-white ${mobile ? "rounded-2xl rounded-tr-sm" : "rounded-2xl rounded-tr-none"} font-medium`
-            : mobile
-                ? "bg-[#1a1a1a] text-white/90 border border-white/[0.06] rounded-2xl rounded-tl-sm"
-                : "bg-[#1f1f1f] text-white/90 border border-white/5 rounded-2xl rounded-tl-none";
+            ? "bg-primary text-white rounded-2xl rounded-tr-sm font-medium"
+            : "bg-[#1a1a1a] text-white/90 border border-white/[0.06] rounded-2xl rounded-tl-sm";
 
         return (
             <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                <div className={`${mobile ? "max-w-[82%]" : "max-w-[70%]"} shadow-${mobile ? "sm" : "md"} overflow-hidden ${bubbleClass}`}>
+                <div className={`max-w-[82%] shadow-sm overflow-hidden ${bubbleClass}`}>
                     {msg.type === "image" && msg.mediaUrl ? (
                         <div>
                             <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">
@@ -304,11 +343,12 @@ export default function StudentChatPage() {
                             <p className="text-[13px] whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
                         </div>
                     )}
-                    {mobile ? (
-                        <span className={`text-[9px] block px-3.5 pb-1.5 text-right ${isMe ? "text-white/50" : "text-white/30"}`}>{formatTime(msg.createdAt)}</span>
-                    ) : null}
+                    {/* Time + sent checkmark inside bubble */}
+                    <div className={`flex items-center gap-1 px-3.5 pb-1.5 ${isMe ? "justify-end" : "justify-start"}`}>
+                        <span className={`text-[9px] ${isMe ? "text-white/50" : "text-white/30"}`}>{formatTime(msg.createdAt)}</span>
+                        {isMe && <span className="text-[9px] text-white/60">✓</span>}
+                    </div>
                 </div>
-                {!mobile && <span className="text-[9px] opacity-40 mt-1 px-1">{formatTime(msg.createdAt)}</span>}
             </div>
         );
     };
@@ -424,7 +464,24 @@ export default function StudentChatPage() {
                     <div className="min-w-0"><div className="text-sm font-bold truncate leading-tight">Admin DJR Akademi</div><div className="text-[10px] text-green-400 font-semibold leading-tight">Enliy</div></div>
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 select-text">
-                    {messages.length === 0 ? <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-4"><span className="material-symbols-outlined text-4xl mb-2 animate-bounce">forum</span><p className="text-sm font-bold">Ekri premye mesaj ou a pou kòmanse diskisyon an.</p><p className="text-xs mt-1">Ekip admin la ap reponn ou trè vit.</p></div> : messages.map((m) => renderBubble(m, m.senderId === user?.uid, true))}
+                    {messages.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-4">
+                            <span className="material-symbols-outlined text-4xl mb-2 animate-bounce">forum</span>
+                            <p className="text-sm font-bold">Ekri premye mesaj ou a pou kòmanse diskisyon an.</p>
+                            <p className="text-xs mt-1">Ekip admin la ap reponn ou trè vit.</p>
+                        </div>
+                    ) : (
+                        messages.map((m, i) => {
+                            const prevMsg = messages[i - 1];
+                            const showSeparator = i === 0 || getDateKey(m.createdAt) !== getDateKey(prevMsg?.createdAt);
+                            return (
+                                <div key={m.id}>
+                                    {showSeparator && renderDaySeparator(getDateLabel(m.createdAt), true)}
+                                    {renderBubble(m, m.senderId === user?.uid)}
+                                </div>
+                            );
+                        })
+                    )}
                     <div ref={messagesEndRef} />
                 </div>
                 {renderInputBar(true)}
@@ -523,45 +580,54 @@ export default function StudentChatPage() {
                                     <p className="text-sm max-w-xs leading-relaxed">Ekri premye mesaj ou a pou kòmanse diskisyon an. Ekip admin la ap reponn ou trè vit!</p>
                                 </div>
                             ) : (
-                                messages.map((m) => {
+                                messages.map((m, i) => {
                                     const isMe = m.senderId === user?.uid;
+                                    const prevMsg = messages[i - 1];
+                                    const showSeparator = i === 0 || getDateKey(m.createdAt) !== getDateKey(prevMsg?.createdAt);
                                     return (
-                                        <div key={m.id} className={`flex flex-col gap-1 ${isMe ? "items-end" : "items-start"}`}>
-                                            {!isMe && (
-                                                <span className="text-[10px] font-bold text-black/30 dark:text-white/25 px-1 uppercase tracking-wide">Admin</span>
-                                            )}
-                                            <div className={`max-w-[65%] rounded-2xl overflow-hidden shadow-sm ${
-                                                isMe
-                                                    ? "bg-primary text-white rounded-tr-sm"
-                                                    : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/[0.05] dark:border-white/[0.06] rounded-tl-sm"
-                                            }`}>
-                                                {m.type === "image" && m.mediaUrl ? (
-                                                    <div>
-                                                        <a href={m.mediaUrl} target="_blank" rel="noopener noreferrer">
-                                                            <img src={m.mediaUrl} alt="Image" className="w-full max-w-[320px] object-cover hover:opacity-90 transition-opacity cursor-zoom-in" loading="lazy" />
-                                                        </a>
-                                                        {m.text && m.text !== "📷 Imaj" && <p className="px-4 py-2 text-[13px] whitespace-pre-wrap break-words">{m.text}</p>}
-                                                    </div>
-                                                ) : m.type === "voice" && m.mediaUrl ? (
-                                                    <div className="px-4 py-3 flex items-center gap-3 min-w-[200px]">
-                                                        <button onClick={() => { const a = document.getElementById(`audio-${m.id}`) as HTMLAudioElement; a?.paused ? a?.play() : a?.pause(); }} className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${isMe ? "bg-white/20 hover:bg-white/30" : "bg-primary/10 hover:bg-primary/20"}`}>
-                                                            <span className={`material-symbols-outlined text-sm ${isMe ? "text-white" : "text-primary"}`}>play_arrow</span>
-                                                        </button>
-                                                        <div className="flex-1 flex flex-col gap-1.5">
-                                                            <div className={`h-1 rounded-full overflow-hidden ${isMe ? "bg-white/20" : "bg-black/10 dark:bg-white/10"}`}>
-                                                                <div className={`h-full rounded-full w-0 ${isMe ? "bg-white/70" : "bg-primary/60"}`} />
-                                                            </div>
-                                                            <span className="text-[10px] opacity-50 font-medium">{formatDuration(m.voiceDuration || 0)}</span>
-                                                        </div>
-                                                        <audio id={`audio-${m.id}`} src={m.mediaUrl} preload="none" />
-                                                    </div>
-                                                ) : (
-                                                    <div className="px-4 py-2.5">
-                                                        <p className="text-[13.5px] whitespace-pre-wrap break-words leading-relaxed">{m.text}</p>
-                                                    </div>
+                                        <div key={m.id}>
+                                            {showSeparator && renderDaySeparator(getDateLabel(m.createdAt), false)}
+                                            <div className={`flex flex-col gap-1 ${isMe ? "items-end" : "items-start"}`}>
+                                                {!isMe && (
+                                                    <span className="text-[10px] font-bold text-black/30 dark:text-white/25 px-1 uppercase tracking-wide">Admin</span>
                                                 )}
+                                                <div className={`max-w-[65%] rounded-2xl overflow-hidden shadow-sm ${
+                                                    isMe
+                                                        ? "bg-primary text-white rounded-tr-sm"
+                                                        : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/[0.05] dark:border-white/[0.06] rounded-tl-sm"
+                                                }`}>
+                                                    {m.type === "image" && m.mediaUrl ? (
+                                                        <div>
+                                                            <a href={m.mediaUrl} target="_blank" rel="noopener noreferrer">
+                                                                <img src={m.mediaUrl} alt="Image" className="w-full max-w-[320px] object-cover hover:opacity-90 transition-opacity cursor-zoom-in" loading="lazy" />
+                                                            </a>
+                                                            {m.text && m.text !== "📷 Imaj" && <p className="px-4 py-2 text-[13px] whitespace-pre-wrap break-words">{m.text}</p>}
+                                                        </div>
+                                                    ) : m.type === "voice" && m.mediaUrl ? (
+                                                        <div className="px-4 py-3 flex items-center gap-3 min-w-[200px]">
+                                                            <button onClick={() => { const a = document.getElementById(`audio-${m.id}`) as HTMLAudioElement; a?.paused ? a?.play() : a?.pause(); }} className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${isMe ? "bg-white/20 hover:bg-white/30" : "bg-primary/10 hover:bg-primary/20"}`}>
+                                                                <span className={`material-symbols-outlined text-sm ${isMe ? "text-white" : "text-primary"}`}>play_arrow</span>
+                                                            </button>
+                                                            <div className="flex-1 flex flex-col gap-1.5">
+                                                                <div className={`h-1 rounded-full overflow-hidden ${isMe ? "bg-white/20" : "bg-black/10 dark:bg-white/10"}`}>
+                                                                    <div className={`h-full rounded-full w-0 ${isMe ? "bg-white/70" : "bg-primary/60"}`} />
+                                                                </div>
+                                                                <span className="text-[10px] opacity-50 font-medium">{formatDuration(m.voiceDuration || 0)}</span>
+                                                            </div>
+                                                            <audio id={`audio-${m.id}`} src={m.mediaUrl} preload="none" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="px-4 py-2.5">
+                                                            <p className="text-[13.5px] whitespace-pre-wrap break-words leading-relaxed">{m.text}</p>
+                                                        </div>
+                                                    )}
+                                                    {/* Time + sent checkmark */}
+                                                    <div className={`flex items-center gap-1 px-4 pb-2 ${isMe ? "justify-end" : "justify-start"}`}>
+                                                        <span className={`text-[9px] font-medium ${ isMe ? "text-white/50" : "text-black/30 dark:text-white/25"}`}>{formatTime(m.createdAt)}</span>
+                                                        {isMe && <span className="text-[9px] text-white/60">✓</span>}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <span className={`text-[9px] font-medium opacity-30 px-1 ${isMe ? "text-right" : "text-left"}`}>{formatTime(m.createdAt)}</span>
                                         </div>
                                     );
                                 })
