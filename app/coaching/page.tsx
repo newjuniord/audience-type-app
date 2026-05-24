@@ -42,10 +42,7 @@ export default function CoachingPage() {
                   <span className="material-symbols-outlined">rocket_launch</span>
                   Kòmanse Kounye A
                 </Link>
-                <a href="https://wa.me/821012345678" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 text-white/70 hover:text-white rounded-full font-black uppercase tracking-wide text-sm hover:bg-white/10 transition-all flex items-center justify-center gap-2">
-                  <span className="material-symbols-outlined text-green-500">chat</span>
-                  Ekri Nou
-                </a>
+
               </div>
             </div>
 
