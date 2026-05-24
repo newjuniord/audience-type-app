@@ -326,6 +326,16 @@ export default function LoginPage() {
             console.error("Erreur de connexion sans mot de passe :", err);
             if (err.message && err.message.toLowerCase().includes("server action")) {
                 setError("Tanpri refrechi paj la konplètman (F5 oswa glise desann). Gen yon mizajou ki fèk fèt sou sit la.");
+            } else if (err.message && err.message.includes("auth/invalid-app-credential")) {
+                setError("Sistèm sekirite a bloke demann nan (reCAPTCHA echwe). Tanpri refrechi paj la epi reyezi, oswa chwazi WhatsApp/Imel pito.");
+                if ((window as any).recaptchaVerifier) {
+                    try {
+                        (window as any).recaptchaVerifier.clear();
+                        (window as any).recaptchaVerifier = null;
+                        const container = document.getElementById("recaptcha-container");
+                        if (container) container.innerHTML = "";
+                    } catch (e) {}
+                }
             } else {
                 setError(err.message || "Gen yon erè ki fèt. Tanpri reyezi ankò.");
             }
