@@ -10,6 +10,8 @@ export default function SettingsPage() {
     const [videoUrl, setVideoUrl] = useState("");
     const [videoVisible, setVideoVisible] = useState(false);
     const [chatAccessRule, setChatAccessRule] = useState<"all" | "enrolled_only" | "closed">("enrolled_only");
+    const [chatMessageLimit, setChatMessageLimit] = useState<number>(0);
+    const [chatLimitTarget, setChatLimitTarget] = useState<"all" | "non_enrolled">("non_enrolled");
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [messageModal, setMessageModal] = useState({ isOpen: false, title: "", message: "", type: "alert" as "alert" | "confirm" });
@@ -29,7 +31,10 @@ export default function SettingsPage() {
                 const platformRef = doc(db, "settings", "platform");
                 const platformSnap = await getDoc(platformRef);
                 if (platformSnap.exists()) {
-                    setChatAccessRule(platformSnap.data().chatAccessRule || "enrolled_only");
+                    const platformData = platformSnap.data();
+                    setChatAccessRule(platformData.chatAccessRule || "enrolled_only");
+                    setChatMessageLimit(platformData.chatMessageLimit || 0);
+                    setChatLimitTarget(platformData.chatLimitTarget || "non_enrolled");
                 }
             } catch (error) {
                 console.error("Error fetching settings:", error);
@@ -51,7 +56,9 @@ export default function SettingsPage() {
             }, { merge: true });
 
             await setDoc(doc(db, "settings", "platform"), {
-                chatAccessRule
+                chatAccessRule,
+                chatMessageLimit,
+                chatLimitTarget
             }, { merge: true });
             
             // Show success toast
@@ -197,6 +204,68 @@ export default function SettingsPage() {
                             <span className="text-xs text-black/60 dark:text-white/60">Désactive complètement le chat de support pour tous les utilisateurs.</span>
                         </div>
                     </label>
+
+                    {chatAccessRule !== "closed" && (
+                        <div className="mt-6 pt-6 border-t border-black/5 dark:border-white/10 space-y-6 animate-in fade-in duration-300">
+                            <div>
+                                <h3 className="font-bold text-sm">Limiter le nombre de messages</h3>
+                                <p className="text-xs text-black/40 dark:text-white/40 mt-1">
+                                    Définissez si les utilisateurs ont une limite du nombre de messages qu'ils peuvent envoyer.
+                                </p>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest">
+                                        Nombre maximal de messages par utilisateur
+                                    </label>
+                                    <select
+                                        value={chatMessageLimit}
+                                        onChange={(e) => setChatMessageLimit(Number(e.target.value))}
+                                        className="w-full h-14 px-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 outline-none text-sm font-medium dark:text-white dark:bg-background-dark"
+                                    >
+                                        <option value={0}>Illimité</option>
+                                        <option value={2}>2 messages</option>
+                                        <option value={3}>3 messages</option>
+                                        <option value={5}>5 messages</option>
+                                        <option value={8}>8 messages</option>
+                                        <option value={10}>10 messages</option>
+                                        <option value={15}>15 messages</option>
+                                    </select>
+                                </div>
+
+                                {chatMessageLimit > 0 && (
+                                    <div className="space-y-3 animate-in fade-in duration-300">
+                                        <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest">
+                                            À qui s'applique cette limite ?
+                                        </label>
+                                        <div className="flex gap-4">
+                                            <label className={`flex-1 flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer transition-colors ${chatLimitTarget === "all" ? "border-primary bg-primary/5" : "border-black/5 dark:border-white/10 hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"}`}>
+                                                <input 
+                                                    type="radio" 
+                                                    name="chatLimitTarget" 
+                                                    checked={chatLimitTarget === "all"} 
+                                                    onChange={() => setChatLimitTarget("all")}
+                                                    className="accent-primary"
+                                                />
+                                                <span className="text-xs font-bold">Tous les utilisateurs</span>
+                                            </label>
+                                            <label className={`flex-1 flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer transition-colors ${chatLimitTarget === "non_enrolled" ? "border-primary bg-primary/5" : "border-black/5 dark:border-white/10 hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"}`}>
+                                                <input 
+                                                    type="radio" 
+                                                    name="chatLimitTarget" 
+                                                    checked={chatLimitTarget === "non_enrolled"} 
+                                                    onChange={() => setChatLimitTarget("non_enrolled")}
+                                                    className="accent-primary"
+                                                />
+                                                <span className="text-xs font-bold">Uniquement non-inscrits</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -35,6 +35,10 @@ export default function StudentChatPage() {
     const [loadingAccess, setLoadingAccess] = useState(true);
     const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const [chatAccessRule, setChatAccessRule] = useState<string>("enrolled_only");
+    const [chatMessageLimit, setChatMessageLimit] = useState<number>(0);
+    const [chatLimitTarget, setChatLimitTarget] = useState<"all" | "non_enrolled">("non_enrolled");
+    const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
 
     // Voice recording state
     const [isRecording, setIsRecording] = useState(false);
@@ -72,6 +76,17 @@ export default function StudentChatPage() {
                 const platformRef = doc(db, "settings", "platform");
                 const platformSnap = await getDoc(platformRef);
                 const chatRule = platformSnap.exists() ? platformSnap.data().chatAccessRule : "enrolled_only";
+                const limit = platformSnap.exists() ? (platformSnap.data().chatMessageLimit || 0) : 0;
+                const target = platformSnap.exists() ? (platformSnap.data().chatLimitTarget || "non_enrolled") : "non_enrolled";
+
+                setChatAccessRule(chatRule);
+                setChatMessageLimit(limit);
+                setChatLimitTarget(target);
+
+                const snapEnroll = await getDocs(query(collection(db, "enrollments"), where("userId", "==", uid)));
+                const snapBook = await getDocs(query(collection(db, "bookingApplications"), where("usersId", "==", uid)));
+                const enrolled = (snapEnroll.size + snapBook.size) > 0;
+                setIsEnrolled(enrolled);
 
                 if (role === "admin") {
                     setHasAccess(true);
@@ -80,15 +95,13 @@ export default function StudentChatPage() {
                 } else if (chatRule === "all") {
                     setHasAccess(true);
                 } else {
-                    const snapEnroll = await getDocs(query(collection(db, "enrollments"), where("userId", "==", uid)));
-                    const snapBook = await getDocs(query(collection(db, "bookingApplications"), where("usersId", "==", uid)));
-                    setHasAccess(snapEnroll.size + snapBook.size > 0);
+                    setHasAccess(enrolled);
                 }
             } catch { setHasAccess(false); }
             finally { setLoadingAccess(false); }
         }
         checkAccess();
-    }, [user]);
+    }, [user, role]);
 
     // ──── Messages listener ────
     useEffect(() => {
@@ -115,9 +128,20 @@ export default function StudentChatPage() {
         toastTimerRef.current = setTimeout(() => setToast(null), 2500);
     }, []);
 
+    const userSentMessagesCount = user ? messages.filter(m => m.senderId === user.uid).length : 0;
+    const isLimitApplied = role !== "admin" && chatMessageLimit > 0 && (
+        chatLimitTarget === "all" || (chatLimitTarget === "non_enrolled" && !isEnrolled)
+    );
+    const hasReachedLimit = isLimitApplied && userSentMessagesCount >= chatMessageLimit;
+
     // ──── Send helper (text, image, voice) ────
     const sendMessage = useCallback(async (type: "text" | "image" | "voice", mediaBlob?: Blob, mediaName?: string, duration?: number) => {
         if (!user) return;
+        if (hasReachedLimit) {
+            setErrorMessage("Ou depase limit mesaj ou ka voye yo.");
+            setIsErrorModalOpen(true);
+            return;
+        }
         setSending(true);
         try {
             const uid = user.uid;
@@ -160,7 +184,7 @@ export default function StudentChatPage() {
             setErrorMessage("Echèk nan voye mesaj la. Tanpri re-eseye.");
             setIsErrorModalOpen(true);
         } finally { setSending(false); }
-    }, [user, userData, inputText, showToast]);
+    }, [user, userData, inputText, showToast, hasReachedLimit]);
 
     // ──── Text send ────
     const handleSendText = (e: React.FormEvent) => {
@@ -373,6 +397,26 @@ export default function StudentChatPage() {
         const bar = mobile ? "px-3 py-2.5 pb-[84px]" : "p-4";
         const bg = mobile ? "bg-[#0e0e0e] border-white/[0.06]" : "bg-black/5 dark:bg-white/[0.01] border-black/5 dark:border-white/5";
 
+        if (hasReachedLimit) {
+            return (
+                <div className={`${bar} ${bg} border-t flex items-center justify-center p-5 text-center shrink-0`}>
+                    <div className="flex flex-col items-center gap-2 max-w-sm">
+                        <div className="size-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-xl">lock</span>
+                        </div>
+                        <p className="text-xs text-black/60 dark:text-white/60 font-semibold mt-1">
+                            Ou rive nan limit {chatMessageLimit} {chatMessageLimit > 1 ? 'mesaj' : 'mesaj'} ou ka voye yo.
+                        </p>
+                        {!isEnrolled && chatAccessRule === "all" && (
+                            <Link href="/products" className="text-[10px] text-primary hover:underline font-bold mt-1 block">
+                                Enskri nan yon kou pou debloke chat la san limit →
+                            </Link>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
         if (imagePreview) {
             return (
                 <div className={`${bar} ${bg} border-t shrink-0`}>
@@ -424,7 +468,10 @@ export default function StudentChatPage() {
             );
         }
 
-        // Desktop-aware color tokens
+        const placeholderText = isLimitApplied 
+            ? `Ekri mesaj... (${userSentMessagesCount}/${chatMessageLimit} voye)`
+            : "Ekri mesaj ou a la...";
+
         const inputBg   = mobile ? "bg-white/[0.06] border-white/[0.08] text-white placeholder-white/25 focus:border-primary/40"
                                  : "bg-black/[0.04] dark:bg-white/[0.06] border-black/[0.08] dark:border-white/[0.08] text-black dark:text-white placeholder-black/30 dark:placeholder-white/25 focus:border-primary/50";
         const iconBtn   = mobile ? "bg-white/[0.06] text-white/50 hover:text-white hover:bg-white/10"
@@ -436,7 +483,7 @@ export default function StudentChatPage() {
                 <button type="button" onClick={() => fileInputRef.current?.click()} className={`${mobile ? "w-9 h-9" : "w-10 h-10"} rounded-full ${iconBtn} flex items-center justify-center shrink-0 transition-colors active:scale-90`}>
                     <span className="material-symbols-outlined text-lg">image</span>
                 </button>
-                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Ekri mesaj ou a la..." className={`flex-1 border ${inputBg} ${mobile ? "rounded-full px-4 py-2.5" : "rounded-2xl px-5 py-3"} text-sm focus:outline-none transition-colors`} />
+                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder={placeholderText} className={`flex-1 border ${inputBg} ${mobile ? "rounded-full px-4 py-2.5" : "rounded-2xl px-5 py-3"} text-sm focus:outline-none transition-colors`} />
                 <button type="submit" disabled={!inputText.trim() || sending} className={`${mobile ? "w-10 h-10" : "h-11 px-5"} bg-primary text-white ${mobile ? "rounded-full" : "rounded-2xl"} flex items-center justify-center ${mobile ? "" : "gap-2"} active:scale-90 transition-all shrink-0 ${(!inputText.trim() || sending) ? "opacity-40" : "shadow-lg shadow-primary/30"}`}>
                     {!mobile && <span className="text-xs uppercase tracking-wider">Ale</span>}
                     <span className="material-symbols-outlined text-lg">send</span>
