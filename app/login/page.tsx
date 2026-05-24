@@ -336,6 +336,16 @@ export default function LoginPage() {
                         if (container) container.innerHTML = "";
                     } catch (e) {}
                 }
+            } else if (err.message && err.message.includes("reCAPTCHA has already been rendered in this element")) {
+                setError("Sistèm sekirite a anrejistre yon erè. Tanpri refrechi paj la (F5), oswa eseye konekte ak WhatsApp pito.");
+                if ((window as any).recaptchaVerifier) {
+                    try {
+                        (window as any).recaptchaVerifier.clear();
+                        (window as any).recaptchaVerifier = null;
+                        const container = document.getElementById("recaptcha-container");
+                        if (container) container.innerHTML = "";
+                    } catch (e) {}
+                }
             } else {
                 setError(err.message || "Gen yon erè ki fèt. Tanpri reyezi ankò.");
             }
