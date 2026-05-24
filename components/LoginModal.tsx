@@ -213,12 +213,13 @@ export default function LoginModal({
     useEffect(() => {
         if (isOpen && phone) {
             const cleanPhone = getCleanPhone();
-            const lastSentKey = `otp_last_sent_whatsapp_${cleanPhone}`;
+            const lastSentKey = `otp_last_sent_sms_${cleanPhone}`;
             const lastSentTime = localStorage.getItem(lastSentKey);
             if (lastSentTime) {
                 const diff = Date.now() - parseInt(lastSentTime);
-                if (diff < 60 * 1000) {
-                    setCooldownSeconds(Math.ceil((60 * 1000 - diff) / 1000));
+                const cooldownMs = 299 * 1000;
+                if (diff < cooldownMs) {
+                    setCooldownSeconds(Math.ceil((cooldownMs - diff) / 1000));
                 } else {
                     setCooldownSeconds(0);
                 }
@@ -230,13 +231,14 @@ export default function LoginModal({
     const checkLocalLimits = (phoneStr: string, channelType: 'whatsapp' | 'sms'): { allowed: boolean; reason?: string } => {
         const now = Date.now();
         
-        // 1. Check cooldown (60s)
+        // 1. Check cooldown (299s for SMS)
         const lastSentKey = `otp_last_sent_${channelType}_${phoneStr}`;
         const lastSentTime = localStorage.getItem(lastSentKey);
         if (lastSentTime) {
             const diff = now - parseInt(lastSentTime);
-            if (diff < 60 * 1000) {
-                const waitSec = Math.ceil((60 * 1000 - diff) / 1000);
+            const cooldownMs = channelType === 'sms' ? 299 * 1000 : 60 * 1000;
+            if (diff < cooldownMs) {
+                const waitSec = Math.ceil((cooldownMs - diff) / 1000);
                 return { allowed: false, reason: `Veuillez patienter ${waitSec} secondes avant de demander un nouveau code.` };
             }
         }
@@ -357,7 +359,7 @@ export default function LoginModal({
             }
 
             incrementLocalCount(cleanPhone, 'sms');
-            setCooldownSeconds(60);
+            setCooldownSeconds(299);
             setStep('code');
         } catch (err: any) {
             console.error("Phone submit error:", err);
@@ -393,7 +395,7 @@ export default function LoginModal({
             }
 
             incrementLocalCount(cleanPhone, 'sms');
-            setCooldownSeconds(60);
+            setCooldownSeconds(299);
             setStep('code');
         } catch (err: any) {
             console.error("SMS Registration error:", err);

@@ -307,7 +307,7 @@ export default function LoginPage() {
 
                 setVerificationError(null);
                 setVerificationCode("");
-                setCooldownSeconds(60);
+                setCooldownSeconds(loginMethod === 'phone' ? 299 : 60);
                 setStep('verify');
             }
         } catch (err: any) {

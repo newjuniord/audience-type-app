@@ -341,7 +341,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
         setVerificationError(null);
         setVerificationCode("");
         setTempLink(null);
-        setCooldownSeconds(60);
+        setCooldownSeconds(contactMethod === 'phone' ? 299 : 60);
         setModalStep('verify_code');
       }
     } catch (err: any) {
