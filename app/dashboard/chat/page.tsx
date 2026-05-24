@@ -41,10 +41,22 @@ export default function StudentChatPage() {
     const audioChunksRef = useRef<Blob[]>([]);
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Voice preview (recorded but not yet sent)
+    const [voicePreviewBlob, setVoicePreviewBlob] = useState<Blob | null>(null);
+    const [voicePreviewUrl, setVoicePreviewUrl] = useState<string | null>(null);
+    const [voicePreviewDuration, setVoicePreviewDuration] = useState(0);
+    const [isVoicePlaying, setIsVoicePlaying] = useState(false);
+    const voicePreviewAudioRef = useRef<HTMLAudioElement | null>(null);
+
     // Image preview state
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Toast
+    const [toast, setToast] = useState<string | null>(null);
+    const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +93,13 @@ export default function StudentChatPage() {
         return () => unsub();
     }, [user, hasAccess]);
 
+    // ──── Toast helper ────
+    const showToast = useCallback((msg: string) => {
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        setToast(msg);
+        toastTimerRef.current = setTimeout(() => setToast(null), 2500);
+    }, []);
+
     // ──── Send helper (text, image, voice) ────
     const sendMessage = useCallback(async (type: "text" | "image" | "voice", mediaBlob?: Blob, mediaName?: string, duration?: number) => {
         if (!user) return;
@@ -115,13 +134,18 @@ export default function StudentChatPage() {
             setInputText("");
             setImagePreview(null);
             setImageFile(null);
+            setVoicePreviewBlob(null);
+            setVoicePreviewUrl(null);
+            setVoicePreviewDuration(0);
+            setIsVoicePlaying(false);
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            showToast(type === "image" ? "📷 Imaj voye !" : type === "voice" ? "🎤 Mesaj vokal voye !" : "✓ Mesaj voye !");
         } catch (err) {
             console.error("Error sending message:", err);
             setErrorMessage("Echèk nan voye mesaj la. Tanpri re-eseye.");
             setIsErrorModalOpen(true);
         } finally { setSending(false); }
-    }, [user, userData, inputText]);
+    }, [user, userData, inputText, showToast]);
 
     // ──── Text send ────
     const handleSendText = (e: React.FormEvent) => {
@@ -146,7 +170,19 @@ export default function StudentChatPage() {
         await sendMessage("image", compressed, imageFile.name);
     };
 
-    const cancelImage = () => { setImagePreview(null); setImageFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; };
+    const cancelImage = () => {
+        setImagePreview(null);
+        setImageFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
+    // Long-press to delete image preview
+    const handleImageLongPressStart = () => {
+        longPressTimerRef.current = setTimeout(() => { cancelImage(); }, 500);
+    };
+    const handleImageLongPressEnd = () => {
+        if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+    };
 
     // ──── Voice recording ────
     const startRecording = async () => {
@@ -162,7 +198,7 @@ export default function StudentChatPage() {
             setRecordingTime(0);
             recordingTimerRef.current = setInterval(() => {
                 setRecordingTime((t) => {
-                    if (t >= 59) { stopRecording(true); return 60; }
+                    if (t >= 59) { stopRecording(); return 60; }
                     return t + 1;
                 });
             }, 1000);
@@ -172,7 +208,7 @@ export default function StudentChatPage() {
         }
     };
 
-    const stopRecording = (autoSend = false) => {
+    const stopRecording = () => {
         if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
         const recorder = mediaRecorderRef.current;
         if (!recorder || recorder.state === "inactive") { setIsRecording(false); return; }
@@ -180,13 +216,43 @@ export default function StudentChatPage() {
         recorder.onstop = () => {
             recorder.stream.getTracks().forEach((t) => t.stop());
             const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType });
-            if (autoSend || blob.size > 0) {
-                sendMessage("voice", blob, "voice.webm", finalDuration);
+            if (blob.size > 0) {
+                const url = URL.createObjectURL(blob);
+                setVoicePreviewBlob(blob);
+                setVoicePreviewUrl(url);
+                setVoicePreviewDuration(finalDuration);
             }
         };
         recorder.stop();
         setIsRecording(false);
         setRecordingTime(0);
+    };
+
+    const cancelVoicePreview = () => {
+        if (voicePreviewAudioRef.current) { voicePreviewAudioRef.current.pause(); voicePreviewAudioRef.current = null; }
+        if (voicePreviewUrl) URL.revokeObjectURL(voicePreviewUrl);
+        setVoicePreviewBlob(null);
+        setVoicePreviewUrl(null);
+        setVoicePreviewDuration(0);
+        setIsVoicePlaying(false);
+    };
+
+    const toggleVoicePreviewPlay = () => {
+        if (!voicePreviewUrl) return;
+        if (!voicePreviewAudioRef.current) {
+            const audio = new Audio(voicePreviewUrl);
+            audio.onended = () => setIsVoicePlaying(false);
+            voicePreviewAudioRef.current = audio;
+        }
+        const audio = voicePreviewAudioRef.current;
+        if (isVoicePlaying) { audio.pause(); setIsVoicePlaying(false); }
+        else { audio.play(); setIsVoicePlaying(true); }
+    };
+
+    const sendVoicePreview = () => {
+        if (!voicePreviewBlob) return;
+        if (voicePreviewAudioRef.current) { voicePreviewAudioRef.current.pause(); voicePreviewAudioRef.current = null; }
+        sendMessage("voice", voicePreviewBlob, "voice.webm", voicePreviewDuration);
     };
 
     const cancelRecording = () => {
@@ -249,16 +315,19 @@ export default function StudentChatPage() {
 
     // ──── Input bar renderer (shared) ────
     const renderInputBar = (mobile: boolean) => {
-        // Image preview overlay
+        const bar = mobile ? "px-3 py-2.5 pb-[84px]" : "p-4";
+        const bg = mobile ? "bg-[#0e0e0e] border-white/[0.06]" : "bg-black/5 dark:bg-white/[0.01] border-black/5 dark:border-white/5";
+
         if (imagePreview) {
             return (
-                <div className={`${mobile ? "px-3 py-2.5 pb-[84px]" : "p-4"} bg-${mobile ? "[#0e0e0e]" : "black/5 dark:bg-white/[0.01]"} border-t border-${mobile ? "white/[0.06]" : "black/5 dark:border-white/5"} shrink-0`}>
+                <div className={`${bar} ${bg} border-t shrink-0`}>
                     <div className="flex items-end gap-3">
-                        <div className="relative">
+                        <div className="relative select-none cursor-pointer" onMouseDown={handleImageLongPressStart} onMouseUp={handleImageLongPressEnd} onMouseLeave={handleImageLongPressEnd} onTouchStart={handleImageLongPressStart} onTouchEnd={handleImageLongPressEnd} title="Kenbe pou efase">
                             <img src={imagePreview} alt="preview" className="w-20 h-20 rounded-xl object-cover border border-white/10" />
-                            <button onClick={cancelImage} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs">✕</button>
+                            <button onClick={cancelImage} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs shadow-lg">✕</button>
+                            <span className="absolute bottom-0 left-0 right-0 text-[8px] text-center text-white/40 bg-black/40 rounded-b-xl py-0.5">Kenbe pou efase</span>
                         </div>
-                        <button onClick={handleSendImage} disabled={sending} className={`h-10 px-4 bg-primary text-white rounded-full flex items-center gap-2 text-xs font-bold active:scale-95 transition-all ${sending ? "opacity-50" : ""}`}>
+                        <button onClick={handleSendImage} disabled={sending} className={`h-10 px-4 bg-primary text-white rounded-full flex items-center gap-2 text-xs font-bold active:scale-95 transition-all shadow-lg shadow-primary/30 ${sending ? "opacity-50" : ""}`}>
                             {sending ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> : <><span className="material-symbols-outlined text-sm">send</span> Voye</>}
                         </button>
                     </div>
@@ -266,24 +335,42 @@ export default function StudentChatPage() {
             );
         }
 
-        // Voice recording bar
+        if (voicePreviewBlob && voicePreviewUrl) {
+            return (
+                <div className={`${bar} ${bg} border-t flex items-center gap-3 shrink-0`}>
+                    <button onClick={cancelVoicePreview} className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center shrink-0 active:scale-90"><span className="material-symbols-outlined text-lg">delete</span></button>
+                    <div className="flex-1 flex items-center gap-2 bg-white/[0.06] rounded-full px-3 py-2">
+                        <button onClick={toggleVoicePreviewPlay} className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined text-sm text-white">{isVoicePlaying ? "pause" : "play_arrow"}</span>
+                        </button>
+                        <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full" style={{ width: isVoicePlaying ? "100%" : "0%", transition: isVoicePlaying ? `width ${voicePreviewDuration}s linear` : "none" }} />
+                        </div>
+                        <span className="text-[10px] text-white/50 shrink-0">{formatDuration(voicePreviewDuration)}</span>
+                    </div>
+                    <button onClick={sendVoicePreview} disabled={sending} className={`w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center shrink-0 active:scale-90 shadow-lg shadow-primary/30 ${sending ? "opacity-50" : ""}`}>
+                        {sending ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> : <span className="material-symbols-outlined text-lg">send</span>}
+                    </button>
+                </div>
+            );
+        }
+
         if (isRecording) {
             return (
-                <div className={`${mobile ? "px-3 py-2.5 pb-[84px]" : "p-4"} bg-${mobile ? "[#0e0e0e]" : "black/5 dark:bg-white/[0.01]"} border-t border-${mobile ? "white/[0.06]" : "black/5 dark:border-white/5"} flex items-center gap-3 shrink-0`}>
+                <div className={`${bar} ${bg} border-t flex items-center gap-3 shrink-0`}>
                     <button onClick={cancelRecording} className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center shrink-0 active:scale-90"><span className="material-symbols-outlined text-lg">delete</span></button>
                     <div className="flex-1 flex items-center gap-2">
                         <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
                         <span className="text-sm font-bold text-red-400">{formatDuration(recordingTime)}</span>
                         <span className="text-[10px] text-white/40">/ 1:00 max</span>
                     </div>
-                    <button onClick={() => stopRecording(true)} className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center shrink-0 active:scale-90 shadow-lg shadow-primary/30"><span className="material-symbols-outlined text-lg">send</span></button>
+                    <button onClick={stopRecording} className="w-10 h-10 bg-white/10 text-white border border-white/20 rounded-full flex items-center justify-center shrink-0 active:scale-90"><span className="material-symbols-outlined text-lg">stop</span></button>
                 </div>
             );
         }
 
-        // Normal text input
         return (
-            <form onSubmit={handleSendText} className={`${mobile ? "px-3 py-2.5 pb-[84px]" : "p-4"} bg-${mobile ? "[#0e0e0e]" : "black/5 dark:bg-white/[0.01]"} border-t border-${mobile ? "white/[0.06]" : "black/5 dark:border-white/5"} flex items-center gap-2 shrink-0`}>
+            <form onSubmit={handleSendText} className={`${bar} ${bg} border-t flex items-center gap-2 shrink-0`}>
                 <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleImagePick} />
                 <button type="button" onClick={() => fileInputRef.current?.click()} className={`${mobile ? "w-9 h-9" : "w-10 h-10"} rounded-full bg-white/[0.06] text-white/50 hover:text-white hover:bg-white/10 flex items-center justify-center shrink-0 transition-colors active:scale-90`}>
                     <span className="material-symbols-outlined text-lg">image</span>
@@ -295,14 +382,13 @@ export default function StudentChatPage() {
                         <span className="material-symbols-outlined text-lg">send</span>
                     </button>
                 ) : (
-                    <button type="button" onClick={startRecording} className={`${mobile ? "w-10 h-10" : "w-10 h-10"} rounded-full bg-white/[0.06] text-white/50 hover:text-white hover:bg-white/10 flex items-center justify-center shrink-0 transition-colors active:scale-90`}>
+                    <button type="button" onClick={startRecording} className="w-10 h-10 rounded-full bg-white/[0.06] text-white/50 hover:text-white hover:bg-white/10 flex items-center justify-center shrink-0 transition-colors active:scale-90">
                         <span className="material-symbols-outlined text-lg">mic</span>
                     </button>
                 )}
             </form>
         );
     };
-
     // ──── Loading / Access denied ────
     if (loadingAccess) return <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
@@ -360,6 +446,15 @@ export default function StudentChatPage() {
             </div>
 
             <ConfirmModal isOpen={isErrorModalOpen} onClose={() => setIsErrorModalOpen(false)} title="Echèk" message={errorMessage} type="alert" isDanger={true} />
+
+            {/* ===== TOAST ===== */}
+            {toast && (
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[999] pointer-events-none">
+                    <div className="bg-gray-900/95 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl border border-white/10 flex items-center gap-2 animate-fade-in-up backdrop-blur-md whitespace-nowrap">
+                        {toast}
+                    </div>
+                </div>
+            )}
         </>
     );
 }
