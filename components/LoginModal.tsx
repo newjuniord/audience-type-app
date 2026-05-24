@@ -406,8 +406,8 @@ export default function LoginModal({
 
     const handleCodeSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (verificationCode.length !== 4) {
-            setError("Le code doit comporter 4 chiffres.");
+        if (verificationCode.length < 4 || verificationCode.length > 6) {
+            setError("Le code doit comporter entre 4 et 6 chiffres.");
             return;
         }
 
@@ -656,10 +656,10 @@ export default function LoginModal({
                                     error ? 'border-red-500/50 text-red-500' : 'focus:border-primary/20'
                                 }`} 
                                 type="text" 
-                                maxLength={4}
+                                maxLength={6}
                                 value={verificationCode}
                                 onChange={(e) => {
-                                    setVerificationCode(e.target.value.replace(/\D/g, '').substring(0, 4));
+                                    setVerificationCode(e.target.value.replace(/\D/g, '').substring(0, 6));
                                     setError(null);
                                 }}
                                 autoFocus
@@ -673,7 +673,7 @@ export default function LoginModal({
 
                         <button 
                             type="submit" 
-                            disabled={isLoading || verificationCode.length !== 4}
+                            disabled={isLoading || verificationCode.length < 4 || verificationCode.length > 6}
                             className="w-full h-16 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:opacity-90 active:scale-[0.98] transition-all shadow-xl shadow-primary/20 mt-8 flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {isLoading ? (

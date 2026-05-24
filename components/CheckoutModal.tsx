@@ -404,8 +404,11 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
   }, [magicLinkToken, alreadyOwnedMessage]);
 
   const handleVerifyCodeSubmit = async () => {
-    if (!verificationCode || verificationCode.length !== 4) {
-      setVerificationError("Kòd la dwe gen 4 chif presizeman.");
+    const isValidLength = contactMethod === 'phone'
+      ? (verificationCode.length >= 4 && verificationCode.length <= 6)
+      : (verificationCode.length === 4);
+    if (!verificationCode || !isValidLength) {
+      setVerificationError(contactMethod === 'phone' ? "Kòd la dwe gen ant 4 ak 6 chif." : "Kòd la dwe gen 4 chif presizeman.");
       return;
     }
     setIsVerifyingCode(true);
@@ -729,10 +732,24 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                   {!magicLinkToken && (
                     <>
                       <div className="mb-6 text-left">
-                    <input type="text" maxLength={4} placeholder="2102" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').substring(0, 4))} className="w-full h-14 bg-white/5 border-2 border-white/10 rounded-2xl px-6 text-center text-xl font-mono placeholder-white/20 tracking-[0.5em] focus:outline-none focus:border-white transition-colors bg-transparent text-white" />
+                    <input 
+                      type="text" 
+                      maxLength={contactMethod === 'phone' ? 6 : 4} 
+                      placeholder={contactMethod === 'phone' ? "000000" : "0000"} 
+                      value={verificationCode} 
+                      onChange={(e) => {
+                        const maxL = contactMethod === 'phone' ? 6 : 4;
+                        setVerificationCode(e.target.value.replace(/\D/g, '').substring(0, maxL));
+                      }} 
+                      className="w-full h-14 bg-white/5 border-2 border-white/10 rounded-2xl px-6 text-center text-xl font-mono placeholder-white/20 tracking-[0.5em] focus:outline-none focus:border-white transition-colors bg-transparent text-white" 
+                    />
                     {verificationError && <p className="text-[11px] text-red-500 mt-2 font-semibold">⚠️ {verificationError}</p>}
                   </div>
-                      <button onClick={handleVerifyCodeSubmit} disabled={isVerifyingCode || verificationCode.length !== 4} className="w-full h-14 bg-gradient-to-r from-orange-500 to-red-500 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
+                      <button 
+                        onClick={handleVerifyCodeSubmit} 
+                        disabled={isVerifyingCode || (contactMethod === 'phone' ? (verificationCode.length < 4 || verificationCode.length > 6) : verificationCode.length !== 4)} 
+                        className="w-full h-14 bg-gradient-to-r from-orange-500 to-red-500 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
                         {isVerifyingCode ? <div className="size-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"/> : "Valide kòd la"}
                       </button>
                     </>
