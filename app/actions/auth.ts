@@ -140,19 +140,21 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error("Prelude verification error:", errorText);
-                    return { error: "Erè nan voye SMS la. Tanpri eseye avèk WhatsApp pito." };
+                    console.error("❌ [Prelude API Error] Status:", response.status);
+                    console.error("❌ [Prelude API Error] Body:", errorText);
+                    return { error: `Erè nan voye SMS la. (API Error: ${response.status}). Tanpri eseye avèk WhatsApp pito.` };
                 }
 
                 const resData = await response.json();
+                console.log("ℹ️ [Prelude API Success] Response:", resData);
                 if (resData.status === "success") {
                     return { success: true };
                 } else {
-                    return { error: "Erè nan voye SMS la. Tanpri eseye avèk WhatsApp pito." };
+                    return { error: `Erè nan voye SMS la (Status: ${resData.status}). Tanpri eseye avèk WhatsApp pito.` };
                 }
-            } catch (err) {
-                console.error("Error calling Prelude API:", err);
-                return { error: "Erè nan voye SMS la. Tanpri eseye avèk WhatsApp pito." };
+            } catch (err: any) {
+                console.error("❌ [Prelude Exception] calling Prelude API:", err);
+                return { error: `Erè nan voye SMS la. (Exception: ${err.message || err}). Tanpri eseye avèk WhatsApp pito.` };
             }
         }
 
