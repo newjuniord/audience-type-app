@@ -260,6 +260,8 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
                 return { error: "Erreur de configuration email." };
             }
 
+            const templateId = process.env.SENDGRID_TEMPLATE_AUTH_EMAIL || "d-ab881aa9ea704bdda1f3d0736485af12";
+
             const sendgridRes = await fetch("https://api.sendgrid.com/v3/mail/send", {
                 method: "POST",
                 headers: {
@@ -275,7 +277,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
                         }
                     }],
                     from: { email: fromEmail, name: "DJR Akademi" },
-                    template_id: "d-ab881aa9ea704bdda1f3d0736485af12"
+                    template_id: templateId
                 })
             });
 
