@@ -328,7 +328,7 @@ export default function StudentChatPage() {
                             <span className="absolute bottom-0 left-0 right-0 text-[8px] text-center text-white/40 bg-black/40 rounded-b-xl py-0.5">Kenbe pou efase</span>
                         </div>
                         <button onClick={handleSendImage} disabled={sending} className={`h-10 px-4 bg-primary text-white rounded-full flex items-center gap-2 text-xs font-bold active:scale-95 transition-all shadow-lg shadow-primary/30 ${sending ? "opacity-50" : ""}`}>
-                            {sending ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> : <><span className="material-symbols-outlined text-sm">send</span> Voye</>}
+                            {sending ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> : <><span className="material-symbols-outlined text-sm">send</span> Ale</>}
                         </button>
                     </div>
                 </div>
@@ -378,7 +378,7 @@ export default function StudentChatPage() {
                 <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Ekri mesaj ou a la..." className={`flex-1 bg-white/[0.06] border border-white/[0.08] ${mobile ? "rounded-full px-4 py-2.5" : "rounded-2xl px-5 py-3"} text-sm text-white placeholder-white/25 focus:outline-none focus:border-primary/40 transition-colors`} />
                 {inputText.trim() ? (
                     <button type="submit" disabled={sending} className={`${mobile ? "w-10 h-10" : "h-11 px-5"} bg-primary text-white ${mobile ? "rounded-full" : "rounded-2xl"} flex items-center justify-center ${mobile ? "" : "gap-2"} active:scale-90 transition-all shrink-0 ${sending ? "opacity-40" : "shadow-lg shadow-primary/30"}`}>
-                        {!mobile && <span className="text-xs uppercase tracking-wider">Voye</span>}
+                        {!mobile && <span className="text-xs uppercase tracking-wider">Ale</span>}
                         <span className="material-symbols-outlined text-lg">send</span>
                     </button>
                 ) : (
