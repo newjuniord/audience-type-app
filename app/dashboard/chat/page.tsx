@@ -369,20 +369,26 @@ export default function StudentChatPage() {
             );
         }
 
+        // Desktop-aware color tokens
+        const inputBg   = mobile ? "bg-white/[0.06] border-white/[0.08] text-white placeholder-white/25 focus:border-primary/40"
+                                 : "bg-black/[0.04] dark:bg-white/[0.06] border-black/[0.08] dark:border-white/[0.08] text-black dark:text-white placeholder-black/30 dark:placeholder-white/25 focus:border-primary/50";
+        const iconBtn   = mobile ? "bg-white/[0.06] text-white/50 hover:text-white hover:bg-white/10"
+                                 : "bg-black/[0.05] dark:bg-white/[0.06] text-black/40 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10";
+
         return (
             <form onSubmit={handleSendText} className={`${bar} ${bg} border-t flex items-center gap-2 shrink-0`}>
                 <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleImagePick} />
-                <button type="button" onClick={() => fileInputRef.current?.click()} className={`${mobile ? "w-9 h-9" : "w-10 h-10"} rounded-full bg-white/[0.06] text-white/50 hover:text-white hover:bg-white/10 flex items-center justify-center shrink-0 transition-colors active:scale-90`}>
+                <button type="button" onClick={() => fileInputRef.current?.click()} className={`${mobile ? "w-9 h-9" : "w-10 h-10"} rounded-full ${iconBtn} flex items-center justify-center shrink-0 transition-colors active:scale-90`}>
                     <span className="material-symbols-outlined text-lg">image</span>
                 </button>
-                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Ekri mesaj ou a la..." className={`flex-1 bg-white/[0.06] border border-white/[0.08] ${mobile ? "rounded-full px-4 py-2.5" : "rounded-2xl px-5 py-3"} text-sm text-white placeholder-white/25 focus:outline-none focus:border-primary/40 transition-colors`} />
+                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Ekri mesaj ou a la..." className={`flex-1 border ${inputBg} ${mobile ? "rounded-full px-4 py-2.5" : "rounded-2xl px-5 py-3"} text-sm focus:outline-none transition-colors`} />
                 {inputText.trim() ? (
                     <button type="submit" disabled={sending} className={`${mobile ? "w-10 h-10" : "h-11 px-5"} bg-primary text-white ${mobile ? "rounded-full" : "rounded-2xl"} flex items-center justify-center ${mobile ? "" : "gap-2"} active:scale-90 transition-all shrink-0 ${sending ? "opacity-40" : "shadow-lg shadow-primary/30"}`}>
                         {!mobile && <span className="text-xs uppercase tracking-wider">Ale</span>}
                         <span className="material-symbols-outlined text-lg">send</span>
                     </button>
                 ) : (
-                    <button type="button" onClick={startRecording} className="w-10 h-10 rounded-full bg-white/[0.06] text-white/50 hover:text-white hover:bg-white/10 flex items-center justify-center shrink-0 transition-colors active:scale-90">
+                    <button type="button" onClick={startRecording} className={`w-10 h-10 rounded-full ${iconBtn} flex items-center justify-center shrink-0 transition-colors active:scale-90`}>
                         <span className="material-symbols-outlined text-lg">mic</span>
                     </button>
                 )}
