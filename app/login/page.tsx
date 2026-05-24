@@ -327,7 +327,7 @@ export default function LoginPage() {
             if (err.message && err.message.toLowerCase().includes("server action")) {
                 setError("Tanpri refrechi paj la konplètman (F5 oswa glise desann). Gen yon mizajou ki fèk fèt sou sit la.");
             } else if (err.message && err.message.includes("auth/invalid-app-credential")) {
-                setError("Sistèm sekirite a bloke demann nan (reCAPTCHA echwe). Tanpri refrechi paj la epi reyezi, oswa chwazi WhatsApp pito.");
+                setError("Sistèm sekirite a bloke demand nan (reCAPTCHA echwe). Tanpri refrechi paj la epi reyezi, oswa chwazi WhatsApp pito.");
                 if ((window as any).recaptchaVerifier) {
                     try {
                         (window as any).recaptchaVerifier.clear();
