@@ -442,14 +442,27 @@ exports.onenrollmentcreated = (0, firestore_1.onDocumentCreated)({
         return;
     }
     const isGift = enrollmentData.isGift || enrollmentData.orderId === "admin_gift";
-    const userName = enrollmentData.userName || "";
     const productTitle = enrollmentData.productTitle || "";
     const productType = enrollmentData.productType || "Course";
-    if (enrollmentData.notificationSent === true) {
-        console.log("ℹ️ [TRIGGER] Notification already sent by Next.js server action. Skipping duplicate.");
-        return;
-    }
-    await generateAndSendNotification(userId, userName, productTitle, productType, isGift);
+    // Instead of WhatsApp (Twilio), send an in-app alert (which triggers sendAlertPushNotification)
+    const alertBody = isGift
+        ? `🎁 Ou fenk resevwa yon kado: ${productTitle}`
+        : `✅ Ou gen yon nouvo ${productType === "Ebook" ? "Ebook" : "Kou"}: ${productTitle}`;
+    await db.collection("alerts").add({
+        userId,
+        category: "utility",
+        type: "custom",
+        title: "Nouvo Aksè 🎉",
+        body: alertBody,
+        isRead: false,
+        icon: "school",
+        iconColor: "text-primary",
+        iconBg: "bg-primary/10",
+        actionUrl: "/dashboard",
+        actionLabel: "Ouvri tablodbò a",
+        createdAt: new Date()
+    });
+    console.log(`✅ [TRIGGER] Created push notification alert for user ${userId} regarding ${productTitle}`);
 });
 // ============================================================================
 // Helper: Send WhatsApp message via Twilio (WhatsApp channel)
