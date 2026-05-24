@@ -127,6 +127,14 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
             }
 
             if (!is24hWindowOpen) {
+                // Check if user exists
+                let isNewUser = true;
+                const usersRef = adminDb.collection("users");
+                const querySnapshot = await usersRef.where("phone", "==", contactClean).get();
+                if (!querySnapshot.empty) {
+                    isNewUser = false;
+                }
+
                 // La fenêtre de 24h est fermée ou le document n'existe pas.
                 // ON NE CREE PAS le document ici. C'est le webhook qui s'en chargera quand il recevra le message.
                 const businessPhone = process.env.NEXT_PUBLIC_TWILIO_NUMBER || "+17157507852";
@@ -134,7 +142,8 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
                 return { 
                     success: true, 
                     action: "redirect_to_whatsapp",
-                    businessPhone: cleanBusinessPhone
+                    businessPhone: cleanBusinessPhone,
+                    isNewUser
                 };
             }
         }
@@ -389,13 +398,21 @@ export async function generateMagicLinkAction(contact: string) {
             is24hWindowOpen = true;
         }
 
+        let isNewUser = true;
+        const usersRef = adminDb.collection("users");
+        const querySnapshot = await usersRef.where("phone", "==", contactClean).get();
+        if (!querySnapshot.empty) {
+            isNewUser = false;
+        }
+
         if (!is24hWindowOpen) {
             const businessPhone = process.env.NEXT_PUBLIC_TWILIO_NUMBER || "+17157507852";
             const cleanBusinessPhone = businessPhone.replace('whatsapp:', '').replace(/"/g, '').replace(/'/g, '').replace(/\D/g, '');
             return { 
                 success: true, 
                 action: "redirect_to_whatsapp",
-                businessPhone: cleanBusinessPhone
+                businessPhone: cleanBusinessPhone,
+                isNewUser
             };
         }
         

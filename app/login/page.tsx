@@ -142,7 +142,7 @@ export default function LoginPage() {
     const [verificationCode, setVerificationCode] = useState("");
     const [verificationError, setVerificationError] = useState<string | null>(null);
     const [magicLinkToken, setMagicLinkToken] = useState<string | null>(null);
-    const [whatsappRedirect, setWhatsappRedirect] = useState<{ url: string; businessPhone: string } | null>(null);
+    const [whatsappRedirect, setWhatsappRedirect] = useState<{ url: string; businessPhone: string; isNewUser?: boolean } | null>(null);
     const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
     // Effet pour fermer le dropdown des pays au clic extérieur
@@ -282,9 +282,11 @@ export default function LoginPage() {
 
                 if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
                     const cleanBizPhone = genData.businessPhone.replace(/"/g, '').replace(/'/g, '');
+                    const messageText = genData.isNewUser ? "metem" : "kod";
                     setWhatsappRedirect({
-                        url: `https://wa.me/${cleanBizPhone}?text=kod`,
-                        businessPhone: `+${cleanBizPhone}`
+                        url: `https://wa.me/${cleanBizPhone}?text=${messageText}`,
+                        businessPhone: `+${cleanBizPhone}`,
+                        isNewUser: genData.isNewUser
                     });
                     setMagicLinkToken(null);
                 } else {
@@ -613,7 +615,7 @@ export default function LoginPage() {
 
                                             <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 mb-4 text-left w-full">
                                                 <p className="text-xs text-white/50 leading-relaxed">
-                                                    <strong className="text-white">Lòt aparèy ?</strong> Si ou pa gen WhatsApp sou aparèy sa a, voye mo <strong className="text-[#25D366]">KÒD</strong> nan nimewo <strong className="text-white">WhatsApp</strong> nou an anba a depi sou telefòn ou :
+                                                    <strong className="text-white">Lòt aparèy ?</strong> Si ou pa gen WhatsApp sou aparèy sa a, voye mo <strong className="text-[#25D366]">{whatsappRedirect.isNewUser ? "METEM" : "KÒD"}</strong> nan nimewo <strong className="text-white">WhatsApp</strong> nou an anba a depi sou telefòn ou :
                                                 </p>
                                                 <p className="text-lg font-black text-white tracking-widest font-mono mt-2 text-center bg-black/20 rounded-lg p-2.5 border border-white/5">
                                                     {whatsappRedirect.businessPhone.length === 12 && whatsappRedirect.businessPhone.startsWith('+1')
