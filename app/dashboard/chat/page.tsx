@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Message {
     id: string;
@@ -34,6 +35,8 @@ export default function StudentChatPage() {
     const [sending, setSending] = useState(false);
     const [hasAccess, setHasAccess] = useState<boolean | null>(null);
     const [loadingAccess, setLoadingAccess] = useState(true);
+    const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
     
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -152,7 +155,8 @@ export default function StudentChatPage() {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         } catch (err) {
             console.error("Error sending support message:", err);
-            alert("Echèk nan voye mesaj la. Tanpri re-eseye.");
+            setErrorMessage("Echèk nan voye mesaj la. Tanpri re-eseye.");
+            setIsErrorModalOpen(true);
         } finally {
             setSending(false);
         }
@@ -281,6 +285,15 @@ export default function StudentChatPage() {
                     </form>
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={isErrorModalOpen}
+                onClose={() => setIsErrorModalOpen(false)}
+                title="Echèk"
+                message={errorMessage}
+                type="alert"
+                isDanger={true}
+            />
         </div>
     );
 }

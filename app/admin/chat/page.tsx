@@ -13,6 +13,7 @@ import {
     onSnapshot,
     Timestamp
 } from "firebase/firestore";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface ChatThread {
     id: string; // userId
@@ -43,6 +44,8 @@ export default function AdminChatPage() {
     const [inputText, setInputText] = useState("");
     const [sending, setSending] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -150,7 +153,8 @@ export default function AdminChatPage() {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         } catch (err) {
             console.error("Error sending response message:", err);
-            alert("Erreur lors de l'envoi du message.");
+            setErrorMessage("Erreur lors de l'envoi du message. Veuillez réessayer.");
+            setIsErrorModalOpen(true);
         } finally {
             setSending(false);
         }
@@ -285,7 +289,7 @@ export default function AdminChatPage() {
                                 <button
                                     type="submit"
                                     disabled={!inputText.trim() || sending}
-                                    className={`h-11 px-5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md shrink-0 ${
+                                    className={`h-11 px-5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shrink-0 ${
                                         (!inputText.trim() || sending) ? "opacity-50 cursor-not-allowed" : ""
                                     }`}
                                 >
@@ -305,6 +309,15 @@ export default function AdminChatPage() {
                     )}
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={isErrorModalOpen}
+                onClose={() => setIsErrorModalOpen(false)}
+                title="Erreur"
+                message={errorMessage}
+                type="alert"
+                isDanger={true}
+            />
         </div>
     );
 }
