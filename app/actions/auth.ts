@@ -147,7 +147,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
 
                 const resData = await response.json();
                 console.log("ℹ️ [Prelude API Success] Response:", resData);
-                if (resData.status === "success") {
+                if (resData.status === "success" || resData.status === "retry") {
                     return { success: true };
                 } else {
                     return { error: `Erè nan voye SMS la (Status: ${resData.status}). Tanpri eseye avèk WhatsApp pito.` };
