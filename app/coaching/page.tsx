@@ -5,7 +5,7 @@ import { Metadata } from "next";
 import VideoPlayer from "@/components/VideoPlayer";
 
 export const metadata: Metadata = {
-  title: "Coaching Privé - DJR Akademi",
+  title: "Coaching Prive - DJR Akademi",
   description: "Yon pwogram pèsonalize pou pastè, pè, paran, lidè, politisyen, vandè, CEO ak enfliyansè.",
 };
 
@@ -30,7 +30,7 @@ export default function CoachingPage() {
               </div>
               
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.9] text-white mb-6">
-                Coaching <span className="text-primary">Privé</span>
+                Coaching <span className="text-primary">Prive</span>
               </h1>
               
               <p className="text-lg text-white/70 leading-relaxed mb-10 font-medium">
