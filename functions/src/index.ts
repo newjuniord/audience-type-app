@@ -471,15 +471,24 @@ export const onenrollmentcreated = onDocumentCreated({
     const productType = enrollmentData.productType || "Course";
 
     // Instead of WhatsApp (Twilio), send an in-app alert (which triggers sendAlertPushNotification)
+    const alertTitle = isGift ? `🎁 Kado Espesyal: ${productTitle}` : `✅ Aksè Konfime: ${productTitle}`;
+    
+    let descriptionText = "Ou gen aksè konplè kounye a.";
+    if (productType === "Ebook") {
+        descriptionText = "Ou ka telechaje ak li ebook sa a nenpòt kilè nan kont ou.";
+    } else if (productType === "Course" || productType === "Kou") {
+        descriptionText = "Tout videyo ak resous pou kou sa a disponib nan kont ou kounye a.";
+    }
+
     const alertBody = isGift 
-        ? `🎁 Ou fenk resevwa yon kado: ${productTitle}` 
-        : `✅ Ou gen yon nouvo ${productType === "Ebook" ? "Ebook" : "Kou"}: ${productTitle}`;
+        ? `Felisitasyon ! Nou fè w kado: "${productTitle}". ${descriptionText}`
+        : `Mèsi pou konfyans ou ! Ou fenk debloke: "${productTitle}". ${descriptionText}`;
 
     await db.collection("alerts").add({
         userId,
         category: "utility",
         type: "custom",
-        title: "Nouvo Aksè 🎉",
+        title: alertTitle,
         body: alertBody,
         isRead: false,
         icon: "school",
