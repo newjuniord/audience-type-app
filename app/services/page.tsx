@@ -92,10 +92,10 @@ export default function ServicesPage() {
               Pa kite ti detay yo ralanti gwo vizyon w genyen an. Fè yon ti pale avèk nou jodi a pou nou wè kijan nou ka ede w.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a href="https://wa.me/821012345678" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto px-10 py-5 bg-primary text-white rounded-full font-black uppercase tracking-wide text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/30 flex items-center justify-center gap-3">
+              <Link href="/dashboard/chat" className="w-full sm:w-auto px-10 py-5 bg-primary text-white rounded-full font-black uppercase tracking-wide text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/30 flex items-center justify-center gap-3">
                 <span className="material-symbols-outlined">chat</span>
                 Mande Yon Pri
-              </a>
+              </Link>
             </div>
           </div>
         </section>
