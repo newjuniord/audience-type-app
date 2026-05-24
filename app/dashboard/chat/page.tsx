@@ -199,90 +199,164 @@ export default function StudentChatPage() {
     }
 
     return (
-        <div className="relative flex min-h-[calc(100vh-80px)] w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-primary dark:text-white px-4 md:px-10 py-8">
-            <div className="max-w-[800px] w-full mx-auto flex flex-col flex-1">
+        <>
+            {/* ===== MOBILE: Full-screen WhatsApp-style layout ===== */}
+            <div className="md:hidden fixed inset-0 z-40 flex flex-col bg-background-dark text-white">
                 
-                {/* Header Info */}
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h1 className="text-2xl font-black uppercase tracking-tight">Asistans Teknik</h1>
-                        <p className="text-xs text-white/50">Poze admin nenpòt kesyon sou kou ou yo.</p>
-                    </div>
-                    <Link href="/dashboard" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold transition-all">
-                        <span className="material-symbols-outlined text-sm">arrow_back</span>
-                        Retounen
+                {/* Sticky header bar */}
+                <div className="px-4 py-3 bg-[#0e0e0e] border-b border-white/[0.06] flex items-center gap-3 shrink-0 safe-area-pt">
+                    <Link href="/dashboard" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 transition-colors shrink-0 active:scale-90">
+                        <span className="material-symbols-outlined text-lg">arrow_back</span>
                     </Link>
+                    <div className="relative shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center text-primary">
+                            <span className="material-symbols-outlined text-base">support_agent</span>
+                        </div>
+                        <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-[#0e0e0e]"></div>
+                    </div>
+                    <div className="min-w-0">
+                        <div className="text-sm font-bold truncate leading-tight">Admin DJR Akademi</div>
+                        <div className="text-[10px] text-green-400 font-semibold leading-tight">Enliy</div>
+                    </div>
                 </div>
 
-                {/* Chat window */}
-                <div className="bg-white dark:bg-[#121212]/80 border border-black/5 dark:border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[580px] md:h-[620px] backdrop-blur-md">
-                    
-                    {/* Active support details */}
-                    <div className="px-6 py-4 border-b border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/[0.02] flex items-center gap-3 shrink-0">
-                        <div className="relative">
-                            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                                <span className="material-symbols-outlined text-lg">support_agent</span>
-                            </div>
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#121212] animate-pulse"></div>
+                {/* Messages area — fills all remaining space */}
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 select-text">
+                    {messages.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-4">
+                            <span className="material-symbols-outlined text-4xl mb-2 animate-bounce">forum</span>
+                            <p className="text-sm font-bold">Ekri premye mesaj ou a pou kòmanse diskisyon an.</p>
+                            <p className="text-xs mt-1">Ekip admin la ap reponn ou trè vit.</p>
                         </div>
-                        <div>
-                            <div className="text-sm font-bold">Admin DJR Akademi</div>
-                            <div className="text-[10px] text-green-400 font-semibold uppercase tracking-wider flex items-center gap-1">
-                                Enliy kounye a
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Messages list */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4 select-text">
-                        {messages.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-6 py-10">
-                                <span className="material-symbols-outlined text-5xl mb-3 animate-bounce">forum</span>
-                                <p className="text-sm font-bold">Ekri premye mesaj ou a pou kòmanse diskisyon an.</p>
-                                <p className="text-xs mt-1">Ekip admin la ap reponn ou trè vit.</p>
-                            </div>
-                        ) : (
-                            messages.map((msg) => {
-                                const isMe = msg.senderId === user?.uid;
-                                return (
-                                    <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                                        <div className={`px-4 py-2.5 text-sm max-w-[85%] md:max-w-[70%] shadow-md ${
-                                            isMe 
-                                                ? "bg-primary text-white rounded-2xl rounded-tr-none font-medium" 
-                                                : "bg-[#1f1f1f] text-white/90 border border-white/5 rounded-2xl rounded-tl-none"
-                                        }`}>
-                                            <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
-                                        </div>
-                                        <span className="text-[9px] opacity-40 mt-1 px-1">
+                    ) : (
+                        messages.map((msg) => {
+                            const isMe = msg.senderId === user?.uid;
+                            return (
+                                <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                                    <div className={`px-3.5 py-2 text-[13px] max-w-[82%] shadow-sm ${
+                                        isMe
+                                            ? "bg-primary text-white rounded-2xl rounded-tr-sm font-medium"
+                                            : "bg-[#1a1a1a] text-white/90 border border-white/[0.06] rounded-2xl rounded-tl-sm"
+                                    }`}>
+                                        <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
+                                        <span className={`text-[9px] block mt-1 text-right ${isMe ? "text-white/50" : "text-white/30"}`}>
                                             {formatTime(msg.createdAt)}
                                         </span>
                                     </div>
-                                );
-                            })
-                        )}
-                        <div ref={messagesEndRef} />
+                                </div>
+                            );
+                        })
+                    )}
+                    <div ref={messagesEndRef} />
+                </div>
+
+                {/* Sticky input bar at the bottom — above BottomNav (pb-20 for safe area) */}
+                <form onSubmit={handleSendMessage} className="px-3 py-2.5 pb-[84px] bg-[#0e0e0e] border-t border-white/[0.06] flex items-center gap-2 shrink-0">
+                    <input
+                        type="text"
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        placeholder="Ekri mesaj ou a la..."
+                        className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-full px-4 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-primary/40 transition-colors"
+                    />
+                    <button
+                        type="submit"
+                        disabled={!inputText.trim() || sending}
+                        className={`w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center active:scale-90 transition-all shrink-0 ${
+                            (!inputText.trim() || sending) ? "opacity-40" : "shadow-lg shadow-primary/30"
+                        }`}
+                    >
+                        <span className="material-symbols-outlined text-lg">send</span>
+                    </button>
+                </form>
+            </div>
+
+            {/* ===== DESKTOP: Card-style layout ===== */}
+            <div className="hidden md:flex relative min-h-[calc(100vh-80px)] w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-primary dark:text-white px-10 py-8">
+                <div className="max-w-[800px] w-full mx-auto flex flex-col flex-1">
+                    
+                    {/* Header Info */}
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h1 className="text-2xl font-black uppercase tracking-tight">Asistans Teknik</h1>
+                            <p className="text-xs text-white/50">Poze admin nenpòt kesyon sou kou ou yo.</p>
+                        </div>
+                        <Link href="/dashboard" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold transition-all">
+                            <span className="material-symbols-outlined text-sm">arrow_back</span>
+                            Retounen
+                        </Link>
                     </div>
 
-                    {/* Form Input */}
-                    <form onSubmit={handleSendMessage} className="p-4 border-t border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/[0.01] flex items-center gap-3 shrink-0">
-                        <input
-                            type="text"
-                            value={inputText}
-                            onChange={(e) => setInputText(e.target.value)}
-                            placeholder="Ekri mesaj ou a la..."
-                            className="flex-1 bg-black/10 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl px-5 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 transition-colors"
-                        />
-                        <button
-                            type="submit"
-                            disabled={!inputText.trim() || sending}
-                            className={`h-11 px-5 bg-primary hover:bg-primary/95 text-white font-bold rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shrink-0 ${
-                                (!inputText.trim() || sending) ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
-                        >
-                            <span className="hidden md:inline text-xs uppercase tracking-wider">Voye</span>
-                            <span className="material-symbols-outlined text-sm">send</span>
-                        </button>
-                    </form>
+                    {/* Chat window card */}
+                    <div className="bg-white dark:bg-[#121212]/80 border border-black/5 dark:border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[620px] backdrop-blur-md">
+                        
+                        {/* Active support details */}
+                        <div className="px-6 py-4 border-b border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/[0.02] flex items-center gap-3 shrink-0">
+                            <div className="relative">
+                                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                                    <span className="material-symbols-outlined text-lg">support_agent</span>
+                                </div>
+                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#121212] animate-pulse"></div>
+                            </div>
+                            <div>
+                                <div className="text-sm font-bold">Admin DJR Akademi</div>
+                                <div className="text-[10px] text-green-400 font-semibold uppercase tracking-wider flex items-center gap-1">
+                                    Enliy kounye a
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Messages list */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4 select-text">
+                            {messages.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-6 py-10">
+                                    <span className="material-symbols-outlined text-5xl mb-3 animate-bounce">forum</span>
+                                    <p className="text-sm font-bold">Ekri premye mesaj ou a pou kòmanse diskisyon an.</p>
+                                    <p className="text-xs mt-1">Ekip admin la ap reponn ou trè vit.</p>
+                                </div>
+                            ) : (
+                                messages.map((msg) => {
+                                    const isMe = msg.senderId === user?.uid;
+                                    return (
+                                        <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                                            <div className={`px-4 py-2.5 text-sm max-w-[70%] shadow-md ${
+                                                isMe 
+                                                    ? "bg-primary text-white rounded-2xl rounded-tr-none font-medium" 
+                                                    : "bg-[#1f1f1f] text-white/90 border border-white/5 rounded-2xl rounded-tl-none"
+                                            }`}>
+                                                <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
+                                            </div>
+                                            <span className="text-[9px] opacity-40 mt-1 px-1">
+                                                {formatTime(msg.createdAt)}
+                                            </span>
+                                        </div>
+                                    );
+                                })
+                            )}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* Form Input */}
+                        <form onSubmit={handleSendMessage} className="p-4 border-t border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/[0.01] flex items-center gap-3 shrink-0">
+                            <input
+                                type="text"
+                                value={inputText}
+                                onChange={(e) => setInputText(e.target.value)}
+                                placeholder="Ekri mesaj ou a la..."
+                                className="flex-1 bg-black/10 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl px-5 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 transition-colors"
+                            />
+                            <button
+                                type="submit"
+                                disabled={!inputText.trim() || sending}
+                                className={`h-11 px-5 bg-primary hover:bg-primary/95 text-white font-bold rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shrink-0 ${
+                                    (!inputText.trim() || sending) ? "opacity-50 cursor-not-allowed" : ""
+                                }`}
+                            >
+                                <span className="text-xs uppercase tracking-wider">Voye</span>
+                                <span className="material-symbols-outlined text-sm">send</span>
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
@@ -294,6 +368,6 @@ export default function StudentChatPage() {
                 type="alert"
                 isDanger={true}
             />
-        </div>
+        </>
     );
 }
