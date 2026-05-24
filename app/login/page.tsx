@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithCustomToken, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
+import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithCustomToken } from "firebase/auth";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 // Importation des fonctions Firestore pour manipuler les documents
@@ -143,7 +143,6 @@ export default function LoginPage() {
     const [verificationError, setVerificationError] = useState<string | null>(null);
     const [magicLinkToken, setMagicLinkToken] = useState<string | null>(null);
     const [whatsappRedirect, setWhatsappRedirect] = useState<{ url: string; businessPhone: string; isNewUser?: boolean } | null>(null);
-    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
     // Effet pour fermer le dropdown des pays au clic extérieur
@@ -299,55 +298,22 @@ export default function LoginPage() {
                 setCooldownSeconds(0);
                 setStep('verify');
             } else {
-                if (loginMethod === 'phone') {
-                    if (!(window as any).recaptchaVerifier) {
-                        (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                            size: 'invisible'
-                        });
-                    }
-                    const appVerifier = (window as any).recaptchaVerifier;
-                    const confirmation = await signInWithPhoneNumber(auth, contactToUse, appVerifier);
-                    setConfirmationResult(confirmation);
-                    setVerificationError(null);
-                    setVerificationCode("");
-                    setCooldownSeconds(60);
-                    setStep('verify');
-                } else {
-                    const genData = await generateOtpAction(contactToUse, 'email');
-                    if (genData.error) throw new Error(genData.error);
+                const genData = await generateOtpAction(contactToUse, loginMethod === 'phone' ? 'phone' : 'email');
+                if (genData.error) throw new Error(genData.error);
 
-                    setVerificationError(null);
-                    setVerificationCode("");
-                    setCooldownSeconds(60);
-                    setStep('verify');
+                if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
+                    window.open(`https://wa.me/${genData.businessPhone}?text=${encodeURIComponent("Bonjou, mwen ta renmen resevwa kòd verifikasyon mwen an.")}`, "_blank");
                 }
+
+                setVerificationError(null);
+                setVerificationCode("");
+                setCooldownSeconds(60);
+                setStep('verify');
             }
         } catch (err: any) {
             console.error("Erreur de connexion sans mot de passe :", err);
             if (err.message && err.message.toLowerCase().includes("server action")) {
                 setError("Tanpri refrechi paj la konplètman (F5 oswa glise desann). Gen yon mizajou ki fèk fèt sou sit la.");
-            } else if (err.message && err.message.includes("auth/invalid-app-credential")) {
-                setError("Sistèm sekirite a bloke demand nan (reCAPTCHA echwe). Tanpri refrechi paj la epi reyezi, oswa chwazi WhatsApp pito.");
-                if ((window as any).recaptchaVerifier) {
-                    try {
-                        (window as any).recaptchaVerifier.clear();
-                        (window as any).recaptchaVerifier = null;
-                        const container = document.getElementById("recaptcha-container");
-                        if (container) container.innerHTML = "";
-                    } catch (e) {}
-                }
-            } else if (err.message && err.message.includes("reCAPTCHA has already been rendered in this element")) {
-                setError("Sistèm sekirite a anrejistre yon erè. Tanpri refrechi paj la (F5), oswa eseye konekte ak WhatsApp pito.");
-                if ((window as any).recaptchaVerifier) {
-                    try {
-                        (window as any).recaptchaVerifier.clear();
-                        (window as any).recaptchaVerifier = null;
-                        const container = document.getElementById("recaptcha-container");
-                        if (container) container.innerHTML = "";
-                    } catch (e) {}
-                }
-            } else if (err.message && err.message.includes("auth/too-many-requests")) {
-                setError("Ou fè twòp demand an menm tan. Tanpri tann kèk minit epi reyezi, oswa chwazi WhatsApp pito.");
             } else {
                 setError(err.message || "Gen yon erè ki fèt. Tanpri reyezi ankò.");
             }
@@ -359,53 +325,26 @@ export default function LoginPage() {
     // Validation du code OTP (SMS / E-mail)
     const handleVerifyOtpSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const requiredLength = loginMethod === 'phone' ? 6 : 4;
-        if (!verificationCode || verificationCode.length !== requiredLength) {
-            setVerificationError(`Kòd la dwe gen ${requiredLength} chif presizeman.`);
+        if (!verificationCode || verificationCode.length !== 4) {
+            setVerificationError("Kòd la dwe gen 4 chif presizeman.");
             return;
         }
         setIsLoading(true);
         setVerificationError(null);
 
         try {
-            if (loginMethod === 'phone') {
-                if (!confirmationResult) {
-                    throw new Error("Erreur : Aucun code envoyé.");
-                }
-                const result = await confirmationResult.confirm(verificationCode.trim());
-                if (result.user) {
-                    const userRef = doc(db, "users", result.user.uid);
-                    const userSnap = await getDoc(userRef);
-                    if (!userSnap.exists()) {
-                        await setDoc(userRef, {
-                            uid: result.user.uid,
-                            phone: verifiedPhone,
-                            name: "Client",
-                            role: "customer",
-                            createdAt: serverTimestamp(),
-                            status: "active",
-                            enrollmentCount: 0
-                        });
-                    }
-                }
-            } else {
-                const contactToUse = loginMethod === 'whatsapp' ? verifiedPhone : email;
-                const typeParam = loginMethod === 'whatsapp' ? 'whatsapp' : 'email';
-                const data = await verifyOtpAndLoginAction(contactToUse, verificationCode.trim(), typeParam);
+            const contactToUse = (loginMethod === 'phone' || loginMethod === 'whatsapp') ? verifiedPhone : email;
+            const typeParam = loginMethod === 'phone' ? 'phone' : (loginMethod === 'whatsapp' ? 'whatsapp' : 'email');
+            const data = await verifyOtpAndLoginAction(contactToUse, verificationCode.trim(), typeParam);
 
-                if (data.error) throw new Error(data.error);
+            if (data.error) throw new Error(data.error);
 
-                if (data.customToken) {
-                    await signInWithCustomToken(auth, data.customToken);
-                }
+            if (data.customToken) {
+                await signInWithCustomToken(auth, data.customToken);
             }
         } catch (err: any) {
             if (err.message && err.message.toLowerCase().includes("server action")) {
                 setVerificationError("Tanpri refrechi paj la konplètman (F5). Gen yon mizajou ki fèk fèt sou sit la.");
-            } else if (err.message && err.message.includes("auth/invalid-verification-code")) {
-                setVerificationError("Kòd ou antre a pa bon. Tanpri verifye l epi reyezi.");
-            } else if (err.message && err.message.includes("auth/too-many-requests")) {
-                setVerificationError("Ou eseye twòp fwa. Tanpri tann kèk minit anvan ou eseye ankò.");
             } else {
                 setVerificationError(err.message || "Kòd verifikasyon sa a pa bon.");
             }
@@ -740,7 +679,7 @@ export default function LoginPage() {
                                             </div>
                                             <h3 className="font-bold text-base text-white">Antre kòd verifikasyon an</h3>
                                             <p className="text-xs text-white/50 max-w-xs leading-relaxed mt-1">
-                                                Antre kòd {loginMethod === 'phone' ? '6' : '4'} chif nou voye nan : <br />
+                                                Antre kòd 4 chif nou voye nan : <br />
                                                 <span className="text-white font-bold">{loginMethod === 'phone' ? verifiedPhone : email}</span>
                                             </p>
                                         </div>
@@ -748,13 +687,13 @@ export default function LoginPage() {
                                         <div className="flex flex-col gap-1.5">
                                             <input
                                                 type="text"
-                                                maxLength={loginMethod === 'phone' ? 6 : 4}
+                                                maxLength={4}
                                                 value={verificationCode}
                                                 onChange={(e) => {
                                                     const val = e.target.value.replace(/\D/g, "");
                                                     setVerificationCode(val);
                                                 }}
-                                                placeholder={loginMethod === 'phone' ? "000000" : "0000"}
+                                                placeholder="0000"
                                                 className="w-full text-center tracking-[1em] pl-[1em] py-3.5 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-lg font-black text-white placeholder:text-white/10"
                                                 required
                                                 autoFocus
@@ -769,7 +708,7 @@ export default function LoginPage() {
 
                                         <button
                                             type="submit"
-                                            disabled={isLoading || verificationCode.length !== (loginMethod === 'phone' ? 6 : 4)}
+                                            disabled={isLoading || verificationCode.length !== 4}
                                             className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:pointer-events-none"
                                         >
                                             {isLoading ? (
@@ -1067,7 +1006,6 @@ export default function LoginPage() {
                         "Mond lan Gen ase richès pou tout moun jwenn epi viv byen."
                     </p>
                 </div>
-                <div id="recaptcha-container"></div>
             </div>
 
             {/* Right Side: Sleek Designer Panel */}
