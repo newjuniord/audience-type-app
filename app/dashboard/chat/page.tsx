@@ -425,22 +425,148 @@ export default function StudentChatPage() {
             </div>
 
             {/* ===== DESKTOP ===== */}
-            <div className="hidden md:flex relative min-h-[calc(100vh-80px)] w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-primary dark:text-white px-10 py-8">
-                <div className="max-w-[800px] w-full mx-auto flex flex-col flex-1">
-                    <div className="flex items-center justify-between mb-6">
-                        <div><h1 className="text-2xl font-black uppercase tracking-tight">Asistans Teknik</h1><p className="text-xs text-white/50">Poze admin nenpòt kesyon sou kou ou yo.</p></div>
-                        <Link href="/dashboard" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold transition-all"><span className="material-symbols-outlined text-sm">arrow_back</span>Retounen</Link>
-                    </div>
-                    <div className="bg-white dark:bg-[#121212]/80 border border-black/5 dark:border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[620px] backdrop-blur-md">
-                        <div className="px-6 py-4 border-b border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/[0.02] flex items-center gap-3 shrink-0">
-                            <div className="relative"><div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary"><span className="material-symbols-outlined text-lg">support_agent</span></div><div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#121212] animate-pulse" /></div>
-                            <div><div className="text-sm font-bold">Admin DJR Akademi</div><div className="text-[10px] text-green-400 font-semibold uppercase tracking-wider">Enliy kounye a</div></div>
+            <div className="hidden md:flex relative min-h-[calc(100vh-80px)] w-full overflow-x-hidden bg-background-light dark:bg-background-dark text-primary dark:text-white">
+                <div className="w-full max-w-[1200px] mx-auto flex gap-6 px-8 py-8 h-[calc(100vh-80px)]">
+
+                    {/* ── Left sidebar ── */}
+                    <div className="w-72 shrink-0 flex flex-col gap-4">
+                        {/* Back link */}
+                        <Link href="/dashboard" className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-sm font-bold transition-all active:scale-95 group">
+                            <span className="material-symbols-outlined text-base group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+                            Retounen nan dashboard
+                        </Link>
+
+                        {/* Admin card */}
+                        <div className="bg-white dark:bg-white/[0.03] border border-black/5 dark:border-white/[0.07] rounded-3xl p-5 shadow-lg">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="relative shrink-0">
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center text-primary">
+                                        <span className="material-symbols-outlined text-xl">support_agent</span>
+                                    </div>
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-[#111] shadow-lg animate-pulse" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-extrabold leading-tight">Admin DJR Akademi</p>
+                                    <p className="text-[11px] text-green-400 font-semibold mt-0.5">● Disponib kounye a</p>
+                                </div>
+                            </div>
+                            <div className="h-px bg-black/5 dark:bg-white/5 mb-4" />
+                            <div className="space-y-2.5 text-xs text-black/50 dark:text-white/40">
+                                <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-sm text-primary/70">schedule</span>
+                                    <span>Repons mwens pase <strong className="text-black/70 dark:text-white/60">24 tè</strong></span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-sm text-primary/70">translate</span>
+                                    <span>Kreyòl, Fransè, Anglè</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-sm text-primary/70">verified</span>
+                                    <span>Sipò ofisyèl DJR Akademi</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-6 space-y-4 select-text">
-                            {messages.length === 0 ? <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-6 py-10"><span className="material-symbols-outlined text-5xl mb-3 animate-bounce">forum</span><p className="text-sm font-bold">Ekri premye mesaj ou a pou kòmanse diskisyon an.</p><p className="text-xs mt-1">Ekip admin la ap reponn ou trè vit.</p></div> : messages.map((m) => renderBubble(m, m.senderId === user?.uid, false))}
+
+                        {/* Quick tips */}
+                        <div className="bg-white dark:bg-white/[0.03] border border-black/5 dark:border-white/[0.07] rounded-3xl p-5 shadow-lg flex-1">
+                            <p className="text-[11px] font-extrabold uppercase tracking-widest text-black/30 dark:text-white/30 mb-3">Kèk konsèy rapid</p>
+                            <div className="space-y-2">
+                                {[
+                                    { icon: "school", text: "Mande konsèy sou kou ou a" },
+                                    { icon: "photo_camera", text: "Voye yon screenshot si w gen pwoblèm" },
+                                    { icon: "mic", text: "Voye yon mesaj vokal si li pi fasil" },
+                                    { icon: "lock", text: "Pa janm pataje mo de pàs ou" },
+                                ].map((tip, i) => (
+                                    <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors">
+                                        <span className="material-symbols-outlined text-base text-primary/60 shrink-0 mt-0.5">{tip.icon}</span>
+                                        <span className="text-xs text-black/60 dark:text-white/50 leading-snug">{tip.text}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── Main chat panel ── */}
+                    <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0f0f0f] border border-black/5 dark:border-white/[0.07] rounded-3xl overflow-hidden shadow-2xl">
+
+                        {/* Chat header */}
+                        <div className="px-6 py-4 border-b border-black/[0.06] dark:border-white/[0.05] bg-gradient-to-r from-primary/[0.04] to-transparent flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-base text-primary">forum</span>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-extrabold leading-tight">Konvèsasyon Sipo</p>
+                                    <p className="text-[10px] text-black/40 dark:text-white/30 font-medium">{messages.length} mesaj</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                                <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Enliy</span>
+                            </div>
+                        </div>
+
+                        {/* Messages area */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-5 select-text" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.08) transparent" }}>
+                            {messages.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center text-center px-8 py-12 gap-4 opacity-60">
+                                    <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-2">
+                                        <span className="material-symbols-outlined text-4xl text-primary">chat_bubble_outline</span>
+                                    </div>
+                                    <p className="text-base font-extrabold">Pa gen mesaj pou kounye a</p>
+                                    <p className="text-sm max-w-xs leading-relaxed">Ekri premye mesaj ou a pou kòmanse diskisyon an. Ekip admin la ap reponn ou trè vit!</p>
+                                </div>
+                            ) : (
+                                messages.map((m) => {
+                                    const isMe = m.senderId === user?.uid;
+                                    return (
+                                        <div key={m.id} className={`flex flex-col gap-1 ${isMe ? "items-end" : "items-start"}`}>
+                                            {!isMe && (
+                                                <span className="text-[10px] font-bold text-black/30 dark:text-white/25 px-1 uppercase tracking-wide">Admin</span>
+                                            )}
+                                            <div className={`max-w-[65%] rounded-2xl overflow-hidden shadow-sm ${
+                                                isMe
+                                                    ? "bg-primary text-white rounded-tr-sm"
+                                                    : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/[0.05] dark:border-white/[0.06] rounded-tl-sm"
+                                            }`}>
+                                                {m.type === "image" && m.mediaUrl ? (
+                                                    <div>
+                                                        <a href={m.mediaUrl} target="_blank" rel="noopener noreferrer">
+                                                            <img src={m.mediaUrl} alt="Image" className="w-full max-w-[320px] object-cover hover:opacity-90 transition-opacity cursor-zoom-in" loading="lazy" />
+                                                        </a>
+                                                        {m.text && m.text !== "📷 Imaj" && <p className="px-4 py-2 text-[13px] whitespace-pre-wrap break-words">{m.text}</p>}
+                                                    </div>
+                                                ) : m.type === "voice" && m.mediaUrl ? (
+                                                    <div className="px-4 py-3 flex items-center gap-3 min-w-[200px]">
+                                                        <button onClick={() => { const a = document.getElementById(`audio-${m.id}`) as HTMLAudioElement; a?.paused ? a?.play() : a?.pause(); }} className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${isMe ? "bg-white/20 hover:bg-white/30" : "bg-primary/10 hover:bg-primary/20"}`}>
+                                                            <span className={`material-symbols-outlined text-sm ${isMe ? "text-white" : "text-primary"}`}>play_arrow</span>
+                                                        </button>
+                                                        <div className="flex-1 flex flex-col gap-1.5">
+                                                            <div className={`h-1 rounded-full overflow-hidden ${isMe ? "bg-white/20" : "bg-black/10 dark:bg-white/10"}`}>
+                                                                <div className={`h-full rounded-full w-0 ${isMe ? "bg-white/70" : "bg-primary/60"}`} />
+                                                            </div>
+                                                            <span className="text-[10px] opacity-50 font-medium">{formatDuration(m.voiceDuration || 0)}</span>
+                                                        </div>
+                                                        <audio id={`audio-${m.id}`} src={m.mediaUrl} preload="none" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="px-4 py-2.5">
+                                                        <p className="text-[13.5px] whitespace-pre-wrap break-words leading-relaxed">{m.text}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span className={`text-[9px] font-medium opacity-30 px-1 ${isMe ? "text-right" : "text-left"}`}>{formatTime(m.createdAt)}</span>
+                                        </div>
+                                    );
+                                })
+                            )}
                             <div ref={messagesEndRef} />
                         </div>
-                        {renderInputBar(false)}
+
+                        {/* Input area — reuse existing renderer but override wrapper */}
+                        <div className="shrink-0 border-t border-black/[0.05] dark:border-white/[0.05]">
+                            {renderInputBar(false)}
+                        </div>
                     </div>
                 </div>
             </div>
