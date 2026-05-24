@@ -347,8 +347,9 @@ export default function LoginPage() {
     // Validation du code OTP (SMS / E-mail)
     const handleVerifyOtpSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!verificationCode || verificationCode.length !== 4) {
-            setVerificationError("Kòd la dwe gen 4 chif presizeman.");
+        const requiredLength = loginMethod === 'phone' ? 6 : 4;
+        if (!verificationCode || verificationCode.length !== requiredLength) {
+            setVerificationError(`Kòd la dwe gen ${requiredLength} chif presizeman.`);
             return;
         }
         setIsLoading(true);
@@ -389,6 +390,8 @@ export default function LoginPage() {
         } catch (err: any) {
             if (err.message && err.message.toLowerCase().includes("server action")) {
                 setVerificationError("Tanpri refrechi paj la konplètman (F5). Gen yon mizajou ki fèk fèt sou sit la.");
+            } else if (err.message && err.message.includes("auth/invalid-verification-code")) {
+                setVerificationError("Kòd ou antre a pa bon. Tanpri verifye l epi reyezi.");
             } else {
                 setVerificationError(err.message || "Kòd verifikasyon sa a pa bon.");
             }
@@ -723,7 +726,7 @@ export default function LoginPage() {
                                             </div>
                                             <h3 className="font-bold text-base text-white">Antre kòd verifikasyon an</h3>
                                             <p className="text-xs text-white/50 max-w-xs leading-relaxed mt-1">
-                                                Antre kòd 4 chif nou voye nan : <br />
+                                                Antre kòd {loginMethod === 'phone' ? '6' : '4'} chif nou voye nan : <br />
                                                 <span className="text-white font-bold">{loginMethod === 'phone' ? verifiedPhone : email}</span>
                                             </p>
                                         </div>
@@ -731,13 +734,13 @@ export default function LoginPage() {
                                         <div className="flex flex-col gap-1.5">
                                             <input
                                                 type="text"
-                                                maxLength={4}
+                                                maxLength={loginMethod === 'phone' ? 6 : 4}
                                                 value={verificationCode}
                                                 onChange={(e) => {
                                                     const val = e.target.value.replace(/\D/g, "");
                                                     setVerificationCode(val);
                                                 }}
-                                                placeholder="0000"
+                                                placeholder={loginMethod === 'phone' ? "000000" : "0000"}
                                                 className="w-full text-center tracking-[1em] pl-[1em] py-3.5 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-lg font-black text-white placeholder:text-white/10"
                                                 required
                                                 autoFocus
@@ -752,7 +755,7 @@ export default function LoginPage() {
 
                                         <button
                                             type="submit"
-                                            disabled={isLoading || verificationCode.length !== 4}
+                                            disabled={isLoading || verificationCode.length !== (loginMethod === 'phone' ? 6 : 4)}
                                             className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:pointer-events-none"
                                         >
                                             {isLoading ? (
