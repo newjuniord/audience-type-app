@@ -882,8 +882,8 @@ export default function ConsultationPage() {
           product={{
             id: service.id!,
             title: service.title,
-            priceHTG: service.priceHTG || 0,
-            price: parseFloat(service.price.replace(/[^0-9.]/g, '')) || 0,
+            priceHTG: typeof service.priceHTG === 'number' ? service.priceHTG : parseFloat(String(service.priceHTG || '0')) || 0,
+            price: typeof service.price === 'number' ? service.price : parseFloat(String(service.price).replace(/[^0-9.]/g, '')) || 0,
             currency: "$",
             type: "service",
             image: service.imageUrl || "",

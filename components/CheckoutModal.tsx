@@ -137,6 +137,10 @@ function formatPhone(digits: string, countryCode: string): string {
 
 export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymentRedirect }: CheckoutModalProps) {
   const { user: currentUser } = useAuth();
+  const priceHTG = typeof product.priceHTG === 'number'
+    ? product.priceHTG
+    : (product.priceHTG ? parseFloat(String(product.priceHTG)) : 0);
+
   const [isClosing, setIsClosing] = useState(false);
   const [animate, setAnimate] = useState(false); // Controls opening animation
   const [dragY, setDragY] = useState(0);
@@ -438,7 +442,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
     setError(null);
 
     try {
-      const amountValue = method === 'moncash' ? product.priceHTG : (typeof product.price === 'number' ? product.price : parseFloat(product.price.toString()));
+      const amountValue = method === 'moncash' ? priceHTG : (typeof product.price === 'number' ? product.price : parseFloat(product.price.toString()));
       const currencyValue = method === 'moncash' ? "HTG" : product.currency;
       const finalEmail = (email || currentUser?.email || "").trim().toLowerCase();
       const finalPhone = verifiedPhone || currentUser?.phoneNumber || "";
@@ -517,15 +521,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
     }
   };
 
-  const shouldShowMonCash = 
-    selectedCountry.code === 'HT' ||
-    selectedCountry.code === 'DO' ||
-    selectedCountry.code === 'KR' ||
-    phone.startsWith('+509') ||
-    phone.startsWith('509') ||
-    verifiedPhone.startsWith('+509') ||
-    verifiedPhone.startsWith('509') ||
-    (currentUser?.phoneNumber && (currentUser.phoneNumber.startsWith('+509') || currentUser.phoneNumber.startsWith('509')));
+  const shouldShowMonCash = true;
 
   if (!isOpen) return null;
 
@@ -791,15 +787,15 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                   {shouldShowMonCash && (
                     <button 
                       onClick={() => handlePurchase('moncash')} 
-                      disabled={isLoading || product.priceHTG <= 0} 
+                      disabled={isLoading || priceHTG <= 0} 
                       className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-[#e30713]/20 to-[#e30713]/5 border-2 border-[#e30713]/50 hover:border-[#e30713] rounded-2xl transition-all active:scale-95 disabled:opacity-50 disabled:grayscale group text-left"
                     >
                       <img src="/images/moncash-logo.png" alt="MonCash" className="size-12 object-contain rounded-xl shadow-lg shrink-0" />
                       <div className="flex-1">
                         <p className="font-black text-sm">
-                          MonCash {product.priceHTG > 0 ? `(${product.priceHTG} HTG)` : ''}
+                          MonCash {priceHTG > 0 ? `(${priceHTG} HTG)` : ''}
                         </p>
-                        {product.priceHTG > 0 ? (
+                        {priceHTG > 0 ? (
                           <p className="text-xs text-white/50 font-medium">Peman mobil ayisyen</p>
                         ) : (
                           <p className="text-xs text-red-400 font-semibold mt-0.5">

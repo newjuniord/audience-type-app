@@ -766,7 +766,9 @@ export default function StartPage() {
       }
 
       // 2. Créer l'utilisateur et la commande de manière sécurisée (Server-side)
-      const amountValue = method === 'moncash' ? (courseData.priceGourdes || 0) : (courseData.currentPrice || 0);
+      const priceGourdesNum = typeof courseData.priceGourdes === 'number' ? courseData.priceGourdes : parseFloat(String(courseData.priceGourdes || '0')) || 0;
+      const currentPriceNum = typeof courseData.currentPrice === 'number' ? courseData.currentPrice : parseFloat(String(courseData.currentPrice).replace(/[^0-9.]/g, '')) || 0;
+      const amountValue = method === 'moncash' ? priceGourdesNum : currentPriceNum;
       const currencyValue = method === 'moncash' ? "HTG" : (courseData.currency || "USD");
 
       const finalEmail = (email || currentUser?.email || "").trim().toLowerCase();
@@ -1274,8 +1276,8 @@ export default function StartPage() {
           product={{
             id: courseData.id || "",
             title: courseData.headline,
-            priceHTG: courseData.priceGourdes,
-            price: courseData.currentPrice,
+            priceHTG: typeof courseData.priceGourdes === 'number' ? courseData.priceGourdes : parseFloat(String(courseData.priceGourdes || '0')) || 0,
+            price: typeof courseData.currentPrice === 'number' ? courseData.currentPrice : parseFloat(String(courseData.currentPrice).replace(/[^0-9.]/g, '')) || 0,
             currency: courseData.currency,
             lemonSqueezyId: courseData.lemonSqueezyId,
             type: courseData.linkedProductType || "course",

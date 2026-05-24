@@ -238,19 +238,14 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
         }, { merge: true });
 
         // Envoi effectif de l'OTP
-        if (type === 'phone' || type === 'whatsapp') {
+        if (type === 'whatsapp') {
             const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
                 "🔑 *VÉRIFICATION DJR AKADEMI*\n\nVoici ton code de vérification pour accéder à la plateforme : {{code}}\n\nNe partage jamais ce code.";
             
             const message = formatMessageTemplate(authTemplate, { code, link: "audiencetype.com", userName: "Client" });
             
-            if (type === 'whatsapp') {
-                await sendWhatsAppMessage(contactClean, message);
-                console.log(`📩 [WhatsApp] Code envoyé directement à ${contactClean} (fenêtre 24h ouverte)`);
-            } else {
-                await sendSmsMessage(contactClean, message);
-                console.log(`📩 [SMS] Code de vérification envoyé à ${contactClean}`);
-            }
+            await sendWhatsAppMessage(contactClean, message);
+            console.log(`📩 [WhatsApp] Code envoyé directement à ${contactClean} (fenêtre 24h ouverte)`);
         } else if (type === 'email') {
             const sendgridKey = process.env.SENDGRID_API_KEY;
             const fromEmail = process.env.SENDGRID_FROM_EMAIL || "contact@audiencetype.com";

@@ -267,8 +267,8 @@ export default function FeaturedProducts({
                     product={{
                         id: selectedProduct.id!,
                         title: selectedProduct.title,
-                        priceHTG: selectedProduct.priceHTG || 0,
-                        price: parseFloat(selectedProduct.price.replace(/[^0-9.]/g, '')) || 0,
+                        priceHTG: typeof selectedProduct.priceHTG === 'number' ? selectedProduct.priceHTG : parseFloat(String(selectedProduct.priceHTG || '0')) || 0,
+                        price: typeof selectedProduct.price === 'number' ? selectedProduct.price : parseFloat(String(selectedProduct.price).replace(/[^0-9.]/g, '')) || 0,
                         currency: "$",
                         type: selectedProduct.type.toLowerCase() === "course" ? "course" : selectedProduct.type.toLowerCase() === "ebook" ? "ebook" : "service",
                         image: selectedProduct.image,

@@ -24,7 +24,10 @@ export default async function ProductCatalog() {
             image: c.thumbnail || "/logo1.png",
             description: c.description,
             features: c.includedItems || [],
-            isOwned: false
+            isOwned: false,
+            isInvitationOnly: c.isInvitationOnly || false,
+            invitationCode: c.invitationCode || "",
+            priceHTG: c.priceHTG
         })),
         ...ebooks.filter(e => e.status === 'published').map(e => ({
             id: e.id,
@@ -34,7 +37,10 @@ export default async function ProductCatalog() {
             image: e.coverImage || "/logo1.png",
             description: e.description,
             features: e.includedItems || [],
-            isOwned: false
+            isOwned: false,
+            isInvitationOnly: e.isInvitationOnly || false,
+            invitationCode: e.invitationCode || "",
+            priceHTG: e.priceHTG
         })),
         ...services.filter(s => s.status === 'published' || (s.status === undefined && s.active === true)).map(s => ({
             id: s.id,
@@ -44,7 +50,11 @@ export default async function ProductCatalog() {
             image: s.imageUrl || "/logo1.png",
             description: s.description,
             features: s.includedItems || [],
-            isOwned: false
+            isOwned: false,
+            isInvitationOnly: s.isInvitationOnly || false,
+            invitationCode: s.invitationCode || "",
+            priceHTG: s.priceHTG,
+            availability: s.availability
         }))
     ].sort(() => 0.5 - Math.random());
 
