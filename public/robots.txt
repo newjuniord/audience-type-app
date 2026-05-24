@@ -1,3 +1,4 @@
+# Règles générales pour les moteurs de recherche normaux (Google, Bing, etc.)
 User-agent: *
 Allow: /
 Disallow: /dashboard/
@@ -7,5 +8,30 @@ Disallow: /login
 Disallow: /register
 Disallow: /reset-password
 Disallow: /payment-success
+
+# Bloquer explicitement les robots d'IA (Scraping pour entraînement)
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Anthropic-ai
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
 
 Sitemap: https://audiencetype.com/sitemap.xml
