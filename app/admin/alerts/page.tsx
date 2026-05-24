@@ -91,7 +91,7 @@ export default function AdminAlertsPage() {
         setSending(true);
         try {
             const preset = ALERT_PRESETS[selectedPreset];
-            const baseAlert = {
+            const baseAlert: any = {
                 category: preset.category,
                 type: preset.type,
                 icon: preset.icon,
@@ -99,19 +99,29 @@ export default function AdminAlertsPage() {
                 iconBg: preset.iconBg,
                 title,
                 body,
-                actionUrl: actionUrl || undefined,
-                actionLabel: actionLabel || undefined,
                 isRead: false,
                 createdAt: Timestamp.now(),
             };
 
+            if (actionUrl) {
+                baseAlert.actionUrl = actionUrl;
+            }
+            if (actionLabel) {
+                baseAlert.actionLabel = actionLabel;
+            }
+
             if (targetMode === "all") {
-                const batch = writeBatch(db);
-                users.forEach((u) => {
-                    const ref = doc(collection(db, "alerts"));
-                    batch.set(ref, { ...baseAlert, userId: u.uid });
-                });
-                await batch.commit();
+                // Chunk the writes in batches of 450 to avoid Firestore's 500 limit
+                const chunkSize = 450;
+                for (let i = 0; i < users.length; i += chunkSize) {
+                    const chunk = users.slice(i, i + chunkSize);
+                    const batch = writeBatch(db);
+                    chunk.forEach((u) => {
+                        const ref = doc(collection(db, "alerts"));
+                        batch.set(ref, { ...baseAlert, userId: u.uid });
+                    });
+                    await batch.commit();
+                }
             } else {
                 await addDoc(collection(db, "alerts"), { ...baseAlert, userId: selectedUserId });
             }
@@ -119,7 +129,7 @@ export default function AdminAlertsPage() {
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
         } catch (e) {
-            console.error(e);
+            console.error("Error sending alerts:", e);
             alert("Erreur lors de l'envoi.");
         } finally {
             setSending(false);
