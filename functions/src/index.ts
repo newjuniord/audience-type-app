@@ -466,7 +466,9 @@ export const onenrollmentcreated = onDocumentCreated({
         return;
     }
 
-    const isGift = enrollmentData.isGift || enrollmentData.orderId === "admin_gift";
+    // Yon kado vrè se sèlman si li soti nan paj Kado a (isGift === true)
+    // Si se admin ki bay aksè a (orderId === "admin_gift"), nou pa konsidere l tankou "Kado Espesyal" ankò
+    const isGift = enrollmentData.isGift === true;
     const productTitle = enrollmentData.productTitle || "";
     const productType = enrollmentData.productType || "Course";
 
