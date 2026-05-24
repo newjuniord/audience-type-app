@@ -22,6 +22,7 @@ interface Message {
     voiceDuration?: number;
     createdAt: any;
     isPending?: boolean;
+    isRead?: boolean;
 }
 
 export default function StudentChatPage() {
@@ -85,7 +86,7 @@ export default function StudentChatPage() {
             const msgs: Message[] = [];
             snap.forEach((d) => {
                 const data = d.data();
-                msgs.push({ id: d.id, senderId: data.senderId, senderName: data.senderName || "", text: data.text || "", type: data.type || "text", mediaUrl: data.mediaUrl || "", voiceDuration: data.voiceDuration || 0, createdAt: data.createdAt, isPending: d.metadata.hasPendingWrites });
+                msgs.push({ id: d.id, senderId: data.senderId, senderName: data.senderName || "", text: data.text || "", type: data.type || "text", mediaUrl: data.mediaUrl || "", voiceDuration: data.voiceDuration || 0, createdAt: data.createdAt, isPending: d.metadata.hasPendingWrites, isRead: data.isRead });
             });
             setMessages(msgs);
             setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
@@ -344,10 +345,10 @@ export default function StudentChatPage() {
                             <p className="text-[13px] whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
                         </div>
                     )}
-                    {/* Time + sent checkmark inside bubble */}
+                    {/* Time + read checkmarks inside bubble */}
                     <div className={`flex items-center gap-1 px-3.5 pb-1.5 ${isMe ? "justify-end" : "justify-start"}`}>
                         <span className={`text-[9px] ${isMe ? "text-white/50" : "text-white/30"}`}>{formatTime(msg.createdAt)}</span>
-                        {isMe && !msg.isPending && <span className="text-[9px] text-white/60 font-bold">✓</span>}
+                        {isMe && msg.isRead && <span className="text-[10px] text-[#4db8ff] font-black">✓✓</span>}
                     </div>
                 </div>
             </div>
@@ -615,10 +616,10 @@ export default function StudentChatPage() {
                                                             <p className="text-[13.5px] whitespace-pre-wrap break-words leading-relaxed">{m.text}</p>
                                                         </div>
                                                     )}
-                                                    {/* Time + sent checkmark */}
+                                                    {/* Time + read checkmarks */}
                                                     <div className={`flex items-center gap-1 px-4 pb-2 ${isMe ? "justify-end" : "justify-start"}`}>
                                                         <span className={`text-[9px] font-medium ${ isMe ? "text-white/50" : "text-black/30 dark:text-white/25"}`}>{formatTime(m.createdAt)}</span>
-                                                        {isMe && !m.isPending && <span className="text-[9px] text-white/60 font-bold">✓</span>}
+                                                        {isMe && m.isRead && <span className="text-[10px] text-[#4db8ff] font-black">✓✓</span>}
                                                     </div>
                                                 </div>
                                             </div>

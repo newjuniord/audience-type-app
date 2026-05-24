@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-    doc, setDoc, addDoc, collection, query, orderBy, onSnapshot, Timestamp
+    doc, setDoc, addDoc, collection, query, orderBy, onSnapshot, Timestamp, writeBatch
 } from "firebase/firestore";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { uploadChatMedia, compressImage } from "@/lib/chatMedia";
@@ -96,6 +96,7 @@ export default function AdminChatPage() {
 
         const unsub = onSnapshot(q, (snapshot) => {
             const list: Message[] = [];
+            const unreadRefs: any[] = [];
             snapshot.forEach((doc) => {
                 const data = doc.data();
                 list.push({
@@ -108,9 +109,19 @@ export default function AdminChatPage() {
                     voiceDuration: data.voiceDuration || 0,
                     createdAt: data.createdAt
                 });
+                if (data.senderId !== "admin" && !data.isRead) {
+                    unreadRefs.push(doc.ref);
+                }
             });
             setMessages(list);
             
+            // Mark individual messages as read so the student sees the double-checkmark
+            if (unreadRefs.length > 0) {
+                const batch = writeBatch(db);
+                unreadRefs.forEach(ref => batch.update(ref, { isRead: true }));
+                batch.commit().catch(err => console.error("Error marking messages as read:", err));
+            }
+
             // Auto scroll to bottom
             setTimeout(() => {
                 messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
