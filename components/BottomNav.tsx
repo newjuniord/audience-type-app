@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useState, useEffect } from "react";
+import { db } from "@/lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const NAV_ITEMS = [
     {
@@ -25,6 +28,12 @@ const NAV_ITEMS = [
         highlight: true,
     },
     {
+        href: "/dashboard/chat",
+        icon: "chat",
+        icon_active: "chat",
+        label: "Chat",
+    },
+    {
         href: "/consultation",
         icon: "support_agent",
         icon_active: "support_agent",
@@ -35,6 +44,22 @@ const NAV_ITEMS = [
 export default function BottomNav() {
     const pathname = usePathname();
     const { user, loading } = useAuth();
+    const [hasUnread, setHasUnread] = useState(false);
+
+    // Subscribe to unread messages for student
+    useEffect(() => {
+        if (!user) return;
+        const unsub = onSnapshot(doc(db, "chats", user.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                setHasUnread(!!docSnap.data().unreadByUser);
+            } else {
+                setHasUnread(false);
+            }
+        }, (err) => {
+            console.error("Error subscribing to chat unread status:", err);
+        });
+        return () => unsub();
+    }, [user]);
 
     // Only show for authenticated users, on mobile
     if (loading || !user) return null;
@@ -71,6 +96,12 @@ export default function BottomNav() {
                                         {isActive && (
                                             <div className={`absolute inset-0 rounded-2xl ${highlight ? "bg-orange-500/20" : "bg-white/10"}`} />
                                         )}
+
+                                        {/* Unread badge for Chat item */}
+                                        {href === "/dashboard/chat" && hasUnread && (
+                                            <span className="absolute top-1 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse z-10" />
+                                        )}
+
                                         <span
                                             className={`material-symbols-outlined notranslate transition-all duration-300 ${
                                                 isActive

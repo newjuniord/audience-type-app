@@ -6,12 +6,15 @@ import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { useState, useEffect, useRef } from "react";
 import { subscribeToAlerts } from "@/lib/alerts";
+import { db } from "@/lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 export default function DashboardHeader() {
     const { user, userData, loading, role, signOutUser } = useAuth();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [chatUnread, setChatUnread] = useState(false);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -29,6 +32,21 @@ export default function DashboardHeader() {
         if (!user) return;
         const unsub = subscribeToAlerts(user.uid, (alerts) => {
             setUnreadCount(alerts.filter((a) => !a.isRead).length);
+        });
+        return () => unsub();
+    }, [user]);
+
+    // Subscribe to support chat unread status
+    useEffect(() => {
+        if (!user) return;
+        const unsub = onSnapshot(doc(db, "chats", user.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                setChatUnread(!!docSnap.data().unreadByUser);
+            } else {
+                setChatUnread(false);
+            }
+        }, (err) => {
+            console.error("Error subscribing to chat unread status:", err);
         });
         return () => unsub();
     }, [user]);
@@ -52,6 +70,12 @@ export default function DashboardHeader() {
                         </Link>
                         <Link href="/dashboard" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
                             Kontni mwen
+                        </Link>
+                        <Link href="/dashboard/chat" className="relative text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                            Chat Support
+                            {chatUnread && (
+                                <span className="absolute -top-1.5 -right-2.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                            )}
                         </Link>
                         <Link href="/consultation" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
                             Konsiltasyon
@@ -147,10 +171,11 @@ export default function DashboardHeader() {
                                         { href: "/dashboard", icon: "grid_view", label: "Kontni mwen" },
                                         { href: "/products", icon: "storefront", label: "Pwodui" },
                                         { href: "/kado", icon: "redeem", label: "Kado", highlight: true },
+                                        { href: "/dashboard/chat", icon: "chat", label: "Chat Support", badge: chatUnread },
                                         { href: "/consultation", icon: "support_agent", label: "Konsiltasyon" },
                                         { href: "/coaching", icon: "psychology", label: "Coaching" },
                                         { href: "/services", icon: "design_services", label: "Sèvis" },
-                                    ].map(({ href, icon, label, highlight }) => (
+                                    ].map(({ href, icon, label, highlight, badge }) => (
                                         <Link
                                             key={href}
                                             href={href}
@@ -163,6 +188,7 @@ export default function DashboardHeader() {
                                             <span className={`material-symbols-outlined text-base notranslate ${highlight ? "text-orange-500" : "text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white"} transition-colors`}>{icon}</span>
                                             {label}
                                             {highlight && <span className="ml-auto text-[9px] font-black uppercase tracking-widest bg-orange-500/15 text-orange-500 px-2 py-0.5 rounded-full">Gratis</span>}
+                                            {badge && <span className="ml-auto w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
                                         </Link>
                                     ))}
                                 </div>

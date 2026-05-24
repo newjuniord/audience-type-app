@@ -3,10 +3,26 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useState, useEffect } from "react";
+import { db } from "@/lib/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
 export default function AdminSidebar() {
     const pathname = usePathname();
     const { user, userData } = useAuth();
+    const [hasUnreadChats, setHasUnreadChats] = useState(false);
+
+    // Subscribe to unread chat threads for Admin
+    useEffect(() => {
+        const chatRef = collection(db, "chats");
+        const q = query(chatRef, where("unreadByAdmin", "==", true));
+        const unsub = onSnapshot(q, (snapshot) => {
+            setHasUnreadChats(snapshot.size > 0);
+        }, (err) => {
+            console.error("Error subscribing to admin unread chats:", err);
+        });
+        return () => unsub();
+    }, []);
 
     const menuSections = [
         {
@@ -28,6 +44,7 @@ export default function AdminSidebar() {
                 { label: "Notifikasyon 🔔", icon: "notifications", href: "/admin/alerts" },
                 { label: "Reviews", icon: "reviews", href: "/admin/reviews" },
                 { label: "Messages", icon: "mail", href: "/admin/messages" },
+                { label: "Chat Support 💬", icon: "chat", href: "/admin/chat" },
             ]
         },
         {
@@ -63,7 +80,10 @@ export default function AdminSidebar() {
                                             }`}
                                     >
                                         <span className="material-symbols-outlined text-xl">{item.icon}</span>
-                                        <span className="text-sm">{item.label}</span>
+                                        <span className="text-sm flex-1">{item.label}</span>
+                                        {item.href === "/admin/chat" && hasUnreadChats && (
+                                            <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shrink-0" />
+                                        )}
                                     </Link>
                                 );
                             })}
