@@ -31,7 +31,7 @@ export default function StudentChatPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState("");
     const [sending, setSending] = useState(false);
-    const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+    const [hasAccess, setHasAccess] = useState<boolean | "closed" | null>(null);
     const [loadingAccess, setLoadingAccess] = useState(true);
     const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -73,7 +73,9 @@ export default function StudentChatPage() {
                 const platformSnap = await getDoc(platformRef);
                 const chatRule = platformSnap.exists() ? platformSnap.data().chatAccessRule : "enrolled_only";
 
-                if (chatRule === "all") {
+                if (chatRule === "closed") {
+                    setHasAccess("closed");
+                } else if (chatRule === "all") {
                     setHasAccess(true);
                 } else {
                     const snapEnroll = await getDocs(query(collection(db, "enrollments"), where("userId", "==", uid)));
@@ -88,7 +90,7 @@ export default function StudentChatPage() {
 
     // ──── Messages listener ────
     useEffect(() => {
-        if (!user || !hasAccess) return;
+        if (!user || hasAccess !== true) return;
         const uid = user.uid;
         const q = query(collection(db, "chats", uid, "messages"), orderBy("createdAt", "asc"));
         const unsub = onSnapshot(q, { includeMetadataChanges: true }, (snap) => {
@@ -442,6 +444,21 @@ export default function StudentChatPage() {
     };
     // ──── Loading / Access denied ────
     if (loadingAccess) return <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+
+    if (hasAccess === "closed") {
+        return (
+            <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-primary dark:text-white px-6 py-20 items-center justify-center">
+                <div className="max-w-md w-full bg-white/5 border border-white/10 rounded-[2.5rem] p-8 text-center backdrop-blur-lg">
+                    <span className="material-symbols-outlined text-6xl text-amber-500 mb-4">chat_error</span>
+                    <h3 className="text-xl font-bold mb-3">Chat la Fèmen pou Kounye a</h3>
+                    <p className="text-sm opacity-75 mb-8">Administratè a fèmen sèvis chat la pou kounye a. Tanpri re-eseye pita oswa kontakte nou si se yon ijans.</p>
+                    <div className="flex flex-col gap-3">
+                        <Link href="/dashboard" className="h-12 w-full bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl flex items-center justify-center transition-all shadow-lg shadow-primary/25">Retounen nan dashboard</Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (hasAccess === false) {
         return (

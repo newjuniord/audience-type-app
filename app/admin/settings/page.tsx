@@ -9,7 +9,7 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 export default function SettingsPage() {
     const [videoUrl, setVideoUrl] = useState("");
     const [videoVisible, setVideoVisible] = useState(false);
-    const [chatAccessRule, setChatAccessRule] = useState<"all" | "enrolled_only">("enrolled_only");
+    const [chatAccessRule, setChatAccessRule] = useState<"all" | "enrolled_only" | "closed">("enrolled_only");
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [messageModal, setMessageModal] = useState({ isOpen: false, title: "", message: "", type: "alert" as "alert" | "confirm" });
@@ -182,6 +182,19 @@ export default function SettingsPage() {
                         <div>
                             <span className="font-bold block">Ouvert à tous</span>
                             <span className="text-xs text-black/60 dark:text-white/60">N'importe quel utilisateur connecté peut vous envoyer un message.</span>
+                        </div>
+                    </label>
+                    <label className={`flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition-colors ${chatAccessRule === "closed" ? "border-red-500 bg-red-500/5 dark:bg-red-500/10" : "border-black/5 dark:border-white/10 hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"}`}>
+                        <input 
+                            type="radio" 
+                            name="chatAccess" 
+                            checked={chatAccessRule === "closed"} 
+                            onChange={() => setChatAccessRule("closed")}
+                            className="mt-1"
+                        />
+                        <div>
+                            <span className="font-bold block text-red-500">Fermer temporairement</span>
+                            <span className="text-xs text-black/60 dark:text-white/60">Désactive complètement le chat de support pour tous les utilisateurs.</span>
                         </div>
                     </label>
                 </div>
