@@ -21,6 +21,7 @@ interface Message {
     mediaUrl?: string;
     voiceDuration?: number;
     createdAt: any;
+    isPending?: boolean;
 }
 
 export default function StudentChatPage() {
@@ -80,11 +81,11 @@ export default function StudentChatPage() {
         if (!user || !hasAccess) return;
         const uid = user.uid;
         const q = query(collection(db, "chats", uid, "messages"), orderBy("createdAt", "asc"));
-        const unsub = onSnapshot(q, (snap) => {
+        const unsub = onSnapshot(q, { includeMetadataChanges: true }, (snap) => {
             const msgs: Message[] = [];
             snap.forEach((d) => {
                 const data = d.data();
-                msgs.push({ id: d.id, senderId: data.senderId, senderName: data.senderName || "", text: data.text || "", type: data.type || "text", mediaUrl: data.mediaUrl || "", voiceDuration: data.voiceDuration || 0, createdAt: data.createdAt });
+                msgs.push({ id: d.id, senderId: data.senderId, senderName: data.senderName || "", text: data.text || "", type: data.type || "text", mediaUrl: data.mediaUrl || "", voiceDuration: data.voiceDuration || 0, createdAt: data.createdAt, isPending: d.metadata.hasPendingWrites });
             });
             setMessages(msgs);
             setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
@@ -346,7 +347,7 @@ export default function StudentChatPage() {
                     {/* Time + sent checkmark inside bubble */}
                     <div className={`flex items-center gap-1 px-3.5 pb-1.5 ${isMe ? "justify-end" : "justify-start"}`}>
                         <span className={`text-[9px] ${isMe ? "text-white/50" : "text-white/30"}`}>{formatTime(msg.createdAt)}</span>
-                        {isMe && <span className="text-[9px] text-white/60">✓</span>}
+                        {isMe && !msg.isPending && <span className="text-[9px] text-white/60 font-bold">✓</span>}
                     </div>
                 </div>
             </div>
@@ -422,16 +423,10 @@ export default function StudentChatPage() {
                     <span className="material-symbols-outlined text-lg">image</span>
                 </button>
                 <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Ekri mesaj ou a la..." className={`flex-1 border ${inputBg} ${mobile ? "rounded-full px-4 py-2.5" : "rounded-2xl px-5 py-3"} text-sm focus:outline-none transition-colors`} />
-                {inputText.trim() ? (
-                    <button type="submit" disabled={sending} className={`${mobile ? "w-10 h-10" : "h-11 px-5"} bg-primary text-white ${mobile ? "rounded-full" : "rounded-2xl"} flex items-center justify-center ${mobile ? "" : "gap-2"} active:scale-90 transition-all shrink-0 ${sending ? "opacity-40" : "shadow-lg shadow-primary/30"}`}>
-                        {!mobile && <span className="text-xs uppercase tracking-wider">Ale</span>}
-                        <span className="material-symbols-outlined text-lg">send</span>
-                    </button>
-                ) : (
-                    <button type="button" onClick={startRecording} className={`w-10 h-10 rounded-full ${iconBtn} flex items-center justify-center shrink-0 transition-colors active:scale-90`}>
-                        <span className="material-symbols-outlined text-lg">mic</span>
-                    </button>
-                )}
+                <button type="submit" disabled={!inputText.trim() || sending} className={`${mobile ? "w-10 h-10" : "h-11 px-5"} bg-primary text-white ${mobile ? "rounded-full" : "rounded-2xl"} flex items-center justify-center ${mobile ? "" : "gap-2"} active:scale-90 transition-all shrink-0 ${(!inputText.trim() || sending) ? "opacity-40" : "shadow-lg shadow-primary/30"}`}>
+                    {!mobile && <span className="text-xs uppercase tracking-wider">Ale</span>}
+                    <span className="material-symbols-outlined text-lg">send</span>
+                </button>
             </form>
         );
     };
@@ -537,7 +532,6 @@ export default function StudentChatPage() {
                                 {[
                                     { icon: "school", text: "Mande konsèy sou kou ou a" },
                                     { icon: "photo_camera", text: "Voye yon screenshot si w gen pwoblèm" },
-                                    { icon: "mic", text: "Voye yon mesaj vokal si li pi fasil" },
                                     { icon: "lock", text: "Pa janm pataje mo de pàs ou" },
                                 ].map((tip, i) => (
                                     <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors">
@@ -624,7 +618,7 @@ export default function StudentChatPage() {
                                                     {/* Time + sent checkmark */}
                                                     <div className={`flex items-center gap-1 px-4 pb-2 ${isMe ? "justify-end" : "justify-start"}`}>
                                                         <span className={`text-[9px] font-medium ${ isMe ? "text-white/50" : "text-black/30 dark:text-white/25"}`}>{formatTime(m.createdAt)}</span>
-                                                        {isMe && <span className="text-[9px] text-white/60">✓</span>}
+                                                        {isMe && !m.isPending && <span className="text-[9px] text-white/60 font-bold">✓</span>}
                                                     </div>
                                                 </div>
                                             </div>
