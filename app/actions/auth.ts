@@ -96,7 +96,7 @@ export async function checkUserAction(phone: string, email?: string, targetProdu
  * Génère un code OTP (4 chiffres) et l'envoie via SMS ou Email.
  * Gère le rate limiting de 4 ou 10 par 24h selon la méthode dans la collection `otp_code`.
  */
-export async function generateOtpAction(contact: string, type: 'phone' | 'email' | 'whatsapp') {
+export async function generateOtpAction(contact: string, type: 'phone' | 'email' | 'whatsapp' | 'telegram') {
     if (!contact) {
         return { error: "Contact manquant" };
     }
@@ -104,19 +104,21 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
     try {
         const adminDb = getAdminDb();
         let contactClean = type === 'email' ? contact.trim().toLowerCase() : contact.trim();
-        if (type === 'whatsapp' || type === 'phone') {
+        if (type === 'whatsapp' || type === 'phone' || type === 'telegram') {
             contactClean = contactClean.replace(/^whatsapp:/i, '');
             if (!contactClean.startsWith('+')) {
                 contactClean = '+' + contactClean;
             }
         }
 
-        if (type === 'phone') {
+        if (type === 'phone' || type === 'telegram') {
             const preludeApiKey = process.env.PRELUDE_API_KEY;
             if (!preludeApiKey) {
                 console.error("PRELUDE_API_KEY is missing from environment variables.");
                 return { error: "Erreur: Konfigirasyon Prelude la pa kòrèk sou sèvè a." };
             }
+
+            const preferredChannel = type === 'phone' ? 'sms' : type;
 
             try {
                 const response = await fetch("https://api.prelude.dev/v2/verification", {
@@ -131,7 +133,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
                             value: contactClean
                         },
                         options: {
-                            preferred_channel: "sms"
+                            preferred_channel: preferredChannel
                         }
                     })
                 });
@@ -311,7 +313,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
  * Vérifie le code de manière stricte dans la collection `otp_code`.
  * Si valide : vérifie ou crée l'utilisateur dans `users` et génère un token Firebase Auth.
  */
-export async function verifyOtpAndLoginAction(contact: string, code: string, type: 'phone' | 'email' | 'whatsapp') {
+export async function verifyOtpAndLoginAction(contact: string, code: string, type: 'phone' | 'email' | 'whatsapp' | 'telegram') {
     if (!contact || !code) {
         return { error: "Contact ou code manquant" };
     }
@@ -319,13 +321,13 @@ export async function verifyOtpAndLoginAction(contact: string, code: string, typ
     try {
         const adminDb = getAdminDb();
         let contactClean = type === 'email' ? contact.trim().toLowerCase() : contact.trim();
-        if (type === 'whatsapp' || type === 'phone') {
+        if (type === 'whatsapp' || type === 'phone' || type === 'telegram') {
             contactClean = contactClean.replace(/^whatsapp:/i, '');
             if (!contactClean.startsWith('+')) {
                 contactClean = '+' + contactClean;
             }
         }
-        if (type === 'phone') {
+        if (type === 'phone' || type === 'telegram') {
             const preludeApiKey = process.env.PRELUDE_API_KEY;
             if (!preludeApiKey) {
                 console.error("PRELUDE_API_KEY is missing from environment variables.");
@@ -444,7 +446,7 @@ export async function verifyOtpAndLoginAction(contact: string, code: string, typ
         }
 
         // Lier l'ID utilisateur au document otp_code pour un éventuel suivi futur
-        if (type !== 'phone') {
+        if (type !== 'phone' && type !== 'telegram') {
             const contactId = type === 'whatsapp' ? `whatsapp:${contactClean}` : contactClean;
             const otpRef = adminDb.collection("otp_code").doc(contactId);
             await otpRef.update({ userId: userId });
