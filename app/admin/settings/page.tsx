@@ -9,6 +9,7 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 export default function SettingsPage() {
     const [videoUrl, setVideoUrl] = useState("");
     const [videoVisible, setVideoVisible] = useState(false);
+    const [chatAccessRule, setChatAccessRule] = useState<"all" | "enrolled_only">("enrolled_only");
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [messageModal, setMessageModal] = useState({ isOpen: false, title: "", message: "", type: "alert" as "alert" | "confirm" });
@@ -23,6 +24,12 @@ export default function SettingsPage() {
                     const data = docSnap.data();
                     setVideoUrl(data.videoUrl || "");
                     setVideoVisible(!!data.videoVisible);
+                }
+
+                const platformRef = doc(db, "settings", "platform");
+                const platformSnap = await getDoc(platformRef);
+                if (platformSnap.exists()) {
+                    setChatAccessRule(platformSnap.data().chatAccessRule || "enrolled_only");
                 }
             } catch (error) {
                 console.error("Error fetching settings:", error);
@@ -41,6 +48,10 @@ export default function SettingsPage() {
             await setDoc(docRef, {
                 videoUrl,
                 videoVisible
+            }, { merge: true });
+
+            await setDoc(doc(db, "settings", "platform"), {
+                chatAccessRule
             }, { merge: true });
             
             // Show success toast
@@ -137,27 +148,64 @@ export default function SettingsPage() {
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Footer Actions */}
-                <div className="px-8 py-6 bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/5 dark:border-white/10 flex justify-end">
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="px-8 py-4 bg-primary text-white rounded-full font-black text-xs uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center gap-2"
-                    >
-                        {isSaving ? (
-                            <>
-                                <span className="material-symbols-outlined animate-spin font-light">refresh</span>
-                                Sauvegarde...
-                            </>
-                        ) : (
-                            <>
-                                <span className="material-symbols-outlined text-sm font-bold">save</span>
-                                Enregistrer
-                            </>
-                        )}
-                    </button>
+            <div className="bg-white dark:bg-background-dark border border-black/5 dark:border-white/10 rounded-3xl overflow-hidden shadow-xl shadow-black/5 mt-8">
+                <div className="p-8 border-b border-black/5 dark:border-white/10">
+                    <h2 className="text-xl font-bold">Accès au Support Chat</h2>
+                    <p className="text-sm text-black/60 dark:text-white/60 mt-1">
+                        Définissez qui peut utiliser le chat pour contacter le support.
+                    </p>
                 </div>
+                <div className="p-8 space-y-4">
+                    <label className={`flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition-colors ${chatAccessRule === "enrolled_only" ? "border-primary bg-primary/5" : "border-black/5 dark:border-white/10 hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"}`}>
+                        <input 
+                            type="radio" 
+                            name="chatAccess" 
+                            checked={chatAccessRule === "enrolled_only"} 
+                            onChange={() => setChatAccessRule("enrolled_only")}
+                            className="mt-1"
+                        />
+                        <div>
+                            <span className="font-bold block">Réservé aux inscrits</span>
+                            <span className="text-xs text-black/60 dark:text-white/60">Seuls les utilisateurs ayant acheté un produit ou pris un rendez-vous y ont accès.</span>
+                        </div>
+                    </label>
+                    <label className={`flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition-colors ${chatAccessRule === "all" ? "border-primary bg-primary/5" : "border-black/5 dark:border-white/10 hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"}`}>
+                        <input 
+                            type="radio" 
+                            name="chatAccess" 
+                            checked={chatAccessRule === "all"} 
+                            onChange={() => setChatAccessRule("all")}
+                            className="mt-1"
+                        />
+                        <div>
+                            <span className="font-bold block">Ouvert à tous</span>
+                            <span className="text-xs text-black/60 dark:text-white/60">N'importe quel utilisateur connecté peut vous envoyer un message.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex justify-end pt-4">
+                <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="px-8 py-4 bg-primary text-white rounded-full font-black text-xs uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center gap-2"
+                >
+                    {isSaving ? (
+                        <>
+                            <span className="material-symbols-outlined animate-spin font-light">refresh</span>
+                            Sauvegarde...
+                        </>
+                    ) : (
+                        <>
+                            <span className="material-symbols-outlined text-sm font-bold">save</span>
+                            Enregistrer
+                        </>
+                    )}
+                </button>
             </div>
 
             <ConfirmModal

@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
     doc, setDoc, addDoc, collection, query, orderBy,
-    onSnapshot, Timestamp, getDocs, where
+    onSnapshot, Timestamp, getDocs, where, getDoc
 } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -68,9 +68,18 @@ export default function StudentChatPage() {
         const uid = user.uid;
         async function checkAccess() {
             try {
-                const snapEnroll = await getDocs(query(collection(db, "enrollments"), where("userId", "==", uid)));
-                const snapBook = await getDocs(query(collection(db, "bookingApplications"), where("usersId", "==", uid)));
-                setHasAccess(snapEnroll.size + snapBook.size > 0);
+                // Read global chat settings first
+                const platformRef = doc(db, "settings", "platform");
+                const platformSnap = await getDoc(platformRef);
+                const chatRule = platformSnap.exists() ? platformSnap.data().chatAccessRule : "enrolled_only";
+
+                if (chatRule === "all") {
+                    setHasAccess(true);
+                } else {
+                    const snapEnroll = await getDocs(query(collection(db, "enrollments"), where("userId", "==", uid)));
+                    const snapBook = await getDocs(query(collection(db, "bookingApplications"), where("usersId", "==", uid)));
+                    setHasAccess(snapEnroll.size + snapBook.size > 0);
+                }
             } catch { setHasAccess(false); }
             finally { setLoadingAccess(false); }
         }
