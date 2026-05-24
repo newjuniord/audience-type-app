@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 export default function DashboardFooter() {
+    const { user } = useAuth();
+
     return (
-        <footer className="border-t border-white/5 bg-[#0a0a0a]">
+        <footer className={`border-t border-white/5 bg-[#0a0a0a] ${user ? 'hidden md:block' : ''}`}>
             <div className="max-w-[1200px] mx-auto px-6 py-16">
                 {/* Top row */}
                 <div className="flex flex-col lg:flex-row justify-between gap-12 mb-12">
