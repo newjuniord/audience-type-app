@@ -218,7 +218,7 @@ export async function POST(request: Request) {
             userMessage === "404" ||
             userMessage === "500"
         ) {
-            await sendWhatsAppMessage(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* ➜ kreye kont ou epi resevwa lyen koneksyon ou\n• Tape *kod* ➜ resevwa yon kòd koneksyon ' OTP '\n• Tanpri🙏🏽🥺 tann 5 minit pou resevwa repons! avan tape yon lòt kòmand...`);
+            await sendWhatsAppMessage(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* ➜ kreye kont ou epi resevwa lyen koneksyon ou\n• Tape *kod* ➜ resevwa yon kòd koneksyon ' OTP '\n• Tanpri🙏🏽🥺 tann 5 minit pou resevwa repons! avan ou tape yon lòt kòmand...`);
         }
         else {
             console.log(`ℹ️ [BOT WEBHOOK] Ignored unknown message: "${userMessage}" from ${phoneNumber}`);
