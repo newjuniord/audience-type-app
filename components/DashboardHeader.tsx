@@ -167,12 +167,35 @@ export default function DashboardHeader() {
                                 <span className="material-symbols-outlined text-[28px]">menu</span>
                             </button>
 
-                            {/* Profile Dropdown — Premium Design */}
+                            {/* Backdrop Mobile */}
+                            {isDropdownOpen && (
+                                <div
+                                    onClick={() => setIsDropdownOpen(false)}
+                                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+                                />
+                            )}
+
+                            {/* Profile Dropdown & Side Drawer — Premium Design */}
                             <div
-                                className={`absolute right-0 mt-4 w-72 bg-white dark:bg-[#141414] border border-black/5 dark:border-white/[0.07] rounded-3xl shadow-2xl shadow-black/20 transition-all duration-300 transform origin-top-right overflow-hidden ${isDropdownOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+                                className={`
+                                    bg-white dark:bg-[#141414] shadow-2xl transition-all duration-300 transform flex flex-col
+                                    fixed top-0 right-0 h-[100dvh] w-[300px] z-50 border-l border-solid border-black/5 dark:border-white/[0.07]
+                                    md:absolute md:top-auto md:right-0 md:mt-4 md:w-72 md:h-auto md:rounded-3xl md:border md:border-solid md:border-black/5 md:dark:border-white/[0.07] md:z-auto md:origin-top-right md:overflow-hidden
+                                    ${isDropdownOpen 
+                                        ? 'translate-x-0 opacity-100 scale-100' 
+                                        : 'translate-x-full opacity-0 scale-100 pointer-events-none md:translate-x-0 md:scale-95 md:opacity-0 md:pointer-events-none'
+                                    }
+                                `}
                             >
                                 {/* Header utilisateur */}
-                                <div className="px-5 pt-5 pb-4 border-b border-black/5 dark:border-white/5">
+                                <div className="px-5 pt-5 pb-4 border-b border-black/5 dark:border-white/5 relative">
+                                    {/* Close button on mobile */}
+                                    <button 
+                                        onClick={() => setIsDropdownOpen(false)}
+                                        className="absolute top-4 right-4 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white md:hidden"
+                                    >
+                                        <span className="material-symbols-outlined">close</span>
+                                    </button>
                                     <div className="flex items-center gap-3">
                                         {user.photoURL ? (
                                             <div
@@ -202,7 +225,7 @@ export default function DashboardHeader() {
                                 </div>
 
                                 {/* Navigation principale */}
-                                <div className="px-3 py-3 space-y-0.5">
+                                <div className="px-3 py-3 space-y-0.5 overflow-y-auto flex-1">
                                     <p className="px-2 text-[9px] font-black uppercase tracking-[0.15em] text-black/30 dark:text-white/30 mb-2">Navigasyon</p>
 
                                     {[
