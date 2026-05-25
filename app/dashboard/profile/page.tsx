@@ -193,23 +193,27 @@ export default function ProfilePage() {
                     const rawPhoneNum = userDoc.phoneNumber || userDoc.phone || "";
                     let cleanPhoneNum = rawPhoneNum.replace("whatsapp:", "").replace(/"/g, "").replace(/'/g, "").trim();
 
-                    let detectedCountry = COUNTRIES[0]; // default Haiti
-                    let displayDigits = cleanPhoneNum;
+                    if (cleanPhoneNum) {
+                        let detectedCountry = COUNTRIES[0]; // default Haiti
+                        let displayDigits = cleanPhoneNum;
 
-                    if (cleanPhoneNum.startsWith('+')) {
-                        const sortedCountries = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
-                        const match = sortedCountries.find(c => cleanPhoneNum.startsWith(c.dial));
-                        if (match) {
-                            detectedCountry = match;
-                            displayDigits = cleanPhoneNum.slice(match.dial.length);
+                        if (cleanPhoneNum.startsWith('+')) {
+                            const sortedCountries = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
+                            const match = sortedCountries.find(c => cleanPhoneNum.startsWith(c.dial));
+                            if (match) {
+                                detectedCountry = match;
+                                displayDigits = cleanPhoneNum.slice(match.dial.length);
+                            }
+                        } else {
+                            detectedCountry = COUNTRIES[0];
+                            displayDigits = cleanPhoneNum;
                         }
-                    } else if (cleanPhoneNum) {
-                        detectedCountry = COUNTRIES[0];
-                        displayDigits = cleanPhoneNum;
-                    }
 
-                    setSelectedCountry(detectedCountry);
-                    setPhoneEditable(formatPhone(displayDigits.replace(/\D/g, ""), detectedCountry.code));
+                        setSelectedCountry(detectedCountry);
+                        setPhoneEditable(formatPhone(displayDigits.replace(/\D/g, ""), detectedCountry.code));
+                    } else {
+                        setPhoneEditable("");
+                    }
 
                     if (userDoc.createdAt) {
                         setMemberSince(userDoc.createdAt.toDate().toLocaleDateString('fr-FR', {
