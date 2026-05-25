@@ -171,7 +171,7 @@ export default function DashboardHeader() {
                             {isDropdownOpen && (
                                 <div
                                     onClick={() => setIsDropdownOpen(false)}
-                                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+                                    className="fixed inset-0 bottom-20 bg-black/60 backdrop-blur-sm z-40 md:hidden"
                                 />
                             )}
 
@@ -179,8 +179,8 @@ export default function DashboardHeader() {
                             <div
                                 className={`
                                     bg-white dark:bg-[#141414] shadow-2xl transition-all duration-300 transform flex flex-col
-                                    fixed top-0 right-0 h-[100dvh] w-[300px] z-50 border-l border-solid border-black/5 dark:border-white/[0.07]
-                                    md:absolute md:top-auto md:right-0 md:mt-4 md:w-72 md:h-auto md:rounded-3xl md:border md:border-solid md:border-black/5 md:dark:border-white/[0.07] md:z-auto md:origin-top-right md:overflow-hidden
+                                    fixed top-0 right-0 bottom-20 w-[300px] z-50 border-l border-b border-solid border-black/5 dark:border-white/[0.07] rounded-bl-3xl
+                                    md:absolute md:top-auto md:bottom-auto md:right-0 md:mt-4 md:w-72 md:h-auto md:rounded-3xl md:border md:border-solid md:border-black/5 md:dark:border-white/[0.07] md:z-auto md:origin-top-right md:overflow-hidden
                                     ${isDropdownOpen 
                                         ? 'translate-x-0 opacity-100 scale-100' 
                                         : 'translate-x-full opacity-0 scale-100 pointer-events-none md:translate-x-0 md:scale-95 md:opacity-0 md:pointer-events-none'
