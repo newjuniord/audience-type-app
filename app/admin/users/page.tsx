@@ -25,10 +25,19 @@ export default function UserManagementPage() {
     const [isSyncing, setIsSyncing] = useState(false);
     const router = useRouter();
 
+    const PAGE_SIZE = 8;
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // Reset page to 1 when search or filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, roleFilter]);
+
     // Confirm Modal State
     const [userToDelete, setUserToDelete] = useState<string | null>(null);
     const [userToToggle, setUserToToggle] = useState<User | null>(null);
     const [userToResetCount, setUserToResetCount] = useState<User | null>(null);
+    const [userToImpersonate, setUserToImpersonate] = useState<User | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Gift & Enrollments State
@@ -44,7 +53,7 @@ export default function UserManagementPage() {
         try {
             setLoading(true);
             const currentLastVisible = reset ? undefined : lastVisible;
-            const { users: newUsers, lastVisible: newLastVisible } = await getUsers(20, currentLastVisible);
+            const { users: newUsers, lastVisible: newLastVisible } = await getUsers(PAGE_SIZE, currentLastVisible);
 
             setUsers(prev => {
                 const combined = reset ? newUsers : [...prev, ...newUsers];
@@ -55,7 +64,10 @@ export default function UserManagementPage() {
             });
 
             setLastVisible(newLastVisible);
-            setHasMore(newUsers.length === 20);
+            setHasMore(newUsers.length === PAGE_SIZE);
+            if (reset) {
+                setCurrentPage(1);
+            }
         } catch (error) {
             console.error("Failed to load users", error);
         } finally {
@@ -161,8 +173,13 @@ export default function UserManagementPage() {
         }
     };
 
-    const handleImpersonate = async (user: User) => {
-        if (!auth.currentUser) return;
+    const handleImpersonate = (user: User) => {
+        setUserToImpersonate(user);
+    };
+
+    const confirmImpersonate = async () => {
+        if (!userToImpersonate || !auth.currentUser) return;
+        setIsProcessing(true);
         
         try {
             const token = await auth.currentUser.getIdToken();
@@ -172,7 +189,7 @@ export default function UserManagementPage() {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ userId: user.uid })
+                body: JSON.stringify({ userId: userToImpersonate.uid })
             });
 
             if (!res.ok) {
@@ -190,6 +207,9 @@ export default function UserManagementPage() {
         } catch (error: any) {
             console.error("Erreur d'impersonation:", error);
             alert("Erreur: " + error.message);
+        } finally {
+            setIsProcessing(false);
+            setUserToImpersonate(null);
         }
     };
 
@@ -232,6 +252,24 @@ export default function UserManagementPage() {
         const matchesRole = roleFilter === 'all' || (user.role || 'customer') === roleFilter;
         return matchesSearch && matchesRole;
     });
+
+    const displayedUsers = filteredUsers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const canGoNext = filteredUsers.length > currentPage * PAGE_SIZE || hasMore;
+
+    const handleNextPage = async () => {
+        if (!canGoNext) return;
+        const nextPageFirstIndex = currentPage * PAGE_SIZE;
+        if (filteredUsers.length <= nextPageFirstIndex && hasMore) {
+            await loadUsers(false);
+        }
+        setCurrentPage(prev => prev + 1);
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(prev => prev - 1);
+        }
+    };
 
     const isUserOnline = (user: User) => {
         if (!user || user.isOnline === false) return false;
@@ -365,16 +403,16 @@ export default function UserManagementPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-black/5 dark:divide-white/5">
-                            {loading ? (
+                            {loading && displayedUsers.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="px-8 py-12 text-center text-black/40 dark:text-white/40 font-medium">Loading users...</td>
                                 </tr>
-                            ) : filteredUsers.length === 0 ? (
+                            ) : displayedUsers.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="px-8 py-12 text-center text-black/40 dark:text-white/40 font-medium">No users found.</td>
                                 </tr>
                             ) : (
-                                filteredUsers.map((user) => (
+                                displayedUsers.map((user) => (
                                     <tr key={user.uid} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors group">
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
@@ -510,35 +548,52 @@ export default function UserManagementPage() {
                 {/* Pagination */}
                 <div className="px-8 py-5 border-t border-black/5 dark:border-white/10 flex items-center justify-between bg-black/[0.01] dark:bg-white/[0.01]">
                     <p className="text-xs text-black/40 dark:text-white/40 font-medium">
-                        Showing <span className="text-primary dark:text-white">{users.length}</span> users
+                        {filteredUsers.length === 0 
+                            ? "Aucun utilisateur" 
+                            : `Affiche ${(currentPage - 1) * PAGE_SIZE + 1} - ${Math.min(currentPage * PAGE_SIZE, filteredUsers.length)} (${filteredUsers.length} chargés)`
+                        }
                     </p>
-                    {hasMore && (
+                    <div className="flex items-center gap-2">
                         <button
-                            onClick={() => loadUsers()}
-                            disabled={loading}
-                            className="text-xs font-bold uppercase tracking-widest px-6 py-2 rounded-full border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-all disabled:opacity-50"
+                            onClick={handlePrevPage}
+                            disabled={currentPage === 1 || loading}
+                            className="px-4 py-2 rounded-full border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-all disabled:opacity-50 text-xs font-bold flex items-center gap-1"
                         >
-                            {loading ? 'Chargement...' : 'Charger plus'}
+                            <span className="material-symbols-outlined text-sm">chevron_left</span>
+                            Précédent
                         </button>
-                    )}
+                        <span className="text-xs font-bold px-2 text-black/60 dark:text-white/60">Page {currentPage}</span>
+                        <button
+                            onClick={handleNextPage}
+                            disabled={!canGoNext || loading}
+                            className="px-4 py-2 rounded-full border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-all disabled:opacity-50 text-xs font-bold flex items-center gap-1"
+                        >
+                            Suivant
+                            <span className="material-symbols-outlined text-sm">chevron_right</span>
+                        </button>
+                    </div>
                 </div>
             </div>
             <ConfirmModal
-                isOpen={!!userToDelete || !!userToToggle || !!userToResetCount}
+                isOpen={!!userToDelete || !!userToToggle || !!userToResetCount || !!userToImpersonate}
                 onClose={() => {
                     if (!isProcessing) {
                         setUserToDelete(null);
                         setUserToToggle(null);
                         setUserToResetCount(null);
+                        setUserToImpersonate(null);
                     }
                 }}
-                onConfirm={userToDelete ? confirmDeleteUser : (userToToggle ? confirmToggleRole : confirmResetCount)}
-                title={userToDelete ? "Supprimer l'utilisateur ?" : (userToToggle ? "Modifier le rôle ?" : "Réinitialiser le compteur ?")}
+                onConfirm={userToDelete ? confirmDeleteUser : (userToToggle ? confirmToggleRole : (userToResetCount ? confirmResetCount : confirmImpersonate))}
+                title={userToDelete ? "Supprimer l'utilisateur ?" : (userToToggle ? "Modifier le rôle ?" : (userToResetCount ? "Réinitialiser le compteur ?" : "Se connecter en tant que..."))}
                 message={userToDelete
                     ? "ATTENTION: Cette action est irréversible. L'utilisateur sera supprimé de la base de données (Note: cela ne supprime pas le compte Auth Firebase)."
                     : (userToToggle 
                         ? `Voulez-vous vraiment ${userToToggle?.role === 'admin' ? "rétrograder" : "promouvoir"} l'utilisateur ${userToToggle?.displayName || userToToggle?.email || userToToggle?.phoneNumber || "Anonyme"} ?`
-                        : `Voulez-vous vraiment réinitialiser le compteur de liens pour l'utilisateur ${userToResetCount?.displayName || userToResetCount?.email || userToResetCount?.phoneNumber || "Anonyme"} ?`
+                        : (userToResetCount
+                            ? `Voulez-vous vraiment réinitialiser le compteur de liens pour l'utilisateur ${userToResetCount?.displayName || userToResetCount?.email || userToResetCount?.phoneNumber || "Anonyme"} ?`
+                            : `Voulez-vous vraiment vous connecter en tant que ${userToImpersonate?.displayName || userToImpersonate?.email || userToImpersonate?.phoneNumber || "Anonyme"} ? Vous serez redirigé vers son tableau de bord.`
+                        )
                     )
                 }
                 confirmText={userToDelete ? "Supprimer" : "Confirmer"}
