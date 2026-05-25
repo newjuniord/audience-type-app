@@ -334,24 +334,16 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
       const contactToUse = (contactMethod === 'phone' || contactMethod === 'whatsapp') ? cleanPhone : email;
       
       if (contactMethod === 'whatsapp') {
-        const genData = await generateMagicLinkAction(contactToUse);
-        if (genData.error) throw new Error(genData.error);
-        
-        if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
-          const cleanBizPhone = genData.businessPhone.replace(/"/g, '').replace(/'/g, '');
-          setWhatsappRedirect({
-              url: `https://wa.me/${cleanBizPhone}?text=kod`,
-              businessPhone: `+${cleanBizPhone}`
-          });
-          setMagicLinkToken(null);
-        } else {
-          setMagicLinkToken(genData.token || null);
-          setWhatsappRedirect(null);
-        }
+        const businessPhone = process.env.NEXT_PUBLIC_TWILIO_NUMBER?.replace(/\D/g, '') || "17157507852";
+        setWhatsappRedirect({
+            url: `https://wa.me/${businessPhone}?text=metem`,
+            businessPhone: `+${businessPhone}`
+        });
+        setMagicLinkToken(null);
         setVerificationError(null);
         setVerificationCode("");
         setTempLink(null);
-        setCooldownSeconds(0); // Pas de cooldown de code pour le magic link, l'expiration est gérée globalement
+        setCooldownSeconds(0);
         setModalStep('verify_code');
       } else {
         const genData = await generateOtpAction(contactToUse, contactMethod);

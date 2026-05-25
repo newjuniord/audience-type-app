@@ -277,22 +277,13 @@ export default function LoginPage() {
             const contactToUse = (loginMethod === 'whatsapp' || loginMethod === 'phone') ? cleanPhone : email;
 
             if (loginMethod === 'whatsapp') {
-                const genData = await generateMagicLinkAction(contactToUse);
-                if (genData.error) throw new Error(genData.error);
-
-                if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
-                    const cleanBizPhone = genData.businessPhone.replace(/"/g, '').replace(/'/g, '');
-                    const messageText = genData.isNewUser ? "metem" : "kod";
-                    setWhatsappRedirect({
-                        url: `https://wa.me/${cleanBizPhone}?text=${messageText}`,
-                        businessPhone: `+${cleanBizPhone}`,
-                        isNewUser: genData.isNewUser
-                    });
-                    setMagicLinkToken(null);
-                } else {
-                    setMagicLinkToken(genData.token || null);
-                    setWhatsappRedirect(null);
-                }
+                const businessPhone = process.env.NEXT_PUBLIC_TWILIO_NUMBER?.replace(/\D/g, '') || "17157507852";
+                setWhatsappRedirect({
+                    url: `https://wa.me/${businessPhone}?text=metem`,
+                    businessPhone: `+${businessPhone}`,
+                    isNewUser: true
+                });
+                setMagicLinkToken(null);
                 setVerificationError(null);
                 setVerificationCode("");
                 setCooldownSeconds(0);
