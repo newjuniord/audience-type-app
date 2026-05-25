@@ -8,7 +8,7 @@ import { getEnrollmentsByUser } from "@/lib/enrollments";
 import { getBookingApplicationsByUser } from "@/lib/booking-applications";
 import { updateProfile } from "firebase/auth";
 import { db } from '@/lib/firebase';
-import { doc as firestoreDoc } from "firebase/firestore";
+import { doc as firestoreDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 // ─── COUNTRIES LIST ──────────────────────────────────────────────────────────
 const COUNTRIES = [
@@ -123,6 +123,8 @@ export default function ProfilePage() {
     const [photoURL, setPhotoURL] = useState("");
     const [memberSince, setMemberSince] = useState("");
     const [showSuccess, setShowSuccess] = useState(false);
+    const [showErrorPopup, setShowErrorPopup] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     // Stats State
     const [stats, setStats] = useState({ coursesRaw: 0, ebooks: 0, bookings: 0 });
@@ -255,6 +257,25 @@ export default function ProfilePage() {
                 const digits = phoneEditable.replace(/\D/g, "");
                 if (digits) {
                     const fullPhone = selectedCountry.dial + digits;
+
+                    // Verification : s'assurer que ce numéro n'appartient pas à un autre compte
+                    const usersRef = collection(db, "users");
+                    const [qPhoneSnap, qPhoneNumSnap] = await Promise.all([
+                        getDocs(query(usersRef, where("phone", "==", fullPhone))),
+                        getDocs(query(usersRef, where("phoneNumber", "==", fullPhone)))
+                    ]);
+
+                    const duplicateDoc =
+                        qPhoneSnap.docs.find(d => d.id !== user.uid) ||
+                        qPhoneNumSnap.docs.find(d => d.id !== user.uid);
+
+                    if (duplicateDoc) {
+                        setSaving(false);
+                        setErrorMessage(`Nimewo telefòn sa a (${fullPhone}) deja asosye ak yon lòt kont. Tanpri chwazi yon lòt nimewo.`);
+                        setShowErrorPopup(true);
+                        return;
+                    }
+
                     updates.phoneNumber = fullPhone;
                     updates.phone = fullPhone; // Save to phone field as well so they can login via WhatsApp/SMS
                 } else {
@@ -617,6 +638,26 @@ export default function ProfilePage() {
                     </div>
                 </div>,
                 document.body
+            )}
+            {/* Error Popup Modal */}
+            {showErrorPopup && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-[#141414] border border-white/10 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+                            <span className="material-symbols-outlined text-red-500 text-2xl notranslate">warning</span>
+                        </div>
+                        <h3 className="text-base font-extrabold text-white mb-2">Nimewo sa a deja itilize</h3>
+                        <p className="text-xs text-white/60 leading-relaxed mb-6">
+                            {errorMessage}
+                        </p>
+                        <button
+                            onClick={() => setShowErrorPopup(false)}
+                            className="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-bold hover:bg-white/10 transition-colors"
+                        >
+                            Dakò
+                        </button>
+                    </div>
+                </div>
             )}
         </div>
     );
