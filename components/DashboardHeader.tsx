@@ -198,126 +198,133 @@ export default function DashboardHeader() {
     if (loading) return null;
 
     return (
-        <header className="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-solid border-primary/10 px-6 md:px-10 lg:px-40 py-4 flex items-center justify-between whitespace-nowrap">
-            <div className="flex items-center gap-4 text-primary dark:text-white">
-                <Link href="/" className="flex items-center gap-2 md:gap-3 group">
-                    <img src="/logo.png" alt="DJR Akademi Logo" className="size-8 md:size-9 rounded-lg object-cover transition-transform group-hover:scale-105" />
-                    <h2 className="text-xl font-bold leading-tight tracking-tight">DJR Akademi</h2>
-                </Link>
-            </div>
-            <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
-                {user && (
-                    <nav className="hidden md:flex items-center gap-9">
-
-                        <Link href="/products" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
-                            Pwodui
-                        </Link>
-                        <Link href="/dashboard" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
-                            Kontni mwen
-                        </Link>
-                        <Link href="/dashboard/chat" className="relative text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
-                            Chat Support
-                            {chatUnread && (
-                                <span className="absolute -top-1.5 -right-2.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                            )}
-                        </Link>
-                        <Link href="/consultation" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
-                            Konsiltasyon
-                        </Link>
-                        <Link href="/coaching" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
-                            Coaching
-                        </Link>
-                        <Link href="/services" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
-                            Sèvis
-                        </Link>
-                        <Link href="/dashboard/transactions" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
-                            Tranzaksyon
-                        </Link>
-                        <Link href="/dashboard/profile" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
-                            Pwofil
-                        </Link>
-                    </nav>
-                )}
-
-                <div className="flex items-center gap-4">
-                    {/* Diagnostic Debug - Visible for admins or when needed */}
-                    {user && (
-                        <div className="hidden lg:flex flex-col items-end opacity-[0.1] hover:opacity-100 transition-opacity pointer-events-none select-none">
-                            <span className="text-[7px] font-mono leading-none">ROLE: {role || 'none'}</span>
-                            <span className="text-[7px] font-mono leading-none">UID: {user.uid.slice(0, 6)}...</span>
-                        </div>
-                    )}
-                    {user && role === 'admin' && (
-                        <Link href="/admin" className="flex items-center gap-2 bg-primary text-white dark:bg-white dark:text-primary px-4 md:px-5 h-10 rounded-full text-xs font-bold tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg border border-black/5 dark:border-white/10">
-                            <span className="material-symbols-outlined text-sm">security</span>
-                            <span className="hidden md:inline uppercase">Espas Admin</span>
-                        </Link>
-                    )}
-                    {/* Bell icon — alerts */}
-                    {user && (
-                        <Link href="/dashboard/alerts" className="relative flex items-center justify-center transition-all focus:outline-none text-white hover:text-white/80 hover:scale-110">
-                            <span className="material-symbols-outlined text-[26px]">notifications</span>
-                            {unreadCount > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-md animate-pulse">
-                                    {unreadCount > 9 ? '9+' : unreadCount}
-                                </span>
-                            )}
-                        </Link>
-                    )}
-                    {user ? (
-                        <div className={`relative ${isDropdownOpen ? 'z-[60]' : 'z-30'}`} ref={dropdownRef}>
-                            <button
-                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center justify-center transition-all focus:outline-none text-white hover:text-white/80 hover:scale-110"
-                            >
-                                <span className="material-symbols-outlined text-[28px]">menu</span>
-                            </button>
-
-                            {/* Backdrop Mobile Drawer */}
-                            {isDropdownOpen && (
-                                <div
-                                    onClick={() => setIsDropdownOpen(false)}
-                                    className="fixed inset-0 bottom-20 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-all duration-300"
-                                />
-                            )}
-
-                            {/* Mobile Drawer (Only visible on mobile) */}
-                            <div
-                                className={`
-                                    bg-[#141414] shadow-2xl transition-all duration-300 transform flex flex-col md:hidden
-                                    fixed top-0 right-0 bottom-20 w-[300px] z-50 border-l border-b border-solid border-white/[0.07] rounded-bl-3xl
-                                    ${isDropdownOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'}
-                                `}
-                            >
-                                {renderMenuContent(true)}
-                            </div>
-
-                            {/* Desktop Dropdown (Only visible on desktop) */}
-                            <div
-                                className={`
-                                    bg-[#141414] border border-solid border-white/[0.07] rounded-3xl shadow-2xl shadow-black/20 transition-all duration-300 transform origin-top-right overflow-hidden hidden md:flex flex-col
-                                    absolute right-0 mt-4 w-72 h-auto z-50
-                                    ${isDropdownOpen 
-                                        ? 'opacity-100 scale-100' 
-                                        : 'opacity-0 scale-95 pointer-events-none'
-                                    }
-                                `}
-                            >
-                                {renderMenuContent(false)}
-                            </div>
-                        </div>
-                    ) : (
-                        <Link
-                            href="/login"
-                            className="bg-primary dark:bg-white text-white dark:text-primary px-4 md:px-8 h-10 rounded-full text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
-                        >
-                            <span className="material-symbols-outlined text-[20px] md:hidden notranslate">login</span>
-                            <span className="hidden md:inline">Konekte</span>
-                        </Link>
-                    )}
+        <>
+            <header className="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-solid border-primary/10 px-6 md:px-10 lg:px-40 py-4 flex items-center justify-between whitespace-nowrap">
+                <div className="flex items-center gap-4 text-primary dark:text-white">
+                    <Link href="/" className="flex items-center gap-2 md:gap-3 group">
+                        <img src="/logo.png" alt="DJR Akademi Logo" className="size-8 md:size-9 rounded-lg object-cover transition-transform group-hover:scale-105" />
+                        <h2 className="text-xl font-bold leading-tight tracking-tight">DJR Akademi</h2>
+                    </Link>
                 </div>
-            </div>
-        </header>
+                <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
+                    {user && (
+                        <nav className="hidden md:flex items-center gap-9">
+                            <Link href="/products" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                                Pwodui
+                            </Link>
+                            <Link href="/dashboard" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                                Kontni mwen
+                            </Link>
+                            <Link href="/dashboard/chat" className="relative text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                                Chat Support
+                                {chatUnread && (
+                                    <span className="absolute -top-1.5 -right-2.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                )}
+                            </Link>
+                            <Link href="/consultation" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                                Konsiltasyon
+                            </Link>
+                            <Link href="/coaching" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                                Coaching
+                            </Link>
+                            <Link href="/services" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                                Sèvis
+                            </Link>
+                            <Link href="/dashboard/transactions" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                                Tranzaksyon
+                            </Link>
+                            <Link href="/dashboard/profile" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
+                                Pwofil
+                            </Link>
+                        </nav>
+                    )}
+
+                    <div className="flex items-center gap-4">
+                        {/* Diagnostic Debug - Visible for admins or when needed */}
+                        {user && (
+                            <div className="hidden lg:flex flex-col items-end opacity-[0.1] hover:opacity-100 transition-opacity pointer-events-none select-none">
+                                <span className="text-[7px] font-mono leading-none">ROLE: {role || 'none'}</span>
+                                <span className="text-[7px] font-mono leading-none">UID: {user.uid.slice(0, 6)}...</span>
+                            </div>
+                        )}
+                        {user && role === 'admin' && (
+                            <Link href="/admin" className="flex items-center gap-2 bg-primary text-white dark:bg-white dark:text-primary px-4 md:px-5 h-10 rounded-full text-xs font-bold tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg border border-black/5 dark:border-white/10">
+                                <span className="material-symbols-outlined text-sm">security</span>
+                                <span className="hidden md:inline uppercase">Espas Admin</span>
+                            </Link>
+                        )}
+                        {/* Bell icon — alerts */}
+                        {user && (
+                            <Link href="/dashboard/alerts" className="relative flex items-center justify-center transition-all focus:outline-none text-white hover:text-white/80 hover:scale-110">
+                                <span className="material-symbols-outlined text-[26px]">notifications</span>
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-md animate-pulse">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                )}
+                            </Link>
+                        )}
+                        {user ? (
+                            <div className="relative" ref={dropdownRef}>
+                                <button
+                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                    className="flex items-center justify-center transition-all focus:outline-none text-white hover:text-white/80 hover:scale-110"
+                                >
+                                    <span className="material-symbols-outlined text-[28px]">menu</span>
+                                </button>
+
+                                {/* Desktop Dropdown (Only visible on desktop) */}
+                                <div
+                                    className={`
+                                        bg-[#141414] border border-solid border-white/[0.07] rounded-3xl shadow-2xl shadow-black/20 transition-all duration-300 transform origin-top-right overflow-hidden hidden md:flex flex-col
+                                        absolute right-0 mt-4 w-72 h-auto z-50
+                                        ${isDropdownOpen 
+                                            ? 'opacity-100 scale-100' 
+                                            : 'opacity-0 scale-95 pointer-events-none'
+                                        }
+                                    `}
+                                >
+                                    {renderMenuContent(false)}
+                                </div>
+                            </div>
+                        ) : (
+                            <Link
+                                href="/login"
+                                className="bg-primary dark:bg-white text-white dark:text-primary px-4 md:px-8 h-10 rounded-full text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
+                            >
+                                <span className="material-symbols-outlined text-[20px] md:hidden notranslate">login</span>
+                                <span className="hidden md:inline">Konekte</span>
+                            </Link>
+                        )}
+                    </div>
+                </div>
+            </header>
+
+            {/* Mobile Drawer (Rendered outside the header sticky/backdrop-blur container to bypass WebKit rendering & opacity clipping bugs) */}
+            {user && (
+                <>
+                    {/* Backdrop Mobile Drawer */}
+                    <div
+                        onClick={() => setIsDropdownOpen(false)}
+                        className={`
+                            fixed inset-0 bottom-20 bg-black/60 backdrop-blur-sm z-[9998] md:hidden transition-all duration-300
+                            ${isDropdownOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
+                        `}
+                    />
+
+                    {/* Mobile Drawer */}
+                    <div
+                        className={`
+                            bg-[#141414] shadow-2xl transition-all duration-300 transform flex flex-col md:hidden
+                            fixed top-0 right-0 bottom-20 w-[300px] z-[9999] border-l border-b border-solid border-white/[0.07] rounded-bl-3xl
+                            ${isDropdownOpen ? 'translate-x-0' : 'translate-x-full'}
+                        `}
+                    >
+                        {renderMenuContent(true)}
+                    </div>
+                </>
+            )}
+        </>
     );
 }
 
