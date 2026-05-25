@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from "react-dom";
 import { useAuth } from "@/context/AuthContext";
 import { getUserById, updateUser } from "@/lib/users";
 import { getEnrollmentsByUser } from "@/lib/enrollments";
@@ -8,6 +9,107 @@ import { getBookingApplicationsByUser } from "@/lib/booking-applications";
 import { updateProfile } from "firebase/auth";
 import { db } from '@/lib/firebase';
 import { doc as firestoreDoc } from "firebase/firestore";
+
+// ─── COUNTRIES LIST ──────────────────────────────────────────────────────────
+const COUNTRIES = [
+    { code: 'HT', name: 'Haïti', dial: '+509', flag: '🇭🇹' },
+    { code: 'DO', name: 'Rép. Dominicaine', dial: '+1', flag: '🇩🇴' },
+    { code: 'CU', name: 'Cuba', dial: '+53', flag: '🇨🇺' },
+    { code: 'JM', name: 'Jamaïque', dial: '+1', flag: '🇯🇲' },
+    { code: 'PR', name: 'Porto Rico', dial: '+1', flag: '🇵🇷' },
+    { code: 'TT', name: 'Trinidad & Tobago', dial: '+1', flag: '🇹🇹' },
+    { code: 'BB', name: 'Barbade', dial: '+1', flag: '🇧🇧' },
+    { code: 'US', name: 'États-Unis', dial: '+1', flag: '🇺🇸' },
+    { code: 'CA', name: 'Canada', dial: '+1', flag: '🇨🇦' },
+    { code: 'MX', name: 'Mexique', dial: '+52', flag: '🇲🇽' },
+    { code: 'GT', name: 'Guatemala', dial: '+502', flag: '🇬🇹' },
+    { code: 'HN', name: 'Honduras', dial: '+504', flag: '🇭🇳' },
+    { code: 'SV', name: 'El Salvador', dial: '+503', flag: '🇸🇻' },
+    { code: 'NI', name: 'Nicaragua', dial: '+505', flag: '🇳🇮' },
+    { code: 'CR', name: 'Costa Rica', dial: '+506', flag: '🇨🇷' },
+    { code: 'PA', name: 'Panama', dial: '+507', flag: '🇵🇦' },
+    { code: 'CO', name: 'Colombie', dial: '+57', flag: '🇨🇴' },
+    { code: 'VE', name: 'Venezuela', dial: '+58', flag: '🇻🇪' },
+    { code: 'EC', name: 'Équateur', dial: '+593', flag: '🇪🇨' },
+    { code: 'PE', name: 'Pérou', dial: '+51', flag: '🇵🇪' },
+    { code: 'BO', name: 'Bolivie', dial: '+591', flag: '🇧🇴' },
+    { code: 'CL', name: 'Chili', dial: '+56', flag: '🇨🇱' },
+    { code: 'AR', name: 'Argentine', dial: '+54', flag: '🇦🇷' },
+    { code: 'UY', name: 'Uruguay', dial: '+598', flag: '🇺🇾' },
+    { code: 'PY', name: 'Paraguay', dial: '+595', flag: '🇵🇾' },
+    { code: 'BR', name: 'Brésil', dial: '+55', flag: '🇧🇷' },
+    { code: 'FR', name: 'France', dial: '+33', flag: '🇫🇷' },
+    { code: 'BE', name: 'Belgique', dial: '+32', flag: '🇧🇪' },
+    { code: 'CH', name: 'Suisse', dial: '+41', flag: '🇨🇭' },
+    { code: 'GP', name: 'Guadeloupe', dial: '+590', flag: '🇬🇵' },
+    { code: 'MQ', name: 'Martinique', dial: '+596', flag: '🇲🇶' },
+    { code: 'GF', name: 'Guyane', dial: '+594', flag: '🇬🇫' },
+    { code: 'RE', name: 'La Réunion', dial: '+262', flag: '🇷🇪' },
+    { code: 'GB', name: 'Royaume-Uni', dial: '+44', flag: '🇬🇧' },
+    { code: 'DE', name: 'Allemagne', dial: '+49', flag: '🇩🇪' },
+    { code: 'ES', name: 'Espagne', dial: '+34', flag: '🇪🇸' },
+    { code: 'PT', name: 'Portugal', dial: '+351', flag: '🇵🇹' },
+    { code: 'IT', name: 'Italie', dial: '+39', flag: '🇮🇹' },
+    { code: 'NL', name: 'Pays-Bas', dial: '+31', flag: '🇳🇱' },
+    { code: 'CN', name: 'Chine', dial: '+86', flag: '🇨🇳' },
+    { code: 'KR', name: 'Corée du Sud', dial: '+82', flag: '🇰🇷' },
+    { code: 'JP', name: 'Japon', dial: '+81', flag: '🇯🇵' },
+];
+
+const TIMEZONE_MAP: Record<string, string> = {
+    'America/Port-au-Prince': 'HT', 'America/Santo_Domingo': 'DO',
+    'America/New_York': 'US', 'America/Chicago': 'US', 'America/Denver': 'US',
+    'America/Los_Angeles': 'US', 'America/Phoenix': 'US', 'America/Anchorage': 'US',
+    'America/Toronto': 'CA', 'America/Vancouver': 'CA', 'America/Winnipeg': 'CA',
+    'America/Montreal': 'CA', 'America/Halifax': 'CA',
+    'Europe/Paris': 'FR', 'Europe/Brussels': 'BE', 'Europe/Zurich': 'CH',
+    'America/Guadeloupe': 'GP', 'America/Martinique': 'MQ',
+    'America/Cayenne': 'GF', 'Indian/Reunion': 'RE',
+    'America/Havana': 'CU', 'America/Jamaica': 'JM', 'America/Puerto_Rico': 'PR',
+    'America/Port_of_Spain': 'TT', 'America/Barbados': 'BB',
+    'America/Mexico_City': 'MX', 'America/Cancun': 'MX', 'America/Monterrey': 'MX',
+    'America/Guatemala': 'GT', 'America/Tegucigalpa': 'HN', 'America/El_Salvador': 'SV',
+    'America/Managua': 'NI', 'America/Costa_Rica': 'CR', 'America/Panama': 'PA',
+    'America/Bogota': 'CO', 'America/Caracas': 'VE', 'America/Guayaquil': 'EC',
+    'America/Lima': 'PE', 'America/La_Paz': 'BO', 'America/Santiago': 'CL',
+    'America/Argentina/Buenos_Aires': 'AR', 'America/Montevideo': 'UY', 'America/Asuncion': 'PY',
+    'America/Sao_Paulo': 'BR', 'America/Manaus': 'BR', 'America/Fortaleza': 'BR',
+    'Europe/London': 'GB', 'Europe/Berlin': 'DE', 'Europe/Madrid': 'ES',
+    'Europe/Lisbon': 'PT', 'Europe/Rome': 'IT', 'Europe/Amsterdam': 'NL',
+    'Asia/Shanghai': 'CN', 'Asia/Chongqing': 'CN', 'Asia/Beijing': 'CN',
+    'Asia/Seoul': 'KR', 'Asia/Tokyo': 'JP',
+};
+
+function detectCountry(): (typeof COUNTRIES)[0] {
+    try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const code = TIMEZONE_MAP[tz];
+        if (code) { const found = COUNTRIES.find(c => c.code === code); if (found) return found; }
+    } catch { }
+    return COUNTRIES[0]; // fallback Haïti
+}
+
+function formatPhone(digits: string, countryCode: string): string {
+    if (!digits) return '';
+    if (countryCode === 'HT') {
+        const d = digits.slice(0, 8);
+        if (d.length <= 4) return d;
+        return `${d.slice(0, 4)} ${d.slice(4)}`;
+    }
+    const plusOne = ['US', 'CA', 'DO', 'JM', 'PR', 'TT', 'BB'];
+    if (plusOne.includes(countryCode)) {
+        const d = digits.slice(0, 10);
+        if (d.length <= 3) return d;
+        if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+        return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+    }
+    const d = digits.slice(0, 10);
+    if (d.length <= 2) return d;
+    if (d.length <= 4) return `${d.slice(0, 2)} ${d.slice(2)}`;
+    if (d.length <= 6) return `${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4)}`;
+    if (d.length <= 8) return `${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4, 6)} ${d.slice(6)}`;
+    return `${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4, 6)} ${d.slice(6, 8)} ${d.slice(8)}`;
+}
 
 export default function ProfilePage() {
     const { user, loading: authLoading, signOutUser } = useAuth();
@@ -32,6 +134,41 @@ export default function ProfilePage() {
     const [generatingLink, setGeneratingLink] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
 
+    // Country selection states & refs
+    const [selectedCountry, setSelectedCountry] = useState(() => detectCountry());
+    const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, above: false });
+    const [countrySearch, setCountrySearch] = useState('');
+    const countryBtnRef = useRef<HTMLButtonElement>(null);
+    const countryDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Effet pour fermer le dropdown au clic extérieur
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
+                setShowCountryDropdown(false);
+                setCountrySearch('');
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    // Positionner et ouvrir le dropdown des pays
+    const openCountryDropdown = () => {
+        if (!countryBtnRef.current) return;
+        const rect = countryBtnRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const above = spaceBelow < 260;
+        setDropdownPos({
+            top: above ? rect.top - 8 : rect.bottom + 4,
+            left: rect.left,
+            above,
+        });
+        setShowCountryDropdown(true);
+        setCountrySearch('');
+    };
+
     useEffect(() => {
         async function fetchProfileData() {
             if (!user) return;
@@ -53,8 +190,26 @@ export default function ProfilePage() {
                     setPhoneDisplay(cleanPhone || "");
 
                     // For email users: editable phone field (phoneNumber field)
-                    const editablePhone = userDoc.phoneNumber || "";
-                    setPhoneEditable(editablePhone.replace("whatsapp:", "").replace(/"/g, "").trim());
+                    const rawPhoneNum = userDoc.phoneNumber || userDoc.phone || "";
+                    let cleanPhoneNum = rawPhoneNum.replace("whatsapp:", "").replace(/"/g, "").replace(/'/g, "").trim();
+
+                    let detectedCountry = COUNTRIES[0]; // default Haiti
+                    let displayDigits = cleanPhoneNum;
+
+                    if (cleanPhoneNum.startsWith('+')) {
+                        const sortedCountries = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
+                        const match = sortedCountries.find(c => cleanPhoneNum.startsWith(c.dial));
+                        if (match) {
+                            detectedCountry = match;
+                            displayDigits = cleanPhoneNum.slice(match.dial.length);
+                        }
+                    } else if (cleanPhoneNum) {
+                        detectedCountry = COUNTRIES[0];
+                        displayDigits = cleanPhoneNum;
+                    }
+
+                    setSelectedCountry(detectedCountry);
+                    setPhoneEditable(formatPhone(displayDigits.replace(/\D/g, ""), detectedCountry.code));
 
                     if (userDoc.createdAt) {
                         setMemberSince(userDoc.createdAt.toDate().toLocaleDateString('fr-FR', {
@@ -92,8 +247,16 @@ export default function ProfilePage() {
         try {
             const updates: any = { displayName };
             // Save phone number for email users
-            if (user.email && phoneEditable.trim()) {
-                updates.phoneNumber = phoneEditable.trim();
+            if (user.email) {
+                const digits = phoneEditable.replace(/\D/g, "");
+                if (digits) {
+                    const fullPhone = selectedCountry.dial + digits;
+                    updates.phoneNumber = fullPhone;
+                    updates.phone = fullPhone; // Save to phone field as well so they can login via WhatsApp/SMS
+                } else {
+                    updates.phoneNumber = "";
+                    updates.phone = "";
+                }
             }
             await updateUser(user.uid, updates);
             await updateProfile(user, { displayName });
@@ -272,13 +435,28 @@ export default function ProfilePage() {
                                         <span className="text-emerald-400 text-sm material-symbols-outlined">phone_iphone</span>
                                         Nimewo telefòn (opsyonèl)
                                     </label>
-                                    <input
-                                        type="tel"
-                                        value={phoneEditable}
-                                        onChange={(e) => setPhoneEditable(e.target.value)}
-                                        placeholder="+509 48 48 0000 oswa +1 829 000 0000"
-                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20 font-mono"
-                                    />
+                                    <div className="flex gap-2">
+                                        <button
+                                            ref={countryBtnRef}
+                                            type="button"
+                                            onClick={openCountryDropdown}
+                                            className="flex items-center gap-1.5 px-3 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm text-white shrink-0"
+                                        >
+                                            <span className="text-base leading-none">{selectedCountry.flag}</span>
+                                            <span className="font-bold">{selectedCountry.dial}</span>
+                                            <span className="material-symbols-outlined notranslate text-xs text-white/40">keyboard_arrow_down</span>
+                                        </button>
+                                        <input
+                                            type="tel"
+                                            value={phoneEditable}
+                                            onChange={(e) => {
+                                                const digits = e.target.value.replace(/\D/g, "");
+                                                setPhoneEditable(formatPhone(digits, selectedCountry.code));
+                                            }}
+                                            placeholder={selectedCountry.code === 'HT' ? "3456 7890" : "06 12 34 56 78"}
+                                            className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20 font-mono"
+                                        />
+                                    </div>
                                     <p className="text-[10px] text-white/30 leading-relaxed">
                                         Ajoute nimewo sa a si ou vle resevwa kòd koneksyon pa mesaj (WhatsApp oswa SMS) tou.
                                     </p>
@@ -383,6 +561,59 @@ export default function ProfilePage() {
 
                 </div>
             </main>
+
+            {/* Country Dropdown (rendered via Portal) */}
+            {showCountryDropdown && typeof window !== "undefined" && createPortal(
+                <div
+                    ref={countryDropdownRef}
+                    style={{
+                        position: 'fixed',
+                        top: dropdownPos.top,
+                        left: dropdownPos.left,
+                        zIndex: 9999,
+                    }}
+                    className="w-64 max-h-60 overflow-y-auto bg-zinc-900 border border-white/10 rounded-xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-150"
+                >
+                    <div className="sticky top-0 bg-zinc-900 pb-2 mb-2 border-b border-white/5">
+                        <input
+                            type="text"
+                            value={countrySearch}
+                            onChange={(e) => setCountrySearch(e.target.value)}
+                            placeholder="Chache yon peyi..."
+                            className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-primary/50"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="space-y-0.5">
+                        {COUNTRIES.filter(c =>
+                            c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+                            c.dial.includes(countrySearch)
+                        ).map((c) => (
+                            <button
+                                key={c.code}
+                                type="button"
+                                onClick={() => {
+                                    setSelectedCountry(c);
+                                    setShowCountryDropdown(false);
+                                    setCountrySearch('');
+                                    setPhoneEditable('');
+                                }}
+                                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left text-xs transition-colors ${selectedCountry.code === c.code
+                                        ? 'bg-primary text-white font-bold'
+                                        : 'text-white/60 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <span className="flex items-center gap-2 truncate">
+                                    <span>{c.flag}</span>
+                                    <span className="truncate">{c.name}</span>
+                                </span>
+                                <span className="text-white/40 font-mono text-[10px]">{c.dial}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }
