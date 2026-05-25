@@ -173,8 +173,8 @@ export async function POST(request: Request) {
             await updateOtpDoc(uid, code, rateLimit.count, rateLimit.expireAt);
             
             const msg = isNewUser
-                ? `🎉 Kont ou a kreye avèk suksè, ${displayName}!\n\nMen lyen sekirize ou pou w konekte an 1 klik (li ekspire nan 10 tè) :\n🔗 ${link}\n\nNou jenere yon kòd OTP pou ou tou si w vle konekte sou yon òdinatè :\n🔑 *${code}*\n\n⚠️ Pa pataje lyen sa a — li pou ou sèlman.`
-                : `Mèsi paske ou mande kont ou, li egziste deja 😊!\n\n🔐 Pou sekirite ou, tout ansyen lyen ou yo efase.\nMen nouvo lyen koneksyon rapid ou a (li ekspire nan 10 tè) :\n🔗 ${link}\n\nEpi men kòd OTP ou a si ou bezwen konekte sou yon lòt aparèy :\n🔑 *${code}*\n\n⚠️ Pa pataje lyen sa a — li pou ou sèlman.`;
+                ? `🎉 Kont ou a kreye avèk siksè, ${displayName}!\n\nMen lyen sekirize ou pou w konekte an (lap ekspire nan 10è tan) : 🔗 ${link}\n\nNou jenere yon kòd OTP pou ou tou : 🔑 *${code}*\n\n⚠️ Pa pataje lyen sa a — li pou ou sèlman.`
+                : `Mèsi paske ou mande kont ou, li egziste deja 😊!\n\n🔐 Pou sekirite ou, tout ansyen lyen ou yo efase.\nMen nouvo lyen koneksyon rapid ou a (lap ekspire nan 10è tan) : 🔗 ${link}\n\nEpi men kòd OTP ou a si ou bezwen konekte sou yon lòt aparèy : 🔑 *${code}*\n\n⚠️ Pa pataje lyen sa a — li pou ou sèlman.`;
                 
             await sendWhatsAppMessage(From, msg);
             console.log(`📤 [BOT WEBHOOK/metem] Done (isNew=${isNewUser})`);
