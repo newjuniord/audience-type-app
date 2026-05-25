@@ -389,6 +389,9 @@ export default function ProfilePage() {
         );
     }
 
+    const twilioNumber = process.env.NEXT_PUBLIC_TWILIO_NUMBER || "+17157507852";
+    const cleanTwilioNumber = twilioNumber.replace(/\D/g, "");
+
     const initials = (displayName || user.email || "?")
         .split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
 
@@ -578,7 +581,7 @@ export default function ProfilePage() {
                                                 </p>
                                                 
                                                 <a
-                                                    href={`https://wa.me/17157507852?text=kod`}
+                                                    href={`https://wa.me/${cleanTwilioNumber}?text=kod`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="w-full py-2.5 rounded-xl bg-emerald-500 text-white font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-emerald-500/90 active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/20"
@@ -586,6 +589,9 @@ export default function ProfilePage() {
                                                     <span className="material-symbols-outlined text-sm notranslate">chat</span>
                                                     Voye 'kod' sou WhatsApp
                                                 </a>
+                                                <p className="text-[10px] text-white/50 text-center leading-relaxed">
+                                                    Si bouton an pa mache pou ou, ajoute nimewo sa a : <strong className="text-emerald-400 font-bold font-mono select-all">{twilioNumber}</strong> epi voye mesaj <strong className="text-emerald-400 font-bold">kod</strong> ba li.
+                                                </p>
                                                 
                                                 <div className="h-px bg-white/5 my-1" />
                                                 
