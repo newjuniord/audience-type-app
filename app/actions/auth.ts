@@ -637,3 +637,59 @@ export async function verifyMagicLinkAction(token: string) {
         return { error: "Une erreur est survenue lors de la vérification du lien." };
     }
 }
+
+/**
+ * Vérifie le code OTP de WhatsApp envoyé par le bot (lorsque l'utilisateur tape 'kod')
+ * et associe ce numéro vérifié au compte de l'utilisateur.
+ */
+export async function verifyAndLinkPhoneAction(userId: string, fullPhone: string, code: string) {
+    if (!userId || !fullPhone || !code) {
+        return { error: "Paramètres manquants." };
+    }
+    try {
+        const adminDb = getAdminDb();
+        const contactClean = fullPhone.replace(/^whatsapp:/i, '').trim();
+        const contactId = `whatsapp:${contactClean}`;
+
+        // 1. Vérifier si le code OTP existe et correspond
+        const otpRef = adminDb.collection("otp_code").doc(contactId);
+        const otpDoc = await otpRef.get();
+        if (!otpDoc.exists) {
+            return { error: "Nou pa jwenn okenn kòd pou nimewo sa a. Tanpri tape 'kod' sou WhatsApp anvan." };
+        }
+
+        const otpData = otpDoc.data();
+        if (!otpData?.code || otpData.code !== code.trim()) {
+            return { error: "Kòd ou antre a pa kòrèk. Tanpri verifye li." };
+        }
+
+        // 2. Vérifier à nouveau si le numéro n'a pas été associé entre-temps à un autre utilisateur
+        const usersRef = adminDb.collection("users");
+        const dupPhoneQuery = await usersRef.where("phone", "==", contactClean).get();
+        const dupPhoneNumQuery = await usersRef.where("phoneNumber", "==", contactClean).get();
+
+        const duplicate =
+            dupPhoneQuery.docs.find(d => d.id !== userId) ||
+            dupPhoneNumQuery.docs.find(d => d.id !== userId);
+
+        if (duplicate) {
+            return { error: "Nimewo sa a deja itilize pa yon lòt kont." };
+        }
+
+        // 3. Mettre à jour l'utilisateur dans Firestore
+        const userRef = usersRef.doc(userId);
+        await userRef.update({
+            phone: contactClean,
+            phoneNumber: contactClean
+        });
+
+        // Effacer le code OTP
+        await otpRef.update({ code: "" });
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error in verifyAndLinkPhoneAction:", error);
+        return { error: error.message || "Erreur de serveur." };
+    }
+}
+

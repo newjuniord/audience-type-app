@@ -9,6 +9,7 @@ import { getBookingApplicationsByUser } from "@/lib/booking-applications";
 import { updateProfile } from "firebase/auth";
 import { db } from '@/lib/firebase';
 import { doc as firestoreDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { verifyAndLinkPhoneAction } from "@/app/actions/auth";
 
 // ─── COUNTRIES LIST ──────────────────────────────────────────────────────────
 const COUNTRIES = [
@@ -126,6 +127,13 @@ export default function ProfilePage() {
     const [showErrorPopup, setShowErrorPopup] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
+    // Verification states
+    const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+    const [checkingPhone, setCheckingPhone] = useState(false);
+    const [showVerificationStep, setShowVerificationStep] = useState(false);
+    const [verificationOtp, setVerificationOtp] = useState("");
+    const [linkingPhone, setLinkingPhone] = useState(false);
+
     // Stats State
     const [stats, setStats] = useState({ coursesRaw: 0, ebooks: 0, bookings: 0 });
 
@@ -196,7 +204,8 @@ export default function ProfilePage() {
                     let cleanPhoneNum = rawPhoneNum.replace("whatsapp:", "").replace(/"/g, "").replace(/'/g, "").trim();
 
                     if (cleanPhoneNum) {
-                        let detectedCountry = COUNTRIES[0]; // default Haiti
+                        setIsPhoneVerified(true);
+                        let detectedCountry: any = COUNTRIES[0]; // default Haiti
                         let displayDigits = cleanPhoneNum;
 
                         if (cleanPhoneNum.startsWith('+')) {
@@ -207,13 +216,18 @@ export default function ProfilePage() {
                                 displayDigits = cleanPhoneNum.slice(match.dial.length);
                             }
                         } else {
-                            detectedCountry = COUNTRIES[0];
+                            detectedCountry = "-";
                             displayDigits = cleanPhoneNum;
                         }
 
-                        setSelectedCountry(detectedCountry);
-                        setPhoneEditable(formatPhone(displayDigits.replace(/\D/g, ""), detectedCountry.code));
+                        if (typeof detectedCountry !== "string") {
+                            setSelectedCountry(detectedCountry);
+                            setPhoneEditable(formatPhone(displayDigits.replace(/\D/g, ""), detectedCountry.code));
+                        } else {
+                            setPhoneEditable(cleanPhoneNum);
+                        }
                     } else {
+                        setIsPhoneVerified(false);
                         setPhoneEditable("");
                     }
 
@@ -252,37 +266,6 @@ export default function ProfilePage() {
         setSaving(true);
         try {
             const updates: any = { displayName };
-            // Save phone number for email users
-            if (user.email) {
-                const digits = phoneEditable.replace(/\D/g, "");
-                if (digits) {
-                    const fullPhone = selectedCountry.dial + digits;
-
-                    // Verification : s'assurer que ce numéro n'appartient pas à un autre compte
-                    const usersRef = collection(db, "users");
-                    const [qPhoneSnap, qPhoneNumSnap] = await Promise.all([
-                        getDocs(query(usersRef, where("phone", "==", fullPhone))),
-                        getDocs(query(usersRef, where("phoneNumber", "==", fullPhone)))
-                    ]);
-
-                    const duplicateDoc =
-                        qPhoneSnap.docs.find(d => d.id !== user.uid) ||
-                        qPhoneNumSnap.docs.find(d => d.id !== user.uid);
-
-                    if (duplicateDoc) {
-                        setSaving(false);
-                        setErrorMessage(`Nimewo telefòn sa a (${fullPhone}) deja asosye ak yon lòt kont. Tanpri chwazi yon lòt nimewo.`);
-                        setShowErrorPopup(true);
-                        return;
-                    }
-
-                    updates.phoneNumber = fullPhone;
-                    updates.phone = fullPhone; // Save to phone field as well so they can login via WhatsApp/SMS
-                } else {
-                    updates.phoneNumber = "";
-                    updates.phone = "";
-                }
-            }
             await updateUser(user.uid, updates);
             await updateProfile(user, { displayName });
             setShowSuccess(true);
@@ -292,6 +275,70 @@ export default function ProfilePage() {
             alert("Erreur lors de la mise à jour.");
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleInitiatePhoneLink = async () => {
+        if (!user) return;
+        const digits = phoneEditable.replace(/\D/g, "");
+        if (!digits) return;
+        const fullPhone = selectedCountry.dial + digits;
+
+        setCheckingPhone(true);
+        try {
+            // Verification : s'assurer que ce numéro n'appartient pas à un autre compte
+            const usersRef = collection(db, "users");
+            const [qPhoneSnap, qPhoneNumSnap] = await Promise.all([
+                getDocs(query(usersRef, where("phone", "==", fullPhone))),
+                getDocs(query(usersRef, where("phoneNumber", "==", fullPhone)))
+            ]);
+
+            const duplicateDoc =
+                qPhoneSnap.docs.find(d => d.id !== user.uid) ||
+                qPhoneNumSnap.docs.find(d => d.id !== user.uid);
+
+            if (duplicateDoc) {
+                setErrorMessage(`Nimewo telefòn sa a (${fullPhone}) deja asosye ak yon lòt kont. Tanpri chwazi yon lòt nimewo.`);
+                setShowErrorPopup(true);
+                return;
+            }
+
+            // Si c'est ok, on montre l'étape de vérification WhatsApp
+            setShowVerificationStep(true);
+        } catch (error) {
+            console.error("Error initiating phone verification:", error);
+            alert("Erreur lors de l'initiation de la vérification.");
+        } finally {
+            setCheckingPhone(false);
+        }
+    };
+
+    const handleVerifyOtpAndLink = async () => {
+        if (!user) return;
+        const digits = phoneEditable.replace(/\D/g, "");
+        if (!digits) return;
+        const fullPhone = selectedCountry.dial + digits;
+
+        setLinkingPhone(true);
+        try {
+            const res = await verifyAndLinkPhoneAction(user.uid, fullPhone, verificationOtp);
+            if (res.error) {
+                setErrorMessage(res.error);
+                setShowErrorPopup(true);
+            } else {
+                setIsPhoneVerified(true);
+                setShowVerificationStep(false);
+                setVerificationOtp("");
+                
+                // Afficher le message de succès
+                setShowSuccess(true);
+                setTimeout(() => setShowSuccess(false), 3000);
+            }
+        } catch (error) {
+            console.error("Error verifying and linking phone number:", error);
+            alert("Erreur lors de la confirmation du code.");
+        } finally {
+            setLinkingPhone(false);
         }
     };
 
@@ -453,39 +500,133 @@ export default function ProfilePage() {
                                 </div>
                             </div>
 
-                            {/* Phone field — editable for email users */}
+                            {/* Phone field — editable or locked for email users */}
                             {user.email && (
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5">
-                                        <span className="text-emerald-400 text-sm material-symbols-outlined">phone_iphone</span>
-                                        Nimewo telefòn (opsyonèl)
-                                    </label>
-                                    <div className="flex gap-2">
-                                        <button
-                                            ref={countryBtnRef}
-                                            type="button"
-                                            onClick={openCountryDropdown}
-                                            className="flex items-center gap-1.5 px-3 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm text-white shrink-0"
-                                        >
-                                            <span className="text-base leading-none">{selectedCountry.flag}</span>
-                                            <span className="font-bold">{selectedCountry.dial}</span>
-                                            <span className="material-symbols-outlined notranslate text-xs text-white/40">keyboard_arrow_down</span>
-                                        </button>
-                                        <input
-                                            type="tel"
-                                            value={phoneEditable}
-                                            onChange={(e) => {
-                                                const digits = e.target.value.replace(/\D/g, "");
-                                                setPhoneEditable(formatPhone(digits, selectedCountry.code));
-                                            }}
-                                            placeholder={selectedCountry.code === 'HT' ? "3456 7890" : "06 12 34 56 78"}
-                                            className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20 font-mono"
-                                        />
+                                isPhoneVerified ? (
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                                                <span className="text-emerald-400 text-sm material-symbols-outlined">phone_iphone</span>
+                                                Nimewo telefòn
+                                            </label>
+                                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                                                <span className="material-symbols-outlined text-xs">verified</span>
+                                                Verifye epi fèmen
+                                            </span>
+                                        </div>
+                                        <div className="relative animate-in fade-in duration-200">
+                                            <input
+                                                readOnly
+                                                type="tel"
+                                                value={phoneEditable}
+                                                className="w-full px-4 py-3 pr-10 rounded-xl bg-white/[0.03] border border-white/5 text-sm text-white/50 cursor-not-allowed font-mono"
+                                            />
+                                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-emerald-400">
+                                                lock
+                                             </span>
+                                        </div>
                                     </div>
-                                    <p className="text-[10px] text-white/30 leading-relaxed">
-                                        Ajoute nimewo sa a si ou vle resevwa kòd koneksyon pa mesaj (WhatsApp oswa SMS) tou.
-                                    </p>
-                                </div>
+                                ) : (
+                                    <div className="flex flex-col gap-2 animate-in fade-in duration-200">
+                                        <label className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                                            <span className="text-emerald-400 text-sm material-symbols-outlined">phone_iphone</span>
+                                            Nimewo telefòn (opsyonèl)
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <button
+                                                ref={countryBtnRef}
+                                                type="button"
+                                                disabled={showVerificationStep}
+                                                onClick={openCountryDropdown}
+                                                className="flex items-center gap-1.5 px-3 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm text-white shrink-0 disabled:opacity-50"
+                                            >
+                                                <span className="text-base leading-none">{selectedCountry.flag}</span>
+                                                <span className="font-bold">{selectedCountry.dial}</span>
+                                                <span className="material-symbols-outlined notranslate text-xs text-white/40">keyboard_arrow_down</span>
+                                            </button>
+                                            <input
+                                                type="tel"
+                                                disabled={showVerificationStep}
+                                                value={phoneEditable}
+                                                onChange={(e) => {
+                                                    const digits = e.target.value.replace(/\D/g, "");
+                                                    setPhoneEditable(formatPhone(digits, selectedCountry.code));
+                                                }}
+                                                placeholder={selectedCountry.code === 'HT' ? "3456 7890" : "06 12 34 56 78"}
+                                                className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+                                            />
+                                        </div>
+                                        
+                                        {!showVerificationStep ? (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleInitiatePhoneLink}
+                                                    disabled={checkingPhone || !phoneEditable.replace(/\D/g, "")}
+                                                    className="mt-1.5 w-full py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-xs hover:bg-emerald-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {checkingPhone ? "Ap verifye..." : "Verifye nimewo sa a"}
+                                                </button>
+                                                <p className="text-[10px] text-white/30 leading-relaxed">
+                                                    Ajoute nimewo sa a si ou vle resevwa kòd koneksyon pa mesaj (WhatsApp oswa SMS) tou.
+                                                </p>
+                                            </>
+                                        ) : (
+                                            <div className="mt-2 p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
+                                                <p className="text-xs text-white/80 font-medium leading-relaxed">
+                                                    Pou verifye nimewo sa a se pou ou vre, voye mesaj <strong className="text-emerald-400 font-bold">kod</strong> bay robot nou an sou WhatsApp :
+                                                </p>
+                                                
+                                                <a
+                                                    href={`https://wa.me/17157507852?text=kod`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="w-full py-2.5 rounded-xl bg-emerald-500 text-white font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-emerald-500/90 active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/20"
+                                                >
+                                                    <span className="material-symbols-outlined text-sm notranslate">chat</span>
+                                                    Voye 'kod' sou WhatsApp
+                                                </a>
+                                                
+                                                <div className="h-px bg-white/5 my-1" />
+                                                
+                                                <div className="flex flex-col gap-1.5">
+                                                     <label className="text-[10px] font-bold text-white/40 uppercase tracking-wider">
+                                                         Antre kòd ou resevwa a :
+                                                     </label>
+                                                     <div className="flex gap-2">
+                                                         <input
+                                                             type="text"
+                                                             maxLength={6}
+                                                             value={verificationOtp}
+                                                             onChange={(e) => setVerificationOtp(e.target.value.replace(/\D/g, ""))}
+                                                             placeholder="Ex: 1234"
+                                                             className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-center font-mono focus:outline-none focus:border-primary/60 text-white placeholder:text-white/20"
+                                                         />
+                                                         <button
+                                                             type="button"
+                                                             onClick={handleVerifyOtpAndLink}
+                                                             disabled={linkingPhone || verificationOtp.length < 4}
+                                                             className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                         >
+                                                             {linkingPhone ? "Ap verifye..." : "Konfime"}
+                                                         </button>
+                                                     </div>
+                                                </div>
+                                                
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowVerificationStep(false);
+                                                        setVerificationOtp("");
+                                                    }}
+                                                    className="text-[10px] text-white/40 hover:text-white/60 font-bold uppercase tracking-wider mt-1 text-center"
+                                                >
+                                                    Anile
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
                             )}
                         </div>
 
