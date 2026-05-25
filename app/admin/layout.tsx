@@ -10,6 +10,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const router = useRouter();
 
     useEffect(() => {
+        // Force light mode on admin mount by removing dark class
+        const htmlElement = document.documentElement;
+        htmlElement.classList.remove("dark");
+
+        return () => {
+            // Restore dark mode on admin unmount
+            htmlElement.classList.add("dark");
+        };
+    }, []);
+
+    useEffect(() => {
         if (!loading) {
             if (!user || role?.trim().toLowerCase() !== "admin") {
                 router.push("/");
@@ -19,8 +30,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-background-dark">
-                <div className="w-8 h-8 border-4 border-white/10 border-t-primary rounded-full animate-spin"></div>
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <div className="w-8 h-8 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
             </div>
         );
     }
@@ -30,9 +41,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     return (
-        <div className="flex min-h-screen bg-background-dark text-white font-display">
+        <div className="flex min-h-screen bg-white text-gray-900 font-display">
             <AdminSidebar />
-            <div className="flex-1 ml-64 p-10 bg-background-dark min-h-screen border-l border-white/5">
+            <div className="flex-1 ml-64 p-10 bg-gray-50 min-h-screen border-l border-gray-200">
                 {children}
             </div>
         </div>
