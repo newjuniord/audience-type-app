@@ -28,7 +28,7 @@ export default function AdminSidebar() {
         {
             title: "Contenu & Utilisateurs",
             items: [
-                { label: "Users", icon: "group", href: "/admin" },
+                { label: "Users", icon: "group", href: "/admin/users" },
                 { label: "Courses", icon: "school", href: "/admin/courses" },
                 { label: "Ebooks", icon: "menu_book", href: "/admin/ebooks" },
                 { label: "Booking App", icon: "calendar_today", href: "/admin/booking-application" },
