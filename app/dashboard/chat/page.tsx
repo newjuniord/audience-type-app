@@ -394,7 +394,7 @@ export default function StudentChatPage() {
 
     // ──── Input bar renderer (shared) ────
     const renderInputBar = (mobile: boolean) => {
-        const bar = mobile ? "px-3 py-2.5 pb-[84px]" : "p-4";
+        const bar = mobile ? "px-3 py-2.5" : "p-4";
         const bg = mobile ? "bg-[#0e0e0e] border-white/[0.06]" : "bg-black/5 dark:bg-white/[0.01] border-black/5 dark:border-white/5";
 
         if (hasReachedLimit) {
@@ -533,9 +533,8 @@ export default function StudentChatPage() {
     return (
         <>
             {/* ===== MOBILE ===== */}
-            <div className="md:hidden fixed inset-0 z-40 flex flex-col bg-background-dark text-white">
-                <div className="px-4 py-3 bg-[#0e0e0e] border-b border-white/[0.06] flex items-center gap-3 shrink-0 safe-area-pt">
-                    <Link href="/dashboard" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 transition-colors shrink-0 active:scale-90"><span className="material-symbols-outlined text-lg">arrow_back</span></Link>
+            <div className="md:hidden fixed top-[72px] bottom-[80px] left-0 right-0 z-40 flex flex-col bg-background-dark text-white">
+                <div className="px-4 py-3 bg-[#0e0e0e] border-b border-white/[0.06] flex items-center gap-3 shrink-0">
                     <div className="relative shrink-0"><div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center text-primary"><span className="material-symbols-outlined text-base">support_agent</span></div><div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-[#0e0e0e]" /></div>
                     <div className="min-w-0"><div className="text-sm font-bold truncate leading-tight">Admin DJR Akademi</div><div className="text-[10px] text-green-400 font-semibold leading-tight">Enliy</div></div>
                 </div>
