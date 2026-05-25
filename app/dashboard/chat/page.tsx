@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
     doc, setDoc, addDoc, collection, query, orderBy,
-    onSnapshot, Timestamp, getDocs, where, getDoc
+    onSnapshot, Timestamp, getDocs, where, getDoc, deleteDoc
 } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -133,6 +133,36 @@ export default function StudentChatPage() {
         chatLimitTarget === "all" || (chatLimitTarget === "non_enrolled" && !isEnrolled)
     );
     const hasReachedLimit = isLimitApplied && userSentMessagesCount >= chatMessageLimit;
+
+    // ──── Message Deletion (Long Press) ────
+    const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
+    const pressTimer = useRef<NodeJS.Timeout | null>(null);
+
+    const handlePressStart = (msg: Message) => {
+        if (msg.senderId !== user?.uid) return;
+        pressTimer.current = setTimeout(() => {
+            setMessageToDelete(msg);
+        }, 600);
+    };
+
+    const handlePressEnd = () => {
+        if (pressTimer.current) {
+            clearTimeout(pressTimer.current);
+            pressTimer.current = null;
+        }
+    };
+
+    const confirmDeleteMessage = async () => {
+        if (!messageToDelete || !user) return;
+        try {
+            await deleteDoc(doc(db, "chats", user.uid, "messages", messageToDelete.id));
+            setMessageToDelete(null);
+        } catch (err) {
+            console.error("Error deleting message:", err);
+            setErrorMessage("Enposib pou efase mesaj la.");
+            setIsErrorModalOpen(true);
+        }
+    };
 
     // ──── Send helper (text, image, voice) ────
     const sendMessage = useCallback(async (type: "text" | "image" | "voice", mediaBlob?: Blob, mediaName?: string, duration?: number) => {
@@ -358,7 +388,14 @@ export default function StudentChatPage() {
 
         return (
             <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                <div className={`max-w-[82%] shadow-sm overflow-hidden ${bubbleClass}`}>
+                <div 
+                    className={`max-w-[82%] shadow-sm overflow-hidden ${bubbleClass} cursor-pointer transition-opacity active:opacity-80 select-none`}
+                    onTouchStart={() => handlePressStart(msg)}
+                    onTouchEnd={handlePressEnd}
+                    onMouseDown={() => handlePressStart(msg)}
+                    onMouseUp={handlePressEnd}
+                    onMouseLeave={handlePressEnd}
+                >
                     {msg.type === "image" && msg.mediaUrl ? (
                         <div>
                             <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">
@@ -718,6 +755,15 @@ export default function StudentChatPage() {
             </div>
 
             <ConfirmModal isOpen={isErrorModalOpen} onClose={() => setIsErrorModalOpen(false)} title="Echèk" message={errorMessage} type="alert" isDanger={true} />
+            <ConfirmModal
+                isOpen={!!messageToDelete}
+                onClose={() => setMessageToDelete(null)}
+                title="Efase mesaj la"
+                message="Ou sèten ou vle efase mesaj sa a ?"
+                onConfirm={confirmDeleteMessage}
+                type="confirm"
+                isDanger={true}
+            />
 
             {/* ===== TOAST ===== */}
             {toast && (

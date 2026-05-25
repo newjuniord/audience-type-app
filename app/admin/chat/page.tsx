@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-    doc, setDoc, addDoc, collection, query, orderBy, onSnapshot, Timestamp, writeBatch
+    doc, setDoc, addDoc, collection, query, orderBy, onSnapshot, Timestamp, writeBatch, deleteDoc
 } from "firebase/firestore";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { uploadChatMedia, compressImage } from "@/lib/chatMedia";
@@ -193,6 +193,36 @@ export default function AdminChatPage() {
 
     const cancelImage = () => { setImagePreview(null); setImageFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; };
 
+    // ──── Message Deletion (Long Press) ────
+    const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
+    const pressTimer = useRef<NodeJS.Timeout | null>(null);
+
+    const handlePressStart = (msg: Message) => {
+        if (msg.senderId !== "admin") return;
+        pressTimer.current = setTimeout(() => {
+            setMessageToDelete(msg);
+        }, 600);
+    };
+
+    const handlePressEnd = () => {
+        if (pressTimer.current) {
+            clearTimeout(pressTimer.current);
+            pressTimer.current = null;
+        }
+    };
+
+    const confirmDeleteMessage = async () => {
+        if (!messageToDelete || !selectedThread) return;
+        try {
+            await deleteDoc(doc(db, "chats", selectedThread.id, "messages", messageToDelete.id));
+            setMessageToDelete(null);
+        } catch (err) {
+            console.error("Error deleting message:", err);
+            setErrorMessage("Erreur lors de la suppression du message.");
+            setIsErrorModalOpen(true);
+        }
+    };
+
     const formatTime = (timestamp: any) => {
         if (!timestamp) return "";
         const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -317,7 +347,14 @@ export default function AdminChatPage() {
                                         : "bg-white text-gray-900 border border-gray-200 rounded-2xl rounded-tl-none";
                                     return (
                                         <div key={msg.id} className={`flex flex-col ${isAdminMsg ? "items-end" : "items-start"}`}>
-                                            <div className={`max-w-[70%] shadow-sm overflow-hidden ${bubbleCls}`}>
+                                            <div 
+                                                className={`max-w-[70%] shadow-sm overflow-hidden ${bubbleCls} cursor-pointer transition-opacity active:opacity-80 select-none`}
+                                                onTouchStart={() => handlePressStart(msg)}
+                                                onTouchEnd={handlePressEnd}
+                                                onMouseDown={() => handlePressStart(msg)}
+                                                onMouseUp={handlePressEnd}
+                                                onMouseLeave={handlePressEnd}
+                                            >
                                                 {msg.type === "image" && msg.mediaUrl ? (
                                                     <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer"><img src={msg.mediaUrl} alt="Image" className="w-full max-w-[280px] rounded-xl object-cover" loading="lazy" /></a>
                                                 ) : msg.type === "voice" && msg.mediaUrl ? (
@@ -372,6 +409,15 @@ export default function AdminChatPage() {
                 title="Erreur"
                 message={errorMessage}
                 type="alert"
+                isDanger={true}
+            />
+            <ConfirmModal
+                isOpen={!!messageToDelete}
+                onClose={() => setMessageToDelete(null)}
+                title="Supprimer le message"
+                message="Êtes-vous sûr de vouloir supprimer ce message ?"
+                onConfirm={confirmDeleteMessage}
+                type="confirm"
                 isDanger={true}
             />
 
