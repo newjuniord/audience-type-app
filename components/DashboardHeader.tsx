@@ -15,6 +15,8 @@ export default function DashboardHeader() {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [unreadCount, setUnreadCount] = useState(0);
     const [chatUnread, setChatUnread] = useState(false);
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [isInstallable, setIsInstallable] = useState(false);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -26,6 +28,42 @@ export default function DashboardHeader() {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    // Listen for PWA install prompt
+    useEffect(() => {
+        const handleBeforeInstallPrompt = (e: Event) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            setIsInstallable(true);
+        };
+
+        window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+        if (window.matchMedia("(display-mode: standalone)").matches) {
+            setIsInstallable(false);
+        }
+
+        const handleAppInstalled = () => {
+            setIsInstallable(false);
+            setDeferredPrompt(null);
+        };
+        window.addEventListener("appinstalled", handleAppInstalled);
+
+        return () => {
+            window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+            window.removeEventListener("appinstalled", handleAppInstalled);
+        };
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`Install prompt outcome: ${outcome}`);
+        setDeferredPrompt(null);
+        setIsInstallable(false);
+        setIsDropdownOpen(false);
+    };
 
     // Subscribe to unread alerts count
     useEffect(() => {
@@ -147,7 +185,7 @@ export default function DashboardHeader() {
                                             </div>
                                         )}
                                         <div className="min-w-0">
-                                            <p className="text-sm font-black truncate leading-tight">{userData?.displayName || user.displayName || "Client"}</p>
+                                            <p className="text-sm font-black truncate leading-tight text-black dark:text-white">{userData?.displayName || user.displayName || "Client"}</p>
                                             <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{userData?.email || user.email || userData?.phone}</p>
                                         </div>
                                     </div>
@@ -175,6 +213,7 @@ export default function DashboardHeader() {
                                         { href: "/consultation", icon: "support_agent", label: "Konsiltasyon" },
                                         { href: "/coaching", icon: "psychology", label: "Coaching" },
                                         { href: "/services", icon: "design_services", label: "Sèvis" },
+                                        { href: "/sondage", icon: "poll", label: "Sondaj" },
                                     ].map(({ href, icon, label, highlight, badge }) => (
                                         <Link
                                             key={href}
@@ -212,6 +251,15 @@ export default function DashboardHeader() {
                                         <span className="material-symbols-outlined text-base notranslate text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white transition-colors">manage_accounts</span>
                                         Pwofil mwen
                                     </Link>
+                                    {isInstallable && (
+                                        <button
+                                            onClick={handleInstallClick}
+                                            className="flex md:hidden items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-sm font-semibold text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white group w-full text-left"
+                                        >
+                                            <span className="material-symbols-outlined text-base notranslate text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white transition-colors">download</span>
+                                            Enstale aplikasyon
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>

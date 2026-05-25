@@ -22,12 +22,31 @@ const serwist = new Serwist({
             matcher: /^\/api\//,
             handler: new NetworkOnly(),
         },
-        // Pages Next.js — Network First avec fallback cache
+        // Pages Next.js — StaleWhileRevalidate avec fallback cache (hors admin)
         {
-            matcher: ({ request }: { request: Request }) => request.mode === "navigate",
-            handler: new NetworkFirst({
+            matcher: ({ request, url }: { request: Request; url: URL }) => 
+                request.mode === "navigate" && !url.pathname.startsWith("/admin"),
+            handler: new StaleWhileRevalidate({
                 cacheName: "pages-cache",
-                networkTimeoutSeconds: 3,
+                plugins: [
+                    {
+                        cacheWillUpdate: async ({ response }: { response: Response }) => {
+                            return response.status === 200 ? response : null;
+                        },
+                    },
+                ],
+            }),
+        },
+        // RSC Payloads pour la navigation Next.js — StaleWhileRevalidate (hors admin/api)
+        {
+            matcher: ({ request, url }: { request: Request; url: URL }) => {
+                const isRsc = request.headers.get("rsc") === "1" || 
+                              request.headers.get("RSC") === "1" || 
+                              url.searchParams.has("_rsc");
+                return isRsc && !url.pathname.startsWith("/api/") && !url.pathname.startsWith("/admin");
+            },
+            handler: new StaleWhileRevalidate({
+                cacheName: "rsc-cache",
                 plugins: [
                     {
                         cacheWillUpdate: async ({ response }: { response: Response }) => {

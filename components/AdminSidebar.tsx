@@ -43,6 +43,7 @@ export default function AdminSidebar() {
                 { label: "Announcement", icon: "campaign", href: "/admin/announcement" },
                 { label: "Notifikasyon 🔔", icon: "notifications", href: "/admin/alerts" },
                 { label: "Reviews", icon: "reviews", href: "/admin/reviews" },
+                { label: "Sondaj 📊", icon: "poll", href: "/admin/sondages" },
                 { label: "Messages", icon: "mail", href: "/admin/messages" },
                 { label: "Chat Support 💬", icon: "chat", href: "/admin/chat" },
             ]

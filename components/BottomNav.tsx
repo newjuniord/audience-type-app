@@ -12,13 +12,13 @@ const NAV_ITEMS = [
         href: "/dashboard",
         icon: "grid_view",
         icon_active: "grid_view",
-        label: "Contenu",
+        label: "Kontni",
     },
     {
         href: "/products",
         icon: "storefront",
         icon_active: "storefront",
-        label: "Produits",
+        label: "Pwodwi",
     },
     {
         href: "/kado",

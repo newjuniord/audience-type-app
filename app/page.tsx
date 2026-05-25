@@ -4,6 +4,7 @@ import DashboardFooter from "../components/DashboardFooter";
 import DashboardHeader from "../components/DashboardHeader";
 import Hero from "../components/Hero";
 import AcademyOverview from "../components/AcademyOverview";
+import FounderSection from "../components/FounderSection";
 import ReviewsSection from "../components/ReviewsSection";
 import ScrollReveal from "../components/ScrollReveal";
 import { getCourses } from "@/lib/courses";
@@ -77,6 +78,10 @@ export default async function Home() {
         
         <ScrollReveal delay={0.2} className="w-full max-w-7xl">
           <FeaturedProducts initialProducts={initialProducts} />
+        </ScrollReveal>
+        
+        <ScrollReveal delay={0.2}>
+          <FounderSection />
         </ScrollReveal>
         
         <ScrollReveal delay={0.2} className="w-full">
