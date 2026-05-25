@@ -137,7 +137,6 @@ export default function AdminAlertsPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Supprimer cette alerte ?")) return;
         await deleteDoc(doc(db, "alerts", id));
     };
 
