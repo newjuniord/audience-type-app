@@ -144,7 +144,13 @@ export default function DashboardHeader() {
                         { href: "/coaching", icon: "psychology", label: "Coaching" },
                         { href: "/services", icon: "design_services", label: "Sèvis" },
                         { href: "/sondage", icon: "poll", label: "Sondaj" },
-                    ].map(({ href, icon, label, highlight, badge }) => (
+                    ].filter(item => {
+                        if (showClose) {
+                            // Cacher les éléments déjà présents dans le BottomNav sur mobile
+                            return !["/dashboard", "/products", "/kado", "/dashboard/chat", "/consultation"].includes(item.href);
+                        }
+                        return true;
+                    }).map(({ href, icon, label, highlight, badge }) => (
                         <Link
                             key={href}
                             href={href}
