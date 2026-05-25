@@ -401,8 +401,8 @@ export async function verifyOtpAndLoginAction(contact: string, code: string, typ
         } else {
             // Création du compte dans Firebase Auth
             let userEmail = type === 'email' ? contactClean : undefined;
-            let userPhone = type === 'phone' ? contactClean : undefined;
-            const userName = type === 'email' ? contactClean.split('@')[0] : "Client";
+            let userPhone = (type === 'phone' || type === 'whatsapp' || type === 'telegram') ? contactClean : undefined;
+            const userName = type === 'email' ? contactClean.split('@')[0] : contactClean;
 
             try {
                 const authUser = await adminAuth.createUser({
