@@ -757,8 +757,8 @@ export default function LoginPage() {
                         ) : (
                             <div className="flex flex-col gap-4">
                                 {/* TABS SELECTOR */}
-                                <div className="grid grid-cols-4 gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-2">
-                                    {(['whatsapp', 'phone', 'email', 'password'] as const).map((method) => {
+                                <div className="grid grid-cols-3 gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-2">
+                                    {(['whatsapp', 'email', 'password'] as const).map((method) => {
                                         const labels = {
                                             whatsapp: 'WhatsApp',
                                             phone: 'SMS',
