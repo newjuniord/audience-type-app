@@ -8,7 +8,11 @@ import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Link from "next/link";
 
-export default function AnnouncementBar() {
+interface AnnouncementBarProps {
+    mode?: "default" | "mobile-header";
+}
+
+export default function AnnouncementBar({ mode = "default" }: AnnouncementBarProps) {
     const { user, loading: authLoading } = useAuth();
     const [settings, setSettings] = useState<AnnouncementBarSettings | null>(null);
     const [isVisible, setIsVisible] = useState(false);
@@ -86,6 +90,13 @@ export default function AnnouncementBar() {
     }, [settings, user, authLoading]);
 
     if (loading || authLoading || !isVisible || !settings) return null;
+    if (mode === "mobile-header" && !user) return null;
+
+    const responsiveClass = mode === "default" && user 
+        ? "hidden md:block" 
+        : mode === "mobile-header" 
+            ? "block md:hidden" 
+            : "";
 
     const barContent = (
         <div 
@@ -103,11 +114,15 @@ export default function AnnouncementBar() {
 
     if (settings.link) {
         return (
-            <Link href={settings.link} className="block hover:opacity-90 transition-opacity">
+            <Link href={settings.link} className={`block hover:opacity-90 transition-opacity ${responsiveClass}`}>
                 {barContent}
             </Link>
         );
     }
 
-    return barContent;
+    return (
+        <div className={responsiveClass}>
+            {barContent}
+        </div>
+    );
 }
