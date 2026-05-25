@@ -639,28 +639,115 @@ export async function verifyMagicLinkAction(token: string) {
 }
 
 /**
- * Vérifie le code OTP de WhatsApp envoyé par le bot (lorsque l'utilisateur tape 'kod')
- * et associe ce numéro vérifié au compte de l'utilisateur.
+ * Envoie un SMS de vérification via Prelude pour lier un numéro de téléphone à un utilisateur.
  */
-export async function verifyAndLinkPhoneAction(userId: string, fullPhone: string, code: string) {
-    if (!userId || !fullPhone || !code) {
+export async function sendPreludeVerificationAction(userId: string, fullPhone: string) {
+    if (!userId || !fullPhone) {
         return { error: "Paramètres manquants." };
     }
+
     try {
         const adminDb = getAdminDb();
         const contactClean = fullPhone.replace(/^whatsapp:/i, '').trim();
-        const contactId = `whatsapp:${contactClean}`;
 
-        // 1. Vérifier si le code OTP existe et correspond
-        const otpRef = adminDb.collection("otp_code").doc(contactId);
-        const otpDoc = await otpRef.get();
-        if (!otpDoc.exists) {
-            return { error: "Nou pa jwenn okenn kòd pou nimewo sa a. Tanpri tape 'kod' sou WhatsApp anvan." };
+        // 1. Vérifier si le numéro n'est pas déjà associé à un autre utilisateur
+        const usersRef = adminDb.collection("users");
+        const dupPhoneQuery = await usersRef.where("phone", "==", contactClean).get();
+        const dupPhoneNumQuery = await usersRef.where("phoneNumber", "==", contactClean).get();
+
+        const duplicate =
+            dupPhoneQuery.docs.find(d => d.id !== userId) ||
+            dupPhoneNumQuery.docs.find(d => d.id !== userId);
+
+        if (duplicate) {
+            return { error: "Nimewo sa a deja itilize pa yon lòt kont." };
         }
 
-        const otpData = otpDoc.data();
-        if (!otpData?.code || otpData.code !== code.trim()) {
-            return { error: "Kòd ou antre a pa kòrèk. Tanpri verifye li." };
+        // 2. Envoyer la demande de vérification via Prelude API
+        const preludeApiKey = process.env.PRELUDE_API_KEY;
+        if (!preludeApiKey) {
+            console.error("PRELUDE_API_KEY is missing from environment variables.");
+            return { error: "Erreur: Konfigirasyon Prelude la pa kòrèk sou sèvè a." };
+        }
+
+        const response = await fetch("https://api.prelude.dev/v2/verification", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${preludeApiKey}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                target: {
+                    type: "phone_number",
+                    value: contactClean
+                },
+                options: {
+                    preferred_channel: "sms"
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("❌ [Prelude API Error] Status:", response.status, "Body:", errorText);
+            return { error: `Erè nan voye SMS la. (API Error: ${response.status}).` };
+        }
+
+        const resData = await response.json();
+        if (resData.status === "success" || resData.status === "retry") {
+            return { success: true };
+        } else {
+            return { error: `Erè nan voye SMS la (Status: ${resData.status}).` };
+        }
+    } catch (error: any) {
+        console.error("Error in sendPreludeVerificationAction:", error);
+        return { error: error.message || "Erreur lors de l'envoi du SMS." };
+    }
+}
+
+/**
+ * Vérifie le code de vérification SMS Prelude et lie le numéro au compte utilisateur.
+ */
+export async function verifyPreludeAndLinkPhoneAction(userId: string, fullPhone: string, code: string) {
+    if (!userId || !fullPhone || !code) {
+        return { error: "Paramètres manquants." };
+    }
+
+    try {
+        const adminDb = getAdminDb();
+        const contactClean = fullPhone.replace(/^whatsapp:/i, '').trim();
+
+        // 1. Appeler l'API Prelude pour valider le code
+        const preludeApiKey = process.env.PRELUDE_API_KEY;
+        if (!preludeApiKey) {
+            console.error("PRELUDE_API_KEY is missing from environment variables.");
+            return { error: "Erreur: Konfigirasyon Prelude la pa kòrèk sou sèvè a." };
+        }
+
+        const response = await fetch("https://api.prelude.dev/v2/verification/check", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${preludeApiKey}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                target: {
+                    type: "phone_number",
+                    value: contactClean
+                },
+                code: code.trim()
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("❌ [Prelude Check Error] Status:", response.status, "Body:", errorText);
+            return { error: "Kòd la ekspire oswa li pa korèk." };
+        }
+
+        const resData = await response.json();
+        if (resData.status !== "success") {
+            return { error: "Kòd la ekspire oswa li pa korèk." };
         }
 
         // 2. Vérifier à nouveau si le numéro n'a pas été associé entre-temps à un autre utilisateur
@@ -683,13 +770,10 @@ export async function verifyAndLinkPhoneAction(userId: string, fullPhone: string
             phoneNumber: contactClean
         });
 
-        // Effacer le code OTP
-        await otpRef.update({ code: "" });
-
         return { success: true };
     } catch (error: any) {
-        console.error("Error in verifyAndLinkPhoneAction:", error);
-        return { error: error.message || "Erreur de serveur." };
+        console.error("Error in verifyPreludeAndLinkPhoneAction:", error);
+        return { error: error.message || "Erreur de serveur lors de la validation." };
     }
 }
 

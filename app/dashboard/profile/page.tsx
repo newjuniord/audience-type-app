@@ -9,7 +9,7 @@ import { getBookingApplicationsByUser } from "@/lib/booking-applications";
 import { updateProfile } from "firebase/auth";
 import { db } from '@/lib/firebase';
 import { doc as firestoreDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { verifyAndLinkPhoneAction } from "@/app/actions/auth";
+import { sendPreludeVerificationAction, verifyPreludeAndLinkPhoneAction } from "@/app/actions/auth";
 
 // ─── COUNTRIES LIST ──────────────────────────────────────────────────────────
 const COUNTRIES = [
@@ -286,25 +286,13 @@ export default function ProfilePage() {
 
         setCheckingPhone(true);
         try {
-            // Verification : s'assurer que ce numéro n'appartient pas à un autre compte
-            const usersRef = collection(db, "users");
-            const [qPhoneSnap, qPhoneNumSnap] = await Promise.all([
-                getDocs(query(usersRef, where("phone", "==", fullPhone))),
-                getDocs(query(usersRef, where("phoneNumber", "==", fullPhone)))
-            ]);
-
-            const duplicateDoc =
-                qPhoneSnap.docs.find(d => d.id !== user.uid) ||
-                qPhoneNumSnap.docs.find(d => d.id !== user.uid);
-
-            if (duplicateDoc) {
-                setErrorMessage(`Nimewo telefòn sa a (${fullPhone}) deja asosye ak yon lòt kont. Tanpri chwazi yon lòt nimewo.`);
+            const res = await sendPreludeVerificationAction(user.uid, fullPhone);
+            if (res.error) {
+                setErrorMessage(res.error);
                 setShowErrorPopup(true);
-                return;
+            } else {
+                setShowVerificationStep(true);
             }
-
-            // Si c'est ok, on montre l'étape de vérification WhatsApp
-            setShowVerificationStep(true);
         } catch (error) {
             console.error("Error initiating phone verification:", error);
             alert("Erreur lors de l'initiation de la vérification.");
@@ -321,7 +309,7 @@ export default function ProfilePage() {
 
         setLinkingPhone(true);
         try {
-            const res = await verifyAndLinkPhoneAction(user.uid, fullPhone, verificationOtp);
+            const res = await verifyPreludeAndLinkPhoneAction(user.uid, fullPhone, verificationOtp);
             if (res.error) {
                 setErrorMessage(res.error);
                 setShowErrorPopup(true);
@@ -389,8 +377,6 @@ export default function ProfilePage() {
         );
     }
 
-    const twilioNumber = process.env.NEXT_PUBLIC_TWILIO_NUMBER || "+17157507852";
-    const cleanTwilioNumber = twilioNumber.replace(/\D/g, "");
 
     const initials = (displayName || user.email || "?")
         .split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
@@ -568,32 +554,17 @@ export default function ProfilePage() {
                                                     disabled={checkingPhone || !phoneEditable.replace(/\D/g, "")}
                                                     className="mt-1.5 w-full py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-xs hover:bg-emerald-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                    {checkingPhone ? "Ap verifye..." : "Verifye nimewo sa a"}
+                                                    {checkingPhone ? "N ap voye SMS..." : "Verifye nimewo sa a pa SMS"}
                                                 </button>
                                                 <p className="text-[10px] text-white/30 leading-relaxed">
-                                                    Ajoute nimewo sa a si ou vle resevwa kòd koneksyon pa mesaj (WhatsApp oswa SMS) tou.
+                                                    Ajoute nimewo sa a si ou vle resevwa kòd koneksyon pa SMS tou.
                                                 </p>
                                             </>
                                         ) : (
                                             <div className="mt-2 p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
                                                 <p className="text-xs text-white/80 font-medium leading-relaxed">
-                                                    Pou verifye nimewo sa a se pou ou vre, voye mesaj <strong className="text-emerald-400 font-bold">kod</strong> bay robot nou an sou WhatsApp :
+                                                    Nou voye yon kòd verifikasyon pa SMS sou nimewo sa a : <strong className="text-emerald-400 font-bold font-mono">{selectedCountry.dial + " " + phoneEditable}</strong>.
                                                 </p>
-                                                
-                                                <a
-                                                    href={`https://wa.me/${cleanTwilioNumber}?text=kod`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="w-full py-2.5 rounded-xl bg-emerald-500 text-white font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-emerald-500/90 active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/20"
-                                                >
-                                                    <span className="material-symbols-outlined text-sm notranslate">chat</span>
-                                                    Voye 'kod' sou WhatsApp
-                                                </a>
-                                                <p className="text-[10px] text-white/50 text-center leading-relaxed">
-                                                    Si bouton an pa mache pou ou, ajoute nimewo sa a : <strong className="text-emerald-400 font-bold font-mono select-all">{twilioNumber}</strong> epi voye mesaj <strong className="text-emerald-400 font-bold">kod</strong> ba li.
-                                                </p>
-                                                
-                                                <div className="h-px bg-white/5 my-1" />
                                                 
                                                 <div className="flex flex-col gap-1.5">
                                                      <label className="text-[10px] font-bold text-white/40 uppercase tracking-wider">
