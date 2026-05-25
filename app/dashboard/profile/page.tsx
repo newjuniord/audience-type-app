@@ -137,12 +137,7 @@ export default function ProfilePage() {
     // Stats State
     const [stats, setStats] = useState({ coursesRaw: 0, ebooks: 0, bookings: 0 });
 
-    // Temp Link states
-    const [canGenerateTempLinks, setCanGenerateTempLinks] = useState(false);
-    const [tempLinksCount, setTempLinksCount] = useState(0);
-    const [generatedLink, setGeneratedLink] = useState("");
-    const [generatingLink, setGeneratingLink] = useState(false);
-    const [linkCopied, setLinkCopied] = useState(false);
+
 
     // Country selection states & refs
     const [selectedCountry, setSelectedCountry] = useState(() => detectCountry());
@@ -187,8 +182,7 @@ export default function ProfilePage() {
                 if (userDoc) {
                     setDisplayName(userDoc.displayName || user.displayName || "");
                     setPhotoURL(userDoc.photoURL || user.photoURL || "");
-                    setCanGenerateTempLinks(userDoc.canGenerateTempLinks || false);
-                    setTempLinksCount(userDoc.tempLinksCount || 0);
+
 
                     // For WhatsApp users: read-only display
                     const rawPhone = userDoc.phone || user.phoneNumber || "";
@@ -335,31 +329,7 @@ export default function ProfilePage() {
         window.location.href = "/login";
     };
 
-    const handleGenerateTempLink = async () => {
-        if (!user) return;
-        setGeneratingLink(true);
-        try {
-            const token = await user.getIdToken();
-            const res = await fetch("/api/auth/temp-link/generate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }
-            });
-            if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Erreur"); }
-            const { link } = await res.json();
-            setGeneratedLink(link);
-            setTempLinksCount(prev => prev + 1);
-        } catch (error: any) {
-            alert(error.message || "Erreur lors de la génération du lien.");
-        } finally {
-            setGeneratingLink(false);
-        }
-    };
 
-    const copyLinkToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
-        setLinkCopied(true);
-        setTimeout(() => setLinkCopied(false), 2000);
-    };
 
     if (authLoading || loading) {
         return (
@@ -622,74 +592,7 @@ export default function ProfilePage() {
                         </button>
                     </div>
 
-                    {/* ── Magic Link Card ── */}
-                    {canGenerateTempLinks && (
-                        <div className="rounded-3xl border border-primary/20 bg-primary/5 p-6 sm:p-8 relative overflow-hidden">
-                            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
 
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-primary">share_reviews</span>
-                                </div>
-                                <div>
-                                    <h2 className="text-sm font-black uppercase tracking-widest text-white/70">Aksè Pataje</h2>
-                                    <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mt-0.5">Lyen koneksyon tanporè</p>
-                                </div>
-                            </div>
-
-                            <p className="text-sm text-white/60 leading-relaxed mb-5">
-                                Kreye yon lyen espesyal pou pèmèt yon lòt moun gen aksè ak kour ou yo{" "}
-                                <strong className="text-white">san ou pa pataje modpas ou</strong>.
-                            </p>
-
-                            <div className="flex flex-col gap-2 mb-6">
-                                {[
-                                    { icon: "check_circle", color: "text-emerald-500", text: "Bon pou 24 èdtan sèlman." },
-                                    { icon: "check_circle", color: "text-emerald-500", text: "Yon sèl fwa itilizasyon (li ekspire apre premye koneksyon an)." },
-                                    { icon: "info", color: "text-white/30", text: `Kota : ${2 - tempLinksCount} lyen ki rete.` },
-                                ].map((item) => (
-                                    <div key={item.text} className="flex items-start gap-2 text-xs text-white/50">
-                                        <span className={`material-symbols-outlined text-sm mt-0.5 ${item.color}`}>{item.icon}</span>
-                                        <span>{item.text}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {generatedLink ? (
-                                <div className="flex flex-col gap-3 animate-in fade-in duration-300">
-                                    <p className="text-[10px] uppercase font-black text-white/30 tracking-widest">Lyen ou kreye a :</p>
-                                    <div className="relative">
-                                        <input
-                                            readOnly
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs font-mono text-white/60 pr-24"
-                                            value={generatedLink}
-                                        />
-                                        <button
-                                            onClick={() => copyLinkToClipboard(generatedLink)}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-4 bg-primary text-white text-[10px] font-bold rounded-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-1.5"
-                                        >
-                                            <span className="material-symbols-outlined text-xs">{linkCopied ? 'check' : 'content_copy'}</span>
-                                            {linkCopied ? 'Kopye' : 'Kopye'}
-                                        </button>
-                                    </div>
-                                    <p className="text-[10px] text-red-400 italic">Atansyon : ou ka sèvi ak lyen sa a yon sèl fwa sèlman.</p>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={handleGenerateTempLink}
-                                    disabled={generatingLink || tempLinksCount >= 2}
-                                    className="w-full py-3.5 rounded-xl bg-primary text-white font-black text-sm flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
-                                >
-                                    {generatingLink ? (
-                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    ) : (
-                                        <span className="material-symbols-outlined text-xl">add_link</span>
-                                    )}
-                                    {tempLinksCount >= 2 ? 'Kota lyen yo rive nan limit' : 'Kreye yon lyen aksè espesyal'}
-                                </button>
-                            )}
-                        </div>
-                    )}
 
                     {/* ── Logout ── */}
                     <div className="flex justify-center pt-2">

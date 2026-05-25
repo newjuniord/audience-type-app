@@ -68,3 +68,29 @@ export async function sendGiftNotification(
         return { success: false, error: error.message };
     }
 }
+
+export async function generateAdminTempLink(userId: string) {
+    if (!userId) return { success: false, error: "userId manquant." };
+    
+    try {
+        const adminDb = getAdminDb();
+        const token = uuidv4();
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24); // Expire dans 24h
+
+        await adminDb.collection("temp_links").doc(token).set({
+            userId: userId,
+            expiresAt: Timestamp.fromDate(expiresAt),
+            used: false,
+            createdAt: Timestamp.now()
+        });
+
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://audiencetype.com";
+        const link = `${baseUrl}/login/temp?token=${token}`;
+
+        return { success: true, link };
+    } catch (error: any) {
+        console.error("Erreur lors de la génération de lien temporaire :", error);
+        return { success: false, error: error.message };
+    }
+}

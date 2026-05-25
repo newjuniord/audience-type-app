@@ -7,6 +7,7 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 import GiftProductModal from "@/components/GiftProductModal";
 import UserEnrollmentsDrawer from "@/components/UserEnrollmentsDrawer";
 import CreateUserDrawer from "@/components/CreateUserDrawer";
+import { generateAdminTempLink } from "@/app/actions/notify";
 
 import { getEnrollments, getEnrollmentsByUser } from "@/lib/enrollments";
 import { auth, db } from "@/lib/firebase";
@@ -213,14 +214,24 @@ export default function UserManagementPage() {
         }
     };
 
-    const handleToggleTempLinks = async (user: User) => {
+    const [generatedLink, setGeneratedLink] = useState("");
+    const [showLinkModal, setShowLinkModal] = useState(false);
+    const [linkModalUser, setLinkModalUser] = useState<User | null>(null);
+    const [linkCopied, setLinkCopied] = useState(false);
+
+    const handleGenerateAdminTempLink = async (user: User) => {
+        setLinkModalUser(user);
+        setIsProcessing(true);
         try {
-            const newValue = !user.canGenerateTempLinks;
-            await updateUser(user.uid, { canGenerateTempLinks: newValue });
-            setUsers(users.map(u => u.uid === user.uid ? { ...u, canGenerateTempLinks: newValue } : u));
-        } catch (error) {
-            console.error("Failed to toggle temp links", error);
-            alert("Erreur lors de la mise à jour des permissions.");
+            const res = await generateAdminTempLink(user.uid);
+            if (!res.success) throw new Error(res.error || "Erreur de génération");
+            setGeneratedLink(res.link || "");
+            setShowLinkModal(true);
+        } catch (error: any) {
+            console.error("Failed to generate temp link", error);
+            alert(error.message || "Erreur lors de la génération du lien.");
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -514,11 +525,11 @@ export default function UserManagementPage() {
                                                     {user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
                                                 </button>
                                                 <button
-                                                    onClick={() => handleToggleTempLinks(user)}
-                                                    className={`p-2.5 rounded-full border border-black/5 dark:border-white/10 transition-all duration-300 ${user.canGenerateTempLinks === false ? 'bg-red-400/20 text-red-600 border-red-400/50' : 'bg-purple-400/20 text-purple-600 border-purple-400/50'}`}
-                                                    title={user.canGenerateTempLinks === false ? "Réactiver Partage d'accès" : "Bloquer Partage d'accès"}
+                                                    onClick={() => handleGenerateAdminTempLink(user)}
+                                                    className="p-2.5 rounded-full border border-black/5 dark:border-white/10 hover:bg-purple-400/20 hover:text-purple-600 hover:border-purple-400/50 transition-all duration-300"
+                                                    title="Générer un lien de connexion temporaire"
                                                 >
-                                                    <span className="material-symbols-outlined text-sm">{user.canGenerateTempLinks === false ? 'block' : 'share_reviews'}</span>
+                                                    <span className="material-symbols-outlined text-sm">link</span>
                                                 </button>
                                                 {user.tempLinksCount && user.tempLinksCount > 0 ? (
                                                     <button
@@ -615,6 +626,53 @@ export default function UserManagementPage() {
                 onClose={() => setIsCreateUserDrawerOpen(false)}
                 onUserCreated={() => loadUsers(true)}
             />
+
+            {/* Modal de lien temporaire généré */}
+            {showLinkModal && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm" onClick={() => setShowLinkModal(false)} />
+                    <div className="bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl shadow-black/10 w-full max-w-md relative overflow-hidden p-8 text-center animate-in fade-in zoom-in-95 duration-200">
+                        <div className="size-16 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto mb-6">
+                            <span className="material-symbols-outlined text-3xl">key</span>
+                        </div>
+                        <h3 className="text-2xl font-black text-primary dark:text-white mb-2">Lien généré !</h3>
+                        <p className="text-black/50 dark:text-white/50 text-sm font-medium leading-relaxed mb-6">
+                            Copiez ce lien de connexion unique pour l'envoyer manuellement à{" "}
+                            <strong className="text-primary dark:text-white">
+                                {linkModalUser?.displayName || linkModalUser?.email || linkModalUser?.phoneNumber || "l'utilisateur"}
+                            </strong>.
+                        </p>
+
+                        <div className="relative mb-6">
+                            <input
+                                readOnly
+                                value={generatedLink}
+                                className="w-full bg-black/[0.03] dark:bg-white/[0.03] border border-black/5 dark:border-white/5 rounded-xl px-4 py-3 text-xs font-mono text-black/70 dark:text-white/70 pr-24 focus:outline-none"
+                            />
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(generatedLink);
+                                    setLinkCopied(true);
+                                    setTimeout(() => setLinkCopied(false), 2000);
+                                }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-4 bg-primary text-white text-[10px] font-bold rounded-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-1.5"
+                            >
+                                <span className="material-symbols-outlined text-xs">{linkCopied ? 'check' : 'content_copy'}</span>
+                                {linkCopied ? 'Copié !' : 'Copier'}
+                            </button>
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setShowLinkModal(false)}
+                                className="flex-1 h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-primary dark:text-white rounded-xl font-bold text-sm transition-colors"
+                            >
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
