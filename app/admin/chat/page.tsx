@@ -173,8 +173,9 @@ export default function AdminChatPage() {
                 iconColor: "text-primary",
                 iconBg: "bg-primary/10",
                 actionUrl: "/dashboard/chat",
-                actionLabel: "Ouvri chat la"
-            });
+                actionLabel: "Ouvri chat la",
+                transient: true
+            } as any);
 
             setInputText("");
             setImagePreview(null);

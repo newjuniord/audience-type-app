@@ -755,8 +755,20 @@ exports.sendAlertPushNotification = (0, firestore_1.onDocumentCreated)({ documen
         return;
     const alertData = snapshot.data();
     const userId = alertData.userId;
+    const deleteTransient = async () => {
+        if (alertData.transient === true) {
+            try {
+                await snapshot.ref.delete();
+                console.log(`[PUSH] Successfully deleted transient alert document ${event.params.alertId}`);
+            }
+            catch (deleteError) {
+                console.error(`[PUSH] Error deleting transient alert:`, deleteError);
+            }
+        }
+    };
     if (!userId) {
         console.log(`[PUSH] Alert document ${event.params.alertId} has no userId`);
+        await deleteTransient();
         return;
     }
     try {
@@ -765,12 +777,14 @@ exports.sendAlertPushNotification = (0, firestore_1.onDocumentCreated)({ documen
         const userSnap = await userRef.get();
         if (!userSnap.exists) {
             console.log(`[PUSH] User ${userId} not found`);
+            await deleteTransient();
             return;
         }
         const userData = userSnap.data();
         const fcmToken = userData?.fcmToken;
         if (!fcmToken) {
             console.log(`[PUSH] No FCM token for user ${userId}. Skipping push notification.`);
+            await deleteTransient();
             return;
         }
         // Construct payload
@@ -787,6 +801,9 @@ exports.sendAlertPushNotification = (0, firestore_1.onDocumentCreated)({ documen
     }
     catch (error) {
         console.error(`❌ [PUSH] Error sending message:`, error);
+    }
+    finally {
+        await deleteTransient();
     }
 });
 //# sourceMappingURL=index.js.map
