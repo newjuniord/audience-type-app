@@ -26,9 +26,7 @@ export function subscribeToAlerts(userId: string, callback: (alerts: Alert[]) =>
         orderBy("createdAt", "desc")
     );
     return onSnapshot(q, (snapshot) => {
-        const alerts = snapshot.docs
-            .map((d) => ({ id: d.id, ...d.data() }))
-            .filter((a: any) => !a.transient) as Alert[];
+        const alerts = snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Alert[];
         callback(alerts);
     }, (error) => {
         console.error("Error subscribing to alerts:", error);

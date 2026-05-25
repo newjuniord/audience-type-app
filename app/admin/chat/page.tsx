@@ -10,7 +10,6 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 import { uploadChatMedia, compressImage } from "@/lib/chatMedia";
 import UserEnrollmentsModal from "@/components/UserEnrollmentsModal";
 import GiftProductModal from "@/components/GiftProductModal";
-import { createAlert } from "@/lib/alerts";
 
 interface ChatThread {
     id: string; // userId
@@ -160,22 +159,6 @@ export default function AdminChatPage() {
             await addDoc(messagesRef, msgData);
             await setDoc(chatRef, { lastMessage: textContent, lastMessageSenderId: "admin", lastMessageAt: now, unreadByAdmin: false, unreadByUser: true }, { merge: true });
 
-            // Trigger Firebase Cloud Function (sendAlertPushNotification) by creating an alert document
-            const alertBody = type === "image" ? "📷 Ou resevwa yon nouvo imaj" : textContent;
-            await createAlert({
-                userId: selectedThread.id,
-                category: "utility",
-                type: "custom",
-                title: "DJR Akademi",
-                body: alertBody,
-                isRead: false,
-                icon: "chat",
-                iconColor: "text-primary",
-                iconBg: "bg-primary/10",
-                actionUrl: "/dashboard/chat",
-                actionLabel: "Ouvri chat la",
-                transient: true
-            } as any);
 
             setInputText("");
             setImagePreview(null);
