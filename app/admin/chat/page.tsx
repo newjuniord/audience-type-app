@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-    doc, setDoc, addDoc, collection, query, orderBy, onSnapshot, Timestamp, writeBatch, deleteDoc
+    doc, setDoc, addDoc, collection, query, orderBy, onSnapshot, Timestamp, writeBatch, deleteDoc, getDocs
 } from "firebase/firestore";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { uploadChatMedia, compressImage } from "@/lib/chatMedia";
@@ -198,7 +198,6 @@ export default function AdminChatPage() {
     const pressTimer = useRef<NodeJS.Timeout | null>(null);
 
     const handlePressStart = (msg: Message) => {
-        if (msg.senderId !== "admin") return;
         pressTimer.current = setTimeout(() => {
             setMessageToDelete(msg);
         }, 600);
@@ -220,6 +219,35 @@ export default function AdminChatPage() {
             console.error("Error deleting message:", err);
             setErrorMessage("Erreur lors de la suppression du message.");
             setIsErrorModalOpen(true);
+        }
+    };
+
+    // ──── Delete entire conversation ────
+    const [isDeleteChatModalOpen, setIsDeleteChatModalOpen] = useState(false);
+
+    const deleteConversation = async () => {
+        if (!selectedThread) return;
+        try {
+            setSending(true);
+            const messagesRef = collection(db, "chats", selectedThread.id, "messages");
+            const snapshot = await getDocs(messagesRef);
+            
+            const batch = writeBatch(db);
+            snapshot.docs.forEach((docSnap) => {
+                batch.delete(docSnap.ref);
+            });
+            batch.delete(doc(db, "chats", selectedThread.id));
+            await batch.commit();
+
+            setSelectedThread(null);
+            setIsDeleteChatModalOpen(false);
+            // Optionally, we could show a toast here, but just clearing the selection is enough
+        } catch (err) {
+            console.error("Error deleting conversation:", err);
+            setErrorMessage("Erreur lors de la suppression de la conversation.");
+            setIsErrorModalOpen(true);
+        } finally {
+            setSending(false);
         }
     };
 
@@ -335,6 +363,14 @@ export default function AdminChatPage() {
                                         <span className="material-symbols-outlined text-base">redeem</span>
                                         <span className="hidden sm:inline">Donner l'accès</span>
                                     </button>
+                                    <button
+                                        onClick={() => setIsDeleteChatModalOpen(true)}
+                                        className="h-9 px-3.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all active:scale-95 border border-red-100"
+                                        title="Supprimer la conversation"
+                                    >
+                                        <span className="material-symbols-outlined text-base">delete</span>
+                                        <span className="hidden sm:inline">Supprimer</span>
+                                    </button>
                                 </div>
                             </div>
 
@@ -424,6 +460,15 @@ export default function AdminChatPage() {
             {/* User Access and Gifting Modals */}
             {selectedThread && (
                 <>
+                    <ConfirmModal
+                        isOpen={isDeleteChatModalOpen}
+                        onClose={() => setIsDeleteChatModalOpen(false)}
+                        title="Supprimer la conversation"
+                        message="Êtes-vous sûr de vouloir supprimer TOUTE la conversation ? Cette action est irréversible et supprimera tous les messages pour l'étudiant également."
+                        onConfirm={deleteConversation}
+                        type="confirm"
+                        isDanger={true}
+                    />
                     <UserEnrollmentsModal
                         isOpen={isEnrollmentsOpen}
                         onClose={() => setIsEnrollmentsOpen(false)}
