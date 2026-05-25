@@ -770,13 +770,6 @@ export const webhookbotmessage = onRequest({
         }
 
         // ════════════════════════════════════════════════════════════════════════
-        // KEYWORD: kontak / contact — Contact général
-        // ════════════════════════════════════════════════════════════════════════
-        else if (userMessage === "kontak" || userMessage === "contact") {
-            await sendWhatsAppViaFetch(From, `📞 KONTAKTE NOU\n\nPou nenpòt enfòmasyon, kesyon, oswa asistans jeneral, ou ka ekri nou dirèkteman sou WhatsApp nan nimewo sa a :\n👉 3094848394`);
-        }
-
-        // ════════════════════════════════════════════════════════════════════════
         // HELP MENU: info | enfo | enfomasyon | information | edem | 404 | 500
         // ════════════════════════════════════════════════════════════════════════
         else if (
@@ -790,7 +783,7 @@ export const webhookbotmessage = onRequest({
             userMessage === "404" ||
             userMessage === "500"
         ) {
-            await sendWhatsAppViaFetch(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* ➜ kreye kont ou epi resevwa lyen koneksyon ou\n• Tape *kod* ➜ resevwa yon kòd koneksyon ' OTP '\n• Tape *bug* ➜ jwenn sipò teknik\n• Tape *kontak* ➜ kontakte ekip nou an.\n \n Tanpri🙏🏽🥺  tann 5 minit pou resevwa repons! avan tape yon lòt kòmand...`);
+            await sendWhatsAppViaFetch(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* ➜ kreye kont ou epi resevwa lyen koneksyon ou\n• Tape *kod* ➜ resevwa yon kòd koneksyon ' OTP '\n• Tanpri🙏🏽🥺 tann 5 minit pou resevwa repons! avan tape yon lòt kòmand...`);
         }
         // ════════════════════════════════════════════════════════════════════════
         // UNKNOWN — Ignorer silencieusement

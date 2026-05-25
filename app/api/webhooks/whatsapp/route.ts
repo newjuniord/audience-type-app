@@ -206,11 +206,6 @@ export async function POST(request: Request) {
             await sendWhatsAppMessage(From, `⚠️ SIPÒ TEKNIK\n\nSi w jwenn yon pwoblèm teknik oswa yon ensèk (bug) sou sit la, kontakte nou imedyatman nan imel sa a :\n📧 contact@audiencetype.com\n\noswa dirèkteman sou WhatsApp dans le numéro : \n📞 3094848394`);
         }
         
-        // KEYWORD: kontak / contact
-        else if (userMessage === "kontak" || userMessage === "contact") {
-            await sendWhatsAppMessage(From, `📞 KONTAKTE NOU\n\nPou nenpòt enfòmasyon, kesyon, oswa asistans jeneral, ou ka ekri nou dirèkteman sou WhatsApp nan nimewo sa a :\n👉 3094848394`);
-        }
-        
         // HELP MENU
         else if (
             userMessage === "info" ||
@@ -223,7 +218,7 @@ export async function POST(request: Request) {
             userMessage === "404" ||
             userMessage === "500"
         ) {
-            await sendWhatsAppMessage(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* ➜ kreye kont ou epi resevwa lyen koneksyon ou\n• Tape *kod* ➜ resevwa yon kòd koneksyon ' OTP '\n• Tape *bug* ➜ jwenn sipò teknik\n• Tape *kontak* ➜ kontakte ekip nou an.\n \n Tanpri🙏🏽🥺  tann 5 minit pou resevwa repons! avan tape yon lòt kòmand...`);
+            await sendWhatsAppMessage(From, `👋 Bonjou! Men kòmand ki disponib yo :\n\n• Tape *metem* ➜ kreye kont ou epi resevwa lyen koneksyon ou\n• Tape *kod* ➜ resevwa yon kòd koneksyon ' OTP '\n• Tanpri🙏🏽🥺 tann 5 minit pou resevwa repons! avan tape yon lòt kòmand...`);
         }
         else {
             console.log(`ℹ️ [BOT WEBHOOK] Ignored unknown message: "${userMessage}" from ${phoneNumber}`);
