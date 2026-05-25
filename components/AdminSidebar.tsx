@@ -7,7 +7,12 @@ import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 
-export default function AdminSidebar() {
+interface AdminSidebarProps {
+    isOpen?: boolean;
+    onToggle?: () => void;
+}
+
+export default function AdminSidebar({ isOpen = true, onToggle }: AdminSidebarProps) {
     const pathname = usePathname();
     const { user, userData } = useAuth();
     const [hasUnreadChats, setHasUnreadChats] = useState(false);
@@ -88,7 +93,18 @@ export default function AdminSidebar() {
     };
 
     return (
-        <aside className="w-64 border-r border-black/5 dark:border-white/10 bg-white dark:bg-background-dark flex flex-col fixed h-full z-50">
+        <aside className={`w-64 border-r border-black/5 dark:border-white/10 bg-white dark:bg-background-dark flex flex-col fixed h-full z-50 transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
+            {/* Collapse Toggle Button */}
+            {onToggle && (
+                <button
+                    onClick={onToggle}
+                    className={`absolute top-8 w-8 h-8 rounded-full bg-white dark:bg-background-dark border border-black/5 dark:border-white/10 flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all z-50 ${isOpen ? "-right-4" : "-right-8"}`}
+                >
+                    <span className="material-symbols-outlined text-sm text-black/50 dark:text-white/50">
+                        {isOpen ? "chevron_left" : "chevron_right"}
+                    </span>
+                </button>
+            )}
             <div className="p-8 flex items-center gap-3">
                 <Link href="/" className="text-xl font-black tracking-tighter uppercase transition-opacity hover:opacity-80">DJR Akademi</Link>
             </div>

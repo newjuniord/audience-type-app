@@ -3,11 +3,12 @@
 import AdminSidebar from "@/components/AdminSidebar";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { user, role, loading } = useAuth();
     const router = useRouter();
+    const [sidebarOpen, setSidebarOpen] = useState(true);
 
     useEffect(() => {
         // Force light mode on admin mount by removing dark class
@@ -41,9 +42,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     return (
-        <div className="flex min-h-screen bg-white text-gray-900 font-display">
-            <AdminSidebar />
-            <div className="flex-1 ml-64 p-10 bg-gray-50 min-h-screen border-l border-gray-200">
+        <div className="flex min-h-screen bg-white text-gray-900 font-display overflow-x-hidden">
+            <AdminSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+            <div className={`flex-1 p-10 bg-gray-50 min-h-screen border-l border-gray-200 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
                 {children}
             </div>
         </div>
