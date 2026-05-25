@@ -19,8 +19,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-white">
-                <div className="w-8 h-8 border-4 border-gray-300 border-t-gray-800 rounded-full animate-spin"></div>
+            <div className="min-h-screen flex items-center justify-center bg-background-dark">
+                <div className="w-8 h-8 border-4 border-white/10 border-t-primary rounded-full animate-spin"></div>
             </div>
         );
     }
@@ -30,10 +30,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     return (
-        // "light" class forces Tailwind's dark: variants to never apply inside admin
-        <div className="light flex min-h-screen bg-white text-gray-900 font-display">
+        <div className="flex min-h-screen bg-background-dark text-white font-display">
             <AdminSidebar />
-            <div className="flex-1 ml-64 p-10 bg-gray-50 min-h-screen border-l border-gray-200">
+            <div className="flex-1 ml-64 p-10 bg-background-dark min-h-screen border-l border-white/5">
                 {children}
             </div>
         </div>
