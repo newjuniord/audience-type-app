@@ -834,26 +834,6 @@ export default function BookingsManagementPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-black/5 dark:border-white/5 shrink-0">
-                                        {app.status === 'pending' && (
-                                            <>
-                                                <button
-                                                    onClick={() => app.id && handleStatusUpdate(app.id, 'confirmed')}
-                                                    className="flex-1 md:flex-none h-10 px-5 rounded-full bg-black dark:bg-white text-white dark:text-primary text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <span className="material-symbols-outlined text-base">check</span>
-                                                    Confirmer
-                                                </button>
-                                                <button
-                                                    onClick={() => app.id && handleStatusUpdate(app.id, 'cancelled')}
-                                                    className="flex-1 md:flex-none h-10 px-5 rounded-full border border-black/10 dark:border-white/10 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all text-xs font-bold flex items-center justify-center gap-2"
-                                                >
-                                                    <span className="material-symbols-outlined text-base">close</span>
-                                                    Annuler
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
                                 </div>
                             );
                         })
@@ -964,34 +944,7 @@ export default function BookingsManagementPage() {
                                             {app.message}
                                         </div>
 
-                                        {/* Bottom Row */}
-                                        <div className="flex items-center justify-between pt-4 border-t border-black/5 dark:border-white/5">
-                                            <div className="flex items-center gap-1.5 text-xs text-black/50 dark:text-white/40">
-                                                <span className="material-symbols-outlined text-[14px]">{platform.icon}</span>
-                                                <span>{platform.name}</span>
-                                            </div>
 
-                                            <div className="flex items-center gap-2">
-                                                {app.status === 'pending' && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => app.id && handleStatusUpdate(app.id, 'confirmed')}
-                                                            className="h-8 px-4 rounded-full bg-black dark:bg-white text-white dark:text-primary text-[10px] font-bold hover:opacity-90 transition-all flex items-center justify-center gap-1.5"
-                                                        >
-                                                            <span className="material-symbols-outlined text-sm">check</span>
-                                                            Confirmer
-                                                        </button>
-                                                        <button
-                                                            onClick={() => app.id && handleStatusUpdate(app.id, 'cancelled')}
-                                                            className="h-8 px-4 rounded-full border border-black/10 dark:border-white/10 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all text-[10px] font-bold flex items-center justify-center gap-1.5"
-                                                        >
-                                                            <span className="material-symbols-outlined text-sm">close</span>
-                                                            Annuler
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
                                     </div>
                                 );
                             })}
