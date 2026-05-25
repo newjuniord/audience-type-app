@@ -17,7 +17,7 @@ export async function POST(request: Request) {
         
         if (!From || !Body) {
             console.warn("⚠️ [BOT WEBHOOK] Missing From or Body.");
-            return new Response("OK", { status: 200 });
+            return new Response("<Response></Response>", { status: 200, headers: { "Content-Type": "application/xml" } });
         }
         
         const phoneNumber = From.replace("whatsapp:", "").trim(); // "+18296692914"
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
         
         if (isLocked) {
             console.warn(`🔒 [BOT WEBHOOK] Duplicate request blocked by isProcessing lock: ${phoneNumber} -> ${userMessage}`);
-            return new Response("OK", { status: 200 });
+            return new Response("<Response></Response>", { status: 200, headers: { "Content-Type": "application/xml" } });
         }
         
         console.log(`📩 [BOT WEBHOOK] "${rawMessage}" (normalized: "${userMessage}") from ${phoneNumber} (${ProfileName})`);
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
             const rateLimit = await checkRateLimit();
             if (rateLimit.blocked) {
                 await sendWhatsAppMessage(From, `🚫 Ou te mande twòp kòd jodi a.\nEsaye ankò demen (limit ${MAX_PER_DAY} fwa pou 24 tè).`);
-                return new Response("OK", { status: 200 });
+                return new Response("<Response></Response>", { status: 200, headers: { "Content-Type": "application/xml" } });
             }
             
             let uid = "";
@@ -185,13 +185,13 @@ export async function POST(request: Request) {
             const rateLimit = await checkRateLimit();
             if (rateLimit.blocked) {
                 await sendWhatsAppMessage(From, `🚫 Ou te mande twòp kòd jodi a.\nEsaye ankò demen (limit ${MAX_PER_DAY} fwa pou 24 tè).`);
-                return new Response("OK", { status: 200 });
+                return new Response("<Response></Response>", { status: 200, headers: { "Content-Type": "application/xml" } });
             }
             
             const existingUser = await findUserByPhone();
             if (!existingUser) {
                 await sendWhatsAppMessage(From, `❌ Nou pa jwenn okenn kont pou nimewo sa a.\nTanpri, ekri mo sa a anvan : *metem*\npou w ka kreye kont ou.`);
-                return new Response("OK", { status: 200 });
+                return new Response("<Response></Response>", { status: 200, headers: { "Content-Type": "application/xml" } });
             }
             
             const { uid } = existingUser;
@@ -241,5 +241,5 @@ export async function POST(request: Request) {
         }
     }
     
-    return new Response("OK", { status: 200 });
+    return new Response("<Response></Response>", { status: 200, headers: { "Content-Type": "application/xml" } });
 }
