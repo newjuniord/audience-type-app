@@ -94,11 +94,11 @@ export default function DashboardHeader() {
         return (
             <>
                 {/* Header utilisateur */}
-                <div className="px-5 pt-5 pb-4 border-b border-black/5 dark:border-white/5 relative">
+                <div className="px-5 pt-5 pb-4 border-b border-white/5 relative">
                     {showClose && (
                         <button 
                             onClick={() => setIsDropdownOpen(false)}
-                            className="absolute top-4 right-4 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white md:hidden"
+                            className="absolute top-4 right-4 text-white/40 hover:text-white md:hidden"
                         >
                             <span className="material-symbols-outlined">close</span>
                         </button>
@@ -106,24 +106,24 @@ export default function DashboardHeader() {
                     <div className="flex items-center gap-3">
                         {user.photoURL ? (
                             <div
-                                className="size-11 rounded-2xl bg-cover bg-center border-2 border-primary/20 dark:border-white/10 shadow-md shrink-0"
+                                className="size-11 rounded-2xl bg-cover bg-center border-2 border-white/10 shadow-md shrink-0"
                                 style={{ backgroundImage: `url("${user.photoURL}")` }}
                             />
                         ) : (
-                            <div className="size-11 rounded-2xl bg-primary/10 border-2 border-primary/20 dark:border-white/10 flex items-center justify-center text-primary shadow-md shrink-0">
+                            <div className="size-11 rounded-2xl bg-primary/10 border-2 border-white/10 flex items-center justify-center text-primary shadow-md shrink-0">
                                 <span className="material-symbols-outlined text-xl">person</span>
                             </div>
                         )}
                         <div className="min-w-0">
-                            <p className="text-sm font-black truncate leading-tight text-black dark:text-white">{userData?.displayName || user.displayName || "Client"}</p>
-                            <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{userData?.email || user.email || userData?.phone}</p>
+                            <p className="text-sm font-black truncate leading-tight text-white">{userData?.displayName || user.displayName || "Client"}</p>
+                            <p className="text-[11px] text-white/40 truncate">{userData?.email || user.email || userData?.phone}</p>
                         </div>
                     </div>
                     {role === 'admin' && (
                         <Link
                             href="/admin"
                             onClick={() => setIsDropdownOpen(false)}
-                            className="mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary dark:bg-white dark:text-primary text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-md flex items-center justify-center"
+                            className="mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white text-primary text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-md flex items-center justify-center"
                         >
                             <span className="material-symbols-outlined text-sm notranslate mr-1.5">shield_person</span>
                             Espas Administratè
@@ -133,7 +133,7 @@ export default function DashboardHeader() {
 
                 {/* Navigation principale */}
                 <div className="px-3 py-3 space-y-0.5 overflow-y-auto flex-1">
-                    <p className="px-2 text-[9px] font-black uppercase tracking-[0.15em] text-black/30 dark:text-white/30 mb-2">Navigasyon</p>
+                    <p className="px-2 text-[9px] font-black uppercase tracking-[0.15em] text-white/30 mb-2">Navigasyon</p>
 
                     {[
                         { href: "/dashboard", icon: "grid_view", label: "Kontni mwen" },
@@ -151,10 +151,10 @@ export default function DashboardHeader() {
                             onClick={() => setIsDropdownOpen(false)}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold group ${highlight
                                     ? "text-orange-500 hover:bg-orange-500/10"
-                                    : "text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white"
+                                    : "text-white/80 hover:bg-white/5 hover:text-white"
                                 }`}
                         >
-                            <span className={`material-symbols-outlined text-base notranslate ${highlight ? "text-orange-500" : "text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white"} transition-colors`}>{icon}</span>
+                            <span className={`material-symbols-outlined text-base notranslate ${highlight ? "text-orange-500" : "text-white/40 group-hover:text-white"} transition-colors`}>{icon}</span>
                             {label}
                             {highlight && <span className="ml-auto text-[9px] font-black uppercase tracking-widest bg-orange-500/15 text-orange-500 px-2 py-0.5 rounded-full">Gratis</span>}
                             {badge && <span className="ml-auto w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
@@ -163,30 +163,30 @@ export default function DashboardHeader() {
                 </div>
 
                 {/* Section profil + déconnexion */}
-                <div className="px-3 pb-3 pt-1 border-t border-black/5 dark:border-white/5 space-y-0.5">
-                    <p className="px-2 text-[9px] font-black uppercase tracking-[0.15em] text-black/30 dark:text-white/30 mb-2 pt-2">Kont</p>
+                <div className="px-3 pb-3 pt-1 border-t border-white/5 space-y-0.5">
+                    <p className="px-2 text-[9px] font-black uppercase tracking-[0.15em] text-white/30 mb-2 pt-2">Kont</p>
                     <Link
                         href="/dashboard/transactions"
                         onClick={() => setIsDropdownOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-sm font-semibold text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white group"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all text-sm font-semibold text-white/80 hover:text-white group"
                     >
-                        <span className="material-symbols-outlined text-base notranslate text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white transition-colors">receipt_long</span>
+                        <span className="material-symbols-outlined text-base notranslate text-white/40 group-hover:text-white transition-colors">receipt_long</span>
                         Tranzaksyon
                     </Link>
                     <Link
                         href="/dashboard/profile"
                         onClick={() => setIsDropdownOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-sm font-semibold text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white group"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all text-sm font-semibold text-white/80 hover:text-white group"
                     >
-                        <span className="material-symbols-outlined text-base notranslate text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white transition-colors">manage_accounts</span>
+                        <span className="material-symbols-outlined text-base notranslate text-white/40 group-hover:text-white transition-colors">manage_accounts</span>
                         Pwofil mwen
                     </Link>
                     {isInstallable && (
                         <button
                             onClick={handleInstallClick}
-                            className="flex md:hidden items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-sm font-semibold text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white group w-full text-left"
+                            className="flex md:hidden items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all text-sm font-semibold text-white/80 hover:text-white group w-full text-left"
                         >
-                            <span className="material-symbols-outlined text-base notranslate text-black/40 dark:text-white/40 group-hover:text-primary dark:group-hover:text-white transition-colors">download</span>
+                            <span className="material-symbols-outlined text-base notranslate text-white/40 group-hover:text-white transition-colors">download</span>
                             Enstale aplikasyon
                         </button>
                     )}
@@ -265,7 +265,7 @@ export default function DashboardHeader() {
                         </Link>
                     )}
                     {user ? (
-                        <div className="relative" ref={dropdownRef}>
+                        <div className={`relative ${isDropdownOpen ? 'z-[60]' : 'z-30'}`} ref={dropdownRef}>
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 className="flex items-center justify-center transition-all focus:outline-none text-white hover:text-white/80 hover:scale-110"
@@ -284,8 +284,8 @@ export default function DashboardHeader() {
                             {/* Mobile Drawer (Only visible on mobile) */}
                             <div
                                 className={`
-                                    bg-white dark:bg-[#141414] shadow-2xl transition-all duration-300 transform flex flex-col md:hidden
-                                    fixed top-0 right-0 bottom-20 w-[300px] z-50 border-l border-b border-solid border-black/5 dark:border-white/[0.07] rounded-bl-3xl
+                                    bg-[#141414] shadow-2xl transition-all duration-300 transform flex flex-col md:hidden
+                                    fixed top-0 right-0 bottom-20 w-[300px] z-50 border-l border-b border-solid border-white/[0.07] rounded-bl-3xl
                                     ${isDropdownOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'}
                                 `}
                             >
@@ -295,7 +295,7 @@ export default function DashboardHeader() {
                             {/* Desktop Dropdown (Only visible on desktop) */}
                             <div
                                 className={`
-                                    bg-white dark:bg-[#141414] border border-solid border-black/5 dark:border-white/[0.07] rounded-3xl shadow-2xl shadow-black/20 transition-all duration-300 transform origin-top-right overflow-hidden hidden md:flex flex-col
+                                    bg-[#141414] border border-solid border-white/[0.07] rounded-3xl shadow-2xl shadow-black/20 transition-all duration-300 transform origin-top-right overflow-hidden hidden md:flex flex-col
                                     absolute right-0 mt-4 w-72 h-auto z-50
                                     ${isDropdownOpen 
                                         ? 'opacity-100 scale-100' 

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: #F28C28; /* Orange brûlé */
   --color-secondary: #123A5A; /* Bleu foncé */
