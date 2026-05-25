@@ -8,7 +8,6 @@ import { useState, useEffect, useRef } from "react";
 import { subscribeToAlerts } from "@/lib/alerts";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
-import AnnouncementBar from "@/components/AnnouncementBar";
 
 export default function DashboardHeader() {
     const { user, userData, loading, role, signOutUser } = useAuth();
@@ -306,7 +305,6 @@ export default function DashboardHeader() {
                     </div>
                 </div>
             </header>
-            <AnnouncementBar mode="mobile-header" />
 
             {/* Mobile Drawer (Rendered outside the header sticky/backdrop-blur container to bypass WebKit rendering & opacity clipping bugs) */}
             {user && (
