@@ -58,39 +58,88 @@ export default function AdminSidebar() {
         }
     ];
 
+    const [expandedSection, setExpandedSection] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Automatically expand the section containing the active menu item
+        let activeSectionTitle: string | null = null;
+        menuSections.forEach(section => {
+            const hasActiveItem = section.items.some(item => pathname === item.href || pathname.startsWith(item.href + "/"));
+            if (hasActiveItem) {
+                activeSectionTitle = section.title;
+            }
+        });
+        
+        // If no menu item is active, default the first section to open
+        if (!activeSectionTitle) {
+            const hasAnyActive = menuSections.some(section => 
+                section.items.some(item => pathname === item.href || pathname.startsWith(item.href + "/"))
+            );
+            if (!hasAnyActive) {
+                activeSectionTitle = "Contenu & Utilisateurs";
+            }
+        }
+
+        setExpandedSection(activeSectionTitle);
+    }, [pathname]);
+
+    const toggleSection = (title: string) => {
+        setExpandedSection(prev => (prev === title ? null : title));
+    };
+
     return (
         <aside className="w-64 border-r border-black/5 dark:border-white/10 bg-white dark:bg-background-dark flex flex-col fixed h-full z-50">
             <div className="p-8 flex items-center gap-3">
                 <Link href="/" className="text-xl font-black tracking-tighter uppercase transition-opacity hover:opacity-80">DJR Akademi</Link>
             </div>
 
-            <nav className="flex-1 px-4 space-y-8 overflow-y-auto custom-scrollbar pb-10">
-                {menuSections.map((section) => (
-                    <div key={section.title}>
-                        <p className="px-4 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-4">{section.title}</p>
-                        <div className="space-y-1">
-                            {section.items.map((item) => {
-                                const isActive = pathname === item.href;
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className={`flex items-center gap-3 px-4 py-3 rounded-full transition-all ${isActive
-                                            ? "bg-primary text-white font-bold shadow-lg shadow-primary/20"
-                                            : "hover:bg-gray-50 dark:hover:bg-white/5 text-black/60 dark:text-white/60 font-medium"
-                                            }`}
-                                    >
-                                        <span className="material-symbols-outlined text-xl">{item.icon}</span>
-                                        <span className="text-sm flex-1">{item.label}</span>
-                                        {item.href === "/admin/chat" && hasUnreadChats && (
-                                            <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shrink-0" />
-                                        )}
-                                    </Link>
-                                );
-                            })}
+            <nav className="flex-1 px-4 space-y-4 overflow-y-auto custom-scrollbar pb-10">
+                {menuSections.map((section) => {
+                    const isExpanded = expandedSection === section.title;
+                    return (
+                        <div key={section.title} className="space-y-1">
+                            <button
+                                onClick={() => toggleSection(section.title)}
+                                className="w-full flex items-center justify-between px-4 py-2 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] rounded-xl transition-all text-left group"
+                            >
+                                <span className="text-[10px] font-black text-black/40 dark:text-white/40 uppercase tracking-widest group-hover:text-black/60 dark:group-hover:text-white/60 transition-colors">
+                                    {section.title}
+                                </span>
+                                <span className="material-symbols-outlined text-sm text-black/30 dark:text-white/30 transition-transform duration-300 font-bold">
+                                    {isExpanded ? "remove" : "add"}
+                                </span>
+                            </button>
+                            
+                            <div 
+                                className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                                    isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"
+                                }`}
+                            >
+                                <div className="space-y-1 pt-1">
+                                    {section.items.map((item) => {
+                                        const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                                        return (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                className={`flex items-center gap-3 px-4 py-2.5 rounded-full transition-all ${isActive
+                                                    ? "bg-primary text-white font-bold shadow-lg shadow-primary/20"
+                                                    : "hover:bg-gray-50 dark:hover:bg-white/5 text-black/60 dark:text-white/60 font-medium"
+                                                    }`}
+                                            >
+                                                <span className="material-symbols-outlined text-lg">{item.icon}</span>
+                                                <span className="text-sm flex-1">{item.label}</span>
+                                                {item.href === "/admin/chat" && hasUnreadChats && (
+                                                    <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shrink-0" />
+                                                )}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </nav>
 
             <div className="p-6 border-t border-black/5 dark:border-white/10">
