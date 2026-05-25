@@ -12,7 +12,7 @@ import { getEbooks } from "@/lib/ebooks";
 import { getServices } from "@/lib/services";
 import { Product } from "@/types/product";
 
-export const revalidate = 120; // Cache for 2 minutes
+export const revalidate = 0; // Force dynamic to ensure products update immediately
 
 export default async function Home() {
   const [courses, ebooks, services] = await Promise.all([
