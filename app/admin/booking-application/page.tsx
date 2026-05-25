@@ -453,7 +453,7 @@ export default function BookingsManagementPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight mb-2">Booking Applications</h2>
+                    <h2 className="text-4xl font-black tracking-tight mb-2">Booking Application</h2>
                     <p className="text-black/50 dark:text-white/50 text-sm">Gérez et validez les demandes de réservation de consultation.</p>
                 </div>
                 
