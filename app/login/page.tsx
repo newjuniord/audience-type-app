@@ -290,31 +290,13 @@ export default function LoginPage() {
             }
 
             // 3. Si on arrive ici, l'utilisateur existe ou vient de renseigner son nom
-            if (loginMethod === 'whatsapp') {
-                const businessPhone = process.env.NEXT_PUBLIC_TWILIO_NUMBER?.replace(/\D/g, '') || "17157507852";
-                setWhatsappRedirect({
-                    url: `https://wa.me/${businessPhone}?text=metem`,
-                    businessPhone: `+${businessPhone}`,
-                    isNewUser: !check.exists
-                });
-                setMagicLinkToken(null);
-                setVerificationError(null);
-                setVerificationCode("");
-                setCooldownSeconds(0);
-                setStep('verify');
-            } else {
-                const genData = await generateOtpAction(contactToUse, loginMethod === 'phone' ? 'phone' : 'email');
-                if (genData.error) throw new Error(genData.error);
+            const genData = await generateOtpAction(contactToUse, loginMethod === 'phone' ? 'phone' : (loginMethod === 'whatsapp' ? 'whatsapp' : 'email'));
+            if (genData.error) throw new Error(genData.error);
 
-                if (genData.action === "redirect_to_whatsapp" && genData.businessPhone) {
-                    window.open(`https://wa.me/${genData.businessPhone}?text=${encodeURIComponent("Bonjou, mwen ta renmen resevwa kòd verifikasyon mwen an.")}`, "_blank");
-                }
-
-                setVerificationError(null);
-                setVerificationCode("");
-                setCooldownSeconds(loginMethod === 'phone' ? 299 : 60);
-                setStep('verify');
-            }
+            setVerificationError(null);
+            setVerificationCode("");
+            setCooldownSeconds(loginMethod === 'email' ? 60 : 299);
+            setStep('verify');
         } catch (err: any) {
             console.error("Erreur de connexion sans mot de passe :", err);
             if (err.message && err.message.toLowerCase().includes("server action")) {
@@ -540,151 +522,20 @@ export default function LoginPage() {
 
                         {step === 'verify' ? (
                             <div className="flex flex-col gap-4">
-                                {loginMethod === 'whatsapp' ? (
-                                    magicLinkToken ? (
-                                        <div className="flex flex-col items-center text-center p-6 bg-white/[0.02] border border-white/10 rounded-2xl w-full">
-                                            <div className="size-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-                                                <svg viewBox="0 0 24 24" className="w-10 h-10 animate-pulse" xmlns="http://www.w3.org/2000/svg">
-                                                    <circle cx="12" cy="12" r="12" fill="#25D366" />
-                                                    <path d="M12.012 3c-4.966 0-9.006 4.04-9.006 9.002 0 1.588.413 3.131 1.2 4.493L3 21.01l4.636-1.215a8.96 8.96 0 004.377 1.135h.004c4.964 0 9.003-4.04 9.003-9.003-.002-2.405-.939-4.667-2.639-6.368A8.956 8.956 0 0012.012 3zm4.945 12.393c-.271.765-1.353 1.394-1.854 1.488-.475.09-1.092.164-1.748-.05-.417-.137-.935-.308-1.579-.585-2.738-1.176-4.521-3.957-4.658-4.14-.136-.184-1.112-1.48-1.112-2.825 0-1.344.704-2.004.954-2.271.25-.266.542-.333.722-.333h.52c.162 0 .38.062.593.57.217.519.742 1.81.805 1.942.064.133.107.288.021.462-.085.174-.128.3-.255.448-.128.148-.268.33-.383.443-.128.125-.263.262-.113.52.15.258.667 1.1 1.433 1.785.987.88 1.815 1.152 2.073 1.28.258.128.408.107.562-.067.155-.174.663-.77.842-1.034.178-.264.358-.22.604-.128.247.092 1.56.735 1.829.87.269.135.448.203.513.315.065.112.065.65-.206 1.414z" fill="#ffffff" />
-                                                </svg>
-                                            </div>
-                                            <h3 className="font-bold text-lg mb-1 text-white">Verifye WhatsApp ou</h3>
-                                            <p className="text-xs text-white/50 mb-4 max-w-xs leading-relaxed">
-                                                Nou voye yon lyen koneksyon rapid nan <span className="text-emerald-400 font-bold">{verifiedPhone}</span>.
-                                            </p>
-
-                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-[11px] text-white/60 mb-6">
-                                                <div className="size-2 rounded-full bg-primary animate-ping" />
-                                                N ap tann koneksyon otomatik la...
-                                            </div>
-
-                                            {verificationError && (
-                                                <div className="p-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium w-full">
-                                                    {verificationError}
-                                                </div>
-                                            )}
-
-                                            <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 mb-4">
-                                                <p className="text-xs text-white/50 mb-3 text-center">
-                                                    Si lyen an pa mache, antre kòd 4 chif nou voye w la :
-                                                </p>
-                                                <form onSubmit={handleVerifyOtpSubmit} className="flex flex-col gap-3">
-                                                    <input
-                                                        type="text"
-                                                        maxLength={4}
-                                                        value={verificationCode}
-                                                        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").substring(0, 4))}
-                                                        placeholder="0000"
-                                                        className="w-full text-center tracking-[1em] pl-[1em] py-3 rounded-xl bg-black/20 border border-white/10 focus:outline-none focus:border-primary/60 text-lg font-black text-white placeholder:text-white/10"
-                                                    />
-                                                    <button
-                                                        type="submit"
-                                                        disabled={isLoading || verificationCode.length !== 4}
-                                                        className="w-full py-3 bg-primary/20 text-primary border border-primary/30 rounded-xl font-bold text-sm hover:bg-primary/30 transition-all disabled:opacity-50 flex items-center justify-center"
-                                                    >
-                                                        {isLoading ? <div className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : "Valide kòd la"}
-                                                    </button>
-                                                </form>
-                                            </div>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setStep('input');
-                                                    setMagicLinkToken(null);
-                                                    setWhatsappRedirect(null);
-                                                    setError(null);
-                                                }}
-                                                className="text-xs text-white/40 hover:text-white transition-colors py-1 underline"
-                                            >
-                                                Chanje nimewo a / Retounen
-                                            </button>
-                                        </div>
-                                    ) : whatsappRedirect ? (
-                                        <div className="flex flex-col items-center text-center p-6 bg-white/[0.02] border border-white/10 rounded-2xl w-full">
-                                            <div className="size-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-                                                <span className="text-3xl">📱</span>
-                                            </div>
-                                            <h3 className="font-bold text-lg mb-2 text-white uppercase">Ouvri WhatsApp !</h3>
-                                            <p className="text-xs text-white/60 mb-6 leading-relaxed max-w-sm">
-                                                Klike sou bouton anba a pou w voye mesaj la. <strong className="text-white">Robo a ap reponn ou ak kòd ou a!</strong>
-                                            </p>
-
-                                            <a href={whatsappRedirect.url} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 py-4 mb-5 bg-[#25D366] text-white font-black rounded-xl text-sm transition-all hover:bg-[#1ebd5a] shadow-lg shadow-[#25D366]/20">
-                                                <svg className="size-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" /></svg>
-                                                Ouvri WhatsApp
-                                            </a>
-
-                                            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 mb-4 text-left w-full">
-                                                <p className="text-xs text-white/50 leading-relaxed">
-                                                    <strong className="text-white">Lòt aparèy ?</strong> Si ou pa gen WhatsApp sou aparèy sa a, voye mo <strong className="text-[#25D366]">{whatsappRedirect.isNewUser ? "METEM" : "KÒD"}</strong> nan nimewo <strong className="text-white">WhatsApp</strong> nou an anba a depi sou telefòn ou :
-                                                </p>
-                                                <p className="text-lg font-black text-white tracking-widest font-mono mt-2 text-center bg-black/20 rounded-lg p-2.5 border border-white/5">
-                                                    {whatsappRedirect.businessPhone.length === 12 && whatsappRedirect.businessPhone.startsWith('+1')
-                                                        ? whatsappRedirect.businessPhone.replace(/(\+\d{1})(\d{3})(\d{3})(\d{4})/, '$1 $2 $3 $4')
-                                                        : whatsappRedirect.businessPhone}
-                                                </p>
-                                            </div>
-
-                                            <form onSubmit={handleVerifyOtpSubmit} className="flex flex-col gap-4 w-full">
-                                                <div className="flex flex-col items-center text-center">
-                                                    <p className="text-xs text-white/50 leading-relaxed">
-                                                        Kou ou resevwa kòd la sou WhatsApp, antre li la :
-                                                    </p>
-                                                </div>
-                                                <input
-                                                    type="text"
-                                                    maxLength={4}
-                                                    value={verificationCode}
-                                                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").substring(0, 4))}
-                                                    placeholder="1234"
-                                                    className="w-full h-14 bg-white/5 border-2 border-white/10 rounded-2xl px-6 text-center text-xl font-mono placeholder-white/20 tracking-[0.5em] focus:outline-none focus:border-white transition-colors bg-transparent text-white"
-                                                />
-                                                {verificationError && (
-                                                    <p className="text-[11px] text-red-500 font-semibold text-center">
-                                                        ⚠️ {verificationError}
-                                                    </p>
-                                                )}
-                                                <button
-                                                    type="submit"
-                                                    disabled={isLoading || verificationCode.length !== 4}
-                                                    className="w-full h-14 bg-gradient-to-r from-primary to-orange-500 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-                                                >
-                                                    {isLoading ? <div className="size-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" /> : "Valide kòd la"}
-                                                </button>
-                                            </form>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setStep('input');
-                                                    setMagicLinkToken(null);
-                                                    setWhatsappRedirect(null);
-                                                    setError(null);
-                                                }}
-                                                className="text-xs text-white/40 hover:text-white transition-colors py-1 mt-4 underline"
-                                            >
-                                                Chanje nimewo a / Retounen
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="text-center p-6 text-white/50 text-sm w-full">
-                                            Pa gen okenn aksyon ki kòmanse. Tanpri retounen.
-                                            <button onClick={() => setStep('input')} className="block mx-auto mt-4 text-xs underline">Retounen</button>
-                                        </div>
-                                    )
-                                ) : (
-                                    <form onSubmit={handleVerifyOtpSubmit} className="flex flex-col gap-4 py-5 px-4 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
-                                        <div className="flex flex-col items-center text-center mb-2">
-                                            <div className="size-12 rounded-full bg-primary/15 flex items-center justify-center mb-3 text-primary">
+                                <form onSubmit={handleVerifyOtpSubmit} className="flex flex-col gap-4 py-5 px-4 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
+                                    <div className="flex flex-col items-center text-center mb-2">
+                                        <div className="size-12 rounded-full bg-primary/15 flex items-center justify-center mb-3 text-primary">
+                                            {loginMethod === 'whatsapp' ? (
+                                                <span className="text-2xl">📱</span>
+                                            ) : (
                                                 <span className="material-symbols-outlined notranslate text-2xl">{loginMethod === 'phone' ? 'sms' : 'mail'}</span>
-                                            </div>
-                                            <h3 className="font-bold text-base text-white">Antre kòd verifikasyon an</h3>
-                                            <p className="text-xs text-white/50 max-w-xs leading-relaxed mt-1">
-                                                {loginMethod === 'phone' ? "Antre kòd nou voye nan :" : "Antre kòd 4 chif nou voye nan :"} <br />
-                                                <span className="text-white font-bold">{loginMethod === 'phone' ? verifiedPhone : email}</span>
-                                            </p>
+                                            )}
+                                        </div>
+                                        <h3 className="font-bold text-base text-white">Antre kòd verifikasyon an</h3>
+                                        <p className="text-xs text-white/50 max-w-xs leading-relaxed mt-1">
+                                            {loginMethod === 'phone' || loginMethod === 'whatsapp' ? "Antre kòd nou voye nan :" : "Antre kòd 4 chif nou voye nan :"} <br />
+                                            <span className="text-white font-bold">{loginMethod === 'phone' || loginMethod === 'whatsapp' ? verifiedPhone : email}</span>
+                                        </p>
                                             {loginMethod === 'email' && (
                                                 <p className="text-[11px] text-amber-400/80 font-medium mt-2 max-w-xs leading-relaxed bg-amber-500/5 px-3 py-1.5 rounded-lg border border-amber-500/10">
                                                     ⚠️ Si ou pa resevwa kòd la, tanpri verifye dosye <strong>Spam</strong> ou an.
@@ -752,7 +603,6 @@ export default function LoginPage() {
                                             )}
                                         </div>
                                     </form>
-                                )}
                             </div>
                         ) : step === 'name' ? (
                             <div className="flex flex-col gap-4 py-5 px-4 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">

@@ -111,7 +111,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
             }
         }
 
-        if (type === 'phone' || type === 'telegram') {
+        if (type === 'phone' || type === 'telegram' || type === 'whatsapp') {
             const preludeApiKey = process.env.PRELUDE_API_KEY;
             if (!preludeApiKey) {
                 console.error("PRELUDE_API_KEY is missing from environment variables.");
@@ -142,7 +142,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
                     const errorText = await response.text();
                     console.error("❌ [Prelude API Error] Status:", response.status);
                     console.error("❌ [Prelude API Error] Body:", errorText);
-                    return { error: `Erè nan voye SMS la. (API Error: ${response.status}). Tanpri eseye avèk WhatsApp pito.` };
+                    return { error: `Erè nan voye kòd la. (API Error: ${response.status}). Tanpri eseye yon lòt metòd.` };
                 }
 
                 const resData = await response.json();
@@ -150,51 +150,23 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
                 if (resData.status === "success" || resData.status === "retry") {
                     return { success: true };
                 } else {
-                    return { error: `Erè nan voye SMS la (Status: ${resData.status}). Tanpri eseye avèk WhatsApp pito.` };
+                    return { error: `Erè nan voye kòd la (Status: ${resData.status}). Tanpri eseye yon lòt metòd.` };
                 }
             } catch (err: any) {
                 console.error("❌ [Prelude Exception] calling Prelude API:", err);
-                return { error: `Erè nan voye SMS la. (Exception: ${err.message || err}). Tanpri eseye avèk WhatsApp pito.` };
+                return { error: `Erè nan voye kòd la. (Exception: ${err.message || err}). Tanpri eseye yon lòt metòd.` };
             }
         }
 
-        const contactId = type === 'whatsapp' ? `whatsapp:${contactClean}` : contactClean;
+        const contactId = contactClean;
         const otpRef = adminDb.collection("otp_code").doc(contactId);
         
         const otpDoc = await otpRef.get();
         const now = new Date();
-        const maxLimit = type === 'whatsapp' ? 10 : type === 'email' ? 5 : 4;
+        const maxLimit = type === 'email' ? 5 : 4;
 
         let currentCount = 0;
         let isBlocked = false;
-
-        if (type === 'whatsapp') {
-            let is24hWindowOpen = false;
-            if (otpDoc.exists && otpDoc.data()?.expireAt?.toDate() > now) {
-                is24hWindowOpen = true;
-            }
-
-            if (!is24hWindowOpen) {
-                // Check if user exists
-                let isNewUser = true;
-                const usersRef = adminDb.collection("users");
-                const querySnapshot = await usersRef.where("phone", "==", contactClean).get();
-                if (!querySnapshot.empty) {
-                    isNewUser = false;
-                }
-
-                // La fenêtre de 24h est fermée ou le document n'existe pas.
-                // ON NE CREE PAS le document ici. C'est le webhook qui s'en chargera quand il recevra le message.
-                const businessPhone = process.env.NEXT_PUBLIC_TWILIO_NUMBER || "+17157507852";
-                const cleanBusinessPhone = businessPhone.replace('whatsapp:', '').replace(/"/g, '').replace(/'/g, '').replace(/\D/g, '');
-                return { 
-                    success: true, 
-                    action: "redirect_to_whatsapp",
-                    businessPhone: cleanBusinessPhone,
-                    isNewUser
-                };
-            }
-        }
 
         if (otpDoc.exists) {
             const data = otpDoc.data();
@@ -238,15 +210,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
         }, { merge: true });
 
         // Envoi effectif de l'OTP
-        if (type === 'whatsapp') {
-            const authTemplate = process.env.TWILIO_TEMPLATE_AUTH || 
-                "🔑 *VÉRIFICATION DJR AKADEMI*\n\nVoici ton code de vérification pour accéder à la plateforme : {{code}}\n\nNe partage jamais ce code.";
-            
-            const message = formatMessageTemplate(authTemplate, { code, link: "audiencetype.com", userName: "Client" });
-            
-            await sendWhatsAppMessage(contactClean, message);
-            console.log(`📩 [WhatsApp] Code envoyé directement à ${contactClean} (fenêtre 24h ouverte)`);
-        } else if (type === 'email') {
+        if (type === 'email') {
             const sendgridKey = process.env.SENDGRID_API_KEY;
             const fromEmail = process.env.SENDGRID_FROM_EMAIL || "contact@audiencetype.com";
 
@@ -326,7 +290,7 @@ export async function verifyOtpAndLoginAction(contact: string, code: string, typ
                 contactClean = '+' + contactClean;
             }
         }
-        if (type === 'phone' || type === 'telegram') {
+        if (type === 'phone' || type === 'telegram' || type === 'whatsapp') {
             const preludeApiKey = process.env.PRELUDE_API_KEY;
             if (!preludeApiKey) {
                 console.error("PRELUDE_API_KEY is missing from environment variables.");
@@ -364,7 +328,7 @@ export async function verifyOtpAndLoginAction(contact: string, code: string, typ
                 return { error: "Kòd la ekspire oswa li pa korèk." };
             }
         } else {
-            const contactId = type === 'whatsapp' ? `whatsapp:${contactClean}` : contactClean;
+            const contactId = contactClean;
             const otpRef = adminDb.collection("otp_code").doc(contactId);
 
             const otpDoc = await otpRef.get();
