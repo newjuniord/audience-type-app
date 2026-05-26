@@ -270,7 +270,10 @@ export default function ConsultationBanner() {
                 padding: "0 0 40px",
             }}>
                 {/* Drag handle */}
-                <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
+                <div 
+                    onClick={() => setDrawerOpen(false)}
+                    style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px", cursor: "pointer" }}
+                >
                     <div style={{ width: 40, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.12)" }} />
                 </div>
 
@@ -292,7 +295,8 @@ export default function ConsultationBanner() {
                         </div>
                         <button
                             onClick={() => setDrawerOpen(false)}
-                            style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+                            className="hidden sm:flex"
+                            style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
                         >
                             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
                         </button>
@@ -317,9 +321,13 @@ export default function ConsultationBanner() {
 
                         {/* Time */}
                         <div style={{ background: "rgba(242,140,40,0.05)", border: "1px solid rgba(242,140,40,0.12)", borderRadius: 16, padding: "14px 16px" }}>
-                            <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(242,140,40,0.6)", marginBottom: 6 }}>Lè (Admin)</p>
-                            <p style={{ fontSize: 20, fontWeight: 900, color: "#F28C28", letterSpacing: "-0.02em" }}>{formattedTime}</p>
-                            {parsed.creneau && <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>Lè lokal: {parsed.creneau}</p>}
+                            <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(242,140,40,0.6)", marginBottom: 6 }}>Lè Konsiltasyon</p>
+                            <p style={{ fontSize: 18, fontWeight: 900, color: "#F28C28", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                                {parsed.creneau?.includes("/") 
+                                    ? parsed.creneau.split("/").pop()?.replace("lè lokal", "").trim() 
+                                    : parsed.creneau || formattedTime}
+                            </p>
+                            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>Lè {country.name}</p>
                         </div>
 
                         {/* Phone */}
