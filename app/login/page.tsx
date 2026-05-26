@@ -129,7 +129,8 @@ export default function LoginPage() {
 
     // Connexion sans mot de passe
     const [loginMethod, setLoginMethod] = useState<'whatsapp' | 'phone' | 'email' | 'password'>('whatsapp');
-    const [step, setStep] = useState<'input' | 'verify'>('input');
+    const [step, setStep] = useState<'input' | 'name' | 'verify'>('input');
+    const [fullName, setFullName] = useState("");
     const [phone, setPhone] = useState("");
     const [verifiedPhone, setVerifiedPhone] = useState("");
     const [selectedCountry, setSelectedCountry] = useState(() => detectCountry());
@@ -228,9 +229,11 @@ export default function LoginPage() {
         }
     }, [user, role, authLoading, router]);
 
+
+
     // Envoi du Magic Link ou OTP
-    const handlePasswordlessSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handlePasswordlessSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         setError(null);
         setIsLoading(true);
 
@@ -276,12 +279,23 @@ export default function LoginPage() {
         try {
             const contactToUse = (loginMethod === 'whatsapp' || loginMethod === 'phone') ? cleanPhone : email;
 
+            // 1. Vérifier si l'utilisateur existe
+            const check = await checkUserAction(contactToUse);
+
+            // 2. Si on est à l'étape "input" et qu'il n'existe pas, on passe à l'étape "name"
+            if (step === 'input' && !check.exists) {
+                setStep('name');
+                setIsLoading(false);
+                return;
+            }
+
+            // 3. Si on arrive ici, l'utilisateur existe ou vient de renseigner son nom
             if (loginMethod === 'whatsapp') {
                 const businessPhone = process.env.NEXT_PUBLIC_TWILIO_NUMBER?.replace(/\D/g, '') || "17157507852";
                 setWhatsappRedirect({
                     url: `https://wa.me/${businessPhone}?text=metem`,
                     businessPhone: `+${businessPhone}`,
-                    isNewUser: true
+                    isNewUser: !check.exists
                 });
                 setMagicLinkToken(null);
                 setVerificationError(null);
@@ -329,7 +343,9 @@ export default function LoginPage() {
         try {
             const contactToUse = (loginMethod === 'phone' || loginMethod === 'whatsapp') ? verifiedPhone : email;
             const typeParam = loginMethod === 'phone' ? 'phone' : (loginMethod === 'whatsapp' ? 'whatsapp' : 'email');
-            const data = await verifyOtpAndLoginAction(contactToUse, verificationCode.trim(), typeParam);
+            
+            // Passer fullName à verifyOtpAndLoginAction pour la création du compte si nécessaire
+            const data = await verifyOtpAndLoginAction(contactToUse, verificationCode.trim(), typeParam, fullName);
 
             if (data.error) throw new Error(data.error);
 
@@ -448,29 +464,22 @@ export default function LoginPage() {
         setIsLoading(true);
         setError(null);
         try {
-            // 1. Déclenche le popup de connexion Google
             const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
 
-            // 2. Création d'une référence vers le document de l'utilisateur dans la collection "users"
-            // On utilise l'UID unique de l'utilisateur comme identifiant de document
             const userRef = doc(db, "users", user.uid);
-
-            // 3. Vérifie si l'utilisateur existe déjà dans Firestore
             const userSnap = await getDoc(userRef);
 
             if (!userSnap.exists()) {
-                // SI L'UTILISATEUR N'EXISTE PAS : On crée son profil complet
                 await setDoc(userRef, {
-                    displayName: user.displayName || "Anonyme", // Nom récupéré de Google
-                    email: user.email,                      // Email récupéré de Google
-                    photoURL: user.photoURL,                // Photo de profil récupérée de Google
-                    phoneNumber: user.phoneNumber || "",          // Numéro de téléphone (si disponible)
-                    role: "user",                           // Rôle par défaut
-                    createdAt: serverTimestamp(),           // Date de création via le serveur Firebase
+                    displayName: user.displayName || "Anonyme",
+                    email: user.email,
+                    photoURL: user.photoURL,
+                    phoneNumber: user.phoneNumber || "",
+                    role: "user",
+                    createdAt: serverTimestamp(),
                 });
             } else {
-                // SI L'UTILISATEUR EXISTE DÉJÀ : On met à jour ses infos et on s'assure qu'il a une date de création
                 const existingData = userSnap.data();
                 const updates: any = {
                     displayName: user.displayName || existingData.displayName || existingData.fullName,
@@ -483,7 +492,7 @@ export default function LoginPage() {
 
                 await setDoc(userRef, updates, { merge: true });
             }
-            // 4. Redirection vers le tableau approprié
+            
             if (userSnap.exists() && userSnap.data().role?.trim().toLowerCase() === "admin") {
                 window.location.href = "/admin";
             } else {
@@ -744,6 +753,57 @@ export default function LoginPage() {
                                         </div>
                                     </form>
                                 )}
+                            </div>
+                        ) : step === 'name' ? (
+                            <div className="flex flex-col gap-4 py-5 px-4 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
+                                <div className="flex flex-col items-center text-center mb-2">
+                                    <div className="size-12 rounded-full bg-primary/15 flex items-center justify-center mb-3 text-primary">
+                                        <span className="material-symbols-outlined notranslate text-2xl">person</span>
+                                    </div>
+                                    <h3 className="font-bold text-base text-white">Byenvini !</h3>
+                                    <p className="text-xs text-white/50 max-w-xs leading-relaxed mt-1">
+                                        Nou pa jwenn kont pou nimewo sa a. Tanpri antre non w pou nou ka kreye kont ou a.
+                                    </p>
+                                </div>
+
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handlePasswordlessSubmit();
+                                }} className="flex flex-col gap-4">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Non konplè w</label>
+                                        <input
+                                            type="text"
+                                            value={fullName}
+                                            onChange={(e) => setFullName(e.target.value)}
+                                            placeholder="Eg: Jean Dupont"
+                                            className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm font-medium text-white placeholder:text-white/20"
+                                            required
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading || fullName.trim().length < 2}
+                                        className="w-full py-3 mt-2 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                                    >
+                                        Kontinye
+                                    </button>
+
+                                    <div className="flex justify-center mt-2 px-1 text-xs">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setStep('input');
+                                                setError(null);
+                                            }}
+                                            className="text-white/40 hover:text-white transition-colors"
+                                        >
+                                            Retounen
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-4">

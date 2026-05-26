@@ -312,7 +312,7 @@ export async function generateOtpAction(contact: string, type: 'phone' | 'email'
  * Vérifie le code de manière stricte dans la collection `otp_code`.
  * Si valide : vérifie ou crée l'utilisateur dans `users` et génère un token Firebase Auth.
  */
-export async function verifyOtpAndLoginAction(contact: string, code: string, type: 'phone' | 'email' | 'whatsapp' | 'telegram') {
+export async function verifyOtpAndLoginAction(contact: string, code: string, type: 'phone' | 'email' | 'whatsapp' | 'telegram', fullName?: string) {
     if (!contact || !code) {
         return { error: "Contact ou code manquant" };
     }
@@ -402,7 +402,7 @@ export async function verifyOtpAndLoginAction(contact: string, code: string, typ
             // Création du compte dans Firebase Auth
             let userEmail = type === 'email' ? contactClean : undefined;
             let userPhone = (type === 'phone' || type === 'whatsapp' || type === 'telegram') ? contactClean : undefined;
-            const userName = type === 'email' ? contactClean.split('@')[0] : contactClean;
+            const userName = fullName ? fullName : (type === 'email' ? contactClean.split('@')[0] : contactClean);
 
             try {
                 const authUser = await adminAuth.createUser({
