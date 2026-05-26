@@ -138,7 +138,7 @@ export default function ConsultationBanner() {
                 const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
                 const q = query(collection(db, "bookingApplications"), where("usersId", "==", user!.uid));
                 const snap = await getDocs(q);
-                const validStatuses = ["pending", "approved", "confirmed", "paid", "success", "active", "accepted"];
+                const validStatuses = ["confirmed", "accepted"];
                 const upcoming: UpcomingConsultation[] = [];
                 
                 const promises = snap.docs.map(async (bookingDoc) => {
