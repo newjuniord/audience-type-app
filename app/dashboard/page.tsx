@@ -6,16 +6,19 @@ import { useAuth } from "@/context/AuthContext";
 import { getEnrollmentsByUser, incrementEnrollmentDownloadCount } from "@/lib/enrollments";
 import { Enrollment } from "@/lib/types";
 import { doc, getDoc, DocumentReference } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
+import { signInWithCustomToken } from "firebase/auth";
 import ServiceDetailsDrawer from "@/components/ServiceDetailsDrawer";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import Link from "next/link";
 
 export default function Dashboard() {
     const { user } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
     const [loading, setLoading] = useState(true);
 
     // Error Modal State
@@ -30,6 +33,38 @@ export default function Dashboard() {
     });
 
     const [selectedServiceEnrollment, setSelectedServiceEnrollment] = useState<Enrollment | null>(null);
+
+    // ── Auto-login après retour de LemonSqueezy (fix PWA disconnect) ──────────
+    useEffect(() => {
+        const at = searchParams.get("_at");
+        const isPaymentSuccess = searchParams.get("payment") === "success";
+
+        if (at) {
+            // Décoder le token base64url et reconnecter l'utilisateur silencieusement
+            const autoLogin = async () => {
+                try {
+                    const customToken = Buffer.from(at, "base64url").toString("utf8");
+                    await signInWithCustomToken(auth, customToken);
+                    console.log("[Dashboard] Auto-login PWA réussi.");
+                } catch (err) {
+                    console.warn("[Dashboard] Auto-login échoué (token expiré ou déjà connecté):", err);
+                }
+            };
+            autoLogin();
+        }
+
+        if (isPaymentSuccess) {
+            setPaymentSuccess(true);
+            // Nettoyer l'URL sans rechargement
+            const url = new URL(window.location.href);
+            url.searchParams.delete("payment");
+            url.searchParams.delete("_at");
+            window.history.replaceState({}, "", url.toString());
+            // Masquer le toast après 5s
+            setTimeout(() => setPaymentSuccess(false), 5000);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         const fetchEnrollments = async () => {
@@ -121,6 +156,16 @@ export default function Dashboard() {
 
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden bg-background-light dark:bg-background-dark text-primary dark:text-white">
+
+            {/* Toast paiement réussi */}
+            {paymentSuccess && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="flex items-center gap-3 bg-emerald-500 text-white px-6 py-3 rounded-full shadow-2xl shadow-emerald-500/30 font-bold text-sm">
+                        <span className="material-symbols-outlined text-lg">check_circle</span>
+                        Peman ou an konfime ! Mèsi 🎉
+                    </div>
+                </div>
+            )}
             <div className="layout-container flex h-full grow flex-col">
                 <main className="px-6 md:px-10 flex flex-1 justify-center py-10">
                     <div className="layout-content-container flex flex-col max-w-[1200px] flex-1">

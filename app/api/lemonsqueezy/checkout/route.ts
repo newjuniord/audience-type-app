@@ -56,8 +56,9 @@ export async function POST(req: Request) {
         }
 
         // CRÉATION DE L'ORDRE DANS FIRESTORE
-        const { getAdminDb } = await import("@/lib/firebase-admin");
+        const { getAdminDb, getAdminAuth } = await import("@/lib/firebase-admin");
         const adminDb = getAdminDb();
+        const adminAuth = getAdminAuth();
         const ordersRef = adminDb.collection("orders");
         const newOrderRef = ordersRef.doc();
         const orderId = newOrderRef.id;
@@ -97,8 +98,20 @@ export async function POST(req: Request) {
 
         // APPEL API LEMON SQUEEZY (Fetch)
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-        const returnUrl = `${baseUrl}/dashboard?payment=success`;
         const isSandbox = process.env.LEMON_SQUEEZY_ENVIRONMENT === "sandbox";
+
+        // ── Générer un custom token pour auto-reconnecter l'utilisateur
+        // après le retour de LemonSqueezy (surtout en PWA où la session peut être perdue)
+        let returnUrl = `${baseUrl}/dashboard?payment=success`;
+        try {
+            const customToken = await adminAuth.createCustomToken(userId);
+            // Le token Firebase expire dans 1h — on l'encode en base64 pour éviter les problèmes d'URL
+            const encodedToken = Buffer.from(customToken).toString("base64url");
+            returnUrl = `${baseUrl}/dashboard?payment=success&_at=${encodedToken}`;
+        } catch (tokenErr: any) {
+            console.warn("⚠️ [CHECKOUT] Impossible de générer le custom token pour l'URL de retour:", tokenErr.message);
+            // On continue sans token — l'utilisateur devra se reconnecter manuellement si besoin
+        }
 
         const relationships: any = {
             store: {
