@@ -36,3 +36,5 @@ env:
     secret: LEMON_SQUEEZY_API_KEY
   - variable: LEMON_SQUEEZY_WEBHOOK_SECRET
     secret: LEMON_SQUEEZY_WEBHOOK_SECRET
+  - variable: PRELUDE_API_KEY
+    secret: PRELUDE_API_KEY
