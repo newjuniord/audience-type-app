@@ -156,6 +156,26 @@ export async function POST(req: Request) {
                         userName: orderData?.userName || "Étudiant"
                     });
                 }
+
+                try {
+                    const typeLabel = orderData?.productType === "course" ? "Kou" : "Ebook";
+                    await adminDb.collection("alerts").add({
+                        userId: orderData?.userId,
+                        category: "utility",
+                        type: "payment_success",
+                        title: `✅ Peman ou an pase !`,
+                        body: `Ou gen aksè ak ${typeLabel.toLowerCase()} ou an kounye a: ${orderData?.productTitle || ""}.`,
+                        isRead: false,
+                        icon: "check_circle",
+                        iconColor: "text-emerald-400",
+                        iconBg: "bg-emerald-500/10",
+                        actionUrl: "/dashboard",
+                        actionLabel: "Wè pwodwi m yo",
+                        createdAt: Timestamp.now(),
+                    });
+                } catch (e) {
+                    console.error("❌ [WEBHOOK] Error creating course/ebook alert:", e);
+                }
             }
 
             // ── SERVICE / CONSULTATION : Confirmation de la réservation ────────

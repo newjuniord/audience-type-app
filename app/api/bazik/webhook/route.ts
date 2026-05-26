@@ -117,6 +117,94 @@ export async function POST(req: Request) {
                 } else {
                     console.log("⚠️ [BAZIK WEBHOOK] User already enrolled.");
                 }
+
+                // Create alert for course/ebook
+                try {
+                    const typeLabel = productType === "course" ? "Kou" : "Ebook";
+                    await adminDb.collection("alerts").add({
+                        userId: userId,
+                        category: "utility",
+                        type: "payment_success",
+                        title: `✅ Peman ou an pase !`,
+                        body: `Ou gen aksè ak ${typeLabel.toLowerCase()} ou an kounye a: ${pData?.title || orderData?.productTitle || ""}.`,
+                        isRead: false,
+                        icon: "check_circle",
+                        iconColor: "text-emerald-400",
+                        iconBg: "bg-emerald-500/10",
+                        actionUrl: "/dashboard",
+                        actionLabel: "Wè pwodwi m yo",
+                        createdAt: Timestamp.now(),
+                    });
+                } catch (e) {
+                    console.error("❌ [BAZIK WEBHOOK] Error creating alert:", e);
+                }
+
+            } else if (productType === "service" || productType === "booking") {
+                try {
+                    const svcId = productId.id || productId;
+                    const bookingSnap = await adminDb.collection("bookingApplications")
+                        .where("usersId", "==", userId)
+                        .where("bookingsId", "==", svcId)
+                        .where("status", "==", "pending")
+                        .get();
+
+                    if (!bookingSnap.empty) {
+                        const sorted = bookingSnap.docs.sort((a, b) => {
+                            const aMs = a.data().createdAt?.toMillis?.() || 0;
+                            const bMs = b.data().createdAt?.toMillis?.() || 0;
+                            return bMs - aMs;
+                        });
+                        const bookingDoc = sorted[0];
+                        const bookingData = bookingDoc.data();
+
+                        await bookingDoc.ref.update({
+                            status: "accepted",
+                            paidAt: Timestamp.now(),
+                            orderId: orderId,
+                        });
+
+                        const bookingDate = bookingData.bookingDate || "";
+                        const bookingTime = bookingData.bookingTime || "";
+                        let dateLabel = bookingDate;
+                        let timeLabel = bookingTime;
+
+                        if (bookingDate) {
+                            const [y, m, d] = bookingDate.split("-").map(Number);
+                            const MOIS = ["Janvye","Fevriye","Mas","Avril","Me","Jen","Jiyè","Out","Septanm","Oktòb","Novanm","Desanm"];
+                            dateLabel = `${d} ${MOIS[m - 1]} ${y}`;
+                        }
+
+                        if (bookingTime) {
+                            const [h, m] = bookingTime.split(":").map(Number);
+                            const period = h >= 12 ? "PM" : "AM";
+                            let h12 = h % 12;
+                            if (h12 === 0) h12 = 12;
+                            const mm = m > 0 ? `:${String(m).padStart(2, "0")}` : "";
+                            timeLabel = `${h12}${mm} ${period}`;
+                        }
+
+                        const alertBody = bookingDate && bookingTime
+                            ? `Konsiltasyon ou a konfime pou ${dateLabel} a ${timeLabel}. Nou pral kontakte w pa WhatsApp.`
+                            : `Konsiltasyon ou a konfime. Nou pral kontakte w pa WhatsApp.`;
+
+                        await adminDb.collection("alerts").add({
+                            userId: userId,
+                            category: "utility",
+                            type: "booking_reminder",
+                            title: "✅ Konsiltasyon ou konfime !",
+                            body: alertBody,
+                            isRead: false,
+                            icon: "event_available",
+                            iconColor: "text-emerald-400",
+                            iconBg: "bg-emerald-500/10",
+                            actionUrl: "/dashboard",
+                            actionLabel: "Wè detay",
+                            createdAt: Timestamp.now(),
+                        });
+                    }
+                } catch (e) {
+                    console.error("❌ [BAZIK WEBHOOK] Error confirming booking:", e);
+                }
             }
 
         } else if (failureStatuses.includes(rawStatus)) {
@@ -126,6 +214,31 @@ export async function POST(req: Request) {
                 failedAt: Timestamp.now(),
                 transactionId: transactionId || "bazik_failed"
             });
+            
+            try {
+                const { userId, productType } = orderData as any;
+                let productLabel = "Pwodwi a";
+                if (productType === "course") productLabel = "Kou a";
+                else if (productType === "ebook") productLabel = "Ebook la";
+                else if (productType === "service" || productType === "booking") productLabel = "Konsiltasyon an";
+
+                await adminDb.collection("alerts").add({
+                    userId: userId,
+                    category: "utility",
+                    type: "payment_failed",
+                    title: `❌ Peman an echwe`,
+                    body: `Peman ou te fè pou ${productLabel.toLowerCase()} pa reyisi. Tanpri re-eseye ankò, ou byen kontakte nou si w bezwen èd.`,
+                    isRead: false,
+                    icon: "error",
+                    iconColor: "text-red-400",
+                    iconBg: "bg-red-500/10",
+                    actionUrl: "/dashboard/chat",
+                    actionLabel: "Kontakte nou",
+                    createdAt: Timestamp.now(),
+                });
+            } catch (e) {
+                console.error("❌ [BAZIK WEBHOOK] Error creating failure alert:", e);
+            }
         }
 
         return NextResponse.json({ received: true });
