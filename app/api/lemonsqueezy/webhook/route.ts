@@ -171,7 +171,7 @@ export async function POST(req: Request) {
                         iconBg: "bg-emerald-500/10",
                         actionUrl: "/dashboard",
                         actionLabel: "Wè pwodwi m yo",
-                        createdAt: Timestamp.now(),
+                        createdAt: now,
                     });
                 } catch (e) {
                     console.error("❌ [WEBHOOK] Error creating course/ebook alert:", e);
