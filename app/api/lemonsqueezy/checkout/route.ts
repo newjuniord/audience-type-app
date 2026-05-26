@@ -97,7 +97,7 @@ export async function POST(req: Request) {
 
         // APPEL API LEMON SQUEEZY (Fetch)
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-        const returnUrl = `${baseUrl}/payment-success?orderId=${orderId}&amount=${productData.price}&currency=USD&provider=lemonsqueezy&ls_order_id=[order_id]`;
+        const returnUrl = `${baseUrl}/dashboard?payment=success`;
         const isSandbox = process.env.LEMON_SQUEEZY_ENVIRONMENT === "sandbox";
 
         const relationships: any = {

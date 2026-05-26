@@ -23,37 +23,12 @@ export function useLemonSqueezyOverlay(): UseLemonSqueezyOverlayReturn {
     const verifyAndRedirect = useCallback(async (orderId: string) => {
         setIsVerifying(true);
         try {
-            // Attendre 2s pour laisser le webhook Firestore traiter le paiement
+            // Attendre 2s pour laisser le temps au webhook en arrière-plan d'arriver
             await new Promise((resolve) => setTimeout(resolve, 2000));
-
-            const res = await fetch("/api/lemonsqueezy/verify-payment", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId }),
-            });
-
-            if (!res.ok) {
-                console.warn("[Overlay] Verify failed, redirecting to payment-success anyway");
-                router.push(`/payment-success?orderId=${orderId}&provider=lemonsqueezy`);
-                return;
-            }
-
-            const data = await res.json();
-
-            if (data.status === "paid") {
-                const amount = data.order?.amount || "";
-                const currency = data.order?.currency?.toUpperCase() || "USD";
-                router.push(
-                    `/payment-success?orderId=${orderId}&amount=${amount}&currency=${currency}&provider=lemonsqueezy`
-                );
-            } else {
-                // Paiement pas encore confirmé — redirection vers payment-success qui re-vérifie
-                router.push(`/payment-success?orderId=${orderId}&provider=lemonsqueezy`);
-            }
+            router.push(`/dashboard?payment=success`);
         } catch (err) {
-            console.error("[Overlay] Error during post-payment verification:", err);
-            // Fallback sécurisé
-            router.push(`/payment-success?orderId=${orderId}&provider=lemonsqueezy`);
+            console.error("[Overlay] Error during post-payment redirect:", err);
+            router.push(`/dashboard?payment=success`);
         } finally {
             setIsVerifying(false);
         }
