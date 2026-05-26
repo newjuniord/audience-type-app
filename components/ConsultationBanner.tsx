@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
@@ -112,6 +112,22 @@ export default function ConsultationBanner() {
     const [timeLeft, setTimeLeft] = useState("");
     const [dismissed, setDismissed] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
+
+    const touchStartY = useRef<number | null>(null);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        touchStartY.current = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (touchStartY.current === null) return;
+        const currentY = e.changedTouches[0].clientY;
+        const diff = currentY - touchStartY.current;
+        if (diff > 40) { // If pulled down by more than 40px
+            setDrawerOpen(false);
+        }
+        touchStartY.current = null;
+    };
 
     useEffect(() => {
         if (!user || authLoading) { setLoading(false); return; }
@@ -306,7 +322,9 @@ export default function ConsultationBanner() {
                 {/* Drag handle */}
                 <div 
                     onClick={() => setDrawerOpen(false)}
-                    style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px", cursor: "pointer" }}
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                    style={{ display: "flex", justifyContent: "center", padding: "12px 0 16px", cursor: "pointer", touchAction: "none" }}
                 >
                     <div style={{ width: 40, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.12)" }} />
                 </div>
