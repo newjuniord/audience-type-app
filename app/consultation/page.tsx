@@ -8,7 +8,8 @@ import { useAuth } from "@/context/AuthContext";
 import CheckoutModal from "@/components/CheckoutModal";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 const SLOTS_KST = [
   { h: 10, m: 0 }, { h: 11, m: 30 }, { h: 13, m: 0 }, { h: 14, m: 30 },
@@ -243,6 +244,32 @@ export default function ConsultationPage() {
 
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [hasActiveConsultation, setHasActiveConsultation] = useState(false);
+  const [checkingActive, setCheckingActive] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setCheckingActive(false);
+      return;
+    }
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const q = query(collection(db, "bookingApplications"), where("usersId", "==", user.uid));
+    
+    getDocs(q).then(snap => {
+      const validStatuses = ["accepted", "confirmed", "approved", "paid", "success", "active"];
+      const hasActive = snap.docs.some(doc => {
+        const d = doc.data();
+        return d.bookingDate && d.bookingDate >= todayStr && validStatuses.includes((d.status || "").toLowerCase());
+      });
+      setHasActiveConsultation(hasActive);
+      setCheckingActive(false);
+    }).catch(err => {
+      console.error("Error checking active consultations", err);
+      setCheckingActive(false);
+    });
+  }, [user]);
 
   useEffect(() => {
     getServices().then(services => {
@@ -673,7 +700,25 @@ export default function ConsultationPage() {
             <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 sm:p-10 relative overflow-hidden">
                 <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
 
-              {submitted ? (
+              {checkingActive ? (
+                <div className="text-center py-20 flex flex-col items-center justify-center">
+                  <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <p className="text-white/50 text-sm animate-pulse">N ap verifye dosye w...</p>
+                </div>
+              ) : hasActiveConsultation ? (
+                <div className="text-center py-10 animate-in fade-in duration-300">
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-amber-500/10 border border-amber-500/20">
+                    <span className="material-symbols-outlined text-4xl text-amber-500">schedule</span>
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight mb-3 text-white">Ou gen yon konsiltasyon deja</h3>
+                  <p className="text-base text-white/60 leading-relaxed max-w-sm mx-auto">
+                    Ou gen yon konsiltasyon ki poko pase kounye a. Ou dwe tann dat sa pase anvan ou ka rezève yon lòt.
+                  </p>
+                  <Link href="/dashboard" className="mt-8 inline-block px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold uppercase tracking-widest text-xs transition-colors">
+                    Wè konsiltasyon mwen an
+                  </Link>
+                </div>
+              ) : submitted ? (
                 /* ── SUCCÈS ── */
                 <div className="text-center py-10">
                   <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-green-500/10 border border-green-500/20">
