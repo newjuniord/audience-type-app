@@ -714,9 +714,7 @@ export default function ConsultationPage() {
                   <p className="text-base text-white/60 leading-relaxed max-w-sm mx-auto">
                     Ou gen yon konsiltasyon ki poko pase kounye a. Ou dwe tann dat sa pase anvan ou ka rezève yon lòt.
                   </p>
-                  <Link href="/dashboard" className="mt-8 inline-block px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold uppercase tracking-widest text-xs transition-colors">
-                    Wè konsiltasyon mwen an
-                  </Link>
+
                 </div>
               ) : submitted ? (
                 /* ── SUCCÈS ── */
