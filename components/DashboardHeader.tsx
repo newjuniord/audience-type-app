@@ -223,7 +223,7 @@ export default function DashboardHeader() {
                 </div>
                 <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
                     {user && (
-                        <nav className="hidden md:flex items-center gap-9">
+                        <nav className="hidden min-[1441px]:flex items-center gap-9">
                             <Link href="/products" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
                                 Pwodui
                             </Link>
