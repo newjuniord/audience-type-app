@@ -112,6 +112,7 @@ export default function ConsultationBanner() {
     const [timeLeft, setTimeLeft] = useState("");
     const [dismissed, setDismissed] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
 
     const touchStartY = useRef<number | null>(null);
 
@@ -405,7 +406,11 @@ export default function ConsultationBanner() {
                                     {consultation.adminPhone ? formatReadablePhone(consultation.adminPhone) : "+82 10 1234 5678"}
                                 </a>
                                 <button
-                                    onClick={() => { navigator.clipboard.writeText(`+${(consultation.adminPhone || "821012345678").replace(/[^0-9]/g, "")}`); alert("Nimewo a kopye !"); }}
+                                    onClick={() => { 
+                                        navigator.clipboard.writeText(`+${(consultation.adminPhone || "821012345678").replace(/[^0-9]/g, "")}`); 
+                                        setToastMessage("Nimewo a kopye !"); 
+                                        setTimeout(() => setToastMessage(""), 3000);
+                                    }}
                                     style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 10px", borderLeft: "1px solid rgba(37,211,102,0.2)", color: "#25D366", background: "transparent", cursor: "pointer", height: "100%", borderTop: "none", borderBottom: "none", borderRight: "none" }}
                                     title="Kopye nimewo a"
                                 >
@@ -433,6 +438,16 @@ export default function ConsultationBanner() {
                     </div>
                 </div>
             </div>
+
+            {/* Toast Copy */}
+            {toastMessage && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[10000] animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="flex items-center gap-3 bg-emerald-500 text-white px-6 py-3 rounded-full shadow-2xl shadow-emerald-500/30 font-bold text-sm">
+                        <span className="material-symbols-outlined text-lg">check_circle</span>
+                        {toastMessage}
+                    </div>
+                </div>
+            )}
         </>
     );
 }
