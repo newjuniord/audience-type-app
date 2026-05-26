@@ -97,7 +97,7 @@ export default function DashboardHeader() {
                 {/* Header utilisateur */}
                 <div className="px-5 pt-5 pb-4 border-b border-white/5 relative">
                     {showClose && (
-                        <button 
+                        <button
                             onClick={() => setIsDropdownOpen(false)}
                             className="absolute top-4 right-4 text-white/40 hover:text-white md:hidden"
                         >
@@ -148,7 +148,7 @@ export default function DashboardHeader() {
                     ].filter(item => {
                         if (showClose) {
                             // Cacher les éléments déjà présents dans le BottomNav sur mobile
-                        return !["/dashboard", "/products", "/kado", "/dashboard/chat", "/consultation"].includes(item.href);
+                            return !["/dashboard", "/products", "/kado", "/dashboard/chat", "/consultation"].includes(item.href);
                         }
                         return true;
                     }).map(({ href, icon, label, highlight, badge }) => (
@@ -157,8 +157,8 @@ export default function DashboardHeader() {
                             href={href}
                             onClick={() => setIsDropdownOpen(false)}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold group ${highlight
-                                    ? "text-orange-500 hover:bg-orange-500/10"
-                                    : "text-white/80 hover:bg-white/5 hover:text-white"
+                                ? "text-orange-500 hover:bg-orange-500/10"
+                                : "text-white/80 hover:bg-white/5 hover:text-white"
                                 }`}
                         >
                             <span className={`material-symbols-outlined text-base notranslate ${highlight ? "text-orange-500" : "text-white/40 group-hover:text-white"} transition-colors`}>{icon}</span>
@@ -223,7 +223,7 @@ export default function DashboardHeader() {
                 </div>
                 <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
                     {user && (
-                        <nav className="hidden min-[1441px]:flex items-center gap-9">
+                        <nav className="hidden min-[1481px]:flex items-center gap-9">
                             <Link href="/products" className="text-primary dark:text-white text-sm font-semibold leading-normal hover:text-primary/80 dark:hover:text-white/80 transition-colors">
                                 Pwodui
                             </Link>
@@ -293,8 +293,8 @@ export default function DashboardHeader() {
                                     className={`
                                         bg-[#141414] border border-solid border-white/[0.07] rounded-3xl shadow-2xl shadow-black/20 transition-all duration-300 transform origin-top-right overflow-hidden hidden md:flex flex-col
                                         absolute right-0 mt-4 w-72 h-auto z-50
-                                        ${isDropdownOpen 
-                                            ? 'opacity-100 scale-100' 
+                                        ${isDropdownOpen
+                                            ? 'opacity-100 scale-100'
                                             : 'opacity-0 scale-95 pointer-events-none'
                                         }
                                     `}
