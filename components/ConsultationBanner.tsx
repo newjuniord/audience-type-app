@@ -372,7 +372,7 @@ export default function ConsultationBanner() {
 
                         {/* WhatsApp Admin */}
                         <div style={{ background: "rgba(37,211,102,0.05)", border: "1px solid rgba(37,211,102,0.15)", borderRadius: 16, padding: "14px 16px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                            <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(37,211,102,0.8)", marginBottom: 8 }}>Kontakte Admin</p>
+                            <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(37,211,102,0.8)", marginBottom: 8 }}>Kontakte Jean Ronald Dumervil</p>
                             
                             <div style={{ display: "flex", alignItems: "stretch", background: "rgba(37,211,102,0.1)", border: "1px solid rgba(37,211,102,0.2)", borderRadius: 8, overflow: "hidden" }}>
                                 <a 
