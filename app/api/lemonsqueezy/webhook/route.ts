@@ -124,11 +124,10 @@ export async function POST(req: Request) {
             
             await orderRef.update(updateData);
 
-            // CRÉATION DE L'INSCRIPTION (Enrollment)
+            // ── COURS / EBOOK : Création de l'inscription ──────────────────────
             if (orderData && orderData.productType !== "service" && orderData.productType !== "booking") {
                 const enrollmentsRef = adminDb.collection("enrollments");
 
-                // Vérifier si elle existe déjà (au cas où)
                 const existingEnrollment = await enrollmentsRef
                     .where("userId", "==", orderData?.userId)
                     .where("productId", "==", orderData?.productId)
@@ -151,11 +150,97 @@ export async function POST(req: Request) {
                         productType: orderData?.productType,
                         progress: 0,
                         status: "active",
-                        totalLessons: 0, // Idéalement, à fetch depuis le produit
+                        totalLessons: 0,
                         userEmail: finalUserEmail,
                         userId: orderData?.userId,
                         userName: orderData?.userName || "Étudiant"
                     });
+                }
+            }
+
+            // ── SERVICE / CONSULTATION : Confirmation de la réservation ────────
+            if (orderData && (orderData.productType === "service" || orderData.productType === "booking")) {
+                try {
+                    console.log(`📅 [WEBHOOK] Recherche du bookingApplication pour userId=${orderData.userId} / serviceId=${orderData.productId}`);
+
+                    // Chercher toutes les réservations pending de cet utilisateur pour ce service
+                    const bookingSnap = await adminDb.collection("bookingApplications")
+                        .where("usersId", "==", orderData.userId)
+                        .where("bookingsId", "==", orderData.productId)
+                        .where("status", "==", "pending")
+                        .get();
+
+                    if (bookingSnap.empty) {
+                        console.warn(`⚠️ [WEBHOOK] Aucun bookingApplication pending trouvé pour userId=${orderData.userId} / serviceId=${orderData.productId}`);
+                    } else {
+                        // Trier par createdAt pour confirmer le plus récent
+                        const sorted = bookingSnap.docs.sort((a, b) => {
+                            const aMs = a.data().createdAt?.toMillis?.() || 0;
+                            const bMs = b.data().createdAt?.toMillis?.() || 0;
+                            return bMs - aMs; // plus récent en premier
+                        });
+
+                        const bookingDoc = sorted[0];
+                        const bookingData = bookingDoc.data();
+
+                        await bookingDoc.ref.update({
+                            status: "accepted",
+                            paidAt: now,
+                            orderId: internalOrderId,
+                        });
+
+                        console.log(`✅ [WEBHOOK] bookingApplication ${bookingDoc.id} → status: accepted`);
+
+                        // ── Alerte in-app pour l'utilisateur ──────────────────
+                        try {
+                            const bookingDate: string = bookingData.bookingDate || "";
+                            const bookingTime: string = bookingData.bookingTime || "";
+
+                            // Formater date et heure en AM/PM pour l'alerte
+                            let dateLabel = bookingDate;
+                            let timeLabel = bookingTime;
+
+                            if (bookingDate) {
+                                const [y, m, d] = bookingDate.split("-").map(Number);
+                                const MOIS = ["Janvye","Fevriye","Mas","Avril","Me","Jen","Jiyè","Out","Septanm","Oktòb","Novanm","Desanm"];
+                                dateLabel = `${d} ${MOIS[m - 1]} ${y}`;
+                            }
+
+                            if (bookingTime) {
+                                const [h, m] = bookingTime.split(":").map(Number);
+                                const period = h >= 12 ? "PM" : "AM";
+                                let h12 = h % 12;
+                                if (h12 === 0) h12 = 12;
+                                const mm = m > 0 ? `:${String(m).padStart(2, "0")}` : "";
+                                timeLabel = `${h12}${mm} ${period}`;
+                            }
+
+                            const alertBody = bookingDate && bookingTime
+                                ? `Konsiltasyon ou a konfime pou ${dateLabel} a ${timeLabel}. Nou pral kontakte w pa WhatsApp pou konfime detay yo.`
+                                : `Konsiltasyon ou a konfime. Nou pral kontakte w pa WhatsApp pou planifye lè egzak la.`;
+
+                            await adminDb.collection("alerts").add({
+                                userId: orderData.userId,
+                                category: "utility",
+                                type: "booking_reminder",
+                                title: "✅ Konsiltasyon ou konfime !",
+                                body: alertBody,
+                                isRead: false,
+                                icon: "event_available",
+                                iconColor: "text-emerald-400",
+                                iconBg: "bg-emerald-500/10",
+                                actionUrl: "/consultation",
+                                actionLabel: "Wè detay",
+                                createdAt: now,
+                            });
+
+                            console.log(`🔔 [WEBHOOK] Alerte de confirmation envoyée à userId=${orderData.userId}`);
+                        } catch (alertErr: any) {
+                            console.error(`❌ [WEBHOOK] Erreur lors de l'envoi de l'alerte:`, alertErr.message);
+                        }
+                    }
+                } catch (bookingErr: any) {
+                    console.error(`❌ [WEBHOOK] Erreur lors de la confirmation du bookingApplication:`, bookingErr.message);
                 }
             }
             
