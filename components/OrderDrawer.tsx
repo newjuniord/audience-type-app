@@ -50,13 +50,23 @@ export default function OrderDrawer({ isOpen, onClose, order }: OrderDrawerProps
 
     const StatusBadge = ({ status }: { status: string }) => {
         let bgColor = "bg-gray-100 text-gray-700";
-        if (status.toLowerCase() === 'paid' || status.toLowerCase() === 'success') bgColor = "bg-green-100 text-green-700";
-        if (status.toLowerCase() === 'failed' || status.toLowerCase() === 'refunded') bgColor = "bg-red-100 text-red-700";
-        if (status.toLowerCase() === 'pending') bgColor = "bg-yellow-100 text-yellow-700";
+        const normalizedStatus = (status || "").toLowerCase();
+        if (normalizedStatus === 'paid' || normalizedStatus === 'success') bgColor = "bg-green-100 text-green-700";
+        if (normalizedStatus === 'failed' || normalizedStatus === 'refunded') bgColor = "bg-red-100 text-red-700";
+        if (normalizedStatus === 'pending') bgColor = "bg-yellow-100 text-yellow-700";
         
+        const getStatusLabel = (s: string) => {
+            const lower = s.toLowerCase();
+            if (lower === 'paid' || lower === 'success') return 'Payé';
+            if (lower === 'failed') return 'Échoué';
+            if (lower === 'refunded') return 'Remboursé';
+            if (lower === 'pending') return 'En attente';
+            return s || "Inconnu";
+        };
+
         return (
             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${bgColor}`}>
-                {status || "Unknown"}
+                {getStatusLabel(status)}
             </span>
         );
     };

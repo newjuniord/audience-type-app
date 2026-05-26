@@ -11,6 +11,7 @@ import { getEnrollmentsByUser } from "@/lib/enrollments";
 import { Course, Module, Lesson, Enrollment } from "@/lib/types";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import confetti from "canvas-confetti";
 
 import ReviewModal from "@/components/ReviewModal";
 
@@ -25,6 +26,7 @@ export default function CoursePlayerPage() {
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
     const [loading, setLoading] = useState(true);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [showNextLessonPopup, setShowNextLessonPopup] = useState<{isOpen: boolean, nextLesson: Lesson | null}>({isOpen: false, nextLesson: null});
 
     useEffect(() => {
         const fetchData = async () => {
@@ -139,8 +141,17 @@ export default function CoursePlayerPage() {
                 ...updates
             });
 
+            // Trigger confetti
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', '#ffa62d', '#ff36ff']
+            });
+
             if (nextLesson) {
-                setCurrentLesson(nextLesson);
+                // Prompt user to go to next lesson instead of auto-advancing
+                setShowNextLessonPopup({ isOpen: true, nextLesson });
             }
 
             // Check if course is completed and trigger review modal
@@ -166,18 +177,18 @@ export default function CoursePlayerPage() {
     }, [loading, user, enrollment, course, router]);
 
     if (loading || !user || (course && !enrollment)) {
-        return <div className="min-h-screen flex items-center justify-center dark:text-white">Chargement du cours...</div>;
+        return <div className="min-h-screen flex items-center justify-center dark:text-white">Kou a ap chaje...</div>;
     }
 
     if (!course) {
-        return <div className="min-h-screen flex items-center justify-center dark:text-white">Cours introuvable.</div>;
+        return <div className="min-h-screen flex items-center justify-center dark:text-white">Nou pa jwenn kou sa a.</div>;
     }
 
     return (
         <div className="bg-background-light dark:bg-background-dark text-primary dark:text-white transition-colors duration-200 min-h-screen">
             <CoursePlayerHeader courseTitle={course.title} progress={enrollment?.progress || 0} />
 
-            <main className="max-w-4xl mx-auto px-6 py-8">
+            <main className="max-w-4xl mx-0 md:mx-auto px-[5px] md:px-6 py-8">
                 {/* Video Stage */}
                 <section className="w-full mb-10">
                     <div className="relative group aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
@@ -192,8 +203,8 @@ export default function CoursePlayerPage() {
                         ) : (
                             <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-white">
                                 <div className="text-center">
-                                    <p className="mb-2 text-lg font-bold">Vidéo non disponible</p>
-                                    <p className="text-sm opacity-60">Sélectionnez une leçon pour commencer</p>
+                                    <p className="mb-2 text-lg font-bold">Videyo a pa disponib</p>
+                                    <p className="text-sm opacity-60">Chwazi yon leson pou kòmanse</p>
                                 </div>
                             </div>
                         )}
@@ -207,30 +218,29 @@ export default function CoursePlayerPage() {
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold uppercase tracking-widest rounded text-zinc-500">
                                     {/* Find Module Title for current lesson */}
-                                    {modules.find(m => m.lessons?.some(l => l.id === currentLesson?.id))?.title || "Module"}
+                                    {modules.find(m => m.lessons?.some(l => l.id === currentLesson?.id))?.title || "Modil"}
                                 </span>
                                 <span className="text-zinc-400 text-xs">•</span>
                                 <span className="text-zinc-400 text-xs font-medium">{currentLesson?.duration || "00:00"}</span>
                             </div>
                             <h1 className="text-4xl font-bold tracking-tight mb-4 text-primary dark:text-white">
-                                {currentLesson?.title || "Sélectionnez une leçon"}
+                                {currentLesson?.title || "Chwazi yon leson"}
                             </h1>
                             <p className="text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-2xl">
-                                {currentLesson?.description || "Aucune description disponible."}
+                                {currentLesson?.description || "Pa gen okenn deskripsyon pou leson sa a."}
                             </p>
                             <div className="flex flex-wrap gap-4 mt-8">
                                 <button
                                     onClick={handleMarkCompleted}
-                                    disabled={enrollment?.completedLessons?.includes(currentLesson?.id || "")}
                                     className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-sm transition-all ${enrollment?.completedLessons?.includes(currentLesson?.id || "")
-                                        ? "bg-green-500 text-white cursor-not-allowed opacity-80"
+                                        ? "bg-green-500 text-white opacity-80 hover:opacity-100"
                                         : "bg-primary text-white dark:bg-white dark:text-black hover:opacity-90"
                                         }`}
                                 >
                                     <span className="material-symbols-outlined !text-lg">
                                         {enrollment?.completedLessons?.includes(currentLesson?.id || "") ? "check" : "check_circle"}
                                     </span>
-                                    {enrollment?.completedLessons?.includes(currentLesson?.id || "") ? "Terminé" : "Marquer comme terminé"}
+                                    {enrollment?.completedLessons?.includes(currentLesson?.id || "") ? "Fini ✓" : "Make kòm Fini"}
                                 </button>
                                 {currentLesson?.resourceFileUrl && (
                                     <button
@@ -238,7 +248,7 @@ export default function CoursePlayerPage() {
                                         className="flex items-center gap-2 border border-zinc-200 dark:border-zinc-800 px-6 py-3 rounded-lg font-bold text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
                                     >
                                         <span className="material-symbols-outlined !text-lg">download</span>
-                                        Fichiers de ressources
+                                        Fichye resous yo
                                     </button>
                                 )}
                             </div>
@@ -271,6 +281,39 @@ export default function CoursePlayerPage() {
                 courseId={course.id || ""}
                 courseTitle={course.title}
             />
+
+            {/* Next Lesson Popup */}
+            {showNextLessonPopup.isOpen && showNextLessonPopup.nextLesson && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+                        <div className="w-16 h-16 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center mb-4 mx-auto">
+                            <span className="material-symbols-outlined !text-3xl">celebration</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-center text-primary dark:text-white mb-2">Felisitasyon !</h3>
+                        <p className="text-zinc-600 dark:text-zinc-400 text-sm text-center mb-6 leading-relaxed">
+                            Ou sot fini leson sa a. Èske ou vle pase nan pwochen leson an : <br/>
+                            <strong className="text-primary dark:text-white mt-1 block">{showNextLessonPopup.nextLesson.title}</strong>
+                        </p>
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={() => {
+                                    setCurrentLesson(showNextLessonPopup.nextLesson);
+                                    setShowNextLessonPopup({ isOpen: false, nextLesson: null });
+                                }}
+                                className="w-full py-3 rounded-xl font-bold text-sm bg-primary text-white dark:bg-white dark:text-black hover:opacity-90 transition-opacity shadow-lg shadow-primary/20 dark:shadow-white/10"
+                            >
+                                Wi, kontinye
+                            </button>
+                            <button
+                                onClick={() => setShowNextLessonPopup({ isOpen: false, nextLesson: null })}
+                                className="w-full py-3 rounded-xl font-bold text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                            >
+                                Rete la
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -18,14 +18,23 @@ export default function TransactionsPage() {
         const fetchOrders = async () => {
             if (!user) return;
             try {
-                // Limite à 7 pour réduire les lectures Firebase
-                const userOrders = await getOrdersByUser(user.uid, 7);
+                // Limite à 20 pour la lecture initiale, puis on trie
+                const userOrders = await getOrdersByUser(user.uid, 20);
                 userOrders.sort((a, b) => {
+                    const statusA = (a.status || '').toLowerCase();
+                    const statusB = (b.status || '').toLowerCase();
+                    
+                    const isASuccess = statusA === 'paid' || statusA === 'success' || statusA === 'completed';
+                    const isBSuccess = statusB === 'paid' || statusB === 'success' || statusB === 'completed';
+
+                    if (isASuccess && !isBSuccess) return -1;
+                    if (!isASuccess && isBSuccess) return 1;
+
                     const dateA = a.createdAt?.toDate().getTime() || 0;
                     const dateB = b.createdAt?.toDate().getTime() || 0;
                     return dateB - dateA;
                 });
-                setOrders(userOrders);
+                setOrders(userOrders.slice(0, 5));
             } catch (error) {
                 console.error("Error fetching transactions:", error);
             } finally {

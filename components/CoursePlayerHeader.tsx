@@ -18,12 +18,12 @@ export default function CoursePlayerHeader({ courseTitle, progress = 0 }: Course
                     <Link className="text-zinc-500 hover:text-primary dark:hover:text-white transition-colors" href="/dashboard">
                         <span className="material-symbols-outlined">arrow_back</span>
                     </Link>
-                    <h2 className="text-sm font-bold tracking-tight uppercase line-clamp-1">{courseTitle || "Chargement..."}</h2>
+                    <h2 className="text-sm font-bold tracking-tight uppercase line-clamp-1">{courseTitle || "Chaje..."}</h2>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="hidden sm:block text-right">
-                        <p className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold">Progression Globale</p>
-                        <p className="text-xs font-bold">Terminé à {Math.round(progress)}%</p>
+                        <p className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold">Pwogrè Jeneral</p>
+                        <p className="text-xs font-bold">Fini nan nivo {Math.round(progress)}%</p>
                     </div>
                     {user?.photoURL ? (
                         <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 bg-cover bg-center" style={{ backgroundImage: `url('${user.photoURL}')` }}></div>

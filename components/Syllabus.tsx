@@ -18,9 +18,9 @@ export default function Syllabus({ modules = [], currentLessonId, completedLesso
     return (
         <section className="space-y-6">
             <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xl font-bold tracking-tight">Programme du cours</h3>
+                <h3 className="text-xl font-bold tracking-tight">Pwogram kou a</h3>
                 <span className="text-sm text-zinc-500 font-medium">
-                    {completedLessons.length}/{modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)} leçons terminées
+                    {completedLessons.length}/{modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)} leson fini
                 </span>
             </div>
             {modules.map((mod, index) => (
@@ -33,7 +33,7 @@ export default function Syllabus({ modules = [], currentLessonId, completedLesso
                             <span className="text-xs font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 size-8 flex items-center justify-center rounded-lg">{(index + 1) < 10 ? `0${index + 1}` : index + 1}</span>
                             <div>
                                 <p className="text-sm font-bold tracking-tight">{mod.title}</p>
-                                <p className="text-xs text-zinc-500 font-medium">{mod.lessons?.length || 0} leçons • {mod.duration || ""}</p>
+                                <p className="text-xs text-zinc-500 font-medium">{mod.lessons?.length || 0} leson • {mod.duration || ""}</p>
                             </div>
                         </div>
                         <span className="material-symbols-outlined text-zinc-400 group-hover:text-primary dark:group-hover:text-white transition-colors">
@@ -70,9 +70,9 @@ export default function Syllabus({ modules = [], currentLessonId, completedLesso
                                                     {lesson.title}
                                                 </p>
                                                 <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">
-                                                    {isCurrent && "En cours de lecture"}
-                                                    {!isCurrent && isCompleted && "Terminé"}
-                                                    {!isCurrent && !isCompleted && "À suivre"}
+                                                    {isCurrent && "Ap jwe kounye a"}
+                                                    {!isCurrent && isCompleted && "Fini ✓"}
+                                                    {!isCurrent && !isCompleted && "Pa ankò jwe"}
                                                 </p>
                                             </div>
                                         </div>

@@ -147,7 +147,7 @@ export default function DashboardHeader() {
                     ].filter(item => {
                         if (showClose) {
                             // Cacher les éléments déjà présents dans le BottomNav sur mobile
-                            return !["/dashboard", "/products", "/kado", "/dashboard/chat", "/consultation"].includes(item.href);
+                        return !["/dashboard", "/products", "/kado", "/dashboard/chat", "/consultation"].includes(item.href);
                         }
                         return true;
                     }).map(({ href, icon, label, highlight, badge }) => (

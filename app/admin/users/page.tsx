@@ -327,8 +327,8 @@ export default function UserManagementPage() {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight mb-2">User Management</h2>
-                    <p className="text-black/50 dark:text-white/50 text-sm">Oversee your platform members and their activity.</p>
+                    <h2 className="text-4xl font-black tracking-tight mb-2">Gestion des Utilisateurs</h2>
+                    <p className="text-black/50 dark:text-white/50 text-sm">Supervisez les membres de votre plateforme et leur activité.</p>
                 </div>
                 <button 
                     onClick={() => setIsCreateUserDrawerOpen(true)}
@@ -342,7 +342,7 @@ export default function UserManagementPage() {
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                 <div className="bg-white dark:bg-black/20 p-8 border border-black/5 dark:border-white/10 rounded-[1.5rem] hover:border-black/10 dark:hover:border-white/20 transition-colors">
-                    <p className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-2">Total Users</p>
+                    <p className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-2">Total Utilisateurs</p>
                     <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-black tracking-tighter">{stats.total}</span>
                     </div>
@@ -355,7 +355,7 @@ export default function UserManagementPage() {
                     </div>
                 </div>
                 <div className="bg-white dark:bg-black/20 p-8 border border-black/5 dark:border-white/10 rounded-[1.5rem] hover:border-black/10 dark:hover:border-white/20 transition-colors">
-                    <p className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-2">New Today</p>
+                    <p className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-2">Nouveaux aujourd'hui</p>
                     <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-black tracking-tighter">{stats.newToday}</span>
                     </div>
@@ -368,7 +368,7 @@ export default function UserManagementPage() {
                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30">search</span>
                     <input
                         className="w-full bg-white dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-full pl-12 pr-6 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:opacity-50"
-                        placeholder="Search by name or email..."
+                        placeholder="Rechercher par nom ou email..."
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -380,14 +380,14 @@ export default function UserManagementPage() {
                         className="px-6 py-2.5 rounded-full border border-black/5 dark:border-white/10 bg-white dark:bg-black/20 text-xs font-bold flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
                     >
                         <span className="material-symbols-outlined text-sm">filter_list</span>
-                        {roleFilter === 'all' ? 'All Roles' : roleFilter === 'admin' ? 'Admins Only' : 'Customers Type'}
+                        {roleFilter === 'all' ? 'Tous les rôles' : roleFilter === 'admin' ? 'Admins uniquement' : 'Clients uniquement'}
                     </button>
                     <button
                         onClick={() => loadUsers(true)}
                         className="px-6 py-2.5 rounded-full border border-black/5 dark:border-white/10 bg-white dark:bg-black/20 text-xs font-bold flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
                     >
                         <span className="material-symbols-outlined text-sm">refresh</span>
-                        Refresh
+                        Actualiser
                     </button>
                     <button
                         onClick={handleSyncCounts}
@@ -395,7 +395,7 @@ export default function UserManagementPage() {
                         className="px-6 py-2.5 rounded-full border border-black/5 dark:border-white/10 bg-white dark:bg-black/20 text-xs font-bold flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-all disabled:opacity-50"
                     >
                         <span className="material-symbols-outlined text-sm">{isSyncing ? 'sync' : 'database'}</span>
-                        {isSyncing ? 'Syncing...' : 'Sync Counts'}
+                        {isSyncing ? 'Synchronisation...' : 'Synchro. Compteurs'}
                     </button>
                 </div>
             </div>
@@ -406,21 +406,21 @@ export default function UserManagementPage() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b border-black/5 dark:border-white/10">
-                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">User Details</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Role</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Purchases</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Date Joined</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Détails utilisateur</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Rôle</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Inscriptions</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Date d'inscription</th>
                                 <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-black/5 dark:divide-white/5">
                             {loading && displayedUsers.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-8 py-12 text-center text-black/40 dark:text-white/40 font-medium">Loading users...</td>
+                                    <td colSpan={5} className="px-8 py-12 text-center text-black/40 dark:text-white/40 font-medium">Chargement des utilisateurs...</td>
                                 </tr>
                             ) : displayedUsers.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-8 py-12 text-center text-black/40 dark:text-white/40 font-medium">No users found.</td>
+                                    <td colSpan={5} className="px-8 py-12 text-center text-black/40 dark:text-white/40 font-medium">Aucun utilisateur trouvé.</td>
                                 </tr>
                             ) : (
                                 displayedUsers.map((user) => (
@@ -486,14 +486,14 @@ export default function UserManagementPage() {
                                             {user.role === 'admin' ? (
                                                 <span className="px-3 py-1 rounded-full bg-primary text-white dark:bg-white dark:text-primary text-[10px] font-bold uppercase tracking-tight">Admin</span>
                                             ) : (
-                                                <span className="px-3 py-1 rounded-full border border-black/10 dark:border-white/10 text-[10px] font-bold uppercase tracking-tight text-black/50 dark:text-white/50">Customer</span>
+                                                <span className="px-3 py-1 rounded-full border border-black/10 dark:border-white/10 text-[10px] font-bold uppercase tracking-tight text-black/50 dark:text-white/50">Client</span>
                                             )}
                                         </td>
                                         <td className="px-8 py-6">
-                                            <p className="text-sm font-semibold">{user.enrollmentCount || 0} Items</p>
+                                            <p className="text-sm font-semibold">{user.enrollmentCount || 0} inscriptions</p>
                                         </td>
                                         <td className="px-8 py-6 text-sm text-black/60 dark:text-white/60">
-                                            {user.createdAt?.toDate().toLocaleDateString() || "Unknown"}
+                                            {user.createdAt?.toDate().toLocaleDateString() || "Inconnu"}
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -522,7 +522,7 @@ export default function UserManagementPage() {
                                                     onClick={() => handleToggleRole(user)}
                                                     className="px-4 py-1.5 rounded-full bg-black/5 dark:bg-white/5 text-[10px] font-bold hover:bg-primary hover:text-white dark:hover:bg-white dark:hover:text-primary transition-all duration-300"
                                                 >
-                                                    {user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
+                                                    {user.role === 'admin' ? 'Retirer Admin' : 'Rendre Admin'}
                                                 </button>
                                                 <button
                                                     onClick={() => handleGenerateAdminTempLink(user)}

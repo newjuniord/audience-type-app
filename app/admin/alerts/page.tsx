@@ -154,23 +154,22 @@ export default function AdminAlertsPage() {
             {success && (
                 <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white px-6 py-3 rounded-full font-bold text-sm shadow-xl flex items-center gap-2">
                     <span className="material-symbols-outlined text-lg">check_circle</span>
-                    Alèt yo voye avèk siksè!
+                    Alerte envoyée avec succès !
                 </div>
             )}
 
             {/* Header */}
             <div className="mb-10">
-                <h1 className="text-4xl font-black uppercase tracking-tighter italic">Notifikasyon & Alèt</h1>
-                <p className="text-black/50 text-sm mt-2">Voye mesaj utilitè ak maketing bay itilizatè yo.</p>
+                <h1 className="text-4xl font-black uppercase tracking-tighter italic">Notifications & Alertes</h1>
+                <p className="text-black/50 text-sm mt-2">Envoyez des messages utilitaires et marketing aux utilisateurs.</p>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-2 mb-8">
                 {(["send", "history"] as const).map((t) => (
                     <button key={t} onClick={() => setTab(t)}
                         className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all ${tab === t ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-black/5 text-black/60 hover:bg-black/10"}`}
                     >
-                        {t === "send" ? "📤 Voye Alèt" : `📋 Istwa (${sentAlerts.length})`}
+                        {t === "send" ? "📤 Envoyer une alerte" : `📋 Historique (${sentAlerts.length})`}
                     </button>
                 ))}
             </div>
@@ -179,17 +178,17 @@ export default function AdminAlertsPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Left: Form */}
                     <div className="bg-white border border-black/5 rounded-3xl p-8 shadow-sm space-y-6">
-                        <h2 className="font-black text-lg uppercase tracking-tight">Konfigire alèt la</h2>
+                        <h2 className="font-black text-lg uppercase tracking-tight">Configurer l'alerte</h2>
 
                         {/* Target */}
                         <div>
-                            <label className="text-xs font-bold text-black/40 uppercase tracking-wider block mb-2">Destinatè</label>
+                            <label className="text-xs font-bold text-black/40 uppercase tracking-wider block mb-2">Destinataires</label>
                             <div className="flex gap-2">
                                 {(["all", "specific"] as const).map((m) => (
                                     <button key={m} onClick={() => setTargetMode(m)}
                                         className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all ${targetMode === m ? "bg-primary text-white border-primary" : "bg-black/5 border-black/10 text-black/60 hover:bg-black/10"}`}
                                     >
-                                        {m === "all" ? "🌍 Tout itilizatè" : "👤 Yon sèl moun"}
+                                        {m === "all" ? "🌍 Tous les utilisateurs" : "👤 Un utilisateur spécifique"}
                                     </button>
                                 ))}
                             </div>
@@ -202,7 +201,7 @@ export default function AdminAlertsPage() {
                                         {selectedUserId ? (
                                             (() => {
                                                 const u = users.find(user => user.uid === selectedUserId);
-                                                if (!u) return <span className="text-black/30 text-sm">— Chwazi yon itilizatè —</span>;
+                                                if (!u) return <span className="text-black/30 text-sm">— Choisir un utilisateur —</span>;
                                                 const contactInfo = [u.email, u.phone].filter(Boolean).join(" / ");
                                                 return (
                                                     <div className="flex flex-col text-left">
@@ -212,7 +211,7 @@ export default function AdminAlertsPage() {
                                                 );
                                             })()
                                         ) : (
-                                            <span className="text-black/30 text-sm">— Chwazi yon itilizatè —</span>
+                                            <span className="text-black/30 text-sm">— Choisir un utilisateur —</span>
                                         )}
                                         <span className="material-symbols-outlined text-black/40">unfold_more</span>
                                     </div>
@@ -230,7 +229,7 @@ export default function AdminAlertsPage() {
                                                         type="text" 
                                                         value={searchQuery} 
                                                         onChange={(e) => setSearchQuery(e.target.value)} 
-                                                        placeholder="Chèche pa non, imel oswa telefòn..." 
+                                                        placeholder="Rechercher par nom, email ou téléphone..." 
                                                         className="w-full bg-transparent outline-none text-sm placeholder:text-black/30 text-black"
                                                         autoFocus
                                                     />
@@ -263,7 +262,7 @@ export default function AdminAlertsPage() {
                                                         u.email.toLowerCase().includes(searchQuery.toLowerCase()) || 
                                                         u.phone.includes(searchQuery)
                                                     ).length === 0 && (
-                                                        <p className="text-center py-6 text-xs text-black/40 font-bold uppercase tracking-wider">Okenn rezilta jwenn</p>
+                                                        <p className="text-center py-6 text-xs text-black/40 font-bold uppercase tracking-wider">Aucun résultat trouvé</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -275,7 +274,7 @@ export default function AdminAlertsPage() {
 
                         {/* Preset */}
                         <div>
-                            <label className="text-xs font-bold text-black/40 uppercase tracking-wider block mb-2">Modèl alèt</label>
+                            <label className="text-xs font-bold text-black/40 uppercase tracking-wider block mb-2">Modèle d'alerte</label>
                             <div className="grid grid-cols-2 gap-2">
                                 {ALERT_PRESETS.map((p, i) => (
                                     <button key={i} onClick={() => handlePresetChange(i)}
@@ -290,33 +289,33 @@ export default function AdminAlertsPage() {
 
                         {/* Title */}
                         <div>
-                            <label className="text-xs font-bold text-black/40 uppercase tracking-wider block mb-2">Tit</label>
+                            <label className="text-xs font-bold text-black/40 uppercase tracking-wider block mb-2">Titre</label>
                             <input value={title} onChange={(e) => setTitle(e.target.value)}
                                 className="w-full h-11 px-4 bg-black/5 border border-black/10 rounded-xl text-sm outline-none focus:border-primary transition-all"
-                                placeholder="Tit notifikasyon an..."
+                                placeholder="Titre de la notification..."
                             />
                         </div>
 
                         {/* Body */}
                         <div>
-                            <label className="text-xs font-bold text-black/40 uppercase tracking-wider block mb-2">Mesaj</label>
+                            <label className="text-xs font-bold text-black/40 uppercase tracking-wider block mb-2">Message</label>
                             <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3}
                                 className="w-full px-4 py-3 bg-black/5 border border-black/10 rounded-xl text-sm outline-none focus:border-primary transition-all resize-none"
-                                placeholder="Deskripsyon notifikasyon an..."
+                                placeholder="Description de la notification..."
                             />
                         </div>
 
                         {/* Action */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-xs font-bold text-black/40 uppercase tracking-wider block mb-2">Bouton tèks</label>
+                                <label className="text-xs font-bold text-black/40 uppercase tracking-wider block mb-2">Texte du bouton</label>
                                 <input value={actionLabel} onChange={(e) => setActionLabel(e.target.value)}
                                     className="w-full h-10 px-3 bg-black/5 border border-black/10 rounded-xl text-xs outline-none focus:border-primary transition-all"
-                                    placeholder="Wè detay"
+                                    placeholder="Voir les détails"
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-black/40 uppercase tracking-wider block mb-2">Lyen URL</label>
+                                <label className="text-xs font-bold text-black/40 uppercase tracking-wider block mb-2">Lien URL</label>
                                 <input value={actionUrl} onChange={(e) => setActionUrl(e.target.value)}
                                     className="w-full h-10 px-3 bg-black/5 border border-black/10 rounded-xl text-xs outline-none focus:border-primary transition-all"
                                     placeholder="/dashboard"
@@ -328,7 +327,7 @@ export default function AdminAlertsPage() {
                             className="w-full py-3.5 bg-primary text-white rounded-xl font-black text-sm flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-primary/20"
                         >
                             {sending ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <span className="material-symbols-outlined text-xl">send</span>}
-                            {sending ? "Ap voye..." : targetMode === "all" ? `Voye bay ${users.length} itilizatè` : "Voye alèt la"}
+                            {sending ? "Envoi en cours..." : targetMode === "all" ? `Envoyer à ${users.length} utilisateurs` : "Envoyer l'alerte"}
                         </button>
                     </div>
 
@@ -342,10 +341,10 @@ export default function AdminAlertsPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between gap-2">
-                                        <p className="text-sm font-black text-white leading-tight">{title || "Tit notifikasyon an..."}</p>
-                                        <span className="text-[10px] text-white/30 font-bold shrink-0">Kounye a</span>
+                                        <p className="text-sm font-black text-white leading-tight">{title || "Titre de la notification..."}</p>
+                                        <span className="text-[10px] text-white/30 font-bold shrink-0">À l'instant</span>
                                     </div>
-                                    <p className="text-xs text-white/50 mt-1 leading-relaxed">{body || "Mesaj notifikasyon an..."}</p>
+                                    <p className="text-xs text-white/50 mt-1 leading-relaxed">{body || "Message de la notification..."}</p>
                                     {actionLabel && (
                                         <span className="inline-flex items-center gap-1.5 mt-3 text-[11px] font-black text-primary uppercase tracking-wide">
                                             {actionLabel}
@@ -356,7 +355,7 @@ export default function AdminAlertsPage() {
                             </div>
                             <div className="mt-4 flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                                <span className="text-[10px] text-white/30 font-bold uppercase tracking-widest">Non li — aparèt nan onglèt {ALERT_PRESETS[selectedPreset].category === "utility" ? "Utilitè" : "Pwomosyon"}</span>
+                                <span className="text-[10px] text-white/30 font-bold uppercase tracking-widest">Nom de l'onglet — apparaît dans l'onglet {ALERT_PRESETS[selectedPreset].category === "utility" ? "Utilitaire" : "Promotion"}</span>
                             </div>
                         </div>
                     </div>
@@ -367,7 +366,7 @@ export default function AdminAlertsPage() {
                     {sentAlerts.length === 0 ? (
                         <div className="text-center py-20 bg-black/5 border border-dashed border-black/10 rounded-3xl">
                             <span className="material-symbols-outlined text-4xl text-black/20">notifications_off</span>
-                            <p className="text-black/40 font-bold uppercase tracking-widest text-xs mt-4">Okenn alèt voye</p>
+                            <p className="text-black/40 font-bold uppercase tracking-widest text-xs mt-4">Aucune alerte envoyée</p>
                         </div>
                     ) : (
                         sentAlerts.map((alert) => (
@@ -379,10 +378,10 @@ export default function AdminAlertsPage() {
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <p className="font-black text-sm">{alert.title}</p>
                                         <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${alert.category === "utility" ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"}`}>
-                                            {alert.category}
+                                            {alert.category === "utility" ? "Utilitaire" : "Promotion"}
                                         </span>
                                         <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${alert.isRead ? "bg-gray-100 text-gray-500" : "bg-primary/10 text-primary"}`}>
-                                            {alert.isRead ? "Li" : "Pa li"}
+                                            {alert.isRead ? "Lu" : "Non lu"}
                                         </span>
                                     </div>
                                     <p className="text-xs text-black/50 mt-1 truncate">{alert.body}</p>

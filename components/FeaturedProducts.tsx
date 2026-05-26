@@ -24,7 +24,6 @@ export default function FeaturedProducts({
     const [products, setProducts] = useState<Product[]>(initialProducts);
     const [loading, setLoading] = useState(initialProducts.length === 0);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-    const [activeFilter, setActiveFilter] = useState("All");
     const [visibleCount, setVisibleCount] = useState(9);
     const [ownedProductIds, setOwnedProductIds] = useState<Set<string>>(new Set());
 
@@ -83,18 +82,10 @@ export default function FeaturedProducts({
         setIsCheckoutModalOpen(true);
     };
 
-    const displayCategories = [
-        { id: "All", label: "Tout" },
-        { id: "Course", label: "Kou" },
-        { id: "Ebook", label: "Ebook" }
-    ];
-
     const mainProducts = products.filter(p => p.type !== "Service");
     const consultationProduct = products.find(p => p.type === "Service");
 
-    const filteredProducts = activeFilter === "All"
-        ? mainProducts
-        : mainProducts.filter(p => p.type === activeFilter);
+    const filteredProducts = mainProducts;
 
     const visibleProducts = filteredProducts.slice(0, visibleCount);
 
@@ -110,26 +101,6 @@ export default function FeaturedProducts({
                 <>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
                         <h2 className="text-2xl font-black uppercase tracking-tighter text-white"><span>{title}</span></h2>
-                        <div className="flex flex-row gap-8">
-                            {displayCategories.map(cat => {
-                                const isAll = cat.id === "All";
-                                return (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => {
-                                            setActiveFilter(cat.id);
-                                            setVisibleCount(9);
-                                        }}
-                                        className={`text-xs font-bold uppercase tracking-widest transition-all pb-1 border-b-2 w-fit ${isAll ? "block" : "hidden md:block"} ${activeFilter === cat.id
-                                                ? "border-primary opacity-100"
-                                                : "border-transparent opacity-40 hover:opacity-100"
-                                            }`}
-                                    >
-                                        <span>{cat.label}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
                         {visibleProducts.map((product, index) => (

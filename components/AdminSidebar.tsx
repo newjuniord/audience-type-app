@@ -33,22 +33,21 @@ export default function AdminSidebar({ isOpen = true, onToggle }: AdminSidebarPr
         {
             title: "Contenu & Utilisateurs",
             items: [
-                { label: "Users", icon: "group", href: "/admin/users" },
-                { label: "Courses", icon: "school", href: "/admin/courses" },
+                { label: "Utilisateurs", icon: "group", href: "/admin/users" },
+                { label: "Cours", icon: "school", href: "/admin/courses" },
                 { label: "Ebooks", icon: "menu_book", href: "/admin/ebooks" },
-                { label: "Booking App", icon: "calendar_today", href: "/admin/booking-application" },
+                { label: "App Réservations", icon: "calendar_today", href: "/admin/booking-application" },
                 { label: "Consultations", icon: "calendar_month", href: "/admin/bookings" },
             ]
         },
         {
             title: "Marketing & Com",
             items: [
-                { label: "Funnels", icon: "filter_alt", href: "/admin/funnels" },
-                { label: "Kado 🎁", icon: "redeem", href: "/admin/kado" },
-                { label: "Announcement", icon: "campaign", href: "/admin/announcement" },
-                { label: "Notifikasyon 🔔", icon: "notifications", href: "/admin/alerts" },
-                { label: "Reviews", icon: "reviews", href: "/admin/reviews" },
-                { label: "Sondaj 📊", icon: "poll", href: "/admin/sondages" },
+                { label: "Cadeaux 🎁", icon: "redeem", href: "/admin/kado" },
+                { label: "Annonces", icon: "campaign", href: "/admin/announcement" },
+                { label: "Notifications 🔔", icon: "notifications", href: "/admin/alerts" },
+                { label: "Avis", icon: "reviews", href: "/admin/reviews" },
+                { label: "Sondages 📊", icon: "poll", href: "/admin/sondages" },
                 { label: "Messages", icon: "mail", href: "/admin/messages" },
                 { label: "Chat Support 💬", icon: "chat", href: "/admin/chat" },
             ]
@@ -57,8 +56,8 @@ export default function AdminSidebar({ isOpen = true, onToggle }: AdminSidebarPr
             title: "Système",
             items: [
                 { label: "Transactions", icon: "receipt", href: "/admin/orders" },
-                { label: "Storage", icon: "folder", href: "/admin/storage" },
-                { label: "Settings", icon: "settings", href: "/admin/settings" },
+                { label: "Stockage", icon: "folder", href: "/admin/storage" },
+                { label: "Paramètres", icon: "settings", href: "/admin/settings" },
             ]
         }
     ];

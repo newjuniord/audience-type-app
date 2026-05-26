@@ -50,7 +50,7 @@ export default function AnnouncementAdminPage() {
     return (
         <div className="animate-in fade-in duration-700 max-w-4xl mx-auto pb-20">
             <div className="mb-12">
-                <h2 className="text-4xl font-black tracking-tight mb-2">Announcement Bar</h2>
+                <h2 className="text-4xl font-black tracking-tight mb-2">Barre d'annonce</h2>
                 <p className="text-black/50 dark:text-white/50 text-sm">Configurez la barre d'annonce globale pour vos utilisateurs.</p>
             </div>
 

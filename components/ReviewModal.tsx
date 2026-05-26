@@ -36,14 +36,14 @@ export default function ReviewModal({ isOpen, onClose, courseId, courseTitle }: 
                 productTitle: courseTitle,
                 rating: rating,
                 userId: user.uid,
-                userName: userData?.fullName || userData?.displayName || user.displayName || "Utilisateur",
+                userName: userData?.fullName || userData?.displayName || user.displayName || "Itilizatè",
                 userEmail: user.email || "",
             });
             onClose();
             // Optional: Show success toast/notification here if you have a toast system
         } catch (error) {
             console.error("Failed to submit review", error);
-            alert("Erreur lors de l'envoi de l'avis. Veuillez réessayer.");
+            alert("Gen yon erè pandan n ap voye avi a. Tanpri reeseye.");
         } finally {
             setIsSubmitting(false);
         }
@@ -55,9 +55,9 @@ export default function ReviewModal({ isOpen, onClose, courseId, courseTitle }: 
                 {/* Decorative background element */}
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-purple-500 to-pink-500"></div>
 
-                <h2 className="text-2xl font-black tracking-tight mb-2 text-center">Félicitations ! 🎉</h2>
+                <h2 className="text-2xl font-black tracking-tight mb-2 text-center">Felisitasyon ! 🎉</h2>
                 <p className="text-center text-black/60 dark:text-white/60 mb-8 text-sm">
-                    Vous avez terminé <strong>{courseTitle}</strong>. Qu'en avez-vous pensé ?
+                    Ou fini <strong>{courseTitle}</strong>. Kisa w panse de li ?
                 </p>
 
                 {/* Star Rating */}
@@ -73,10 +73,10 @@ export default function ReviewModal({ isOpen, onClose, courseId, courseTitle }: 
                         >
                             <span
                                 className={`material-symbols-outlined text-4xl transition-colors duration-200 ${star <= (hoveredStar ?? rating)
-                                    ? "text-yellow-400 fill-current"
+                                    ? "text-yellow-400"
                                     : "text-gray-300 dark:text-gray-600"
                                     }`}
-                                style={{ fontVariationSettings: "'FILL' 1" }}
+                                style={{ fontVariationSettings: star <= (hoveredStar ?? rating) ? "'FILL' 1" : "'FILL' 0" }}
                             >
                                 star
                             </span>
@@ -87,12 +87,12 @@ export default function ReviewModal({ isOpen, onClose, courseId, courseTitle }: 
                 {/* Comment Input */}
                 <div className="mb-6">
                     <label className="block text-xs font-bold uppercase tracking-widest mb-2 text-black/40 dark:text-white/40">
-                        Votre avis (Optionnel)
+                        Avi ou (Si w vle)
                     </label>
                     <textarea
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
-                        placeholder="Ce cours m'a beaucoup aidé parce que..."
+                        placeholder="Kou sa a te ede m anpil paske..."
                         className="w-full bg-black/5 dark:bg-white/5 border border-transparent focus:border-black/10 dark:focus:border-white/10 rounded-xl p-4 text-sm min-h-[100px] resize-none focus:ring-0 transition-all placeholder:text-black/20 dark:placeholder:text-white/20"
                     />
                 </div>
@@ -115,7 +115,7 @@ export default function ReviewModal({ isOpen, onClose, courseId, courseTitle }: 
                             <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                         ) : (
                             <>
-                                <span>Envoyer</span>
+                                <span>Voye</span>
                                 <span className="material-symbols-outlined text-base">send</span>
                             </>
                         )}

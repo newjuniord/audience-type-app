@@ -453,7 +453,7 @@ export default function BookingsManagementPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight mb-2">Booking Application</h2>
+                    <h2 className="text-4xl font-black tracking-tight mb-2">Demandes de Réservation</h2>
                     <p className="text-black/50 dark:text-white/50 text-sm">Gérez et validez les demandes de réservation de consultation.</p>
                 </div>
                 
@@ -477,13 +477,13 @@ export default function BookingsManagementPage() {
                         className="bg-white dark:bg-white/5 text-primary dark:text-white border border-black/5 dark:border-white/10 px-6 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10 transition-all shadow-sm"
                     >
                         <span className="material-symbols-outlined text-base">refresh</span>
-                        Refresh
+                        Actualiser
                     </button>
                 </div>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-in fade-in duration-1000">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 animate-in fade-in duration-1000">
                 {/* Card 1 */}
                 <div className="bg-white dark:bg-black/20 border border-black/5 dark:border-white/10 p-6 rounded-3xl flex items-center justify-between gap-4 shadow-sm">
                     <div className="flex-1 min-w-0">
@@ -519,23 +519,7 @@ export default function BookingsManagementPage() {
                     </div>
                 </div>
 
-                {/* Card 4 */}
-                <div className="bg-white dark:bg-black/20 border border-black/5 dark:border-white/10 p-6 rounded-3xl flex items-center justify-between gap-4 shadow-sm">
-                    <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-1">Revenus Consultation</p>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-black text-primary dark:text-white truncate">
-                                {stats.revenueUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                            </span>
-                            <span className="text-xs font-bold text-black/50 dark:text-white/50 truncate">
-                                {stats.revenueHTG.toLocaleString('en-US')} HTG
-                            </span>
-                        </div>
-                    </div>
-                    <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary dark:text-white shrink-0">
-                        <span className="material-symbols-outlined text-2xl">monetization_on</span>
-                    </div>
-                </div>
+
             </div>
 
             {/* View Mode Tabs Selector */}
@@ -691,7 +675,7 @@ export default function BookingsManagementPage() {
             {viewMode === 'list' && (
                 <div className="space-y-6">
                     {loading ? (
-                        <div className="text-center py-20 text-black/40 dark:text-white/40 font-medium">Loading applications...</div>
+                        <div className="text-center py-20 text-black/40 dark:text-white/40 font-medium">Chargement des demandes...</div>
                     ) : filteredApps.length === 0 ? (
                         <div className="text-center py-20 text-black/40 dark:text-white/40 font-medium">Aucune demande trouvée.</div>
                     ) : (
@@ -704,136 +688,106 @@ export default function BookingsManagementPage() {
                             const parsed = parseMessage(app.message);
 
                             return (
-                                <div key={app.id} className="bg-white dark:bg-black/20 border border-black/5 dark:border-white/10 p-6 rounded-[1.5rem] flex flex-col md:flex-row items-start justify-between gap-6 hover:border-black/20 dark:hover:border-white/20 transition-all shadow-sm shadow-black/5 animate-in fade-in duration-300">
-                                    <div className="flex items-start gap-6 flex-1 w-full">
-                                        {/* Left Date created badge */}
-                                        <div className="hidden md:flex flex-col items-center justify-center w-16 h-16 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shrink-0" title="Demande reçue le">
-                                            <span className="text-[9px] font-black uppercase text-black/40 dark:text-white/40">Reçue</span>
-                                            <span className="text-xs font-black uppercase text-black/50 dark:text-white/50">
-                                                {app.createdAt ? app.createdAt.toDate().toLocaleString('fr-FR', { month: 'short' }) : 'N/A'}
-                                            </span>
-                                            <span className="text-lg font-black text-primary dark:text-white -mt-0.5">
-                                                {app.createdAt ? app.createdAt.toDate().getDate() : '--'}
-                                            </span>
-                                        </div>
+                                <div key={app.id} className="group bg-white dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-2xl overflow-hidden hover:border-black/20 dark:hover:border-white/20 hover:shadow-lg transition-all duration-300 shadow-sm shadow-black/5 animate-in fade-in duration-300">
+                                    {/* Colored top accent bar */}
+                                    <div className={`h-0.5 w-full ${app.paymentStatus === 'paid' ? 'bg-gradient-to-r from-green-400 to-emerald-500' : app.paymentStatus === 'pending' ? 'bg-gradient-to-r from-yellow-400 to-amber-500' : 'bg-gradient-to-r from-red-400 to-rose-500'}`} />
 
-                                        <div className="flex-1 min-w-0 w-full">
-                                            {/* 1. Header Row (Badges) */}
-                                            <div className="flex flex-wrap items-center gap-2 mb-4 border-b border-black/5 dark:border-white/5 pb-3">
-                                                {/* Payment status badge */}
-                                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide border flex items-center gap-1 ${
+                                    <div className="p-5 flex flex-col gap-4">
+
+                                        {/* Row 1 — Avatar + Name + Status */}
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className={`size-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${styleClass}`}>
+                                                    {initials}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-black text-primary dark:text-white truncate leading-tight">{app.userName}</p>
+                                                    <p className="text-[11px] text-black/40 dark:text-white/40 truncate mt-0.5">{app.customerEmail || app.userPhone}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1 shrink-0">
+                                                <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wide border flex items-center gap-1 ${
                                                     app.paymentStatus === 'paid' ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' :
                                                     app.paymentStatus === 'pending' ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20' :
                                                     'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
                                                 }`}>
-                                                    <span className="material-symbols-outlined text-[10px]">
+                                                    <span className="material-symbols-outlined text-[11px]">
                                                         {app.paymentStatus === 'paid' ? 'check_circle' : app.paymentStatus === 'pending' ? 'hourglass_empty' : 'cancel'}
                                                     </span>
-                                                    Paiement : {
-                                                        app.paymentStatus === 'paid' ? `Payé (${app.paymentAmount} ${app.paymentCurrency?.toUpperCase() === 'HTG' ? 'Gourdes (HTG)' : 'USD ($)'} - ${app.paymentMethod === 'moncash' ? 'MonCash' : 'Kat / PayPal'})` :
-                                                        app.paymentStatus === 'pending' ? `En attente (${app.paymentAmount || app.servicePrice || '—'} ${app.paymentCurrency?.toUpperCase() === 'HTG' ? 'Gourdes (HTG)' : 'USD ($)'})` :
-                                                        `Non payé (${app.servicePrice || '—'} USD)`
+                                                    {app.paymentStatus === 'paid'
+                                                        ? `Payé · ${app.paymentAmount || app.servicePrice || '—'} ${app.paymentCurrency?.toUpperCase() === 'HTG' ? 'HTG' : 'USD'}`
+                                                        : app.paymentStatus === 'pending'
+                                                        ? `En attente · ${app.paymentAmount || app.servicePrice || '—'} ${app.paymentCurrency?.toUpperCase() === 'HTG' ? 'HTG' : 'USD'}`
+                                                        : `Non payé · ${app.servicePrice || '—'} USD`
                                                     }
                                                 </span>
-
-                                                {app.transactionId && (
-                                                    <span className="text-[10px] text-black/40 dark:text-white/30 font-medium px-2 py-0.5 border border-black/5 dark:border-white/5 rounded-md bg-black/[0.02] dark:bg-white/[0.02] font-mono">
-                                                        TXID: {app.transactionId}
+                                                {app.createdAt && (
+                                                    <span className="text-[10px] text-black/30 dark:text-white/30">
+                                                        Reçue le {app.createdAt.toDate().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                     </span>
                                                 )}
-
-                                                <span className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest px-2 border-l border-black/10 dark:border-white/10 flex items-center gap-1">
-                                                    <span className="material-symbols-outlined text-xs">event_seat</span>
-                                                    {app.serviceName}
-                                                </span>
-
-                                                {/* Platform badge */}
-                                                <span className="ml-auto flex items-center gap-1 text-[10px] font-bold text-black/50 dark:text-white/40 bg-black/[0.03] dark:bg-white/[0.03] px-2 py-0.5 rounded border border-black/5 dark:border-white/5">
-                                                    <span className="material-symbols-outlined text-[12px]">{platform.icon}</span>
-                                                    <span>{platform.name}</span>
-                                                </span>
-                                            </div>
-
-                                            {/* 2. Structured Layout */}
-                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                                {/* Client Info Card */}
-                                                <div className="bg-black/[0.01] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-2xl p-4 flex gap-4">
-                                                    <div className={`size-12 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-inner ${styleClass}`}>
-                                                        {initials}
-                                                    </div>
-                                                    <div className="flex flex-col min-w-0">
-                                                        <div className="text-sm font-black text-primary dark:text-white truncate mb-1">
-                                                            {app.userName}
-                                                        </div>
-                                                        <div className="flex flex-col gap-1 text-xs text-black/60 dark:text-white/60">
-                                                            <span className="flex items-center gap-1">
-                                                                <span className="text-base">{country.flag}</span>
-                                                                <span className="font-semibold text-black/40 dark:text-white/40">Pays :</span> {country.name}
-                                                            </span>
-                                                            <span className="flex items-center gap-1">
-                                                                <span className="material-symbols-outlined text-xs text-black/30 dark:text-white/30">call</span>
-                                                                <span className="font-semibold text-black/40 dark:text-white/40">Tél :</span> {formatPhoneUX(app.userPhone)}
-                                                            </span>
-                                                            <span className="flex items-center gap-1 truncate">
-                                                                <span className="material-symbols-outlined text-xs text-black/30 dark:text-white/30">mail</span>
-                                                                <span className="font-semibold text-black/40 dark:text-white/40">Email :</span> {app.customerEmail}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Session Details Card */}
-                                                <div className="bg-black/[0.01] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-2xl p-4 flex flex-col justify-between gap-2.5">
-                                                    <div className="flex flex-col gap-1.5 text-xs">
-                                                        <div className="flex items-center gap-1 text-black/70 dark:text-white/70 pb-1 border-b border-black/5 dark:border-white/5">
-                                                            <span className="material-symbols-outlined text-sm text-black/30 dark:text-white/30">calendar_month</span>
-                                                            <span className="font-bold text-black/40 dark:text-white/40">Date :</span>
-                                                            <span className="capitalize font-semibold">{formatBookingDateUX(app.bookingDate)}</span>
-                                                            {app.bookingDate && app.bookingDate < todayStr && (
-                                                                <span className="ml-auto px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-red-500/10 text-red-600 border border-red-500/20 flex items-center gap-0.5">
-                                                                    <span className="material-symbols-outlined text-[10px]">warning</span>
-                                                                    Dépassée
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center gap-1 text-black/70 dark:text-white/70">
-                                                            <span className="material-symbols-outlined text-sm text-black/30 dark:text-white/30">schedule</span>
-                                                            <span className="font-bold text-black/40 dark:text-white/40">Horaire :</span>
-                                                            <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold">
-                                                                <span className="flex items-center gap-0.5">🇺🇸 {timeEST}</span>
-                                                                <span>•</span>
-                                                                <span className="flex items-center gap-0.5">🇰🇷 {format12h(kstTimeStr)}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="border-t border-black/5 dark:border-white/5 pt-2 flex flex-col gap-1 text-xs">
-                                                        {parsed.sujet || parsed.kategori ? (
-                                                            <>
-                                                                {parsed.sujet && (
-                                                                    <div className="flex items-start gap-1">
-                                                                        <span className="font-bold text-black/40 dark:text-white/40 whitespace-nowrap">Sujet :</span>
-                                                                        <span className="text-black/80 dark:text-white/80 font-medium">{parsed.sujet}</span>
-                                                                    </div>
-                                                                )}
-                                                                {parsed.kategori && (
-                                                                    <div className="flex items-start gap-1">
-                                                                        <span className="font-bold text-black/40 dark:text-white/40 whitespace-nowrap">Catégorie :</span>
-                                                                        <span className="text-black/80 dark:text-white/80 font-medium">{parsed.kategori}</span>
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        ) : (
-                                                            <div className="text-black/60 dark:text-white/60 italic leading-relaxed whitespace-pre-line">
-                                                                {app.message}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
+                                        {/* Row 2 — Info tiles */}
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                            <div className="bg-black/[0.02] dark:bg-white/[0.03] rounded-xl p-3 flex flex-col gap-0.5 border border-black/5 dark:border-white/5">
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-black/30 dark:text-white/30">Pays</span>
+                                                <span className="text-xs font-bold text-black/70 dark:text-white/70 flex items-center gap-1">
+                                                    <span>{country.flag}</span> <span className="truncate">{country.name}</span>
+                                                </span>
+                                            </div>
+                                            <div className="bg-black/[0.02] dark:bg-white/[0.03] rounded-xl p-3 flex flex-col gap-0.5 border border-black/5 dark:border-white/5">
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-black/30 dark:text-white/30">Téléphone</span>
+                                                <span className="text-xs font-bold text-black/70 dark:text-white/70 truncate">{formatPhoneUX(app.userPhone)}</span>
+                                            </div>
+                                            <div className={`rounded-xl p-3 flex flex-col gap-0.5 border ${
+                                                app.bookingDate && app.bookingDate < todayStr
+                                                    ? 'bg-red-500/5 border-red-400/30'
+                                                    : 'bg-black/[0.02] dark:bg-white/[0.03] border-black/5 dark:border-white/5'
+                                            }`}>
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-black/30 dark:text-white/30">Date RDV</span>
+                                                <span className="text-xs font-bold text-black/70 dark:text-white/70 capitalize flex items-center gap-1">
+                                                    <span className="truncate">{formatBookingDateUX(app.bookingDate)}</span>
+                                                    {app.bookingDate && app.bookingDate < todayStr && (
+                                                        <span className="material-symbols-outlined text-[11px] text-red-500 shrink-0">warning</span>
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <div className="bg-black/[0.02] dark:bg-white/[0.03] rounded-xl p-3 flex flex-col gap-0.5 border border-black/5 dark:border-white/5">
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-black/30 dark:text-white/30">Horaire</span>
+                                                <span className="font-mono text-sm font-bold text-primary dark:text-white leading-snug">
+                                                    🇺🇸 {timeEST}<br/>🇰🇷 {format12h(kstTimeStr)}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Row 3 — Footer chips */}
+                                        <div className="flex flex-wrap items-center gap-1.5 pt-3 border-t border-black/5 dark:border-white/5">
+                                            <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-black/50 dark:text-white/40 bg-black/[0.03] dark:bg-white/[0.03] border border-black/5 dark:border-white/5 px-2.5 py-1 rounded-lg">
+                                                <span className="material-symbols-outlined text-[12px]">event_seat</span>
+                                                {app.serviceName}
+                                            </span>
+                                            {parsed.kategori && (
+                                                <span className="text-[10px] text-black/50 dark:text-white/40 flex items-center gap-1 px-2.5 py-1 bg-black/[0.02] dark:bg-white/[0.02] rounded-lg border border-black/5 dark:border-white/5">
+                                                    <span className="material-symbols-outlined text-[12px]">label</span>
+                                                    {parsed.kategori}
+                                                </span>
+                                            )}
+                                            {app.transactionId && (
+                                                <span className="text-[10px] text-black/30 dark:text-white/30 font-mono px-2 py-1 border border-black/5 dark:border-white/5 rounded-lg bg-black/[0.02] dark:bg-white/[0.02]">
+                                                    TXID: {app.transactionId}
+                                                </span>
+                                            )}
+                                            {parsed.sujet && (
+                                                <span className="w-full text-[10px] text-black/60 dark:text-white/50 flex items-start gap-1.5 px-2.5 py-1.5 bg-black/[0.02] dark:bg-white/[0.02] rounded-lg border border-black/5 dark:border-white/5">
+                                                    <span className="material-symbols-outlined text-[12px] shrink-0 mt-px">subject</span>
+                                                    <span>{parsed.sujet}</span>
+                                                </span>
+                                            )}
+                                        </div>
+
+                                    </div>
                                 </div>
                             );
                         })

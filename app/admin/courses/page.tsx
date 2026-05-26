@@ -89,17 +89,16 @@ export default function CourseManagementPage() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b border-black/5 dark:border-white/10">
-                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Product Name</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Status</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Price</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Sales</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Nom du cours</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Statut</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">Prix</th>
                                 <th className="px-8 py-5 text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-black/5 dark:divide-white/5">
                             {courses.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="text-center py-10 opacity-50">Aucun cours trouvé.</td>
+                                    <td colSpan={4} className="text-center py-10 opacity-50">Aucun cours trouvé.</td>
                                 </tr>
                             ) : (
                                 courses.map((course) => (
@@ -128,34 +127,36 @@ export default function CourseManagementPage() {
                                             </div>
                                         </td>
                                         <td className="px-8 py-6">
-                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${course.statut === "Published"
+                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${(course.statut === "published" || course.statut === "Published")
                                                 ? "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400"
-                                                : "bg-black/5 dark:bg-white/5 text-black/50 dark:text-white/50"
+                                                : (course.statut === "archived" || course.statut === "Archived")
+                                                    ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                                                    : "bg-black/5 dark:bg-white/5 text-black/50 dark:text-white/50"
                                                 }`}>
-                                                {course.statut || "Draft"}
+                                                {(course.statut === "published" || course.statut === "Published")
+                                                    ? "Publié"
+                                                    : (course.statut === "archived" || course.statut === "Archived")
+                                                        ? "Archivé"
+                                                        : "Brouillon"}
                                             </span>
                                         </td>
                                         <td className="px-8 py-6">
                                             <p className="text-sm font-bold tracking-tight">${course.price}</p>
                                         </td>
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black">{course.sales || 0}</span>
-                                            </div>
-                                        </td>
+
                                         <td className="px-8 py-6">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Link href={`/admin/courses/${course.id}`} className="p-2 rounded-full border border-black/5 dark:border-white/10 hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-primary transition-all" title="Manage Content">
-                                                    <span className="material-symbols-outlined text-sm">visibility</span>
+                                                <Link href={`/admin/courses/${course.id}`} className="p-2 rounded-full border border-black/5 dark:border-white/10 hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-primary transition-all" title="Ajouter des leçons">
+                                                    <span className="material-symbols-outlined text-sm">playlist_add</span>
                                                 </Link>
                                                 <button
                                                     onClick={() => handleEdit(course)}
-                                                    className="p-2 rounded-full border border-black/5 dark:border-white/10 hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-primary transition-all" title="Edit Details">
+                                                    className="p-2 rounded-full border border-black/5 dark:border-white/10 hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-primary transition-all" title="Modifier le cours">
                                                     <span className="material-symbols-outlined text-sm">edit</span>
                                                 </button>
                                                 <button
                                                     onClick={() => course.id && setDeleteId(course.id)}
-                                                    className="p-2 rounded-full border border-black/5 dark:border-white/10 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all" title="Delete Course">
+                                                    className="p-2 rounded-full border border-black/5 dark:border-white/10 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all" title="Supprimer le cours">
                                                     <span className="material-symbols-outlined text-sm">delete</span>
                                                 </button>
                                             </div>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import DashboardHero from "@/components/DashboardHero";
-import FilterBar from "@/components/FilterBar";
 import { useAuth } from "@/context/AuthContext";
 import { getEnrollmentsByUser, incrementEnrollmentDownloadCount } from "@/lib/enrollments";
 import { Enrollment } from "@/lib/types";
@@ -16,7 +15,6 @@ import Link from "next/link";
 export default function Dashboard() {
     const { user } = useAuth();
     const router = useRouter();
-    const [activeFilter, setActiveFilter] = useState("Tout");
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -119,14 +117,7 @@ export default function Dashboard() {
         }
     };
 
-    // Filter Logic
-    const filteredEnrollments = enrollments.filter(item => {
-        if (activeFilter === "Tout") return true;
-        if (activeFilter === "Kou") return item.productType.toLowerCase().includes('course');
-        if (activeFilter === "Ebooks") return item.productType.toLowerCase().includes('ebook');
-        if (activeFilter === "Rezèvasyon") return !item.productType.toLowerCase().includes('course') && !item.productType.toLowerCase().includes('ebook');
-        return true;
-    });
+    const filteredEnrollments = enrollments;
 
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden bg-background-light dark:bg-background-dark text-primary dark:text-white">
@@ -134,7 +125,6 @@ export default function Dashboard() {
                 <main className="px-6 md:px-10 flex flex-1 justify-center py-10">
                     <div className="layout-content-container flex flex-col max-w-[1200px] flex-1">
                         <DashboardHero />
-                        <FilterBar activeFilter={activeFilter} onFilterChange={setActiveFilter} />
 
                         {/* Dynamic Grid */}
                         {loading ? (

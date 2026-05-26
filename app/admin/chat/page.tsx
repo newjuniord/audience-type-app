@@ -4,12 +4,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-    doc, setDoc, addDoc, collection, query, orderBy, onSnapshot, Timestamp, writeBatch, deleteDoc, getDocs
+    doc, setDoc, addDoc, collection, query, orderBy, onSnapshot, Timestamp, writeBatch, deleteDoc, getDocs, where, limit
 } from "firebase/firestore";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { uploadChatMedia, compressImage } from "@/lib/chatMedia";
 import UserEnrollmentsModal from "@/components/UserEnrollmentsModal";
 import GiftProductModal from "@/components/GiftProductModal";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 interface ChatThread {
     id: string; // userId
@@ -41,6 +43,11 @@ export default function AdminChatPage() {
     const [selectedThread, setSelectedThread] = useState<ChatThread | null>(null);
     const [isEnrollmentsOpen, setIsEnrollmentsOpen] = useState(false);
     const [isGiftOpen, setIsGiftOpen] = useState(false);
+    const [isEditUserOpen, setIsEditUserOpen] = useState(false);
+    const [editUserName, setEditUserName] = useState("");
+    const [editUserEmail, setEditUserEmail] = useState("");
+    const [editUserPhone, setEditUserPhone] = useState("");
+    const [isSavingUser, setIsSavingUser] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState("");
     const [sending, setSending] = useState(false);
@@ -251,6 +258,63 @@ export default function AdminChatPage() {
         }
     };
 
+    const handleUpdateUser = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedThread) return;
+        setIsSavingUser(true);
+        try {
+            const currentUserId = selectedThread.userId || selectedThread.id;
+            const usersRef = collection(db, "users");
+
+            // Check if email already exists
+            if (editUserEmail.trim() !== "") {
+                const emailQuery = query(usersRef, where("email", "==", editUserEmail.trim()), limit(1));
+                const emailSnap = await getDocs(emailQuery);
+                if (!emailSnap.empty && emailSnap.docs[0].id !== currentUserId) {
+                    setErrorMessage("Cette adresse email est déjà utilisée par un autre utilisateur.");
+                    setIsErrorModalOpen(true);
+                    setIsSavingUser(false);
+                    return;
+                }
+            }
+
+            // Check if phone already exists
+            if (editUserPhone.trim() !== "") {
+                const phoneQuery = query(usersRef, where("phone", "==", editUserPhone.trim()), limit(1));
+                const phoneSnap = await getDocs(phoneQuery);
+                if (!phoneSnap.empty && phoneSnap.docs[0].id !== currentUserId) {
+                    setErrorMessage("Ce numéro de téléphone est déjà utilisé par un autre utilisateur.");
+                    setIsErrorModalOpen(true);
+                    setIsSavingUser(false);
+                    return;
+                }
+            }
+
+            const threadDocRef = doc(db, "chats", selectedThread.id);
+            await setDoc(threadDocRef, {
+                userName: editUserName,
+                userEmail: editUserEmail,
+                userPhone: editUserPhone
+            }, { merge: true });
+            
+            // Also update in users collection
+            const userDocRef = doc(db, "users", selectedThread.userId || selectedThread.id);
+            await setDoc(userDocRef, {
+                displayName: editUserName,
+                email: editUserEmail,
+                phone: editUserPhone
+            }, { merge: true });
+
+            setIsEditUserOpen(false);
+        } catch(err) {
+            console.error("Error updating user:", err);
+            setErrorMessage("Erreur lors de la mise à jour des informations.");
+            setIsErrorModalOpen(true);
+        } finally {
+            setIsSavingUser(false);
+        }
+    };
+
     const formatTime = (timestamp: any) => {
         if (!timestamp) return "";
         const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -268,7 +332,7 @@ export default function AdminChatPage() {
     return (
         <div className="flex flex-col h-[calc(100vh-80px)]">
             <div className="mb-6">
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">Support Chat & Messenger</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900">Support Client & Messagerie</h1>
                 <p className="text-sm text-gray-500">Gérez les demandes d'assistance des étudiants en temps réel.</p>
             </div>
 
@@ -347,6 +411,19 @@ export default function AdminChatPage() {
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setEditUserName(selectedThread.userName || "");
+                                            setEditUserEmail(selectedThread.userEmail || "");
+                                            setEditUserPhone(selectedThread.userPhone || "");
+                                            setIsEditUserOpen(true);
+                                        }}
+                                        className="h-9 px-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all active:scale-95 border border-gray-200"
+                                        title="Modifier les infos"
+                                    >
+                                        <span className="material-symbols-outlined text-base">edit</span>
+                                        <span className="hidden sm:inline">Modifier</span>
+                                    </button>
                                     <button
                                         onClick={() => setIsEnrollmentsOpen(true)}
                                         className="h-9 px-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all active:scale-95 border border-gray-200"
@@ -489,6 +566,70 @@ export default function AdminChatPage() {
                             phone: selectedThread.userPhone
                         } as any}
                     />
+
+                    {isEditUserOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                            <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+                                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                                    <h3 className="text-lg font-bold text-gray-900">Modifier l'utilisateur</h3>
+                                    <button onClick={() => setIsEditUserOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500">
+                                        <span className="material-symbols-outlined text-lg">close</span>
+                                    </button>
+                                </div>
+                                <form onSubmit={handleUpdateUser} className="p-6 flex flex-col gap-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Nom Complet</label>
+                                        <input
+                                            type="text"
+                                            value={editUserName}
+                                            onChange={(e) => setEditUserName(e.target.value)}
+                                            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                            placeholder="Ex: Jean Dupont"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                                        <input
+                                            type="email"
+                                            value={editUserEmail}
+                                            onChange={(e) => setEditUserEmail(e.target.value)}
+                                            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                            placeholder="Ex: jean@mail.com"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Numéro de téléphone</label>
+                                        <PhoneInput
+                                            international
+                                            defaultCountry="HT"
+                                            value={editUserPhone}
+                                            onChange={(val) => setEditUserPhone(val || "")}
+                                            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all PhoneInput-custom"
+                                            placeholder="Ex: +1 849 000 0000"
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-end gap-3 mt-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEditUserOpen(false)}
+                                            className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all"
+                                        >
+                                            Annuler
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={isSavingUser}
+                                            className={`px-5 py-2.5 text-sm font-bold text-white bg-primary hover:bg-primary/95 rounded-xl transition-all shadow-sm shadow-primary/20 flex items-center gap-2 ${isSavingUser ? "opacity-50 cursor-not-allowed" : ""}`}
+                                        >
+                                            {isSavingUser && <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>}
+                                            Enregistrer
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
         </div>

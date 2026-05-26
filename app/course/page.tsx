@@ -7,7 +7,7 @@ export default function CoursePlayerPage() {
         <div className="bg-background-light dark:bg-background-dark text-primary dark:text-white transition-colors duration-200 min-h-screen">
             <CoursePlayerHeader />
 
-            <main className="max-w-4xl mx-auto px-6 py-8">
+            <main className="max-w-4xl mx-0 md:mx-auto px-[5px] md:px-6 py-8">
                 {/* Video Stage */}
                 <section className="w-full mb-10">
                     <div className="relative group aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">

@@ -14,8 +14,8 @@ export default function ReviewsPage() {
 
     // Filter States
     const [searchTerm, setSearchTerm] = useState("");
-    const [ratingFilter, setRatingFilter] = useState("All Ratings");
-    const [visibilityFilter, setVisibilityFilter] = useState("All Visibility");
+    const [ratingFilter, setRatingFilter] = useState("Toutes les notes");
+    const [visibilityFilter, setVisibilityFilter] = useState("Toutes les visibilités");
 
     // Action States
     const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
@@ -55,11 +55,11 @@ export default function ReviewsPage() {
             (review.productTitle?.toLowerCase() || "").includes(searchTerm.toLowerCase())
         );
 
-        const matchesRating = ratingFilter === "All Ratings" || review.rating === parseInt(ratingFilter.charAt(0));
+        const matchesRating = ratingFilter === "Toutes les notes" || review.rating === parseInt(ratingFilter.charAt(0));
 
-        const matchesVisibility = visibilityFilter === "All Visibility"
+        const matchesVisibility = visibilityFilter === "Toutes les visibilités"
             ? true
-            : visibilityFilter === "Visible Only"
+            : visibilityFilter === "Visible uniquement"
                 ? review.isVisible
                 : !review.isVisible;
 
@@ -123,8 +123,8 @@ export default function ReviewsPage() {
             <header className="flex flex-col mb-8">
                 <div className="flex justify-between items-end mb-6">
                     <div>
-                        <h2 className="text-3xl font-black text-slate-900 dark:text-white leading-tight">Product Reviews</h2>
-                        <p className="text-slate-500 dark:text-slate-400 mt-1">Manage and moderate customer feedback across all products.</p>
+                        <h2 className="text-3xl font-black text-slate-900 dark:text-white leading-tight">Avis Produits</h2>
+                        <p className="text-slate-500 dark:text-slate-400 mt-1">Gérez et modérez les avis clients sur l'ensemble de vos produits.</p>
                     </div>
                 </div>
             </header>
@@ -139,7 +139,7 @@ export default function ReviewsPage() {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-lg text-sm focus:ring-primary focus:border-primary transition-all outline-none"
-                            placeholder="Search by user or product name..."
+                            placeholder="Rechercher par utilisateur ou produit..."
                             type="text"
                         />
                     </div>
@@ -149,27 +149,27 @@ export default function ReviewsPage() {
                             onChange={(e) => setRatingFilter(e.target.value)}
                             className="text-sm bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-lg py-2 pl-3 pr-8 focus:ring-primary outline-none"
                         >
-                            <option>All Ratings</option>
-                            <option>5 Stars</option>
-                            <option>4 Stars</option>
-                            <option>3 Stars</option>
-                            <option>2 Stars</option>
-                            <option>1 Star</option>
+                            <option>Toutes les notes</option>
+                            <option>5 Étoiles</option>
+                            <option>4 Étoiles</option>
+                            <option>3 Étoiles</option>
+                            <option>2 Étoiles</option>
+                            <option>1 Étoile</option>
                         </select>
                         <select
                             value={visibilityFilter}
                             onChange={(e) => setVisibilityFilter(e.target.value)}
                             className="text-sm bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-lg py-2 pl-3 pr-8 focus:ring-primary outline-none"
                         >
-                            <option>All Visibility</option>
-                            <option>Visible Only</option>
-                            <option>Hidden Only</option>
+                            <option>Toutes les visibilités</option>
+                            <option>Visible uniquement</option>
+                            <option>Masqué uniquement</option>
                         </select>
                         <button
-                            onClick={() => { setSearchTerm(""); setRatingFilter("All Ratings"); setVisibilityFilter("All Visibility"); }}
+                            onClick={() => { setSearchTerm(""); setRatingFilter("Toutes les notes"); setVisibilityFilter("Toutes les visibilités"); }}
                             className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 transition-opacity"
                         >
-                            Reset
+                            Réinitialiser
                         </button>
                     </div>
                 </div>
@@ -179,24 +179,24 @@ export default function ReviewsPage() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-white/40 text-[10px] font-bold uppercase tracking-wider">
-                                <th className="px-6 py-4">User Name</th>
-                                <th className="px-6 py-4">Rating</th>
-                                <th className="px-6 py-4">Product Title</th>
-                                <th className="px-6 py-4">Comment</th>
-                                <th className="px-6 py-4">Date Created</th>
-                                <th className="px-6 py-4">IsVisible</th>
+                                <th className="px-6 py-4">Nom d'utilisateur</th>
+                                <th className="px-6 py-4">Note</th>
+                                <th className="px-6 py-4">Titre du produit</th>
+                                <th className="px-6 py-4">Commentaire</th>
+                                <th className="px-6 py-4">Date de création</th>
+                                <th className="px-6 py-4">Visibilité</th>
                                 <th className="px-6 py-4 text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400">Loading reviews...</td>
-                                </tr>
-                            ) : filteredReviews.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400">No reviews found matching {searchTerm || "filters"}.</td>
-                                </tr>
+                             {loading ? (
+                                 <tr>
+                                     <td colSpan={7} className="px-6 py-12 text-center text-slate-400">Chargement des avis...</td>
+                                 </tr>
+                             ) : filteredReviews.length === 0 ? (
+                                 <tr>
+                                     <td colSpan={7} className="px-6 py-12 text-center text-slate-400">Aucun avis trouvé correspondant à {searchTerm || "aux filtres"}.</td>
+                                 </tr>
                             ) : (
                                 paginatedReviews.map((review) => (
                                     <tr
@@ -205,7 +205,7 @@ export default function ReviewsPage() {
                                         className="hover:bg-primary/5 dark:hover:bg-white/5 transition-colors cursor-pointer group"
                                     >
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center gap-3"><span className="text-sm font-bold">{review.userName || "Anonymous"}</span></div>
+                                            <div className="flex items-center gap-3"><span className="text-sm font-bold">{review.userName || "Anonyme"}</span></div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex text-primary gap-0.5">
@@ -222,14 +222,14 @@ export default function ReviewsPage() {
                                             <span className="text-[10px] text-slate-400 font-medium">{review.rating}/5</span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-sm font-semibold">{review.productTitle || "Unknown Product"}</span>
+                                            <span className="text-sm font-semibold">{review.productTitle || "Produit inconnu"}</span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-1 max-w-[200px]">{review.comment}</p>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-medium">
                                             {review.createdAt && typeof review.createdAt.toDate === 'function'
-                                                ? format(review.createdAt.toDate(), "MMM d, yyyy")
+                                                ? format(review.createdAt.toDate(), "d MMM yyyy")
                                                 : "-"}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -247,7 +247,7 @@ export default function ReviewsPage() {
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); review.id && setReviewToDelete(review.id); }}
                                                 className="p-1 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
-                                                title="Delete"
+                                                title="Supprimer"
                                             >
                                                 <span className="material-symbols-outlined text-lg">delete</span>
                                             </button>
@@ -261,7 +261,7 @@ export default function ReviewsPage() {
                 {/* Pagination Footer */}
                 <div className="p-4 bg-slate-50 dark:bg-white/5 border-t border-slate-100 dark:border-white/10 flex items-center justify-between mt-auto">
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        Showing {filteredReviews.length} reviews
+                        Affichage de {filteredReviews.length} avis
                     </span>
                     <div className="flex gap-2">
                         <button
@@ -269,7 +269,7 @@ export default function ReviewsPage() {
                             disabled={currentPage === 1}
                             className="px-3 py-1.5 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold hover:bg-white dark:hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Previous
+                            Précédent
                         </button>
                         <div className="flex items-center gap-1">
                             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -300,7 +300,7 @@ export default function ReviewsPage() {
                             disabled={currentPage === totalPages || totalPages === 0}
                             className="px-3 py-1.5 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold hover:bg-white dark:hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Next
+                            Suivant
                         </button>
                     </div>
                 </div>
@@ -314,7 +314,7 @@ export default function ReviewsPage() {
                 ></div>
                 <div className={`absolute inset-y-0 right-0 max-w-md w-full bg-white dark:bg-background-dark shadow-2xl transform transition-transform duration-300 border-l border-slate-200 dark:border-white/10 flex flex-col ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="p-6 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
-                        <h3 className="text-xl font-bold">Review Details</h3>
+                        <h3 className="text-xl font-bold">Détails de l'avis</h3>
                         <button onClick={closeDrawer} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full transition-colors">
                             <span className="material-symbols-outlined">close</span>
                         </button>
@@ -322,15 +322,15 @@ export default function ReviewsPage() {
                     {selectedReview && (
                         <div className="flex-1 overflow-y-auto p-6 space-y-8">
                             <section>
-                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">User Name</p>
-                                <p className="text-lg font-bold">{selectedReview.userName || "Anonymous"}</p>
+                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Nom de l'utilisateur</p>
+                                <p className="text-lg font-bold">{selectedReview.userName || "Anonyme"}</p>
                             </section>
                             <section>
-                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Product Title</p>
-                                <p className="font-semibold">{selectedReview.productTitle || "Unknown Product"}</p>
+                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Titre du produit</p>
+                                <p className="font-semibold">{selectedReview.productTitle || "Produit inconnu"}</p>
                             </section>
                             <section>
-                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Rating</p>
+                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Note</p>
                                 <div className="flex items-center gap-2">
                                     <div className="flex text-primary gap-0.5">
                                         {[1, 2, 3, 4, 5].map((star) => (
@@ -347,30 +347,30 @@ export default function ReviewsPage() {
                                 </div>
                             </section>
                             <section>
-                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Date Created</p>
+                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Date de création</p>
                                 <p className="text-slate-600 dark:text-slate-400">
                                     {selectedReview.createdAt && typeof selectedReview.createdAt.toDate === 'function'
-                                        ? format(selectedReview.createdAt.toDate(), "MMMM d, yyyy 'at' p")
+                                        ? format(selectedReview.createdAt.toDate(), "d MMMM yyyy 'à' HH:mm")
                                         : "-"}
                                 </p>
                             </section>
                             <section>
-                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Full Comment</p>
+                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Commentaire complet</p>
                                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-white/5 p-4 rounded-lg whitespace-pre-wrap">
                                     {selectedReview.comment}
                                 </p>
                             </section>
                             <section>
-                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Visibility</p>
+                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Visibilité</p>
                                 <div className="flex items-center gap-2">
                                     <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${selectedReview.isVisible ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                                        {selectedReview.isVisible ? "Visible" : "Hidden"}
+                                        {selectedReview.isVisible ? "Visible" : "Masqué"}
                                     </span>
                                     <button
                                         onClick={() => handleToggleVisibility(selectedReview)}
                                         className="text-primary text-xs font-bold hover:underline"
                                     >
-                                        Toggle Visibility
+                                        Basculer la visibilité
                                     </button>
                                 </div>
                             </section>
@@ -382,9 +382,9 @@ export default function ReviewsPage() {
                 isOpen={!!reviewToDelete}
                 onClose={() => !isDeleting && setReviewToDelete(null)}
                 onConfirm={confirmDelete}
-                title="Delete Review?"
-                message="Are you sure you want to delete this review? This action cannot be undone."
-                confirmText="Delete"
+                title="Supprimer l'avis ?"
+                message="Êtes-vous sûr de vouloir supprimer cet avis ? Cette action est irréversible."
+                confirmText="Supprimer"
                 isDanger={true}
                 isLoading={isDeleting}
             />

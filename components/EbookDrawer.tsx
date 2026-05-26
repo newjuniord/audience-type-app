@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Ebook } from "@/lib/types";
+import ConfirmModal from "./ui/ConfirmModal";
 
 interface EbookDrawerProps {
     isOpen: boolean;
@@ -13,6 +14,7 @@ interface EbookDrawerProps {
 export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: EbookDrawerProps) {
     const [isVisible, setIsVisible] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [showPublishConfirm, setShowPublishConfirm] = useState(false);
 
     // Form States
     const [title, setTitle] = useState("");
@@ -24,8 +26,7 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
     const [status, setStatus] = useState("draft");
     const [includedItems, setIncludedItems] = useState<string[]>([]);
     const [fileUrl, setFileUrl] = useState("");
-    const [isInvitationOnly, setIsInvitationOnly] = useState(false);
-    const [invitationCode, setInvitationCode] = useState("");
+
 
     // Reset or Populate form when drawer opens/closes or data changes
     useEffect(() => {
@@ -44,8 +45,7 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                 setStatus(initialData.status);
                 setIncludedItems(initialData.includedItems || []);
                 setFileUrl(initialData.fileUrl);
-                setIsInvitationOnly(initialData.isInvitationOnly || false);
-                setInvitationCode(initialData.invitationCode || "");
+                setFileUrl(initialData.fileUrl);
             } else {
                 // Create Mode (Reset)
                 setTitle("");
@@ -57,8 +57,7 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                 setStatus("draft");
                 setIncludedItems(["Digital PDF"]);
                 setFileUrl("");
-                setIsInvitationOnly(false);
-                setInvitationCode("");
+                setFileUrl("");
             }
         } else {
             const timer = setTimeout(() => setIsVisible(false), 700);
@@ -82,8 +81,6 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                 status,
                 includedItems,
                 fileUrl,
-                isInvitationOnly,
-                invitationCode: isInvitationOnly ? invitationCode : "",
                 sales: initialData ? initialData.sales : 0, // Preserve sales if editing
             });
             onClose();
@@ -214,7 +211,11 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                             <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest">Statut</label>
                             <div className="flex bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl p-1 h-14">
                                 <button
-                                    onClick={() => setStatus('published')}
+                                    onClick={() => {
+                                        if (status !== 'published') {
+                                            setShowPublishConfirm(true);
+                                        }
+                                    }}
                                     className={`flex-1 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${status === 'published' ? 'bg-primary text-white shadow-md' : 'text-black/40 dark:text-white/40 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 >
                                     Publié
@@ -244,36 +245,7 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                             ></textarea>
                         </div>
 
-                        <div className="pt-4 border-t border-black/5 dark:border-white/5 space-y-4">
-                            <div className="flex items-center justify-between p-4 bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl">
-                                <div>
-                                    <p className="text-sm font-bold">Sur invitation uniquement</p>
-                                    <p className="text-[10px] text-black/40 dark:text-white/40 uppercase tracking-widest mt-1">Nécessite un code pour l'accès</p>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only peer" 
-                                        checked={isInvitationOnly}
-                                        onChange={(e) => setIsInvitationOnly(e.target.checked)}
-                                    />
-                                    <div className="w-11 h-6 bg-black/10 peer-focus:outline-none rounded-full peer dark:bg-white/10 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                                </label>
-                            </div>
 
-                            {isInvitationOnly && (
-                                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest ml-1">Code d'invitation</label>
-                                    <input
-                                        value={invitationCode}
-                                        onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
-                                        className="w-full h-14 px-6 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border-none focus:ring-2 focus:ring-primary/10 dark:focus:ring-white/10 transition-all outline-none text-sm font-medium"
-                                        placeholder="ex: VIP2024"
-                                        type="text"
-                                    />
-                                </div>
-                            )}
-                        </div>
 
                         <div className="space-y-2">
                             <label className="block text-[10px] font-black uppercase text-black/40 dark:text-white/40 tracking-widest">Lien du Fichier (facultatif)</label>
@@ -350,6 +322,19 @@ export default function EbookDrawer({ isOpen, onClose, initialData, onSave }: Eb
                     </button>
                 </div>
             </div >
+
+            <ConfirmModal
+                isOpen={showPublishConfirm}
+                onClose={() => setShowPublishConfirm(false)}
+                onConfirm={() => {
+                    setStatus('published');
+                    setShowPublishConfirm(false);
+                }}
+                title="Confirmer la publication"
+                message="Êtes-vous sûr de vouloir publier cet ebook ? Il sera disponible à l'achat."
+                confirmText="Publier"
+                cancelText="Annuler"
+            />
         </div >
     );
 }

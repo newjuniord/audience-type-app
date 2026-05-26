@@ -91,11 +91,10 @@ export default function EbooksManagementPage() {
             </div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
                 {[
                     { label: "Total Ebooks", value: ebooks.length.toString(), icon: "book" },
                     { label: "Ventes Totales", value: ebooks.reduce((acc, curr) => acc + (curr.sales || 0), 0).toString(), icon: "shopping_cart" },
-                    { label: "Revenu Est.", value: "$" + ebooks.reduce((acc, curr) => acc + ((curr.sales || 0) * (curr.price || 0)), 0).toLocaleString(), icon: "payments" },
                 ].map((stat, i) => (
                     <div key={i} className="bg-white dark:bg-black/20 border border-black/5 dark:border-white/10 p-6 rounded-3xl group hover:border-black/20 dark:hover:border-white/20 transition-all">
                         <div className="flex items-center gap-4">
@@ -143,9 +142,18 @@ export default function EbooksManagementPage() {
                                         <span className="material-symbols-outlined">delete</span>
                                     </button>
                                 </div>
-                                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${ebook.status === 'published' ? 'bg-green-500 text-white' : 'bg-black/40 text-white backdrop-blur-md'
+                                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                    ebook.status === 'published' 
+                                        ? 'bg-green-500 text-white' 
+                                        : ebook.status === 'archived'
+                                            ? 'bg-red-500 text-white'
+                                            : 'bg-black/40 text-white backdrop-blur-md'
                                     }`}>
-                                    {ebook.status === 'published' ? 'Publié' : 'Brouillon'}
+                                    {ebook.status === 'published' 
+                                        ? 'Publié' 
+                                        : ebook.status === 'archived'
+                                            ? 'Archivé'
+                                            : 'Brouillon'}
                                 </div>
                             </div>
                             <div>

@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
 export default function StoragePage() {
-    const [filter, setFilter] = useState("All Files");
+    const [filter, setFilter] = useState("Tous les fichiers");
     const [assets, setAssets] = useState<StorageAsset[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -38,9 +38,9 @@ export default function StoragePage() {
 
     // Filter Logic
     const filteredAssets = assets.filter(asset => {
-        if (filter === "All Files") return true;
+        if (filter === "Tous les fichiers") return true;
         if (filter === "Images") return asset.contentType.startsWith("image/");
-        if (filter === "Videos") return asset.contentType.startsWith("video/");
+        if (filter === "Vidéos") return asset.contentType.startsWith("video/");
         if (filter === "Documents") return asset.contentType.includes("pdf") || asset.contentType.includes("doc") || asset.contentType.includes("txt");
         if (filter === "Archives") return asset.contentType.includes("zip") || asset.contentType.includes("rar") || asset.contentType.includes("compressed");
         return true;
@@ -105,7 +105,7 @@ export default function StoragePage() {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tighter text-black dark:text-white">Storage Manager</h2>
+                    <h2 className="text-4xl font-black tracking-tighter text-black dark:text-white">Gestionnaire de Stockage</h2>
                     <p className="text-black/60 dark:text-white/60 mt-2">Gérez vos fichiers et assets cloud.</p>
                 </div>
                 <div className="flex gap-4">
@@ -119,7 +119,7 @@ export default function StoragePage() {
                         ) : (
                             <span className="material-symbols-outlined text-[20px]">upload</span>
                         )}
-                        {uploading ? "Uploading..." : "Upload New File"}
+                        {uploading ? "Importation..." : "Importer un fichier"}
                     </button>
                 </div>
             </div>
@@ -128,7 +128,7 @@ export default function StoragePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 <div className="bg-white dark:bg-white/5 p-6 rounded-xl border border-black/5 dark:border-white/5 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
-                        <span className="text-black/40 dark:text-white/40 font-bold text-xs uppercase tracking-widest">Total Files</span>
+                        <span className="text-black/40 dark:text-white/40 font-bold text-xs uppercase tracking-widest">Total Fichiers</span>
                         <span className="material-symbols-outlined text-black/20 dark:text-white/20">description</span>
                     </div>
                     <div className="flex items-baseline gap-2">
@@ -137,7 +137,7 @@ export default function StoragePage() {
                 </div>
                 <div className="bg-white dark:bg-white/5 p-6 rounded-xl border border-black/5 dark:border-white/5 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
-                        <span className="text-black/40 dark:text-white/40 font-bold text-xs uppercase tracking-widest">Storage Used</span>
+                        <span className="text-black/40 dark:text-white/40 font-bold text-xs uppercase tracking-widest">Espace Utilisé</span>
                         <span className="material-symbols-outlined text-black/20 dark:text-white/20">cloud_done</span>
                     </div>
                     <div className="flex items-baseline gap-2">
@@ -146,7 +146,7 @@ export default function StoragePage() {
                 </div>
                 <div className="bg-white dark:bg-white/5 p-6 rounded-xl border border-black/5 dark:border-white/5 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
-                        <span className="text-black/40 dark:text-white/40 font-bold text-xs uppercase tracking-widest">Avg Size</span>
+                        <span className="text-black/40 dark:text-white/40 font-bold text-xs uppercase tracking-widest">Taille Moyenne</span>
                         <span className="material-symbols-outlined text-black/20 dark:text-white/20">straighten</span>
                     </div>
                     <div className="flex items-baseline gap-2">
@@ -157,7 +157,7 @@ export default function StoragePage() {
 
             {/* Filters */}
             <div className="flex overflow-x-auto gap-2 pb-6 no-scrollbar mb-6">
-                {["All Files", "Images", "Videos", "Documents", "Archives"].map((f) => (
+                {["Tous les fichiers", "Images", "Vidéos", "Documents", "Archives"].map((f) => (
                     <button
                         key={f}
                         onClick={() => setFilter(f)}
