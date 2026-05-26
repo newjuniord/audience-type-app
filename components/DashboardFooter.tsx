@@ -38,6 +38,7 @@ export default function DashboardFooter() {
                             <Link href="/login" className="block text-sm text-white/50 hover:text-white transition-colors">Koneksyon</Link>
                             <Link href="/dashboard/profile" className="block text-sm text-white/50 hover:text-white transition-colors">Pwofil</Link>
                             <Link href="/dashboard/transactions" className="block text-sm text-white/50 hover:text-white transition-colors">Tranzaksyon</Link>
+                            <Link href="/dashboard/consultations" className="block text-sm text-white/50 hover:text-white transition-colors">Konsiltasyon</Link>
                         </div>
                         <div className="space-y-3">
                             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Legal</p>

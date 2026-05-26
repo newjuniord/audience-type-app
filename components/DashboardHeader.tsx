@@ -181,6 +181,14 @@ export default function DashboardHeader() {
                         Tranzaksyon
                     </Link>
                     <Link
+                        href="/dashboard/consultations"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all text-sm font-semibold text-white/80 hover:text-white group"
+                    >
+                        <span className="material-symbols-outlined text-base notranslate text-white/40 group-hover:text-white transition-colors">calendar_month</span>
+                        Istwa Konsiltasyon
+                    </Link>
+                    <Link
                         href="/dashboard/profile"
                         onClick={() => setIsDropdownOpen(false)}
                         className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all text-sm font-semibold text-white/80 hover:text-white group"
