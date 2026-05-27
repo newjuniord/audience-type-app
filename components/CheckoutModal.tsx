@@ -702,7 +702,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                       </div>
                       <h3 className="font-bold text-base text-white">Byenvini !</h3>
                       <p className="text-xs text-white/50 max-w-xs leading-relaxed mt-1">
-                          Nou pa jwenn kont pou nimewo sa a. Tanpri antre non w pou nou ka kreye kont ou a.
+                          Nou pa jwenn kont pou {contactMethod === 'email' ? 'imel' : 'nimewo'} sa a. Tanpri antre non w pou nou ka kreye kont ou a.
                       </p>
                   </div>
 

@@ -615,12 +615,12 @@ export default function LoginPage() {
                         ) : step === 'name' ? (
                             <div className="flex flex-col gap-4 py-5 px-4 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
                                 <div className="flex flex-col items-center text-center mb-2">
-                                    <div className="size-12 rounded-full bg-primary/15 flex items-center justify-center mb-3 text-primary">
+                                    <div className="size-12 rounded-full bg-orange-500/10 flex items-center justify-center mb-3 text-orange-400">
                                         <span className="material-symbols-outlined notranslate text-2xl">person</span>
                                     </div>
                                     <h3 className="font-bold text-base text-white">Byenvini !</h3>
                                     <p className="text-xs text-white/50 max-w-xs leading-relaxed mt-1">
-                                        Nou pa jwenn kont pou nimewo sa a. Tanpri antre non w pou nou ka kreye kont ou a.
+                                        Nou pa jwenn kont pou {loginMethod === 'password' ? 'imel' : 'nimewo'} sa a. Tanpri antre non w pou nou ka kreye kont ou a.
                                     </p>
                                 </div>
 
@@ -639,7 +639,7 @@ export default function LoginPage() {
                                             value={fullName}
                                             onChange={(e) => setFullName(e.target.value)}
                                             placeholder="Eg: Jean Dupont"
-                                            className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm font-medium text-white placeholder:text-white/20"
+                                            className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all text-sm font-medium bg-transparent text-white"
                                             required
                                             autoFocus
                                         />
@@ -648,9 +648,11 @@ export default function LoginPage() {
                                     <button
                                         type="submit"
                                         disabled={isLoading || fullName.trim().length < 2}
-                                        className="w-full py-3 mt-2 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                                        className="w-full py-3 mt-2 bg-gradient-to-r from-amber-400 to-orange-500 text-black rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50 disabled:pointer-events-none"
                                     >
-                                        Kontinye
+                                        {isLoading ? (
+                                            <div className="size-5 mx-auto border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
+                                        ) : "Kontinye"}
                                     </button>
 
                                     <div className="flex justify-center mt-2 px-1 text-xs">
