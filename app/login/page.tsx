@@ -663,14 +663,12 @@ export default function LoginPage() {
                                         const labels = {
                                             whatsapp: 'WhatsApp',
                                             phone: 'SMS',
-                                            email: 'Kòd',
-                                            password: 'Modpas'
+                                            password: 'Imel'
                                         };
                                         const icons = {
                                             whatsapp: 'chat',
                                             phone: 'sms',
-                                            email: 'mail',
-                                            password: 'lock'
+                                            password: 'mail'
                                         };
                                         const isActive = loginMethod === method;
                                         return (
