@@ -309,9 +309,6 @@ export default function ConsultationBookingModal({
 
     const renderStep0 = () => (
         <div className="animate-in fade-in slide-in-from-right-4 duration-300 pt-2">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-6 shadow-inner">
-                <span className="material-symbols-outlined text-3xl text-primary">handshake</span>
-            </div>
             <h3 className="text-2xl font-black uppercase tracking-tight mb-2 text-white">{service?.title || "Konsiltasyon Prive"}</h3>
             <p className="text-sm text-white/60 leading-relaxed mb-6">
                 Ou vle pale avè m dirèkteman pou nou ranje biznis ou, kreye yon plan pou kontni w oswa ede w avanse ?
