@@ -323,7 +323,7 @@ export default function ConsultationBookingModal({
                 </div>
                 <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
                     <span className="material-symbols-outlined text-emerald-400">video_camera_front</span>
-                    <span className="text-sm font-bold text-white">Apèl / Videyo (Meet, Zoom, WhatsApp...)</span>
+                    <span className="text-sm font-bold text-white">Apèl / Videyo (Zoom, WhatsApp...)</span>
                 </div>
                 <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
                     <span className="material-symbols-outlined text-emerald-400">monetization_on</span>
