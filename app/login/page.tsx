@@ -761,19 +761,7 @@ export default function LoginPage() {
                                             )}
                                         </button>
 
-                                        <div className="text-center">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setIsLoginView(!isLoginView);
-                                                    setError(null);
-                                                    setMessage(null);
-                                                }}
-                                                className="text-sm text-white/40 hover:text-white transition-colors"
-                                            >
-                                                {isLoginView ? "Ou pa gen kont? Kreye yon kont" : "Ou gen yon kont deja? Konekte"}
-                                            </button>
-                                        </div>
+
                                     </form>
                                 ) : (
                                     <form onSubmit={handlePasswordlessSubmit} className="flex flex-col gap-4 py-5 px-4 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
