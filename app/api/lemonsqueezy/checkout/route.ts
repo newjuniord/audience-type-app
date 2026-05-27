@@ -117,14 +117,10 @@ export async function POST(req: Request) {
             }
         };
 
+        // Lemon Squeezy Checkout API does not support 'customer' relationship directly.
+        // It associates the checkout to a customer based on the email address used.
         if (lemonSqueezyCustomerId) {
-            console.log(`🔗 [CHECKOUT] Linking checkout to existing customer ID: ${lemonSqueezyCustomerId}`);
-            relationships.customer = {
-                data: {
-                    type: "customers",
-                    id: lemonSqueezyCustomerId.toString()
-                }
-            };
+            console.log(`🔗 [CHECKOUT] User has existing customer ID: ${lemonSqueezyCustomerId}, but it's not supported in checkout relationships.`);
         }
 
         const checkoutData: any = {
