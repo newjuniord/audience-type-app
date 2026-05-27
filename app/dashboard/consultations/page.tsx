@@ -142,6 +142,16 @@ export default function ConsultationsHistoryPage() {
                 )}
             </div>
 
+            {/* ── Tabs ── */}
+            <div className="flex items-center gap-2 mb-8">
+                <Link href="/dashboard/transactions" className="px-5 py-2.5 bg-black/5 dark:bg-white/5 text-black/50 dark:text-white/50 hover:bg-black/10 dark:hover:bg-white/10 hover:text-black dark:hover:text-white rounded-full text-xs font-bold uppercase tracking-widest transition-colors">
+                    Tranzaksyon
+                </Link>
+                <Link href="/dashboard/consultations" className="px-5 py-2.5 bg-primary text-white rounded-full text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20">
+                    Istwa Konsiltasyon
+                </Link>
+            </div>
+
             {/* ── Search ── */}
             {!loading && bookings.length > 0 && (
                 <div className="mb-8">

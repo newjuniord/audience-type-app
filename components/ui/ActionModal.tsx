@@ -66,7 +66,7 @@ export function ActionModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-end lg:items-center justify-center p-0 lg:p-6 transition-colors duration-300 ${
+      className={`fixed inset-0 z-[9999] flex items-end lg:items-center justify-center p-0 lg:p-6 transition-colors duration-300 ${
         isClosing ? "bg-black/0 backdrop-blur-none" : "bg-black/70 backdrop-blur-sm"
       }`}
       onClick={(e) => e.target === e.currentTarget && handleClose()}

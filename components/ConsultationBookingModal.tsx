@@ -323,7 +323,7 @@ export default function ConsultationBookingModal({
                 </div>
                 <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
                     <span className="material-symbols-outlined text-emerald-400">video_camera_front</span>
-                    <span className="text-sm font-bold text-white">Apèl Videyo (Google Meet)</span>
+                    <span className="text-sm font-bold text-white">Apèl / Videyo (Meet, Zoom, WhatsApp...)</span>
                 </div>
                 <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
                     <span className="material-symbols-outlined text-emerald-400">monetization_on</span>
@@ -562,7 +562,7 @@ export default function ConsultationBookingModal({
                         { label: "Numéro", value: formData.phone, icon: "call" },
                         { label: "Peyi", value: selectedCountry ? `${selectedCountry.flag} ${selectedCountry.name}` : formData.pays, icon: "public" },
                         { label: "Dat", value: formData.date ? (() => { const [y, m, d] = formData.date.split("-").map(Number); return `${d} ${MONTHS_FR[m - 1]} ${y}`; })() : "", icon: "event" },
-                        { label: "Lè", value: selectedSlot !== null ? fmtUX(localSlots[selectedSlot].local) : "", icon: "schedule" },
+                        { label: "Lè", value: selectedSlot !== null ? (<>{fmtUX(localSlots[selectedSlot].local)} <span className="opacity-50 font-normal ml-1">- Lè peyi {selectedCountry?.name || ""}</span></>) : "", icon: "schedule" },
                         { label: "Sijè", value: formData.sujet, icon: "subject" },
                     ].map((row) => (
                         <li key={row.label} className="flex items-start gap-4">

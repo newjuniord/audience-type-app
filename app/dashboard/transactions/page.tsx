@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from "@/context/AuthContext";
 import { getOrdersByUser } from "@/lib/orders";
 import { Order } from "@/lib/types";
+import Link from "next/link";
 
 export default function TransactionsPage() {
     const { user } = useAuth();
@@ -136,6 +137,16 @@ export default function TransactionsPage() {
                     )}
                 </div>
 
+                {/* Tabs */}
+                <div className="flex items-center gap-2 mt-6">
+                    <Link href="/dashboard/transactions" className="px-5 py-2.5 bg-primary text-white rounded-full text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20">
+                        Tranzaksyon
+                    </Link>
+                    <Link href="/dashboard/consultations" className="px-5 py-2.5 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white rounded-full text-xs font-bold uppercase tracking-widest transition-colors">
+                        Istwa Konsiltasyon
+                    </Link>
+                </div>
+
                 {/* Search bar */}
                 <div className="py-6">
                     <div className="relative max-w-md">
@@ -151,106 +162,105 @@ export default function TransactionsPage() {
                 </div>
 
                 {/* Table */}
-                <div className="rounded-2xl border border-white/10 overflow-hidden">
-                    {/* Table header */}
-                    <div className="hidden md:grid grid-cols-[2fr_1.2fr_1fr_1fr_1fr_1fr] gap-4 px-6 py-4 bg-white/[0.02] border-b border-white/5">
-                        {["Pwodui", "ID Tranzaksyon", "Dat", "Tip", "Metòd", "Montan / Estati"].map((h) => (
-                            <p key={h} className="text-[10px] font-black uppercase tracking-widest text-white/30">{h}</p>
-                        ))}
-                    </div>
+                <div className="rounded-2xl border border-white/10 overflow-x-auto">
+                    <div className="min-w-[1000px]">
+                        {/* Table header */}
+                        <div className="grid grid-cols-[2.5fr_1.2fr_1fr_1fr_1.2fr_1fr] gap-4 px-6 py-4 bg-white/[0.02] border-b border-white/5">
+                            {["Pwodui", "ID Tranzaksyon", "Dat", "Tip", "Metòd", "Montan / Estati"].map((h) => (
+                                <p key={h} className="text-[10px] font-black uppercase tracking-widest text-white/30">{h}</p>
+                            ))}
+                        </div>
 
-                    {/* Rows */}
-                    <div className="divide-y divide-white/5">
-                        {loading ? (
-                            <div className="flex flex-col items-center justify-center py-24 gap-4">
-                                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                <p className="text-white/30 text-sm font-medium">Chajman...</p>
-                            </div>
-                        ) : paginatedOrders.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-24 gap-4">
-                                <div className="size-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-3xl text-white/20">receipt_long</span>
+                        {/* Rows */}
+                        <div className="divide-y divide-white/5">
+                            {loading ? (
+                                <div className="flex flex-col items-center justify-center py-24 gap-4">
+                                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                    <p className="text-white/30 text-sm font-medium">Chajman...</p>
                                 </div>
-                                <div className="text-center">
-                                    <p className="font-bold text-white">Okenn tranzaksyon</p>
-                                    <p className="text-white/40 text-sm mt-1">
-                                        {searchTerm ? "Okenn rezilta pou rechèch sa a." : "Ou poko fè okenn acha."}
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            paginatedOrders.map((order) => {
-                                const status = getStatusConfig(order.status, order.createdAt);
-                                return (
-                                    <div
-                                        key={order.id}
-                                        className="grid grid-cols-1 md:grid-cols-[2fr_1.2fr_1fr_1fr_1fr_1fr] gap-4 px-6 py-5 hover:bg-white/[0.02] transition-colors items-center"
-                                    >
-                                        {/* Product */}
-                                        <div className="flex items-center gap-3">
-                                            <div className="size-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                                                <span className="material-symbols-outlined text-primary text-[18px]">
-                                                    {getIconForType(order.productType || "")}
-                                                </span>
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-bold text-white truncate max-w-[180px]">{order.productTitle}</p>
-                                                <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-0.5 md:hidden">
-                                                    {formatDate(order.createdAt)}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Transaction ID */}
-                                        <button
-                                            onClick={() => {
-                                                if (!order.transactionId) return;
-                                                navigator.clipboard.writeText(order.transactionId);
-                                                setCopiedId(order.transactionId);
-                                                setTimeout(() => setCopiedId(null), 2000);
-                                            }}
-                                            className="relative flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors group/copy w-fit"
-                                            title="Klike pou kopye ID a"
-                                        >
-                                            <span className="font-mono text-xs">#{order.transactionId?.substring(0, 10)}…</span>
-                                            <span className="material-symbols-outlined text-[14px] opacity-0 group-hover/copy:opacity-100 transition-opacity">content_copy</span>
-                                            {copiedId === order.transactionId && (
-                                                <span className="absolute -top-7 left-0 bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap animate-in fade-in zoom-in">
-                                                    Kopye ✓
-                                                </span>
-                                            )}
-                                        </button>
-
-                                        {/* Date */}
-                                        <p className="text-sm text-white/50 hidden md:block">{formatDate(order.createdAt)}</p>
-
-                                        {/* Type */}
-                                        <div className="hidden md:block">
-                                            <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/60">
-                                                {getTypeLabel(order.productType || "")}
-                                            </span>
-                                        </div>
-
-                                        {/* Payment method */}
-                                        <p className="text-sm text-white/50 hidden md:flex items-center gap-1.5">
-                                            <span className="material-symbols-outlined text-[14px] text-white/30">credit_card</span>
-                                            <span className="capitalize">{order.paymentMethod || 'Kat'}</span>
-                                        </p>
-
-                                        {/* Amount + Status */}
-                                        <div className="flex flex-col gap-1.5 items-start md:items-end">
-                                            <p className="text-base font-black text-white">
-                                                {formatCurrency(order.amount, order.currency)}
-                                            </p>
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${status.bg} ${status.text}`}>
-                                                <span className={`size-1.5 rounded-full ${status.dot}`}></span>
-                                                {status.label}
-                                            </span>
-                                        </div>
+                            ) : paginatedOrders.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-24 gap-4">
+                                    <div className="size-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-3xl text-white/20">receipt_long</span>
                                     </div>
-                                );
-                            })
-                        )}
+                                    <div className="text-center">
+                                        <p className="font-bold text-white">Okenn tranzaksyon</p>
+                                        <p className="text-white/40 text-sm mt-1">
+                                            {searchTerm ? "Okenn rezilta pou rechèch sa a." : "Ou poko fè okenn acha."}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                paginatedOrders.map((order) => {
+                                    const status = getStatusConfig(order.status, order.createdAt);
+                                    return (
+                                        <div
+                                            key={order.id}
+                                            className="grid grid-cols-[2.5fr_1.2fr_1fr_1fr_1.2fr_1fr] gap-4 px-6 py-5 hover:bg-white/[0.02] transition-colors items-center"
+                                        >
+                                            {/* Product */}
+                                            <div className="flex items-center gap-3">
+                                                <div className="size-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                                                    <span className="material-symbols-outlined text-primary text-[18px]">
+                                                        {getIconForType(order.productType || "")}
+                                                    </span>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-bold text-white truncate">{order.productTitle}</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Transaction ID */}
+                                            <button
+                                                onClick={() => {
+                                                    if (!order.transactionId) return;
+                                                    navigator.clipboard.writeText(order.transactionId);
+                                                    setCopiedId(order.transactionId);
+                                                    setTimeout(() => setCopiedId(null), 2000);
+                                                }}
+                                                className="relative flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors group/copy w-fit"
+                                                title="Klike pou kopye ID a"
+                                            >
+                                                <span className="font-mono text-xs">#{order.transactionId?.substring(0, 10)}…</span>
+                                                <span className="material-symbols-outlined text-[14px] opacity-0 group-hover/copy:opacity-100 transition-opacity">content_copy</span>
+                                                {copiedId === order.transactionId && (
+                                                    <span className="absolute -top-7 left-0 bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap animate-in fade-in zoom-in">
+                                                        Kopye ✓
+                                                    </span>
+                                                )}
+                                            </button>
+
+                                            {/* Date */}
+                                            <p className="text-sm text-white/50">{formatDate(order.createdAt)}</p>
+
+                                            {/* Type */}
+                                            <div>
+                                                <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/60">
+                                                    {getTypeLabel(order.productType || "")}
+                                                </span>
+                                            </div>
+
+                                            {/* Payment method */}
+                                            <p className="text-sm text-white/50 flex items-center gap-1.5">
+                                                <span className="material-symbols-outlined text-[14px] text-white/30">credit_card</span>
+                                                <span className="capitalize">{order.paymentMethod || 'Kat'}</span>
+                                            </p>
+
+                                            {/* Amount + Status */}
+                                            <div className="flex flex-col gap-1.5 items-start">
+                                                <p className="text-base font-black text-white">
+                                                    {formatCurrency(order.amount, order.currency)}
+                                                </p>
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${status.bg} ${status.text}`}>
+                                                    <span className={`size-1.5 rounded-full ${status.dot}`}></span>
+                                                    {status.label}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
                     </div>
                 </div>
 
