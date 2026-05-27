@@ -302,7 +302,7 @@ export default function ConsultationBookingModal({
         setFormData(newData);
     };
 
-    const handleNext = () => setStep(s => Math.min(s + 1, 4));
+    const handleNext = () => setStep(s => Math.min(s + 1, 5));
     const handleBack = () => setStep(s => Math.max(s - 1, 0));
 
     // --- Steps UI ---
