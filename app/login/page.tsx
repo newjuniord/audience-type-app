@@ -744,6 +744,7 @@ export default function LoginPage() {
                                                     placeholder="••••••••"
                                                     required
                                                     minLength={isLoginView ? undefined : 6}
+                                                    maxLength={6}
                                                 />
                                                 <button
                                                     type="button"

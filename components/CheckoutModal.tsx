@@ -640,7 +640,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                           <label className="text-xs font-bold text-white/50 uppercase tracking-widest">Modpas</label>
                         </div>
                         <div className="relative">
-                          <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="w-full pl-4 pr-10 py-3.5 bg-white/5 border border-white/10 rounded-xl placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all text-sm bg-transparent text-white" />
+                          <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required maxLength={6} className="w-full pl-4 pr-10 py-3.5 bg-white/5 border border-white/10 rounded-xl placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all text-sm bg-transparent text-white" />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
