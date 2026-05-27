@@ -363,7 +363,7 @@ export default function ConsultationBookingModal({
                     <span className="material-symbols-outlined">arrow_back</span>
                 </button>
                 <button onClick={handleNext} disabled={!formData.nomPrenom || !formData.phone} className="flex-1 h-14 rounded-xl bg-primary text-white font-black uppercase text-sm tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
-                    Continue
+                    Kontinye
                 </button>
             </div>
         </div>
@@ -434,7 +434,7 @@ export default function ConsultationBookingModal({
                     <span className="material-symbols-outlined">arrow_back</span>
                 </button>
                 <button onClick={handleNext} disabled={!formData.pays || (formData.pays === 'usa' && !usZone) || !formData.kategori} className="flex-1 h-14 rounded-xl bg-primary text-white font-black uppercase text-sm tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
-                    Continue
+                    Kontinye
                 </button>
             </div>
         </div>
@@ -494,7 +494,7 @@ export default function ConsultationBookingModal({
                     <span className="material-symbols-outlined">arrow_back</span>
                 </button>
                 <button onClick={handleNext} disabled={!formData.date || selectedSlot === null} className="flex-1 h-14 rounded-xl bg-primary text-white font-black uppercase text-sm tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
-                    Continue
+                    Kontinye
                 </button>
             </div>
         </div>
@@ -518,7 +518,7 @@ export default function ConsultationBookingModal({
                     <span className="material-symbols-outlined">arrow_back</span>
                 </button>
                 <button onClick={handleNext} disabled={!formData.sujet.trim()} className="flex-1 h-14 rounded-xl bg-primary text-white font-black uppercase text-sm tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
-                    Continue
+                    Kontinye
                 </button>
             </div>
         </div>
@@ -619,7 +619,7 @@ export default function ConsultationBookingModal({
                     Konfime epi Peye
                 </button>
                 <button onClick={handleBack} className="w-full py-3 text-xs font-bold uppercase tracking-widest rounded-xl transition-colors text-white/50 hover:text-white hover:bg-white/5">
-                    Annuler (Tounen)
+                    Anile (Tounen)
                 </button>
             </div>
         </div>
