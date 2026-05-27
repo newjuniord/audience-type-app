@@ -292,7 +292,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
     setIsLoading(true);
     setError(null);
     try {
-      if (contactMethod === 'email' && usePassword) {
+      if (contactMethod === 'email') {
         if (!password) {
           throw new Error("Tanpri antre modpas ou.");
         }
@@ -627,24 +627,16 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ton@email.com" required autoFocus className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all text-sm bg-transparent text-white" />
                       </div>
 
-                      {usePassword ? (
-                        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-250">
-                          <div className="flex justify-between items-center">
-                            <label className="text-xs font-bold text-white/50 uppercase tracking-widest">Modpas</label>
-                            <button type="button" onClick={() => { setUsePassword(false); setPassword(''); setError(null); }} className="text-[11px] text-orange-400 hover:text-orange-300 font-bold transition-colors">Konekte san modpas</button>
-                          </div>
-                          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required={usePassword} className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all text-sm bg-transparent text-white" />
+                      <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-250">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs font-bold text-white/50 uppercase tracking-widest">Modpas</label>
                         </div>
-                      ) : (
-                        <div className="flex justify-between items-center pl-1">
-                          <p className="text-[11px] text-white/30">W ap resevwa yon kòd aksè nan e-mail ou.</p>
-                          <button type="button" onClick={() => { setUsePassword(true); setError(null); }} className="text-[11px] text-orange-400 hover:text-orange-300 font-bold transition-colors">Konekte ak modpas</button>
-                        </div>
-                      )}
+                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all text-sm bg-transparent text-white" />
+                      </div>
                     </div>
                   )}
 
-                  <button type="submit" disabled={isLoading || (contactMethod === 'email' ? (!email || (usePassword && !password)) : !phone)} className="w-full py-4 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-white font-black rounded-xl text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-orange-500/20 flex items-center justify-center">
+                  <button type="submit" disabled={isLoading || (contactMethod === 'email' ? (!email || !password) : !phone)} className="w-full py-4 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-white font-black rounded-xl text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-orange-500/20 flex items-center justify-center">
                     {isLoading ? <div className="size-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : "Kontinye →"}
                   </button>
                 </form>
