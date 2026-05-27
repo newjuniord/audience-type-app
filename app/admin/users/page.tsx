@@ -448,7 +448,8 @@ export default function UserManagementPage() {
                                                 <div>
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-sm font-bold">{user.displayName || (user as any).fullName || "Anonyme"}</p>
-                                                        {isUserOnline(user) ? (
+                                                        {/* INDICATOR DISABLED 
+                                                        isUserOnline(user) ? (
                                                             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                                                 <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none">En Ligne</span>
@@ -458,7 +459,8 @@ export default function UserManagementPage() {
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-black/20 dark:bg-white/20"></span>
                                                                 <span className="text-[9px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest leading-none">Hors Ligne</span>
                                                             </div>
-                                                        )}
+                                                        )
+                                                        */}
                                                     </div>
                                                     {user.email ? (
                                                         <p className="text-xs text-black/40 dark:text-white/40">{user.email}</p>
