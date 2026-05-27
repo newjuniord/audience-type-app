@@ -442,7 +442,7 @@ export default function ConsultationBookingModal({
 
     const renderStep3 = () => (
         <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6 pt-2">
-            <h3 className="text-xl font-black uppercase tracking-tight text-white mb-2">Planifikasyon & Sijè</h3>
+            <h3 className="text-xl font-black uppercase tracking-tight text-white mb-2">Planifikasyon</h3>
             
             <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-black tracking-widest uppercase text-white/50">Dat ou vle a *</label>
@@ -489,11 +489,26 @@ export default function ConsultationBookingModal({
                 )}
             </div>
 
+            <div className="pt-4 flex gap-3">
+                <button onClick={handleBack} className="w-14 h-14 shrink-0 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center hover:bg-white/10 transition-colors">
+                    <span className="material-symbols-outlined">arrow_back</span>
+                </button>
+                <button onClick={handleNext} disabled={!formData.date || selectedSlot === null} className="flex-1 h-14 rounded-xl bg-primary text-white font-black uppercase text-sm tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                    Continue
+                </button>
+            </div>
+        </div>
+    );
+
+    const renderStep4 = () => (
+        <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6 pt-2">
+            <h3 className="text-xl font-black uppercase tracking-tight text-white mb-2">Sijè konsiltasyon an</h3>
+            
             <div className="flex flex-col gap-2 relative z-40">
                 <label className="text-[10px] font-black tracking-widest uppercase text-white/50">Sijè an detay *</label>
                 <div className="relative">
                     <span className="material-symbols-outlined absolute left-4 top-3 text-white/40">edit_note</span>
-                    <textarea name="sujet" value={formData.sujet} onChange={handleChange} rows={3} placeholder="Ekri yon ti esplikasyon sou pwoblèm ou vle ranje a..."
+                    <textarea name="sujet" value={formData.sujet} onChange={handleChange} rows={5} placeholder="Ekri yon ti esplikasyon sou pwoblèm ou vle ranje a..."
                         className="w-full text-sm rounded-xl pl-12 pr-4 py-3 outline-none transition-all border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-primary placeholder:text-white/20 resize-none"></textarea>
                 </div>
             </div>
@@ -502,7 +517,7 @@ export default function ConsultationBookingModal({
                 <button onClick={handleBack} className="w-14 h-14 shrink-0 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center hover:bg-white/10 transition-colors">
                     <span className="material-symbols-outlined">arrow_back</span>
                 </button>
-                <button onClick={handleNext} disabled={!formData.date || selectedSlot === null || !formData.sujet} className="flex-1 h-14 rounded-xl bg-primary text-white font-black uppercase text-sm tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                <button onClick={handleNext} disabled={!formData.sujet.trim()} className="flex-1 h-14 rounded-xl bg-primary text-white font-black uppercase text-sm tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
                     Continue
                 </button>
             </div>
@@ -551,7 +566,7 @@ export default function ConsultationBookingModal({
         }
     };
 
-    const renderStep4 = () => (
+    const renderStep5 = () => (
         <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6 pt-2">
             <h3 className="text-xl font-black uppercase tracking-tight text-white mb-2">Verifye enfòmasyon w yo</h3>
             
@@ -621,7 +636,7 @@ export default function ConsultationBookingModal({
             >
                 {/* Stepper Indicators */}
                 <div className="flex gap-2 mb-8">
-                    {[0, 1, 2, 3, 4].map(idx => (
+                    {[0, 1, 2, 3, 4, 5].map(idx => (
                         <div key={idx} className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
                             idx <= step ? "bg-primary" : "bg-white/10"
                         }`} />
@@ -633,6 +648,7 @@ export default function ConsultationBookingModal({
                 {step === 2 && renderStep2()}
                 {step === 3 && renderStep3()}
                 {step === 4 && renderStep4()}
+                {step === 5 && renderStep5()}
             </ActionModal>
 
             {isCheckoutModalOpen && (
