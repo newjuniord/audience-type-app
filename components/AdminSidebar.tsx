@@ -47,7 +47,6 @@ export default function AdminSidebar({ isOpen = true, onToggle }: AdminSidebarPr
                 { label: "Annonces", icon: "campaign", href: "/admin/announcement" },
                 { label: "Notifications 🔔", icon: "notifications", href: "/admin/alerts" },
                 { label: "Avis", icon: "reviews", href: "/admin/reviews" },
-                { label: "Sondages 📊", icon: "poll", href: "/admin/sondages" },
                 { label: "Messages", icon: "mail", href: "/admin/messages" },
                 { label: "Chat Support 💬", icon: "chat", href: "/admin/chat" },
             ]

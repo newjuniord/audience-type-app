@@ -31,7 +31,6 @@ export default function DashboardFooter() {
                             <Link href="/consultation" className="block text-sm text-white/50 hover:text-white transition-colors">Konsiltasyon</Link>
                             <Link href="/coaching" className="block text-sm text-white/50 hover:text-white transition-colors">Coaching</Link>
                             <Link href="/services" className="block text-sm text-white/50 hover:text-white transition-colors">Sèvis Pratik</Link>
-                            <Link href="/sondage" className="block text-sm text-white/50 hover:text-white transition-colors">Sondaj</Link>
                         </div>
                         <div className="space-y-3">
                             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Kont</p>

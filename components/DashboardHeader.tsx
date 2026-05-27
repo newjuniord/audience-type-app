@@ -144,7 +144,6 @@ export default function DashboardHeader() {
                         { href: "/consultation", icon: "support_agent", label: "Konsiltasyon" },
                         { href: "/coaching", icon: "psychology", label: "Coaching" },
                         { href: "/services", icon: "design_services", label: "Sèvis" },
-                        { href: "/sondage", icon: "poll", label: "Sondaj" },
                     ].filter(item => {
                         if (showClose) {
                             // Cacher les éléments déjà présents dans le BottomNav sur mobile
