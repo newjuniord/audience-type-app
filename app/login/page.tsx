@@ -743,8 +743,7 @@ export default function LoginPage() {
                                                     className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20 pr-10"
                                                     placeholder="••••••••"
                                                     required
-                                                    minLength={isLoginView ? undefined : 6}
-                                                    maxLength={6}
+                                                    minLength={6}
                                                 />
                                                 <button
                                                     type="button"
@@ -757,7 +756,7 @@ export default function LoginPage() {
                                                 </button>
                                             </div>
                                             <p className="text-[11px] text-white/40 pl-1 mt-1">
-                                                Modpas la dwe gen 6 karaktè presizeman.
+                                                Modpas la dwe gen omwen 6 karaktè.
                                             </p>
                                         </div>
                                         {!isLoginView && (
