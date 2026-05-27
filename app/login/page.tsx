@@ -368,32 +368,53 @@ export default function LoginPage() {
         setIsLoading(false);
     };
 
+    const handleEmailRegistration = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const result = await createUserWithEmailAndPassword(auth, email, password);
+            const user = result.user;
+
+            const userRef = doc(db, "users", user.uid);
+            await setDoc(userRef, {
+                fullName: fullName.trim(),
+                email: user.email,
+                photoURL: "",
+                phone: "",
+                role: "customer",
+                createdAt: serverTimestamp(),
+            });
+
+            window.location.href = "/dashboard";
+        } catch (err: any) {
+            console.error("Registration error:", err);
+            setError("Gen yon erè ki fèt pandan enskripsyon an.");
+            setIsLoading(false);
+        }
+    };
+
     const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email || !password) return;
-
-        if (!isLoginView) {
-            if (password !== confirmPassword) {
-                setError("Modpas yo pa parèy.");
-                return;
-            }
-            if (password.length < 6) {
-                setError("Modpas la dwe gen 6 karaktè pou pi piti.");
-                return;
-            }
-        }
 
         setIsLoading(true);
         setError(null);
         setMessage(null);
         try {
             let user;
-            if (isLoginView) {
+            try {
                 const result = await signInWithEmailAndPassword(auth, email, password);
                 user = result.user;
-            } else {
-                const result = await createUserWithEmailAndPassword(auth, email, password);
-                user = result.user;
+            } catch (err: any) {
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                    const check = await checkUserAction(email);
+                    if (!check.exists) {
+                        setStep('name');
+                        setIsLoading(false);
+                        return;
+                    }
+                }
+                throw err;
             }
 
             const userRef = doc(db, "users", user.uid);
@@ -408,36 +429,22 @@ export default function LoginPage() {
                     role: "customer",
                     createdAt: serverTimestamp(),
                 });
-
                 window.location.href = "/dashboard";
                 return;
             }
 
-            if (userSnap.exists()) {
-                if (!userSnap.data().createdAt) {
-                    await setDoc(userRef, { createdAt: serverTimestamp() }, { merge: true });
-                }
+            if (!userSnap.data().createdAt) {
+                await setDoc(userRef, { createdAt: serverTimestamp() }, { merge: true });
+            }
 
-                if (userSnap.data().role?.trim().toLowerCase() === "admin") {
-                    window.location.href = "/admin";
-                } else {
-                    window.location.href = "/dashboard";
-                }
-                return;
+            if (userSnap.data().role?.trim().toLowerCase() === "admin") {
+                window.location.href = "/admin";
+            } else {
+                window.location.href = "/dashboard";
             }
         } catch (err: any) {
             console.error("Auth error:", err);
-            if (isLoginView) {
-                setError("Imel oswa modpas la pa bon.");
-            } else {
-                if (err.code === 'auth/email-already-in-use') {
-                    setError("Adrès imel sa a deja itilize.");
-                } else if (err.code === 'auth/weak-password') {
-                    setError("Modpas la dwe gen 6 karaktè pou pi piti.");
-                } else {
-                    setError("Gen yon erè ki fèt pandan enskripsyon an.");
-                }
-            }
+            setError("Imel oswa modpas la pa bon.");
             setIsLoading(false);
         }
     };
@@ -618,7 +625,11 @@ export default function LoginPage() {
 
                                 <form onSubmit={(e) => {
                                     e.preventDefault();
-                                    handlePasswordlessSubmit();
+                                    if (loginMethod === 'password') {
+                                        handleEmailRegistration();
+                                    } else {
+                                        handlePasswordlessSubmit();
+                                    }
                                 }} className="flex flex-col gap-4">
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Non konplè w</label>
