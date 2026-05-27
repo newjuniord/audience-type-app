@@ -756,6 +756,9 @@ export default function LoginPage() {
                                                     </span>
                                                 </button>
                                             </div>
+                                            <p className="text-[11px] text-white/40 pl-1 mt-1">
+                                                Modpas la dwe gen 6 karaktè presizeman.
+                                            </p>
                                         </div>
                                         {!isLoginView && (
                                             <div className="flex flex-col gap-1.5">
@@ -773,7 +776,7 @@ export default function LoginPage() {
                                         )}
                                         <button
                                             type="submit"
-                                            disabled={isLoading}
+                                            disabled={isLoading || password.length < 6}
                                             className="w-full py-3 mt-1 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:pointer-events-none"
                                         >
                                             {isLoading ? (

@@ -651,11 +651,14 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                             </span>
                           </button>
                         </div>
+                        <p className="text-[11px] text-white/40 pl-1 mt-1">
+                          Modpas la dwe gen 6 karaktè presizeman.
+                        </p>
                       </div>
                     </div>
                   )}
 
-                  <button type="submit" disabled={isLoading || (contactMethod === 'email' ? (!email || !password) : !phone)} className="w-full py-4 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-white font-black rounded-xl text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-orange-500/20 flex items-center justify-center">
+                  <button type="submit" disabled={isLoading || (contactMethod === 'email' ? (!email || password.length < 6) : !phone)} className="w-full py-4 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-white font-black rounded-xl text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-orange-500/20 flex items-center justify-center">
                     {isLoading ? <div className="size-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : "Kontinye →"}
                   </button>
                 </form>
