@@ -123,6 +123,7 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [isLoginView, setIsLoginView] = useState(true);
     const router = useRouter();
     const { user, role, loading: authLoading } = useAuth();
@@ -734,15 +735,26 @@ export default function LoginPage() {
                                                     </button>
                                                 )}
                                             </div>
-                                            <input
-                                                type="password"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20"
-                                                placeholder="••••••••"
-                                                required
-                                                minLength={isLoginView ? undefined : 6}
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    type={showPassword ? "text" : "password"}
+                                                    value={password}
+                                                    onChange={(e) => setPassword(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all text-sm text-white placeholder:text-white/20 pr-10"
+                                                    placeholder="••••••••"
+                                                    required
+                                                    minLength={isLoginView ? undefined : 6}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors p-1"
+                                                >
+                                                    <span className="material-symbols-outlined notranslate text-[18px]">
+                                                        {showPassword ? "visibility_off" : "visibility"}
+                                                    </span>
+                                                </button>
+                                            </div>
                                         </div>
                                         {!isLoginView && (
                                             <div className="flex flex-col gap-1.5">

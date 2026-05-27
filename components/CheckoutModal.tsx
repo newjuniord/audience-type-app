@@ -149,6 +149,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [usePassword, setUsePassword] = useState(false);
   const [phone, setPhone] = useState('');
@@ -638,7 +639,18 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                         <div className="flex justify-between items-center">
                           <label className="text-xs font-bold text-white/50 uppercase tracking-widest">Modpas</label>
                         </div>
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all text-sm bg-transparent text-white" />
+                        <div className="relative">
+                          <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="w-full pl-4 pr-10 py-3.5 bg-white/5 border border-white/10 rounded-xl placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all text-sm bg-transparent text-white" />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors p-1 flex items-center justify-center"
+                          >
+                            <span className="material-symbols-outlined notranslate text-[18px]">
+                              {showPassword ? "visibility_off" : "visibility"}
+                            </span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
