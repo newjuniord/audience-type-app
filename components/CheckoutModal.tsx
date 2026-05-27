@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { signInWithCustomToken, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useLemonSqueezyOverlay } from "@/hooks/useLemonSqueezyOverlay";
 import { useAuth } from "@/context/AuthContext";
@@ -298,8 +298,36 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
         if (!password) {
           throw new Error("Tanpri antre modpas ou.");
         }
-        const result = await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
-        const user = result.user;
+
+        let user;
+        if (modalStep === 'name') {
+            const result = await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+            user = result.user;
+            const userRef = doc(db, "users", user.uid);
+            await setDoc(userRef, {
+                fullName: fullName.trim(),
+                email: user.email,
+                photoURL: "",
+                phone: "",
+                role: "customer",
+                createdAt: serverTimestamp(),
+            });
+        } else {
+            try {
+                const result = await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+                user = result.user;
+            } catch (err: any) {
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                    const check = await checkUserAction("", email.trim().toLowerCase(), product.id);
+                    if (!check.exists) {
+                        setModalStep('name');
+                        setIsLoading(false);
+                        return;
+                    }
+                }
+                throw err;
+            }
+        }
 
         const checkData = await checkUserAction("", email.trim().toLowerCase(), product.id);
         if (checkData.error) throw new Error(checkData.error);

@@ -408,7 +408,7 @@ export default function LoginPage() {
                 user = result.user;
             } catch (err: any) {
                 if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-                    const check = await checkUserAction(email);
+                    const check = await checkUserAction("", email);
                     if (!check.exists) {
                         setStep('name');
                         setIsLoading(false);
