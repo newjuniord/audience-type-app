@@ -266,6 +266,7 @@ export async function POST(req: Request) {
             
             console.log(`✅ [WEBHOOK] Successfully processed order ${internalOrderId}.`);
 
+        }
 
         return NextResponse.json({ received: true }, { status: 200 });
 
