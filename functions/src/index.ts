@@ -11,11 +11,13 @@ initializeApp();
 const db = getFirestore();
 const auth = getAuth();
 
+
+
 /**
- * Cloud Function: lemonsqueezyWebhook
- * Listen for Lemon Squeezy events (e.g., order_created).
+ * Cloud Function: lemonsqueezywebhookbackup
+ * Backup webhook that waits 20s before checking if order is already processed.
  */
-export const lemonsqueezywebhook = onRequest({
+export const lemonsqueezywebhookbackup = onRequest({
     secrets: [
         "LEMON_SQUEEZY_WEBHOOK_SECRET",
         "TWILIO_ACCOUNT_SID",
@@ -36,7 +38,7 @@ export const lemonsqueezywebhook = onRequest({
         const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET || "";
 
         if (!secret) {
-            console.error("❌ [WEBHOOK] LEMON_SQUEEZY_WEBHOOK_SECRET missing");
+            console.error("❌ [WEBHOOK BACKUP] LEMON_SQUEEZY_WEBHOOK_SECRET missing");
             res.status(500).json({ error: "Secret missing" });
             return;
         }
@@ -47,7 +49,7 @@ export const lemonsqueezywebhook = onRequest({
         const signatureBuffer = Buffer.from(signature, "utf8");
 
         if (digest.length !== signatureBuffer.length || !crypto.timingSafeEqual(digest, signatureBuffer)) {
-            console.error("❌ [WEBHOOK] Invalid signature");
+            console.error("❌ [WEBHOOK BACKUP] Invalid signature");
             res.status(401).json({ error: "Invalid signature" });
             return;
         }
@@ -55,163 +57,217 @@ export const lemonsqueezywebhook = onRequest({
         const payload = JSON.parse(rawBody);
         const eventName = payload.meta.event_name;
 
-        console.log(`🔔 [WEBHOOK] Lemon Squeezy event received: ${eventName}`);
-
-        // Handle events
-        if (eventName === "order_created") {
-            const custom = payload.meta.custom_data;
-            const attributes = payload.data.attributes;
-
-            if (custom && custom.orderId) {
-                console.log(`✅ [WEBHOOK] Handling SUCCESS for order: ${custom.orderId}`);
-                const now = new Date();
-
-                // On convertit les centimes en dollars (ou euros)
-                const finalAmount = (attributes.total || 0) / 100;
-
-                // 1. Update order status to PAID
-                const orderRef = db.collection("orders").doc(custom.orderId);
-                const orderSnap = await orderRef.get();
-
-                if (orderSnap.exists) {
-                    const orderData = orderSnap.data();
-
-                    if (orderData && orderData.status !== "paid") {
-                        const userId = orderData.userId;
-                        const customerEmail = attributes.user_email || "";
-                        const lemonSqueezyCustomerId = attributes.customer_id?.toString() || "";
-
-                        console.log(`🔍 [WEBHOOK] Customer Email: ${customerEmail}, Customer ID: ${lemonSqueezyCustomerId}`);
-
-                        // Self-healing: promote virtual email to real email & link customer ID
-                        let finalUserEmail = orderData.userEmail || customerEmail;
-
-                        if (userId) {
-                            try {
-                                const userRef = db.collection("users").doc(userId);
-                                const userSnap = await userRef.get();
-                                if (userSnap.exists) {
-                                    const userData = userSnap.data();
-                                    const currentEmail = userData?.email || "";
-                                    const isFakeEmail = !currentEmail || currentEmail.endsWith("@audiencetype.com");
-
-                                    const userUpdates: any = {};
-                                    if (lemonSqueezyCustomerId) {
-                                        userUpdates.lemonSqueezyCustomerId = lemonSqueezyCustomerId;
-                                    }
-
-                                    if (isFakeEmail && customerEmail && !customerEmail.endsWith("@audiencetype.com")) {
-                                        console.log(`🌟 [WEBHOOK] Promoting virtual email "${currentEmail}" to real email "${customerEmail}" for user ${userId}`);
-                                        userUpdates.email = customerEmail;
-                                        finalUserEmail = customerEmail;
-
-                                        try {
-                                            await auth.updateUser(userId, { email: customerEmail });
-                                            console.log(`✅ [WEBHOOK] Firebase Auth email updated successfully to ${customerEmail}`);
-                                        } catch (authErr: any) {
-                                            console.warn(`⚠️ [WEBHOOK] Failed to update email in Firebase Auth:`, authErr.message);
-                                        }
-                                    }
-
-                                    if (Object.keys(userUpdates).length > 0) {
-                                        await userRef.update(userUpdates);
-                                        console.log(`✅ [WEBHOOK] Firestore user profile updated with:`, userUpdates);
-                                    }
-                                }
-                            } catch (userErr: any) {
-                                console.error(`❌ [WEBHOOK] Error updating user profile:`, userErr.message);
-                            }
-                        }
-
-                        // Update the order doc
-                        const orderUpdates: any = {
-                            status: "paid",
-                            amount: finalAmount, // Mise à jour avec le vrai montant payé
-                            transactionId: payload.data.id,
-                            updatedAt: now
-                        };
-                        if (finalUserEmail && finalUserEmail !== orderData.userEmail) {
-                            orderUpdates.userEmail = finalUserEmail;
-                        }
-                        await orderRef.update(orderUpdates);
-
-                        // 2. Create enrollment if not a service
-                        if (orderData.productType !== "service" && orderData.productType !== "booking") {
-                            const enrollmentsRef = db.collection("enrollments");
-
-                            // Check for existing enrollment
-                            const existingEnrollment = await enrollmentsRef
-                                .where("userId", "==", orderData.userId)
-                                .where("productId", "==", orderData.productId)
-                                .limit(1)
-                                .get();
-
-                            if (existingEnrollment.empty) {
-                                console.log(`📚 [WEBHOOK] Creating enrollment for user ${finalUserEmail}`);
-
-                                await enrollmentsRef.add({
-                                    accessGranted: true,
-                                    completedLessons: [],
-                                    currentLessonId: "",
-                                    downloadCount: "0",
-                                    enrolledAt: now,
-                                    lastAccessedAt: now,
-                                    orderId: custom.orderId,
-                                    productId: orderData.productId, // String ID as requested
-                                    productThumbnailUrl: orderData.productThumbnailUrl,
-                                    productTitle: orderData.productTitle,
-                                    productType: orderData.productType,
-                                    progress: 0,
-                                    status: "active",
-                                    totalLessons: 0,
-                                    userEmail: finalUserEmail,
-                                    userId: orderData.userId, // String ID as requested
-                                    userName: orderData.userName || "Étudiant"
-                                });
-                            }
-                        } else {
-                            // Pour les consultations, on n'a pas d'inscription (enrollment), 
-                            // donc on envoie manuellement la notification de confirmation ici !
-                            console.log(`📞 [WEBHOOK] Sending consultation confirmation WhatsApp to user ${userId}`);
-                            if (userId) {
-                                await generateAndSendNotification(
-                                    userId,
-                                    orderData.userName || "",
-                                    orderData.productTitle || "Consultation",
-                                    orderData.productType,
-                                    false
-                                );
-                            }
-                        }
-
-                    } else {
-                        console.log(`⚠️ [WEBHOOK] Order ${custom.orderId} is already 'paid'`);
-                    }
-                } else {
-                    console.error(`❌ [WEBHOOK] Order not found: ${custom.orderId}`);
-                }
-            } else {
-                console.error(`❌ [WEBHOOK] Custom data or orderId missing in payload`);
-            }
+        if (eventName !== "order_created") {
+            res.status(200).json({ message: "Event ignored by backup" });
+            return;
         }
-        else if (eventName === "order_failed") {
-            const custom = payload.meta.custom_data;
-            if (custom && custom.orderId) {
-                console.log(`❌ [WEBHOOK] Handling FAILED for order: ${custom.orderId}`);
-                const now = new Date();
 
-                await db.collection("orders").doc(custom.orderId).update({
-                    status: "failed",
-                    failedAt: now,
-                    updatedAt: now
+        const custom = payload.meta.custom_data;
+        if (!custom || !custom.orderId) {
+            console.error(`❌ [WEBHOOK BACKUP] Custom data or orderId missing in payload`);
+            res.status(200).json({ message: "Missing orderId" });
+            return;
+        }
+
+        console.log(`⏳ [WEBHOOK BACKUP] Waiting 20 seconds for order ${custom.orderId}...`);
+        await new Promise(resolve => setTimeout(resolve, 20000));
+        console.log(`🔍 [WEBHOOK BACKUP] Resuming check for order ${custom.orderId}...`);
+
+        const orderRef = db.collection("orders").doc(custom.orderId);
+        const orderSnap = await orderRef.get();
+
+        if (!orderSnap.exists) {
+            console.error(`❌ [WEBHOOK BACKUP] Order ${custom.orderId} not found.`);
+            res.status(404).json({ error: "Order not found" });
+            return;
+        }
+
+        const orderData = orderSnap.data();
+
+        if (orderData?.status === "paid" || orderData?.status === "completed") {
+            console.log(`✅ [WEBHOOK BACKUP] Order ${custom.orderId} is already '${orderData.status}'. Main webhook succeeded. Stopping backup.`);
+            res.status(200).json({ message: "Already processed by main webhook" });
+            return;
+        }
+
+        console.log(`⚠️ [WEBHOOK BACKUP] Order ${custom.orderId} is STILL '${orderData?.status}'. Main webhook likely failed. Taking over!`);
+        const attributes = payload.data.attributes;
+        const now = new Date();
+        const finalAmount = (attributes.total || 0) / 100;
+
+        const userId = orderData?.userId;
+        const customerEmail = attributes.user_email || "";
+        const lemonSqueezyCustomerId = attributes.customer_id?.toString() || "";
+        let finalUserEmail = orderData?.userEmail || customerEmail;
+
+        if (userId) {
+            try {
+                const userRef = db.collection("users").doc(userId);
+                const userSnap = await userRef.get();
+                if (userSnap.exists) {
+                    const userData = userSnap.data();
+                    const currentEmail = userData?.email || "";
+                    const isFakeEmail = !currentEmail || currentEmail.endsWith("@audiencetype.com");
+
+                    const userUpdates: any = {};
+                    if (lemonSqueezyCustomerId) {
+                        userUpdates.lemonSqueezyCustomerId = lemonSqueezyCustomerId;
+                    }
+                    if (isFakeEmail && customerEmail && !customerEmail.endsWith("@audiencetype.com")) {
+                        userUpdates.email = customerEmail;
+                        finalUserEmail = customerEmail;
+                        try {
+                            await auth.updateUser(userId, { email: customerEmail });
+                        } catch (authErr: any) { }
+                    }
+                    if (Object.keys(userUpdates).length > 0) {
+                        await userRef.update(userUpdates);
+                    }
+                }
+            } catch (e) {}
+        }
+
+        // Update the order doc
+        const orderUpdates: any = {
+            status: "paid",
+            amount: finalAmount,
+            transactionId: payload.data.id,
+            updatedAt: now
+        };
+        if (finalUserEmail && finalUserEmail !== orderData?.userEmail) {
+            orderUpdates.userEmail = finalUserEmail;
+        }
+        await orderRef.update(orderUpdates);
+
+        // 2. Create enrollment if not a service
+        if (orderData?.productType !== "service" && orderData?.productType !== "booking") {
+            const enrollmentsRef = db.collection("enrollments");
+            const existingEnrollment = await enrollmentsRef
+                .where("userId", "==", orderData?.userId)
+                .where("productId", "==", orderData?.productId)
+                .limit(1)
+                .get();
+
+            if (existingEnrollment.empty) {
+                await enrollmentsRef.add({
+                    accessGranted: true,
+                    completedLessons: [],
+                    currentLessonId: "",
+                    downloadCount: "0",
+                    enrolledAt: now,
+                    lastAccessedAt: now,
+                    orderId: custom.orderId,
+                    productId: orderData?.productId,
+                    productThumbnailUrl: orderData?.productThumbnailUrl,
+                    productTitle: orderData?.productTitle,
+                    productType: orderData?.productType,
+                    progress: 0,
+                    status: "active",
+                    totalLessons: 0,
+                    userEmail: finalUserEmail,
+                    userId: orderData?.userId,
+                    userName: orderData?.userName || "Étudiant"
                 });
+            }
+
+            // Create in-app alert for Course/Ebook
+            try {
+                let pTypeLabel = orderData?.productType === "course" ? "Kou" : "Ebook";
+                await db.collection("alerts").add({
+                    userId: orderData?.userId,
+                    category: "utility",
+                    type: "payment_success",
+                    title: `✅ Acha ou an konfime !`,
+                    body: `${pTypeLabel} "${orderData?.productTitle || ""}" an disponib kounye a nan kont ou.`,
+                    isRead: false,
+                    icon: "check_circle",
+                    iconColor: "text-emerald-400",
+                    iconBg: "bg-emerald-500/10",
+                    actionUrl: "/dashboard",
+                    actionLabel: "Wè pwodwi m yo",
+                    createdAt: now,
+                });
+            } catch (e) {}
+
+        } else {
+            // Service / Booking Logic
+            try {
+                const bookingSnap = await db.collection("bookingApplications")
+                    .where("usersId", "==", orderData?.userId)
+                    .where("bookingsId", "==", orderData?.productId)
+                    .where("status", "==", "pending")
+                    .get();
+
+                if (!bookingSnap.empty) {
+                    const batch = db.batch();
+                    let bookingDate = "";
+                    let bookingTime = "";
+
+                    bookingSnap.docs.forEach((doc) => {
+                        const bData = doc.data();
+                        if (!bookingDate && bData.date) bookingDate = bData.date;
+                        if (!bookingTime && bData.time) bookingTime = bData.time;
+                        
+                        batch.update(doc.ref, {
+                            status: "accepted",
+                            orderId: custom.orderId,
+                            updatedAt: now
+                        });
+                    });
+                    await batch.commit();
+
+                    let dateLabel = bookingDate;
+                    let timeLabel = bookingTime;
+                    if (bookingDate) {
+                        const [y, m, d] = bookingDate.split("-").map(Number);
+                        const MOIS = ["Janvye","Fevriye","Mas","Avril","Me","Jen","Jiyè","Out","Septanm","Oktòb","Novanm","Desanm"];
+                        dateLabel = `${d} ${MOIS[m - 1]} ${y}`;
+                    }
+                    if (bookingTime) {
+                        const [h, m] = bookingTime.split(":").map(Number);
+                        const period = h >= 12 ? "PM" : "AM";
+                        let h12 = h % 12;
+                        if (h12 === 0) h12 = 12;
+                        const mm = m > 0 ? `:${String(m).padStart(2, "0")}` : "";
+                        timeLabel = `${h12}${mm} ${period}`;
+                    }
+
+                    const alertBody = bookingDate && bookingTime
+                        ? `Konsiltasyon ou a konfime pou ${dateLabel} a ${timeLabel}. Nou pral kontakte w pa WhatsApp pou konfime detay yo.`
+                        : `Konsiltasyon ou a konfime. Nou pral kontakte w pa WhatsApp pou planifye lè egzak la.`;
+
+                    await db.collection("alerts").add({
+                        userId: orderData?.userId,
+                        category: "utility",
+                        type: "booking_reminder",
+                        title: "✅ Konsiltasyon ou konfime !",
+                        body: alertBody,
+                        isRead: false,
+                        icon: "event_available",
+                        iconColor: "text-emerald-400",
+                        iconBg: "bg-emerald-500/10",
+                        actionUrl: "/consultation",
+                        actionLabel: "Wè detay",
+                        createdAt: now,
+                    });
+                }
+            } catch (e) {}
+
+            console.log(`📞 [WEBHOOK BACKUP] Sending consultation confirmation WhatsApp to user ${userId}`);
+            if (userId) {
+                await generateAndSendNotification(
+                    userId,
+                    orderData?.userName || "",
+                    orderData?.productTitle || "Consultation",
+                    orderData?.productType || "service",
+                    false
+                );
             }
         }
 
         res.status(200).json({ received: true });
-
     } catch (error: any) {
-        console.error("🔥 [WEBHOOK ERROR]", error);
+        console.error("🔥 [WEBHOOK BACKUP ERROR]", error);
         res.status(500).json({ error: "Internal error" });
     }
 });
