@@ -149,6 +149,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [usePassword, setUsePassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [verifiedPhone, setVerifiedPhone] = useState("");
@@ -160,7 +161,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
   const countryDropdownRef = useRef<HTMLDivElement>(null);
 
   const [contactMethod, setContactMethod] = useState<'email' | 'phone' | 'whatsapp'>('whatsapp');
-  const [modalStep, setModalStep] = useState<'contact' | 'payment' | 'verify_code' | 'success'>('contact');
+  const [modalStep, setModalStep] = useState<'contact' | 'name' | 'payment' | 'verify_code' | 'success'>('contact');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -331,6 +332,12 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
         setAlreadyOwnedMessage(null);
       }
 
+      if (!checkData.exists && modalStep === 'contact') {
+        setModalStep('name');
+        setIsLoading(false);
+        return;
+      }
+
       const contactToUse = (contactMethod === 'phone' || contactMethod === 'whatsapp') ? cleanPhone : email;
       
       const genData = await generateOtpAction(contactToUse, contactMethod);
@@ -417,7 +424,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
 
     try {
       const contactToUse = (contactMethod === 'phone' || contactMethod === 'whatsapp') ? verifiedPhone : email;
-      const data = await verifyOtpAndLoginAction(contactToUse, verificationCode.trim(), contactMethod);
+      const data = await verifyOtpAndLoginAction(contactToUse, verificationCode.trim(), contactMethod, fullName);
 
       if (data.error) throw new Error(data.error);
 
@@ -641,6 +648,60 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                   </button>
                 </form>
               </>
+            )}
+
+            {/* STEP 1.5: NAME */}
+            {modalStep === 'name' && (
+              <div className="flex flex-col gap-4 py-5 px-4 sm:p-5 border border-white/10 rounded-2xl bg-white/[0.03]">
+                  <div className="flex flex-col items-center text-center mb-2">
+                      <div className="size-12 rounded-full bg-orange-500/10 flex items-center justify-center mb-3 text-orange-400">
+                          <span className="material-symbols-outlined notranslate text-2xl">person</span>
+                      </div>
+                      <h3 className="font-bold text-base text-white">Byenvini !</h3>
+                      <p className="text-xs text-white/50 max-w-xs leading-relaxed mt-1">
+                          Nou pa jwenn kont pou nimewo sa a. Tanpri antre non w pou nou ka kreye kont ou a.
+                      </p>
+                  </div>
+
+                  <form onSubmit={(e) => {
+                      e.preventDefault();
+                      handleContactSubmit(e as any);
+                  }} className="flex flex-col gap-4">
+                      <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-bold text-white/50 uppercase tracking-wider">Non konplè w</label>
+                          <input
+                              type="text"
+                              value={fullName}
+                              onChange={(e) => setFullName(e.target.value)}
+                              placeholder="Eg: Jean Dupont"
+                              className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all text-sm font-medium bg-transparent text-white"
+                              required
+                              autoFocus
+                          />
+                      </div>
+
+                      <button
+                          type="submit"
+                          disabled={isLoading || fullName.trim().length < 2}
+                          className="w-full py-3 mt-2 bg-gradient-to-r from-amber-400 to-orange-500 text-black rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                          {isLoading ? <div className="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin mx-auto"></div> : "Kontinye"}
+                      </button>
+
+                      <div className="flex justify-center mt-2 px-1 text-xs">
+                          <button
+                              type="button"
+                              onClick={() => {
+                                  setModalStep('contact');
+                                  setError(null);
+                              }}
+                              className="text-white/40 hover:text-white transition-colors"
+                          >
+                              Retounen
+                          </button>
+                      </div>
+                  </form>
+              </div>
             )}
 
             {/* STEP 2: VERIFY CODE */}
