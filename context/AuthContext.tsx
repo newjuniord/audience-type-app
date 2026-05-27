@@ -93,6 +93,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Presence management - ONLY start after loading is done and we have a real user
     useEffect(() => {
+        // TEMPORARILY DISABLED AS PER REQUEST
+        /*
         if (!user || loading) return;
 
         const presenceRef = doc(db, "users", user.uid);
@@ -137,13 +139,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Marquer comme hors ligne au démontage
             setDoc(presenceRef, { isOnline: false }, { merge: true }).catch(() => {});
         };
+        */
     }, [user, loading]);
 
     const signOutUser = async () => {
         if (user) {
             try {
+                // TEMPORARILY DISABLED
+                /*
                 const presenceRef = doc(db, "users", user.uid);
                 await setDoc(presenceRef, { isOnline: false }, { merge: true });
+                */
             } catch (error) {
                 console.error("Error setting offline status on logout:", error);
             }
