@@ -606,7 +606,6 @@ export default function CheckoutModal({ isOpen, onClose, product, onBeforePaymen
                     </div>
                     <div>
                       <h2 className="text-lg lg:text-xl font-black leading-tight">Aksè rapid</h2>
-                      <p className="text-xs text-white/40">Ou pa bezwen modpas</p>
                     </div>
                   </div>
                   <button onClick={handleClose} className="hidden lg:flex size-8 rounded-full bg-white/5 hover:bg-white/10 items-center justify-center transition-colors shrink-0 ml-2">
