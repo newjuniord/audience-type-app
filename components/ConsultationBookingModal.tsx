@@ -625,7 +625,7 @@ export default function ConsultationBookingModal({
     return (
         <>
             <ActionModal
-                isOpen={isOpen}
+                isOpen={isOpen && !isCheckoutModalOpen}
                 onClose={onClose}
                 title="Rezèvasyon"
                 subtitle="Konsiltasyon ak Jean Ronald"
