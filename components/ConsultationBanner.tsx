@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { createClient } from "@/lib/supabase/client";
 
 interface UpcomingConsultation {
     id: string;
@@ -134,24 +133,36 @@ export default function ConsultationBanner() {
         if (!user || authLoading) { setLoading(false); return; }
         async function fetchUpcoming() {
             try {
+                const supabase = createClient();
                 const today = new Date();
                 const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-                const q = query(collection(db, "bookingApplications"), where("usersId", "==", user!.uid));
-                const snap = await getDocs(q);
+                
+                const userId = user!.uid || user!.id as string;
+                const { data: bookings, error } = await supabase
+                    .from("bookingApplications")
+                    .select("*")
+                    .eq("usersId", userId);
+                
+                if (error) throw error;
+                
                 const validStatuses = ["confirmed", "accepted"];
                 const upcoming: UpcomingConsultation[] = [];
                 
-                const promises = snap.docs.map(async (bookingDoc) => {
-                    const d = bookingDoc.data();
+                const promises = (bookings || []).map(async (d) => {
                     if (d.bookingDate && d.bookingTime && validStatuses.includes((d.status || "").toLowerCase()) && d.bookingDate >= todayStr) {
                         let adminPhone = "821012345678"; // Fallback
                         try {
                             if (d.bookingsId) {
                                 const svcId = typeof d.bookingsId === 'string' ? d.bookingsId : d.bookingsId.id;
                                 if (svcId) {
-                                    const svcSnap = await getDoc(doc(db, "services", svcId));
-                                    if (svcSnap.exists() && svcSnap.data().phone) {
-                                        adminPhone = svcSnap.data().phone;
+                                    const { data: svcData } = await supabase
+                                        .from("services")
+                                        .select("phone")
+                                        .eq("id", svcId)
+                                        .single();
+                                        
+                                    if (svcData && svcData.phone) {
+                                        adminPhone = svcData.phone;
                                     }
                                 }
                             }
@@ -160,7 +171,7 @@ export default function ConsultationBanner() {
                         }
 
                         upcoming.push({
-                            id: bookingDoc.id,
+                            id: d.id,
                             bookingDate: d.bookingDate,
                             bookingTime: d.bookingTime,
                             serviceName: d.serviceName || d.title,

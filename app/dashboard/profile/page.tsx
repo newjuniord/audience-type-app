@@ -6,10 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 import { getUserById, updateUser } from "@/lib/users";
 import { getEnrollmentsByUser } from "@/lib/enrollments";
 import { getBookingApplicationsByUser } from "@/lib/booking-applications";
-import { updateProfile } from "firebase/auth";
-import { db } from '@/lib/firebase';
-import { doc as firestoreDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { sendPreludeVerificationAction, verifyPreludeAndLinkPhoneAction } from "@/app/actions/auth";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── COUNTRIES LIST ──────────────────────────────────────────────────────────
 const COUNTRIES = [
@@ -114,6 +112,7 @@ function formatPhone(digits: string, countryCode: string): string {
 
 export default function ProfilePage() {
     const { user, loading: authLoading, signOutUser } = useAuth();
+    const supabase = createClient();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -178,14 +177,15 @@ export default function ProfilePage() {
         async function fetchProfileData() {
             if (!user) return;
             try {
-                const userDoc = await getUserById(user.uid);
+                const uid = user.id || (user as any).uid;
+                const userDoc = await getUserById(uid);
                 if (userDoc) {
-                    setDisplayName(userDoc.displayName || user.displayName || "");
-                    setPhotoURL(userDoc.photoURL || user.photoURL || "");
+                    setDisplayName(userDoc.name || userDoc.displayName || user.user_metadata?.displayName || (user as any).displayName || "");
+                    setPhotoURL(userDoc.photoURL || user.user_metadata?.photoURL || (user as any).photoURL || "");
 
 
                     // For WhatsApp users: read-only display
-                    const rawPhone = userDoc.phone || user.phoneNumber || "";
+                    const rawPhone = userDoc.phone || user.phone || (user as any).phoneNumber || "";
                     const cleanPhone = rawPhone
                         .replace("whatsapp:", "")
                         .replace(/"/g, "")
@@ -226,19 +226,18 @@ export default function ProfilePage() {
                     }
 
                     if (userDoc.createdAt) {
-                        setMemberSince(userDoc.createdAt.toDate().toLocaleDateString('fr-FR', {
+                        setMemberSince(new Date(userDoc.createdAt).toLocaleDateString('fr-FR', {
                             month: 'long', year: 'numeric'
                         }));
                     }
                 } else {
-                    setDisplayName(user.displayName || "");
-                    setPhotoURL(user.photoURL || "");
+                    setDisplayName(user.user_metadata?.displayName || (user as any).displayName || "");
+                    setPhotoURL(user.user_metadata?.photoURL || (user as any).photoURL || "");
                 }
 
-                const userRef = firestoreDoc(db, "users", user.uid);
                 const [enrollments, bookings] = await Promise.all([
-                    getEnrollmentsByUser(user.uid).catch(() => []),
-                    getBookingApplicationsByUser(userRef).catch(() => [])
+                    getEnrollmentsByUser(uid).catch(() => []),
+                    getBookingApplicationsByUser(uid).catch(() => [])
                 ]);
 
                 setStats({
@@ -259,9 +258,10 @@ export default function ProfilePage() {
         if (!user) return;
         setSaving(true);
         try {
-            const updates: any = { displayName };
-            await updateUser(user.uid, updates);
-            await updateProfile(user, { displayName });
+            const uid = user.id || (user as any).uid;
+            const updates: any = { name: displayName, displayName };
+            await updateUser(uid, updates);
+            await supabase.auth.updateUser({ data: { displayName } });
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
         } catch (error) {
@@ -274,13 +274,14 @@ export default function ProfilePage() {
 
     const handleInitiatePhoneLink = async () => {
         if (!user) return;
+        const uid = user.id || (user as any).uid;
         const digits = phoneEditable.replace(/\D/g, "");
         if (!digits) return;
         const fullPhone = selectedCountry.dial + digits;
 
         setCheckingPhone(true);
         try {
-            const res = await sendPreludeVerificationAction(user.uid, fullPhone);
+            const res = await sendPreludeVerificationAction(uid, fullPhone);
             if (res.error) {
                 setErrorMessage(res.error);
                 setShowErrorPopup(true);
@@ -297,13 +298,14 @@ export default function ProfilePage() {
 
     const handleVerifyOtpAndLink = async () => {
         if (!user) return;
+        const uid = user.id || (user as any).uid;
         const digits = phoneEditable.replace(/\D/g, "");
         if (!digits) return;
         const fullPhone = selectedCountry.dial + digits;
 
         setLinkingPhone(true);
         try {
-            const res = await verifyPreludeAndLinkPhoneAction(user.uid, fullPhone, verificationOtp);
+            const res = await verifyPreludeAndLinkPhoneAction(uid, fullPhone, verificationOtp);
             if (res.error) {
                 setErrorMessage(res.error);
                 setShowErrorPopup(true);

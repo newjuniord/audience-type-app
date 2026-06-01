@@ -1,31 +1,23 @@
-import {
-    collection,
-    getDocs,
-    doc,
-    getDoc,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    Timestamp,
-    query,
-    orderBy
-} from "firebase/firestore";
-import { db } from "./firebase";
+import { createClient } from "./supabase/client";
 import { Service } from "./types";
 
 const COLLECTION_NAME = "services";
+
+const getSupabase = () => createClient();
 
 /**
  * Récupère tous les services (offres).
  */
 export const getServices = async (): Promise<Service[]> => {
     try {
-        const q = query(collection(db, COLLECTION_NAME), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        })) as Service[];
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .order('createdAt', { ascending: false });
+
+        if (error) throw error;
+        return (data || []) as Service[];
     } catch (error) {
         console.error("Erreur récup services:", error);
         throw error;
@@ -37,13 +29,18 @@ export const getServices = async (): Promise<Service[]> => {
  */
 export const getServiceById = async (id: string): Promise<Service | null> => {
     try {
-        const docRef = doc(db, COLLECTION_NAME, id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as Service;
-        } else {
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) {
+            console.log("Erreur récup service par ID ou non trouvé:", error);
             return null;
         }
+        return data as Service;
     } catch (error) {
         console.error("Erreur récup service par ID:", error);
         return null;
@@ -55,12 +52,21 @@ export const getServiceById = async (id: string): Promise<Service | null> => {
  */
 export const addService = async (data: Omit<Service, "id" | "createdAt" | "updatedAt">): Promise<string> => {
     try {
-        const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+        const supabase = getSupabase();
+        const id = crypto.randomUUID();
+        const newService = {
             ...data,
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now()
-        });
-        return docRef.id;
+            id,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .insert(newService);
+
+        if (error) throw error;
+        return id;
     } catch (error) {
         console.error("Erreur ajout service:", error);
         throw error;
@@ -72,11 +78,16 @@ export const addService = async (data: Omit<Service, "id" | "createdAt" | "updat
  */
 export const updateService = async (id: string, data: Partial<Service>): Promise<void> => {
     try {
-        const docRef = doc(db, COLLECTION_NAME, id);
-        await updateDoc(docRef, {
-            ...data,
-            updatedAt: Timestamp.now()
-        });
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .update({
+                ...data,
+                updatedAt: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (error) throw error;
     } catch (error) {
         console.error("Erreur maj service:", error);
         throw error;
@@ -88,8 +99,13 @@ export const updateService = async (id: string, data: Partial<Service>): Promise
  */
 export const deleteService = async (id: string): Promise<void> => {
     try {
-        const docRef = doc(db, COLLECTION_NAME, id);
-        await deleteDoc(docRef);
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
     } catch (error) {
         console.error("Erreur suppression service:", error);
         throw error;

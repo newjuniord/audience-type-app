@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { User, Enrollment, Order } from "@/lib/types";
 import { getEnrollmentsByUser, deleteEnrollment } from "@/lib/enrollments";
 import { getOrdersByUser } from "@/lib/orders";
-import { doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import ConfirmModal from "./ui/ConfirmModal";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -43,8 +41,8 @@ export default function UserEnrollmentsDrawer({ isOpen, onClose, user }: UserEnr
         if (!user) return;
         setLoading(true);
         try {
-            const userRef = doc(db, "users", user.uid);
-            const data = await getEnrollmentsByUser(userRef);
+            const userId = user.uid || user.id as string;
+            const data = await getEnrollmentsByUser(userId);
             setEnrollments(data);
         } catch (error) {
             console.error("Failed to fetch enrollments", error);
@@ -57,11 +55,12 @@ export default function UserEnrollmentsDrawer({ isOpen, onClose, user }: UserEnr
         if (!user) return;
         setLoadingOrders(true);
         try {
-            const data = await getOrdersByUser(user.uid);
+            const userId = user.uid || user.id as string;
+            const data = await getOrdersByUser(userId);
             // Sort by date descending
             const sortedData = [...data].sort((a, b) => {
-                const dateA = a.createdAt?.toDate().getTime() || 0;
-                const dateB = b.createdAt?.toDate().getTime() || 0;
+                const dateA = a.createdAt ? new Date(a.createdAt as any).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt as any).getTime() : 0;
                 return dateB - dateA;
             });
             setOrders(sortedData);
@@ -220,7 +219,7 @@ export default function UserEnrollmentsDrawer({ isOpen, onClose, user }: UserEnr
                                                     <span>•</span>
                                                     <span>
                                                         {enrollment.enrolledAt 
-                                                            ? `Il y a ${formatDistanceToNow(enrollment.enrolledAt.toDate(), { locale: fr })}` 
+                                                            ? `Il y a ${formatDistanceToNow(new Date(enrollment.enrolledAt as any), { locale: fr })}` 
                                                             : 'Date inconnue'}
                                                     </span>
                                                 </div>
@@ -294,7 +293,7 @@ export default function UserEnrollmentsDrawer({ isOpen, onClose, user }: UserEnr
                                                 <span className="text-[10px] text-black/30 dark:text-white/30">•</span>
                                                 <span className="text-[10px] text-black/40 dark:text-white/40">
                                                     {order.createdAt 
-                                                        ? `Il y a ${formatDistanceToNow(order.createdAt.toDate(), { locale: fr })}` 
+                                                        ? `Il y a ${formatDistanceToNow(new Date(order.createdAt as any), { locale: fr })}` 
                                                         : 'Date inconnue'}
                                                 </span>
                                             </div>

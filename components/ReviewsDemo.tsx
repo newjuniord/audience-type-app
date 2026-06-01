@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { getReviews, addReview, deleteReview } from "@/lib/reviews";
 import { Review } from "@/lib/types";
-import { Timestamp, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 export default function ReviewsDemo() {
     const [reviews, setReviews] = useState<Review[]>([]);
@@ -27,19 +25,14 @@ export default function ReviewsDemo() {
     };
 
     const handleAddTestReview = async () => {
-        // Note: Dans une vraie app, ces Refs viendraient de produits/users réels
-        // Ici on crée des références fictives ou vers des IDs existants si on les connaît
-        const fakeProductRef = doc(db, "products", "some-product-id");
-        const fakeUserRef = doc(db, "users", "some-user-id");
-
         const newReview: Omit<Review, "id"> = {
             isVisible: true,
             comment: "Super produit, je recommande !",
-            createdAt: Timestamp.now(),
-            productId: fakeProductRef,
+            createdAt: new Date().toISOString() as any, // Using ISO string for Supabase
+            productId: "some-product-id" as any,
             productTitle: "Mon Ebook Test",
             rating: 5,
-            userId: "some-user-id",
+            userId: "some-user-id" as any,
             userName: "Sophie Martin",
             userEmail: "sophie.martin@example.com"
         };

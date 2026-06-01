@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { getEbooks, addEbook, deleteEbook } from "@/lib/ebooks"; // On importe nos fonctions magiques
 import { Ebook } from "@/lib/types"; // On importe le type pour que TypeScript nous aide
-import { Timestamp } from "firebase/firestore";
 
 /**
  * Composant de Démonstration pour les Ebooks
@@ -52,8 +51,8 @@ export default function EbooksDemo() {
                 sales: 0,
                 status: "draft",
                 includedItems: ["PDF", "EPUB"],
-                createdAt: Timestamp.now(),
-                updatedAt: Timestamp.now(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
             };
 
             await addEbook(newEbook); // Appel à Firestore

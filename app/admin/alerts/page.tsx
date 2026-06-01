@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, query, orderBy, onSnapshot, deleteDoc, doc, Timestamp, getDocs, where, writeBatch, addDoc } from "firebase/firestore";
+import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Alert, AlertCategory, AlertType } from "@/lib/types";
 
@@ -37,6 +36,7 @@ interface SentAlert extends Alert { id: string; userEmail?: string; }
 
 export default function AdminAlertsPage() {
     const { role, loading } = useAuth();
+    const supabase = createClient();
     const [users, setUsers] = useState<UserOption[]>([]);
     const [sentAlerts, setSentAlerts] = useState<SentAlert[]>([]);
     const [sending, setSending] = useState(false);
@@ -59,24 +59,37 @@ export default function AdminAlertsPage() {
     useEffect(() => {
         if (role !== "admin") return;
         // Load users for dropdown
-        getDocs(collection(db, "users")).then((snap) => {
-            setUsers(snap.docs.map((d) => {
-                const data = d.data();
-                return { 
+        supabase.from("users").select("*").then(({ data }) => {
+            if (data) {
+                setUsers(data.map((d: any) => ({ 
                     uid: d.id, 
-                    displayName: data.displayName || data.name || "Itilizatè", 
-                    email: data.email || "", 
-                    phone: data.phone || "" 
-                };
-            }));
+                    displayName: d.displayName || d.name || "Itilizatè", 
+                    email: d.email || "", 
+                    phone: d.phone || "" 
+                })));
+            }
         });
-        // Real-time sent alerts history
-        const q = query(collection(db, "alerts"), orderBy("createdAt", "desc"));
-        const unsub = onSnapshot(q, (snap) => {
-            setSentAlerts(snap.docs.map((d) => ({ id: d.id, ...d.data() })) as SentAlert[]);
-        });
-        return () => unsub();
-    }, [role]);
+
+        // Real-time sent alerts history using Supabase
+        const fetchAlerts = async () => {
+            const { data } = await supabase.from("alerts").select("*").order("createdAt", { ascending: false });
+            if (data) {
+                setSentAlerts(data as SentAlert[]);
+            }
+        };
+
+        fetchAlerts();
+
+        const channel = supabase.channel('custom-all-alerts')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, () => {
+                fetchAlerts();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [role, supabase]);
 
     const handlePresetChange = (idx: number) => {
         setSelectedPreset(idx);
@@ -100,7 +113,7 @@ export default function AdminAlertsPage() {
                 title,
                 body,
                 isRead: false,
-                createdAt: Timestamp.now(),
+                createdAt: new Date().toISOString(),
             };
 
             if (actionUrl) {
@@ -111,19 +124,15 @@ export default function AdminAlertsPage() {
             }
 
             if (targetMode === "all") {
-                // Chunk the writes in batches of 450 to avoid Firestore's 500 limit
+                const inserts = users.map(u => ({ ...baseAlert, userId: u.uid }));
+                // Chunk the writes
                 const chunkSize = 450;
-                for (let i = 0; i < users.length; i += chunkSize) {
-                    const chunk = users.slice(i, i + chunkSize);
-                    const batch = writeBatch(db);
-                    chunk.forEach((u) => {
-                        const ref = doc(collection(db, "alerts"));
-                        batch.set(ref, { ...baseAlert, userId: u.uid });
-                    });
-                    await batch.commit();
+                for (let i = 0; i < inserts.length; i += chunkSize) {
+                    const chunk = inserts.slice(i, i + chunkSize);
+                    await supabase.from("alerts").insert(chunk);
                 }
             } else {
-                await addDoc(collection(db, "alerts"), { ...baseAlert, userId: selectedUserId });
+                await supabase.from("alerts").insert({ ...baseAlert, userId: selectedUserId });
             }
 
             setSuccess(true);
@@ -137,12 +146,13 @@ export default function AdminAlertsPage() {
     };
 
     const handleDelete = async (id: string) => {
-        await deleteDoc(doc(db, "alerts", id));
+        await supabase.from("alerts").delete().eq("id", id);
+        setSentAlerts(prev => prev.filter(a => a.id !== id));
     };
 
     const formatDate = (ts: any) => {
         if (!ts) return "";
-        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        const d = new Date(ts);
         return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
     };
 

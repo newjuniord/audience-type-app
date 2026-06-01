@@ -5,9 +5,7 @@ import DashboardHero from "@/components/DashboardHero";
 import { useAuth } from "@/context/AuthContext";
 import { getEnrollmentsByUser, incrementEnrollmentDownloadCount } from "@/lib/enrollments";
 import { Enrollment } from "@/lib/types";
-import { doc, getDoc, DocumentReference } from "firebase/firestore";
-import { db, auth } from "@/lib/firebase";
-import { signInWithCustomToken } from "firebase/auth";
+import { createClient } from "@/lib/supabase/client";
 import ServiceDetailsDrawer from "@/components/ServiceDetailsDrawer";
 import { useRouter, useSearchParams } from "next/navigation";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -17,6 +15,7 @@ export default function Dashboard() {
     const { user } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const supabase = createClient();
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [paymentSuccess, setPaymentSuccess] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -34,24 +33,9 @@ export default function Dashboard() {
 
     const [selectedServiceEnrollment, setSelectedServiceEnrollment] = useState<Enrollment | null>(null);
 
-    // ── Auto-login après retour de LemonSqueezy (fix PWA disconnect) ──────────
+    // ── Check payment success ──────────
     useEffect(() => {
-        const at = searchParams.get("_at");
         const isPaymentSuccess = searchParams.get("payment") === "success";
-
-        if (at) {
-            // Décoder le token base64url et reconnecter l'utilisateur silencieusement
-            const autoLogin = async () => {
-                try {
-                    const customToken = Buffer.from(at, "base64url").toString("utf8");
-                    await signInWithCustomToken(auth, customToken);
-                    console.log("[Dashboard] Auto-login PWA réussi.");
-                } catch (err) {
-                    console.warn("[Dashboard] Auto-login échoué (token expiré ou déjà connecté):", err);
-                }
-            };
-            autoLogin();
-        }
 
         if (isPaymentSuccess) {
             setPaymentSuccess(true);
@@ -68,17 +52,15 @@ export default function Dashboard() {
 
     useEffect(() => {
         const fetchEnrollments = async () => {
-            // Si on n'a pas encore d'utilisateur, on attend (le chargement continue)
             if (!user) return;
 
             try {
-                // On passe directement l'UID (string) c'est plus sûr et plus rapide
-                const data = await getEnrollmentsByUser(user.uid);
+                const uid = user.id || (user as any).uid;
+                const data = await getEnrollmentsByUser(uid);
                 setEnrollments(data);
             } catch (error) {
                 console.error("Failed to fetch enrollments", error);
             } finally {
-                // Quoi qu'il arrive, on arrête le spinner de chargement
                 setLoading(false);
             }
         };
@@ -90,26 +72,18 @@ export default function Dashboard() {
         if (enrollment.productType.toLowerCase().includes('ebook')) {
             // Ebook Logic
             try {
-                // 1. Fetch File URL from Product Doc
+                // 1. Fetch File URL from Product Table
                 if (enrollment.productId) {
-                    let productDocRef: DocumentReference;
+                    const productId = typeof enrollment.productId === 'object' ? (enrollment.productId as any).id : enrollment.productId;
                     
-                    if (typeof enrollment.productId === 'string') {
-                        // Si c'est un string, on doit reconstruire la référence
-                        let collectionName = "courses";
-                        const type = enrollment.productType.toLowerCase();
-                        if (type.includes('ebook')) collectionName = "ebooks";
-                        else if (type.includes('service') || type.includes('booking')) collectionName = "services";
-                        
-                        productDocRef = doc(db, collectionName, enrollment.productId);
-                    } else {
-                        // C'est déjà une référence
-                        productDocRef = enrollment.productId;
-                    }
+                    let collectionName = "courses";
+                    const type = enrollment.productType.toLowerCase();
+                    if (type.includes('ebook')) collectionName = "ebooks";
+                    else if (type.includes('service') || type.includes('booking')) collectionName = "services";
+                    
+                    const { data: productData, error } = await supabase.from(collectionName).select("fileUrl").eq("id", productId).single();
 
-                    const productDoc = await getDoc(productDocRef);
-                    if (productDoc.exists()) {
-                        const productData = productDoc.data();
+                    if (productData) {
                         if (productData.fileUrl) {
                             // On incrémente seulement si le fichier est réellement disponible
                             if (enrollment.id) {

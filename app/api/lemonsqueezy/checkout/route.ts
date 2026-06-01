@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
 
 /**
  * API Route: /api/lemonsqueezy/checkout
@@ -26,21 +24,25 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Information manquante" }, { status: 400 });
         }
 
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
+
         // RECHERCHE DU PRODUIT (Comme pour Dodo)
         console.log("🔍 [RECHERCHE] Recherche du produit...");
         const collections = ["products", "courses", "ebooks", "services"];
         
-        const snapshots = await Promise.all(
-            collections.map(name => getDoc(doc(db, name, productId)))
-        );
-
         let productData: any = null;
         let productCollection = "";
 
-        for (let i = 0; i < snapshots.length; i++) {
-            if (snapshots[i].exists()) {
-                productData = snapshots[i].data();
-                productCollection = collections[i];
+        for (const name of collections) {
+            const { data } = await supabaseAdmin
+                .from(name)
+                .select('*')
+                .eq('id', productId)
+                .maybeSingle();
+                
+            if (data) {
+                productData = data;
+                productCollection = name;
                 console.log(`✅ [TROUVÉ] Produit trouvé dans "${productCollection}"`);
                 break;
             }
@@ -55,20 +57,20 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Configuration Lemon Squeezy manquante sur le produit" }, { status: 400 });
         }
 
-        // CRÉATION DE L'ORDRE DANS FIRESTORE
-        const { getAdminDb, getAdminAuth } = await import("@/lib/firebase-admin");
-        const adminDb = getAdminDb();
-        const adminAuth = getAdminAuth();
-        const ordersRef = adminDb.collection("orders");
-        const newOrderRef = ordersRef.doc();
-        const orderId = newOrderRef.id;
+        // CRÉATION DE L'ORDRE DANS SUPABASE
+        const orderId = crypto.randomUUID();
 
         // Fetch user document to check for existing customer ID
         let lemonSqueezyCustomerId = "";
         try {
-            const userDocSnap = await adminDb.collection("users").doc(userId).get();
-            if (userDocSnap.exists) {
-                lemonSqueezyCustomerId = userDocSnap.data()?.lemonSqueezyCustomerId || "";
+            const { data: userDoc } = await supabaseAdmin
+                .from("users")
+                .select("lemonSqueezyCustomerId")
+                .eq("id", userId)
+                .single();
+                
+            if (userDoc) {
+                lemonSqueezyCustomerId = userDoc.lemonSqueezyCustomerId || "";
                 if (lemonSqueezyCustomerId) {
                     console.log(`🔗 [CHECKOUT] Found existing lemonSqueezyCustomerId: ${lemonSqueezyCustomerId}`);
                 }
@@ -78,6 +80,7 @@ export async function POST(req: Request) {
         }
 
         const orderData = {
+            id: orderId,
             userId,
             productId,
             productType: productCollection === "courses" ? "course" : (productCollection === "ebooks" ? "ebook" : "service"),
@@ -88,13 +91,17 @@ export async function POST(req: Request) {
             status: "pending",
             paymentMethod: "card",
             provider: "lemonsqueezy",
-            createdAt: new Date(),
-            expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+            createdAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
             userEmail: userEmail || "unknown",
             userName: userName || "unknown"
         };
 
-        await newOrderRef.set(orderData);
+        const { error: orderError } = await supabaseAdmin.from("orders").insert(orderData);
+        if (orderError) {
+            console.error("❌ [ERREUR DB] Erreur de création de commande", orderError);
+            return NextResponse.json({ error: "Erreur lors de l'initialisation de la commande" }, { status: 500 });
+        }
 
         // APPEL API LEMON SQUEEZY (Fetch)
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
@@ -173,7 +180,7 @@ export async function POST(req: Request) {
         if (!res.ok) {
             const errorData = await res.text();
             console.error("❌ [ERREUR LEMON SQUEEZY]", errorData);
-            await newOrderRef.update({ status: "failed_api", failedReason: errorData });
+            await supabaseAdmin.from("orders").update({ status: "failed_api", failedReason: errorData }).eq("id", orderId);
             
             // On renvoie l'erreur détaillée pour comprendre exactement ce qui bloque
             let errorMsg = "Erreur lors de la création du checkout Lemon Squeezy";
@@ -191,7 +198,7 @@ export async function POST(req: Request) {
         const checkoutUrl = lsData.data.attributes.url;
 
         // Met à jour la transaction ID de façon asynchrone
-        newOrderRef.update({ transactionId: lsData.data.id }).catch(e => console.error(e));
+        supabaseAdmin.from("orders").update({ transactionId: lsData.data.id }).eq("id", orderId).catch(e => console.error(e));
 
         console.log(`🚀 [SUCCESS] Redirection LemonSqueezy vers : ${checkoutUrl}`);
         return NextResponse.json({ checkoutUrl, sessionExpiresAtMs });

@@ -1,14 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User as FirebaseUser } from "firebase/auth";
-import { auth, db } from "../lib/firebase";
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, limit } from "firebase/firestore";
-import { User as FirestoreUser } from "../lib/types";
+import { User as SupabaseUser } from "@supabase/supabase-js";
+import { createClient } from "../lib/supabase/client";
+import { User as DBUser } from "../lib/types";
 
 interface AuthContextType {
-    user: FirebaseUser | null;
-    userData: FirestoreUser | null;
+    user: SupabaseUser | null;
+    userData: DBUser | null;
     role: string | null;
     loading: boolean;
     signOutUser: () => Promise<void>;
@@ -22,141 +21,83 @@ const AuthContext = createContext<AuthContextType>({
     signOutUser: async () => {},
 });
 
-import { onAuthStateChanged, signOut } from "firebase/auth";
-
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState<FirebaseUser | null>(null);
-    const [userData, setUserData] = useState<FirestoreUser | null>(null);
+    const [user, setUser] = useState<SupabaseUser | null>(null);
+    const [userData, setUserData] = useState<DBUser | null>(null);
     const [role, setRole] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const supabase = createClient();
+
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-            if (authUser) {
-                setUser(authUser);
-                // Fetch user data and role from Firestore
-                try {
-                    const userDoc = await getDoc(doc(db, "users", authUser.uid));
-                    let data: any = null;
-                    let foundByUid = false;
+        const fetchUserData = async (authUser: SupabaseUser) => {
+            try {
+                // Fetch user data from Supabase "users" table
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('uid', authUser.id)
+                    .single();
 
-                    if (userDoc.exists()) {
-                        data = userDoc.data();
-                        // Check if this is a "real" profile (has a role) or just a "shadow" presence doc
-                        if (data.role || data.Role || data.ROLE) {
-                            foundByUid = true;
-                        } else {
-                            console.warn("AuthContext: Shadow/empty doc found by UID, trying email fallback...");
-                        }
-                    }
-
-                    if (!foundByUid) {
-                        console.warn("AuthContext: No valid document found by UID.");
-                    }
-
-                    if (data) {
-                        // BACKFILL: If missing createdAt, generate and assign it
-                        const updates: any = {};
-                        if (!data.createdAt) {
-                            updates.createdAt = serverTimestamp();
-                        }
-
-                        if (Object.keys(updates).length > 0) {
-                            await setDoc(doc(db, "users", authUser.uid), updates, { merge: true });
-                            // Update local data object too
-                            Object.assign(data, updates);
-                        }
-
-                        setUserData({ ...data, uid: authUser.uid } as FirestoreUser);
-                        const rawRole = (data.role || data.Role || data.ROLE || "customer")?.toString();
-                        const finalRole = rawRole.trim().toLowerCase();
-                        setRole(finalRole);
-                    } else {
-                        setUserData(null);
-                        setRole("customer");
-                    }
-                } catch (error) {
+                if (error) {
                     console.error("AuthContext: Error fetching user data:", error);
                     setUserData(null);
                     setRole("customer");
+                    return;
                 }
-            } else {
-                setUser(null);
+
+                if (data) {
+                    // Update local data object
+                    setUserData({ ...data, uid: authUser.id } as DBUser);
+                    const rawRole = (data.role || data.Role || data.ROLE || "customer")?.toString();
+                    const finalRole = rawRole.trim().toLowerCase();
+                    setRole(finalRole);
+                } else {
+                    setUserData(null);
+                    setRole("customer");
+                }
+            } catch (error) {
+                console.error("AuthContext: Error fetching user data:", error);
                 setUserData(null);
-                setRole(null);
+                setRole("customer");
             }
-            setLoading(false);
+        };
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event, session) => {
+                const authUser = session?.user;
+                if (authUser) {
+                    setUser(authUser);
+                    await fetchUserData(authUser);
+                } else {
+                    setUser(null);
+                    setUserData(null);
+                    setRole(null);
+                }
+                setLoading(false);
+            }
+        );
+
+        // Initial check
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            const authUser = session?.user;
+            if (authUser) {
+                setUser(authUser);
+                fetchUserData(authUser).then(() => setLoading(false));
+            } else {
+                setLoading(false);
+            }
         });
 
-        return () => unsubscribe();
+        return () => {
+            subscription.unsubscribe();
+        };
     }, []);
 
-    // Presence management - ONLY start after loading is done and we have a real user
-    useEffect(() => {
-        // TEMPORARILY DISABLED AS PER REQUEST
-        /*
-        if (!user || loading) return;
-
-        const presenceRef = doc(db, "users", user.uid);
-
-        const updatePresence = async () => {
-            try {
-                // Fetch latest data to avoid overwriting fullName/displayName with null
-                const snap = await getDoc(presenceRef);
-                const currentData = snap.exists() ? snap.data() : {};
-                
-                const finalName = user.displayName || currentData.displayName || currentData.fullName || "";
-                const finalPhoto = user.photoURL || currentData.photoURL || currentData.photoUrl || "";
-
-                await setDoc(presenceRef, {
-                    isOnline: true,
-                    lastActive: serverTimestamp(),
-                    email: user.email,
-                    displayName: finalName,
-                    photoURL: finalPhoto
-                }, { merge: true });
-            } catch (error) {
-                console.error("Error updating presence:", error);
-            }
-        };
-
-        // Initial Ping
-        updatePresence();
-
-        // Ping every 1 hour (3600000 ms)
-        const interval = setInterval(updatePresence, 3600000);
-
-        // Disconnect hook (best effort on web)
-        const handleBeforeUnload = () => {
-            setDoc(presenceRef, { isOnline: false }, { merge: true }).catch(() => {});
-        };
-
-        window.addEventListener("beforeunload", handleBeforeUnload);
-
-        return () => {
-            clearInterval(interval);
-            window.removeEventListener("beforeunload", handleBeforeUnload);
-            // Marquer comme hors ligne au démontage
-            setDoc(presenceRef, { isOnline: false }, { merge: true }).catch(() => {});
-        };
-        */
-    }, [user, loading]);
-
     const signOutUser = async () => {
-        if (user) {
-            try {
-                // TEMPORARILY DISABLED
-                /*
-                const presenceRef = doc(db, "users", user.uid);
-                await setDoc(presenceRef, { isOnline: false }, { merge: true });
-                */
-            } catch (error) {
-                console.error("Error setting offline status on logout:", error);
-            }
-        }
-        // Supprimer le cookie de session logged_in
+        // Remove logged_in cookie
         document.cookie = "logged_in=; path=/; max-age=0; SameSite=Strict; Secure";
-        await signOut(auth);
+        await supabase.auth.signOut();
     };
 
     return (

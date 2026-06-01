@@ -1,24 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createClient } from "@/lib/supabase/client";
 import VideoPlayer from "./VideoPlayer";
 
 export default function HomeVideo() {
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
+    const supabase = createClient();
 
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const docRef = doc(db, "settings", "homepage");
-                const docSnap = await getDoc(docRef);
+                const { data, error } = await supabase
+                    .from('settings')
+                    .select('*')
+                    .eq('id', 'homepage')
+                    .single();
 
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (data.videoVisible && data.videoUrl) {
+                if (!error && data) {
+                    if (data.video_visible && data.video_url) {
+                        setVideoUrl(data.video_url);
+                        setIsVisible(true);
+                    } else if (data.videoVisible && data.videoUrl) {
+                        // Fallback for camelCase column names if any
                         setVideoUrl(data.videoUrl);
                         setIsVisible(true);
                     } else {

@@ -1,54 +1,37 @@
-import { db } from "./firebase";
-import {
-    collection,
-    doc,
-    getDocs,
-    getDoc,
-    updateDoc,
-    deleteDoc,
-    query,
-    where,
-    orderBy,
-    Timestamp,
-    limit as firestoreLimit,
-    startAfter,
-    QueryDocumentSnapshot
-} from "firebase/firestore";
+import { createClient } from "./supabase/client";
 import { User } from "./types";
 
 const COLLECTION_NAME = "users";
 
+const getSupabase = () => createClient();
+
 /**
  * Récupère les utilisateurs avec pagination.
  * @param pageSize Nombre d'utilisateurs à charger
- * @param lastVisible Dernier document chargé (pour la pagination)
- * @returns Liste des utilisateurs et le dernier document
+ * @param page Numéro de la page (commence à 1)
+ * @returns Liste des utilisateurs et s'il y en a plus
  */
-export async function getUsers(pageSize: number = 20, lastVisible?: QueryDocumentSnapshot): Promise<{ users: User[], lastVisible?: QueryDocumentSnapshot }> {
+export async function getUsers(pageSize: number = 20, page: number = 1): Promise<{ users: User[], hasMore: boolean }> {
     try {
-        let q = query(
-            collection(db, COLLECTION_NAME),
-            orderBy("createdAt", "desc"),
-            firestoreLimit(pageSize)
-        );
+        const supabase = getSupabase();
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
 
-        if (lastVisible) {
-            q = query(q, startAfter(lastVisible));
-        }
+        const { data, error, count } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*', { count: 'exact' })
+            .order('createdAt', { ascending: false })
+            .range(from, to);
 
-        const snapshot = await getDocs(q);
-        const users = snapshot.docs.map(doc => ({
-            uid: doc.id,
-            ...doc.data()
-        } as User));
-
+        if (error) throw error;
+        
         return {
-            users,
-            lastVisible: snapshot.docs[snapshot.docs.length - 1]
+            users: (data || []) as User[],
+            hasMore: count !== null && to < count - 1
         };
     } catch (error) {
         console.error("Error fetching users:", error);
-        return { users: [] };
+        return { users: [], hasMore: false };
     }
 }
 
@@ -57,14 +40,25 @@ export async function getUsers(pageSize: number = 20, lastVisible?: QueryDocumen
  */
 export async function getUserById(uid: string): Promise<User | null> {
     try {
-        const docRef = doc(db, COLLECTION_NAME, uid);
-        const docSnap = await getDoc(docRef);
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .eq('id', uid)
+            .single();
 
-        if (docSnap.exists()) {
-            return { uid: docSnap.id, ...docSnap.data() } as User;
-        } else {
+        if (error) {
+            console.log("Aucun utilisateur trouvé ou erreur:", error);
             return null;
         }
+        
+        // Supabase stores user id as 'id', but old code used 'uid'. Let's ensure 'uid' is mapped if needed
+        const user = data as any;
+        if (user.id && !user.uid) {
+            user.uid = user.id;
+        }
+        
+        return user as User;
     } catch (error) {
         console.error(`Error fetching user ${uid}:`, error);
         return null;
@@ -78,8 +72,13 @@ export async function getUserById(uid: string): Promise<User | null> {
  */
 export async function updateUserRole(uid: string, role: 'admin' | 'customer'): Promise<void> {
     try {
-        const docRef = doc(db, COLLECTION_NAME, uid);
-        await updateDoc(docRef, { role });
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .update({ role })
+            .eq('id', uid);
+            
+        if (error) throw error;
     } catch (error) {
         console.error(`Error updating role for user ${uid}:`, error);
         throw error;
@@ -93,8 +92,13 @@ export async function updateUserRole(uid: string, role: 'admin' | 'customer'): P
  */
 export async function updateUser(uid: string, data: Partial<User>): Promise<void> {
     try {
-        const docRef = doc(db, COLLECTION_NAME, uid);
-        await updateDoc(docRef, data);
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .update(data)
+            .eq('id', uid);
+            
+        if (error) throw error;
     } catch (error) {
         console.error(`Error updating user ${uid}:`, error);
         throw error;
@@ -102,12 +106,18 @@ export async function updateUser(uid: string, data: Partial<User>): Promise<void
 }
 
 /**
- * Supprime un document utilisateur de Firestore.
+ * Supprime un document utilisateur de Postgres.
  * Note: Cela ne supprime pas le compte d'authentification (nécessite Admin SDK).
  */
 export async function deleteUserDocument(uid: string): Promise<void> {
     try {
-        await deleteDoc(doc(db, COLLECTION_NAME, uid));
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .delete()
+            .eq('id', uid);
+            
+        if (error) throw error;
     } catch (error) {
         console.error(`Error deleting user document ${uid}:`, error);
         throw error;

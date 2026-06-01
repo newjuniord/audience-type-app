@@ -1,17 +1,20 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from "firebase/storage";
-import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, Timestamp, where } from "firebase/firestore";
-import { storage, db } from "./firebase";
+import { createClient } from "./supabase/client";
 import { StorageAsset } from "./types";
 
-const ASSETS_COLLECTION = "assets";
+const ASSETS_TABLE = "assets";
+const BUCKET_NAME = "assets";
+
+const getSupabase = () => createClient();
 
 /**
- * Uploads a file to Firebase Storage and saves its metadata to Firestore.
+ * Uploads a file to Supabase Storage and saves its metadata to Postgres.
  * @param file The file to upload.
  * @param folder The folder path in storage (default: 'uploads').
  */
 export async function uploadFile(file: File, folder: string = "uploads"): Promise<StorageAsset> {
     try {
+        const supabase = getSupabase();
+        
         // 1. Determine Folder if not provided
         let targetFolder = folder;
         if (targetFolder === "uploads") { // Only override if default
@@ -23,29 +26,54 @@ export async function uploadFile(file: File, folder: string = "uploads"): Promis
         }
 
         // 2. Upload to Storage
-        const storagePath = `${targetFolder}/${Date.now()}_${file.name}`;
-        const storageRef = ref(storage, storagePath);
-        const snapshot = await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(snapshot.ref);
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const storagePath = `${targetFolder}/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+            .from(BUCKET_NAME)
+            .upload(storagePath, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
 
-        // 2. Format Metadata
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from(BUCKET_NAME)
+            .getPublicUrl(storagePath);
+
+        // 3. Format Metadata
         const type = getFileType(file.type, file.name);
         const size = formatBytes(file.size);
+        const id = crypto.randomUUID();
 
         const newAsset: StorageAsset = {
+            id,
             name: file.name,
             type: type,
             path: targetFolder + "/",
             size: size,
             sizeBytes: file.size,
-            createdAt: Timestamp.now(),
-            url: url,
+            createdAt: new Date().toISOString(),
+            url: publicUrl,
             contentType: file.type,
+            // You can optionally save storagePath if you want to make deletion easier
         };
 
-        // 3. Save to Firestore
-        const docRef = await addDoc(collection(db, ASSETS_COLLECTION), newAsset);
-        return { ...newAsset, id: docRef.id };
+        // 4. Save to Database
+        const { error: dbError } = await supabase
+            .from(ASSETS_TABLE)
+            .insert(newAsset);
+
+        if (dbError) {
+            // Revert upload if DB fails
+            await supabase.storage.from(BUCKET_NAME).remove([storagePath]);
+            throw dbError;
+        }
+
+        return newAsset;
 
     } catch (error) {
         console.error("Error uploading file:", error);
@@ -54,18 +82,22 @@ export async function uploadFile(file: File, folder: string = "uploads"): Promis
 }
 
 /**
- * Retrieves all assets from Firestore, optionally filtered by type.
+ * Retrieves all assets from Postgres, optionally filtered by type.
  */
 export async function getAssets(filterType?: string): Promise<StorageAsset[]> {
     try {
-        let q = query(collection(db, ASSETS_COLLECTION), orderBy("createdAt", "desc"));
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(ASSETS_TABLE)
+            .select('*')
+            .order('createdAt', { ascending: false });
 
-        // Note: Client-side filtering might be better for simple categories unless we index specifically
-        const snapshot = await getDocs(q);
-        const assets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StorageAsset));
+        if (error) throw error;
+        const assets = (data || []) as StorageAsset[];
 
         if (filterType && filterType !== "All Files") {
             return assets.filter(asset => {
+                if (!asset.contentType) return true;
                 if (filterType === "Images") return asset.contentType.startsWith("image/");
                 if (filterType === "Videos") return asset.contentType.startsWith("video/");
                 if (filterType === "Documents") return asset.contentType.includes("pdf") || asset.contentType.includes("doc") || asset.contentType.includes("txt");
@@ -82,28 +114,39 @@ export async function getAssets(filterType?: string): Promise<StorageAsset[]> {
 }
 
 /**
- * Deletes an asset from both Storage and Firestore.
+ * Deletes an asset from both Storage and Database.
  */
 export async function deleteAsset(asset: StorageAsset): Promise<void> {
     try {
-        // 1. Delete from Firestore
-        if (asset.id) {
-            await deleteDoc(doc(db, ASSETS_COLLECTION, asset.id));
+        const supabase = getSupabase();
+        
+        // 1. Extract storage path from the public URL
+        // Example URL: https://[project_ref].supabase.co/storage/v1/object/public/assets/images/123_abc.png
+        // The path we need is 'images/123_abc.png'
+        if (asset.url) {
+            const urlParts = asset.url.split(`/public/${BUCKET_NAME}/`);
+            if (urlParts.length > 1) {
+                const storagePath = urlParts[1];
+                const { error: storageError } = await supabase.storage
+                    .from(BUCKET_NAME)
+                    .remove([storagePath]);
+                
+                if (storageError) {
+                    console.error("Error deleting from Supabase Storage:", storageError);
+                    // Decide if we want to throw or continue to delete the DB record
+                }
+            }
         }
 
-        // 2. Delete from Storage (reconstruct path from URL or store distinct storage path)
-        // We stored 'path' as the folder, let's try to find the full ref. 
-        // Ideally we should store the full 'storagePath' in the object. 
-        // For now, let's try to match by name if we constructed it securely, 
-        // BUT actually getDownloadURL returns a tokenized URL. 
-        // It's safer if we store the `storagePath` explicitly in the DB.
-        // Let's rely on the fact we named it `${folder}/${Date.now()}_${file.name}`... 
-        // Wait, we didn't store the exact storage path string in the DB object (only the folder).
-        // Let's just create a reference from the URL using the storage instance.
-
-        const fileRef = ref(storage, asset.url);
-        // Note: ref(storage, url) works for gs:// urls or http urls if from the same bucket.
-        await deleteObject(fileRef);
+        // 2. Delete from Database
+        if (asset.id) {
+            const { error: dbError } = await supabase
+                .from(ASSETS_TABLE)
+                .delete()
+                .eq('id', asset.id);
+                
+            if (dbError) throw dbError;
+        }
 
     } catch (error) {
         console.error("Error deleting asset:", error);

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { subscribeToAlerts, markAlertAsRead, markAllAlertsAsRead } from "@/lib/alerts";
+import { fetchAlerts, markAlertAsRead, markAllAlertsAsRead } from "@/lib/alerts";
 import { Alert, AlertCategory } from "@/lib/types";
 import Link from "next/link";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -28,14 +28,19 @@ export default function AlertsPage() {
 
     useEffect(() => {
         if (!user) return;
-        const unsub = subscribeToAlerts(user.uid, (data) => {
-            setAlerts(data);
-            setLoading(false);
-        }, (error) => {
-            console.error(error);
-            setLoading(false);
-        });
-        return () => unsub();
+        let isMounted = true;
+        fetchAlerts(user.uid)
+            .then((data) => {
+                if (isMounted) {
+                    setAlerts(data);
+                    setLoading(false);
+                }
+            })
+            .catch((error) => {
+                console.error(error);
+                if (isMounted) setLoading(false);
+            });
+        return () => { isMounted = false; };
     }, [user]);
 
     const handleMarkAll = async () => {

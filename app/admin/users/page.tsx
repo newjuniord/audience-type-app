@@ -9,19 +9,17 @@ import UserEnrollmentsDrawer from "@/components/UserEnrollmentsDrawer";
 import CreateUserDrawer from "@/components/CreateUserDrawer";
 import { generateAdminTempLink } from "@/app/actions/notify";
 
-import { getEnrollments, getEnrollmentsByUser } from "@/lib/enrollments";
-import { auth, db } from "@/lib/firebase";
-import { signInWithCustomToken } from "firebase/auth";
+import { getEnrollments } from "@/lib/enrollments";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { QueryDocumentSnapshot, collection, getDocs, writeBatch, doc } from "firebase/firestore";
+import { createClient } from "@/lib/supabase/client";
 
 export default function UserManagementPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'customer'>('all');
-    const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | undefined>(undefined);
+    const [dataPage, setDataPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
     const router = useRouter();
@@ -53,21 +51,23 @@ export default function UserManagementPage() {
     const loadUsers = async (reset = false) => {
         try {
             setLoading(true);
-            const currentLastVisible = reset ? undefined : lastVisible;
-            const { users: newUsers, lastVisible: newLastVisible } = await getUsers(PAGE_SIZE, currentLastVisible);
+            const pageToFetch = reset ? 1 : dataPage;
+            const { users: newUsers, hasMore: newHasMore } = await getUsers(PAGE_SIZE, pageToFetch);
 
             setUsers(prev => {
                 const combined = reset ? newUsers : [...prev, ...newUsers];
                 // Utilisation d'une Map pour garantir l'unicité par UID
                 const uniqueMap = new Map();
-                combined.forEach(u => uniqueMap.set(u.uid, u));
+                combined.forEach(u => uniqueMap.set(u.uid || u.id, u));
                 return Array.from(uniqueMap.values());
             });
 
-            setLastVisible(newLastVisible);
-            setHasMore(newUsers.length === PAGE_SIZE);
+            setHasMore(newHasMore);
             if (reset) {
                 setCurrentPage(1);
+                setDataPage(2);
+            } else {
+                setDataPage(prev => prev + 1);
             }
         } catch (error) {
             console.error("Failed to load users", error);
@@ -81,8 +81,9 @@ export default function UserManagementPage() {
         
         setIsSyncing(true);
         try {
+            const supabase = createClient();
             // 1. Fetch ALL users (only for sync)
-            const usersSnap = await getDocs(collection(db, "users"));
+            const { data: usersSnap } = await supabase.from('users').select('id');
             // 2. Fetch ALL enrollments (only for sync)
             const enrollmentsData = await getEnrollments();
 
@@ -91,30 +92,21 @@ export default function UserManagementPage() {
             enrollmentsData.forEach(enrollment => {
                 const uid = typeof enrollment.userId === 'string' 
                     ? enrollment.userId 
-                    : (enrollment.userId as any).id;
+                    : (enrollment.userId as any)?.id;
                 if (uid) {
                     counts[uid] = (counts[uid] || 0) + 1;
                 }
             });
 
-            // 4. Update users in batches
-            const batch = writeBatch(db);
-            let operationCount = 0;
-
-            for (const userDoc of usersSnap.docs) {
-                const uid = userDoc.id;
-                const count = counts[uid] || 0;
-                batch.update(doc(db, "users", uid), { enrollmentCount: count });
-                operationCount++;
-
-                if (operationCount >= 500) {
-                    await batch.commit();
-                    // Start a new batch if needed
-                    // (Note: simple implementation here, assuming < 500 users or manual repeat)
-                }
+            // 4. Update users
+            if (usersSnap) {
+                const updates = usersSnap.map(userDoc => {
+                    const uid = userDoc.id;
+                    const count = counts[uid] || 0;
+                    return supabase.from('users').update({ enrollmentCount: count }).eq('id', uid);
+                });
+                await Promise.all(updates);
             }
-            
-            if (operationCount > 0) await batch.commit();
             
             alert("Synchronisation terminée !");
             loadUsers(true);
@@ -179,32 +171,16 @@ export default function UserManagementPage() {
     };
 
     const confirmImpersonate = async () => {
-        if (!userToImpersonate || !auth.currentUser) return;
+        if (!userToImpersonate) return;
         setIsProcessing(true);
         
         try {
-            const token = await auth.currentUser.getIdToken();
-            const res = await fetch("/api/admin/impersonate", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ userId: userToImpersonate.uid })
-            });
-
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error || "Failed to impersonate");
-            }
-
-            const { customToken } = await res.json();
-            
-            // Sign in with the custom token for that user
-            await signInWithCustomToken(auth, customToken);
+            // Dans Supabase, l'impersonation directe du côté client n'est pas aussi simple qu'avec Firebase Custom Tokens.
+            // On peut appeler une API route qui nous connecte via le SSR client, ou stocker un token impersonation.
+            alert("La fonctionnalité d'impersonation est en cours de migration vers Supabase.");
             
             // Redirect to their dashboard
-            router.push("/dashboard");
+            // router.push("/dashboard");
         } catch (error: any) {
             console.error("Erreur d'impersonation:", error);
             alert("Erreur: " + error.message);
@@ -315,7 +291,14 @@ export default function UserManagementPage() {
         newToday: users.filter(u => {
             if (!u.createdAt) return false;
             const today = new Date();
-            const created = u.createdAt.toDate();
+            let created: Date;
+            if (typeof u.createdAt === 'string') {
+                created = new Date(u.createdAt);
+            } else if (typeof (u.createdAt as any).toDate === 'function') {
+                created = (u.createdAt as any).toDate();
+            } else {
+                return false;
+            }
             return created.getDate() === today.getDate() &&
                 created.getMonth() === today.getMonth() &&
                 created.getFullYear() === today.getFullYear();
@@ -424,7 +407,7 @@ export default function UserManagementPage() {
                                 </tr>
                             ) : (
                                 displayedUsers.map((user) => (
-                                    <tr key={user.uid} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors group">
+                                    <tr key={user.uid || user.id} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors group">
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
                                                 <div className="size-10 rounded-full bg-black/5 dark:bg-white/5 overflow-hidden flex items-center justify-center">
@@ -495,7 +478,7 @@ export default function UserManagementPage() {
                                             <p className="text-sm font-semibold">{user.enrollmentCount || 0} inscriptions</p>
                                         </td>
                                         <td className="px-8 py-6 text-sm text-black/60 dark:text-white/60">
-                                            {user.createdAt?.toDate().toLocaleDateString() || "Inconnu"}
+                                            {user.createdAt ? (typeof user.createdAt === 'string' ? new Date(user.createdAt).toLocaleDateString() : (user.createdAt as any).toDate?.().toLocaleDateString()) : "Inconnu"}
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -543,7 +526,7 @@ export default function UserManagementPage() {
                                                     </button>
                                                 ) : null}
                                                 <button
-                                                    onClick={() => handleDeleteUser(user.uid)}
+                                                    onClick={() => handleDeleteUser(user.uid || user.id!)}
                                                     className="p-2.5 rounded-full border border-black/5 dark:border-white/10 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-300"
                                                     title="Remove"
                                                 >

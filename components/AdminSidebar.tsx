@@ -4,8 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { createClient } from "@/lib/supabase/client";
 
 interface AdminSidebarProps {
     isOpen?: boolean;
@@ -16,18 +15,27 @@ export default function AdminSidebar({ isOpen = true, onToggle }: AdminSidebarPr
     const pathname = usePathname();
     const { user, userData } = useAuth();
     const [hasUnreadChats, setHasUnreadChats] = useState(false);
+    const supabase = createClient();
 
     // Subscribe to unread chat threads for Admin
     useEffect(() => {
-        const chatRef = collection(db, "chats");
-        const q = query(chatRef, where("unreadByAdmin", "==", true));
-        const unsub = onSnapshot(q, (snapshot) => {
-            setHasUnreadChats(snapshot.size > 0);
-        }, (err) => {
-            console.error("Error subscribing to admin unread chats:", err);
-        });
-        return () => unsub();
-    }, []);
+        const fetchUnread = async () => {
+            const { count } = await supabase.from("chats").select("*", { count: 'exact', head: true }).eq("unreadByAdmin", true);
+            setHasUnreadChats((count || 0) > 0);
+        };
+        
+        fetchUnread();
+        
+        const channel = supabase.channel('admin-unread-chats')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: 'unreadByAdmin=eq.true' }, () => {
+                fetchUnread();
+            })
+            .subscribe();
+            
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [supabase]);
 
     const menuSections = [
         {
@@ -159,18 +167,18 @@ export default function AdminSidebar({ isOpen = true, onToggle }: AdminSidebarPr
             <div className="p-6 border-t border-black/5 dark:border-white/10">
                 <div className="flex items-center gap-3 p-2">
                     <div className="size-10 rounded-full bg-black/10 overflow-hidden relative flex items-center justify-center">
-                        {user?.photoURL ? (
+                        {(user as any)?.photoURL || user?.user_metadata?.photoURL ? (
                             <img
                                 alt="Admin Profile"
                                 className="w-full h-full object-cover"
-                                src={user.photoURL}
+                                src={(user as any)?.photoURL || user?.user_metadata?.photoURL}
                             />
                         ) : (
                             <span className="material-symbols-outlined text-black/40">person</span>
                         )}
                     </div>
                     <div className="overflow-hidden">
-                        <p className="text-xs font-bold truncate max-w-[120px]">{userData?.displayName || user?.displayName || "Admin User"}</p>
+                        <p className="text-xs font-bold truncate max-w-[120px]">{userData?.displayName || userData?.name || (user as any)?.displayName || user?.user_metadata?.displayName || "Admin User"}</p>
                         <p className="text-[10px] text-black/50 dark:text-white/50 truncate max-w-[120px]">{userData?.email || user?.email || userData?.phone}</p>
                     </div>
                 </div>

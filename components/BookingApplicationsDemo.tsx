@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { getBookingApplications, createBookingApplication } from "@/lib/booking-applications";
 import { BookingApplication } from "@/lib/types";
-import { Timestamp, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 export default function BookingApplicationsDemo() {
     const [applications, setApplications] = useState<BookingApplication[]>([]);
@@ -29,7 +27,7 @@ export default function BookingApplicationsDemo() {
     const handleAddTestApplication = async () => {
         const newApp: Omit<BookingApplication, "id"> = {
             bookingsId: "some-booking-id",
-            createdAt: Timestamp.now(),
+            createdAt: new Date().toISOString() as any, // Using ISO string for Supabase
             message: "Je suis très intéressé par ce coaching.",
             status: "pending",
             userName: "Alice Merveille",

@@ -1,78 +1,110 @@
-import {
-    collection,
-    doc,
-    getDocs,
-    getDoc,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    query,
-    where,
-    Timestamp,
-    increment,
-    runTransaction
-} from "firebase/firestore";
-import { db } from "./firebase";
+import { createClient } from "./supabase/client";
 import { Gift } from "./types";
 
 const COLLECTION = "gifts";
 
+const getSupabase = () => createClient();
+
 /** Récupère tous les cadeaux */
 export const getGifts = async (): Promise<Gift[]> => {
-    const snap = await getDocs(collection(db, COLLECTION));
-    return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Gift[];
+    try {
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION)
+            .select('*')
+            .order('createdAt', { ascending: false });
+
+        if (error) throw error;
+        return (data || []) as Gift[];
+    } catch (error) {
+        console.error("Erreur récup gifts:", error);
+        return [];
+    }
 };
 
 /** Récupère un cadeau par ID */
 export const getGift = async (id: string): Promise<Gift | null> => {
-    const snap = await getDoc(doc(db, COLLECTION, id));
-    if (!snap.exists()) return null;
-    return { id: snap.id, ...snap.data() } as Gift;
+    try {
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION)
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error || !data) return null;
+        return data as Gift;
+    } catch (error) {
+        console.error("Erreur récup gift:", error);
+        return null;
+    }
 };
 
 /** Retourne le premier cadeau actif lié à un produit déclencheur */
 export const getGiftByTriggerProduct = async (triggerProductId: string): Promise<Gift | null> => {
-    const q = query(
-        collection(db, COLLECTION),
-        where("triggerProductId", "==", triggerProductId),
-        where("isActive", "==", true)
-    );
-    const snap = await getDocs(q);
-    if (snap.empty) return null;
-    const d = snap.docs[0];
-    return { id: d.id, ...d.data() } as Gift;
+    try {
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION)
+            .select('*')
+            .eq('triggerProductId', triggerProductId)
+            .eq('isActive', true)
+            .limit(1)
+            .single();
+
+        if (error || !data) return null;
+        return data as Gift;
+    } catch (error) {
+        console.error("Erreur récup gift by trigger:", error);
+        return null;
+    }
 };
 
 /** Crée un cadeau */
 export const createGift = async (data: Omit<Gift, "id" | "createdAt" | "currentUsesCount">): Promise<string> => {
-    const ref = await addDoc(collection(db, COLLECTION), {
-        ...data,
-        currentUsesCount: 0,
-        createdAt: Timestamp.now()
-    });
-    return ref.id;
+    try {
+        const supabase = getSupabase();
+        const id = crypto.randomUUID();
+        const newGift = {
+            ...data,
+            id,
+            currentUsesCount: 0,
+            createdAt: new Date().toISOString()
+        };
+
+        const { error } = await supabase.from(COLLECTION).insert(newGift);
+        if (error) throw error;
+        return id;
+    } catch (error) {
+        console.error("Erreur création gift:", error);
+        throw error;
+    }
 };
 
 /** Met à jour un cadeau */
 export const updateGift = async (id: string, data: Partial<Gift>): Promise<void> => {
-    await updateDoc(doc(db, COLLECTION, id), data);
+    try {
+        const supabase = getSupabase();
+        const { error } = await supabase.from(COLLECTION).update(data).eq('id', id);
+        if (error) throw error;
+    } catch (error) {
+        console.error("Erreur maj gift:", error);
+        throw error;
+    }
 };
 
 /** Supprime un cadeau */
 export const deleteGift = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, COLLECTION, id));
+    try {
+        const supabase = getSupabase();
+        const { error } = await supabase.from(COLLECTION).delete().eq('id', id);
+        if (error) throw error;
+    } catch (error) {
+        console.error("Erreur suppression gift:", error);
+        throw error;
+    }
 };
 
-/**
- * Réclame un cadeau pour un utilisateur.
- * Retourne :
- *  - "already_enrolled"  : l'utilisateur a déjà ce produit
- *  - "inactive"          : le cadeau est désactivé
- *  - "expired"           : cadeau expiré
- *  - "max_uses_reached"  : quota atteint
- *  - "invalid_code"      : code d'invitation invalide
- *  - "success"           : enrollment créé avec succès
- */
 export type ClaimResult = 
     | "already_enrolled"
     | "inactive"
@@ -88,18 +120,19 @@ export const claimGift = async (
     userName: string,
     invitationCode?: string
 ): Promise<ClaimResult> => {
-    const giftRef = doc(db, COLLECTION, giftId);
+    try {
+        const supabase = getSupabase();
 
-    return await runTransaction(db, async (txn) => {
-        const giftSnap = await txn.get(giftRef);
-        if (!giftSnap.exists()) throw new Error("Cadeau introuvable");
+        // 1. Fetch gift
+        const { data: giftData, error: giftError } = await supabase.from(COLLECTION).select('*').eq('id', giftId).single();
+        if (giftError || !giftData) throw new Error("Cadeau introuvable");
+        const gift = giftData as Gift;
 
-        const gift = { id: giftSnap.id, ...giftSnap.data() } as Gift;
-
-        // 1. Vérifications de base
+        // 2. Vérifications de base
         if (!gift.isActive) return "inactive";
 
-        if (gift.expirationDate && gift.expirationDate.toMillis() < Date.now()) {
+        // Expiration check (assuming string ISO date)
+        if (gift.expirationDate && new Date(gift.expirationDate).getTime() < Date.now()) {
             return "expired";
         }
 
@@ -113,14 +146,21 @@ export const claimGift = async (
             }
         }
 
-        // 2. Vérifier si l'utilisateur est déjà inscrit
-        const enrollmentsRef = collection(db, "enrollments");
-        const qString = query(enrollmentsRef, where("userId", "==", userId), where("productId", "==", gift.giftProductId));
-        const existingSnap = await getDocs(qString);
-        if (!existingSnap.empty) return "already_enrolled";
+        // 3. Vérifier si l'utilisateur est déjà inscrit
+        const { data: existingEnrollment } = await supabase
+            .from('enrollments')
+            .select('id')
+            .eq('userId', userId)
+            .eq('productId', gift.giftProductId)
+            .limit(1)
+            .maybeSingle();
 
-        // 3. Créer l'enrollment
+        if (existingEnrollment) return "already_enrolled";
+
+        // 4. Créer l'enrollment
+        const enrollmentId = crypto.randomUUID();
         const enrollmentData = {
+            id: enrollmentId,
             userId,
             userEmail,
             userName,
@@ -129,28 +169,42 @@ export const claimGift = async (
             productType: gift.giftProductType,
             productThumbnailUrl: gift.giftProductThumbnailUrl || "",
             accessGranted: true,
-            enrolledAt: Timestamp.now(),
-            lastAccessedAt: Timestamp.now(),
+            enrolledAt: new Date().toISOString(),
+            lastAccessedAt: new Date().toISOString(),
             status: "active",
             progress: 0,
             completedLessons: [],
             currentLessonId: "",
             totalLessons: 0,
             downloadCount: "0",
-            isGift: true,           // Marqueur pour distinguer des achats normaux
+            isGift: true,
             giftId: giftId
         };
 
-        const newEnrollRef = doc(collection(db, "enrollments"));
-        txn.set(newEnrollRef, enrollmentData);
+        const { error: enrollError } = await supabase.from('enrollments').insert(enrollmentData);
+        if (enrollError) {
+            console.error("Error creating enrollment:", enrollError);
+            throw enrollError;
+        }
 
-        // 4. Incrémenter le compteur du cadeau
-        txn.update(giftRef, { currentUsesCount: increment(1) });
+        // 5. Incrémenter le compteur du cadeau
+        await supabase
+            .from(COLLECTION)
+            .update({ currentUsesCount: gift.currentUsesCount + 1 })
+            .eq('id', giftId);
 
-        // 5. Incrémenter le compteur d'enrollments de l'utilisateur
-        const userRef = doc(db, "users", userId);
-        txn.update(userRef, { enrollmentCount: increment(1) });
+        // 6. Incrémenter le compteur d'enrollments de l'utilisateur
+        const { data: user } = await supabase.from('users').select('enrollmentCount').eq('id', userId).single();
+        if (user) {
+            await supabase
+                .from('users')
+                .update({ enrollmentCount: (user.enrollmentCount || 0) + 1 })
+                .eq('id', userId);
+        }
 
         return "success";
-    });
+    } catch (error) {
+        console.error("Erreur claimGift:", error);
+        throw error;
+    }
 };

@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { getAdminDb } from "@/lib/firebase-admin";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 /**
  * POST /api/gifts/claim
@@ -16,88 +14,117 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "giftId et userId sont requis" }, { status: 400 });
         }
 
-        const adminDb = getAdminDb();
-        const giftRef = adminDb.collection("gifts").doc(giftId);
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
 
-        const result = await adminDb.runTransaction(async (txn) => {
-            const giftSnap = await txn.get(giftRef);
-            if (!giftSnap.exists) throw new Error("Cadeau introuvable");
+        const { data: giftData, error: giftError } = await supabaseAdmin
+            .from("gifts")
+            .select("*")
+            .eq("id", giftId)
+            .single();
 
-            const gift = { id: giftSnap.id, ...giftSnap.data() } as any;
+        if (giftError || !giftData) {
+            throw new Error("Cadeau introuvable");
+        }
 
-            // 1. Vérifications de base
-            if (!gift.isActive) return "inactive";
+        const gift = giftData;
 
-            if (gift.expirationDate && gift.expirationDate.toMillis() < Date.now()) {
-                return "expired";
+        // 1. Vérifications de base
+        if (!gift.isActive) return NextResponse.json({ result: "inactive" });
+
+        if (gift.expirationDate && new Date(gift.expirationDate).getTime() < Date.now()) {
+            return NextResponse.json({ result: "expired" });
+        }
+
+        if (gift.maxUses !== null && gift.currentUsesCount >= gift.maxUses) {
+            return NextResponse.json({ result: "max_uses_reached" });
+        }
+
+        // 2. Vérifier si l'utilisateur possède le produit déclencheur
+        let hasTriggerProduct = false;
+        
+        if (gift.triggerProductId) {
+            const { data: triggerSnap } = await supabaseAdmin
+                .from("enrollments")
+                .select("id")
+                .eq("userId", userId)
+                .eq("productId", gift.triggerProductId)
+                .limit(1);
+
+            if (triggerSnap && triggerSnap.length > 0) {
+                hasTriggerProduct = true;
             }
+        }
 
-            if (gift.maxUses !== null && gift.currentUsesCount >= gift.maxUses) {
-                return "max_uses_reached";
+        if (gift.requiresInvitation && gift.invitationCode && !hasTriggerProduct) {
+            if (!invitationCode || invitationCode.trim() === "") {
+                return NextResponse.json({ result: "missing_code" });
             }
-
-            // 2. Vérifier si l'utilisateur possède le produit déclencheur
-            let hasTriggerProduct = false;
-            const enrollmentsRef = adminDb.collection("enrollments");
-            
-            if (gift.triggerProductId) {
-                const triggerSnap = await txn.get(enrollmentsRef.where("userId", "==", userId).where("productId", "==", gift.triggerProductId));
-                if (!triggerSnap.empty) {
-                    hasTriggerProduct = true;
-                }
+            if (invitationCode.trim().toUpperCase() !== gift.invitationCode.trim().toUpperCase()) {
+                return NextResponse.json({ result: "invalid_code" });
             }
+        }
 
-            if (gift.requiresInvitation && gift.invitationCode && !hasTriggerProduct) {
-                if (!invitationCode || invitationCode.trim() === "") {
-                    return "missing_code";
-                }
-                if (invitationCode.trim().toUpperCase() !== gift.invitationCode.trim().toUpperCase()) {
-                    return "invalid_code";
-                }
-            }
+        // 3. Vérifier si l'utilisateur est déjà inscrit à ce cadeau
+        const { data: existingSnap } = await supabaseAdmin
+            .from("enrollments")
+            .select("id")
+            .eq("userId", userId)
+            .eq("productId", gift.giftProductId)
+            .limit(1)
+            .maybeSingle();
 
-            // 3. Vérifier si l'utilisateur est déjà inscrit à ce cadeau
-            const qString = enrollmentsRef.where("userId", "==", userId).where("productId", "==", gift.giftProductId);
-            const existingSnap = await txn.get(qString);
-            if (!existingSnap.empty) return "already_enrolled";
+        if (existingSnap) {
+            return NextResponse.json({ result: "already_enrolled" });
+        }
 
-            // 3. Créer l'enrollment
-            const enrollmentData = {
-                userId,
-                userEmail,
-                userName,
-                productId: gift.giftProductId,
-                productTitle: gift.giftProductTitle,
-                productType: gift.giftProductType,
-                productThumbnailUrl: gift.giftProductThumbnailUrl || "",
-                accessGranted: true,
-                enrolledAt: Timestamp.now(),
-                lastAccessedAt: Timestamp.now(),
-                status: "active",
-                progress: 0,
-                completedLessons: [],
-                currentLessonId: "",
-                totalLessons: 0,
-                downloadCount: "0",
-                isGift: true,
-                giftId: giftId
-            };
+        const now = new Date().toISOString();
 
-            const newEnrollRef = enrollmentsRef.doc();
-            txn.set(newEnrollRef, enrollmentData);
+        // 4. Créer l'enrollment
+        const enrollmentData = {
+            id: crypto.randomUUID(),
+            userId,
+            userEmail,
+            userName,
+            productId: gift.giftProductId,
+            productTitle: gift.giftProductTitle,
+            productType: gift.giftProductType,
+            productThumbnailUrl: gift.giftProductThumbnailUrl || "",
+            accessGranted: true,
+            enrolledAt: now,
+            lastAccessedAt: now,
+            status: "active",
+            progress: 0,
+            completedLessons: [],
+            currentLessonId: "",
+            totalLessons: 0,
+            downloadCount: "0",
+            isGift: true,
+            giftId: giftId
+        };
 
-            // 4. Incrémenter le compteur du cadeau
-            txn.update(giftRef, { currentUsesCount: FieldValue.increment(1) });
+        const { error: enrollError } = await supabaseAdmin.from("enrollments").insert(enrollmentData);
+        if (enrollError) throw enrollError;
 
-            // 5. Incrémenter le compteur d'enrollments de l'utilisateur
-            const userRef = adminDb.collection("users").doc(userId);
-            // We use set with merge in case the user doc doesn't exist yet, to be safe.
-            txn.set(userRef, { enrollmentCount: FieldValue.increment(1) }, { merge: true });
+        // 5. Incrémenter le compteur du cadeau
+        await supabaseAdmin
+            .from("gifts")
+            .update({ currentUsesCount: gift.currentUsesCount + 1 })
+            .eq("id", giftId);
 
-            return "success";
-        });
+        // 6. Incrémenter le compteur d'enrollments de l'utilisateur
+        const { data: user } = await supabaseAdmin.from("users").select("enrollmentCount").eq("id", userId).maybeSingle();
+        if (user) {
+            await supabaseAdmin
+                .from("users")
+                .update({ enrollmentCount: (user.enrollmentCount || 0) + 1 })
+                .eq("id", userId);
+        } else {
+            // User not found in public.users, create stub if necessary?
+            // Fallback: we assume user exists or we don't care if enrollment count update fails
+        }
 
-        return NextResponse.json({ result });
+        return NextResponse.json({ result: "success" });
+
     } catch (err: any) {
         console.error("❌ [gifts/claim]", err);
         return NextResponse.json({ error: err.message || "Erreur interne" }, { status: 500 });

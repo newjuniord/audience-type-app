@@ -1,12 +1,8 @@
-import { getAdminDb, getAdminAuth } from "@/lib/firebase-admin";
-import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import * as crypto from "crypto";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 
 export async function POST(request: Request) {
     let lockId: string | null = null;
-    const db = getAdminDb();
-    const auth = getAdminAuth();
     
     try {
         const bodyText = await request.text();
@@ -26,24 +22,37 @@ export async function POST(request: Request) {
         const userMessage = rawMessage.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
         lockId = `${phoneNumber}_${userMessage}`;
+
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
         
         // ── Verrou de sécurité contre les requêtes identiques concurrentes ─────
-        const lockRef = db.collection("bot_locks").doc(lockId);
-        const isLocked = await db.runTransaction(async (transaction) => {
-            const doc = await transaction.get(lockRef);
-            if (doc.exists) {
-                const data = doc.data();
-                const now = Date.now();
-                if (data && data.isProcessing && (now - data.lockedAt < 15000)) {
-                    return true;
-                }
+        // En Postgres, nous utilisons un UPSERT ou onConflictDO NOTHING
+        const { data: existingLock, error: lockErr } = await supabaseAdmin
+            .from("bot_locks")
+            .select("isProcessing, lockedAt")
+            .eq("id", lockId)
+            .maybeSingle();
+
+        const now = Date.now();
+        let isLocked = false;
+
+        if (existingLock) {
+            const lockedAt = new Date(existingLock.lockedAt).getTime();
+            if (existingLock.isProcessing && (now - lockedAt < 15000)) {
+                isLocked = true;
+            } else {
+                await supabaseAdmin.from("bot_locks").update({ lockedAt: new Date(now).toISOString() }).eq("id", lockId);
             }
-            transaction.set(lockRef, {
+        } else {
+            const { error: insertErr } = await supabaseAdmin.from("bot_locks").insert({
+                id: lockId,
                 isProcessing: true,
-                lockedAt: Date.now()
+                lockedAt: new Date(now).toISOString()
             });
-            return false;
-        });
+            if (insertErr && insertErr.code === '23505') { // Unique violation
+                isLocked = true;
+            }
+        }
         
         if (isLocked) {
             console.warn(`🔒 [BOT WEBHOOK] Duplicate request blocked by isProcessing lock: ${phoneNumber} -> ${userMessage}`);
@@ -56,16 +65,15 @@ export async function POST(request: Request) {
         
         // ── Helper: vérifier le rate limit ───────────────────────────────────
         const checkRateLimit = async (): Promise<{ blocked: boolean; count: number; expireAt: Date | null }> => {
-            const otpDoc = await db.collection("otp_code").doc(otpDocId).get();
-            const now = new Date();
-            if (otpDoc.exists) {
-                const data = otpDoc.data()!;
-                const expireAt = data.expireAt?.toDate() as Date;
-                const count = (data.count || 0) as number;
-                if (expireAt && expireAt > now && count >= MAX_PER_DAY) {
+            const { data: otpDoc } = await supabaseAdmin.from("otp_code").select("*").eq("id", otpDocId).maybeSingle();
+            const nowTime = new Date();
+            if (otpDoc) {
+                const expireAt = otpDoc.expireAt ? new Date(otpDoc.expireAt) : null;
+                const count = (otpDoc.count || 0) as number;
+                if (expireAt && expireAt > nowTime && count >= MAX_PER_DAY) {
                     return { blocked: true, count, expireAt };
                 }
-                return { blocked: false, count: (expireAt && expireAt > now) ? count : 0, expireAt: expireAt || null };
+                return { blocked: false, count: (expireAt && expireAt > nowTime) ? count : 0, expireAt: expireAt || null };
             }
             return { blocked: false, count: 0, expireAt: null };
         };
@@ -76,31 +84,30 @@ export async function POST(request: Request) {
             const newExpireAt = (existingExpireAt && existingExpireAt > now)
                 ? existingExpireAt
                 : new Date(now.getTime() + 24 * 60 * 60 * 1000); // +24h
-            await db.collection("otp_code").doc(otpDocId).set(
-                { code, count: currentCount + 1, expireAt: Timestamp.fromDate(newExpireAt), type: "whatsapp", userId: uid },
-                { merge: true }
-            );
+                
+            await supabaseAdmin.from("otp_code").upsert({
+                id: otpDocId,
+                code,
+                count: currentCount + 1,
+                expireAt: newExpireAt.toISOString(),
+                type: "whatsapp",
+                userId: uid
+            }, { onConflict: "id" });
         };
         
         const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
         
         // ── Helper: trouver l'utilisateur par numéro ──────────────────────────
         const findUserByPhone = async (): Promise<{ uid: string; displayName: string } | null> => {
-            const snap = await db.collection("users").where("phone", "==", phoneNumber).limit(1).get();
-            if (snap.empty) return null;
-            const d = snap.docs[0].data();
-            return { uid: snap.docs[0].id, displayName: d.displayName || d.name || "Client" };
+            const { data: user } = await supabaseAdmin.from("users").select("id, displayName, name").eq("phone", phoneNumber).maybeSingle();
+            if (!user) return null;
+            return { uid: user.id, displayName: user.displayName || user.name || "Client" };
         };
         
         // ── Helper: effacer tous les anciens temp_links non utilisés ──────────
         const clearOldTempLinks = async (uid: string) => {
-            const old = await db.collection("temp_links").where("userId", "==", uid).where("used", "==", false).get();
-            if (!old.empty) {
-                const batch = db.batch();
-                old.docs.forEach(d => batch.delete(d.ref));
-                await batch.commit();
-                console.log(`🗑️ [BOT WEBHOOK] Deleted ${old.size} old temp_link(s) for ${uid}`);
-            }
+            const { error } = await supabaseAdmin.from("temp_links").delete().eq("userId", uid).eq("used", false);
+            if (error) console.error("Error clearing old temp links:", error);
         };
         
         // ── Helper: créer un nouveau temp_link (10h) ──────────────────────────
@@ -108,11 +115,13 @@ export async function POST(request: Request) {
             const token = crypto.randomUUID();
             const now = new Date();
             const expiresAt = new Date(now.getTime() + 10 * 60 * 60 * 1000); // +10h
-            await db.collection("temp_links").doc(token).set({ 
+            
+            await supabaseAdmin.from("temp_links").insert({ 
+                id: token,
                 userId: uid, 
-                expiresAt: Timestamp.fromDate(expiresAt), 
+                expiresAt: expiresAt.toISOString(), 
                 used: false, 
-                createdAt: Timestamp.fromDate(now) 
+                createdAt: now.toISOString() 
             });
             return token;
         };
@@ -137,32 +146,48 @@ export async function POST(request: Request) {
                 console.log(`✅ [BOT WEBHOOK/metem] Existing user: ${uid}`);
             } else {
                 isNewUser = true;
+                const tempPassword = crypto.randomUUID() + "A1!"; // Un mot de passe fort temporaire
                 try {
-                    const newUser = await auth.createUser({ phoneNumber, displayName: ProfileName });
-                    uid = newUser.uid;
+                    const { data: authUser, error: authErr } = await supabaseAdmin.auth.admin.createUser({ 
+                        phone: phoneNumber, 
+                        password: tempPassword,
+                        email_confirm: true,
+                        phone_confirm: true,
+                        user_metadata: { displayName: ProfileName } 
+                    });
+                    
+                    if (authErr) throw authErr;
+                    if (!authUser.user) throw new Error("No user created");
+                    
+                    uid = authUser.user.id;
                     console.log(`✅ [BOT WEBHOOK/metem] Auth user created: ${uid}`);
                 } catch (authErr: any) {
-                    if (authErr.code === "auth/phone-number-already-exists") {
-                        const existingAuthUser = await auth.getUserByPhoneNumber(phoneNumber);
-                        uid = existingAuthUser.uid;
-                        displayName = existingAuthUser.displayName || ProfileName;
-                        console.warn(`⚠️ [BOT WEBHOOK/metem] Self-healing for uid: ${uid}`);
+                    if (authErr.message && authErr.message.includes("already registered")) {
+                        // User already registered in Auth but maybe not in public.users?
+                        // We will just try to find by phone again or fallback.
+                        console.warn(`⚠️ [BOT WEBHOOK/metem] Phone number already registered in auth, fallback required.`);
+                        const { data: usersData } = await supabaseAdmin.from("users").select("id").eq("phone", phoneNumber).limit(1);
+                        if (usersData && usersData.length > 0) {
+                            uid = usersData[0].id;
+                        } else {
+                            throw authErr;
+                        }
                     } else {
                         throw authErr;
                     }
                 }
                 
-                const now = new Date();
-                await db.collection("users").doc(uid).set({
-                    uid,
+                const now = new Date().toISOString();
+                await supabaseAdmin.from("users").insert({
+                    id: uid,
                     phone: phoneNumber,
                     displayName: ProfileName,
                     name: ProfileName,
                     email: `${uid}@audiencetype.com`,
                     status: "active",
                     role: "user",
-                    createdAt: FieldValue.serverTimestamp(),
-                    updatedAt: FieldValue.serverTimestamp()
+                    createdAt: now,
+                    updatedAt: now
                 });
             }
             
@@ -229,7 +254,8 @@ export async function POST(request: Request) {
     } finally {
         if (lockId) {
             try {
-                await db.collection("bot_locks").doc(lockId).delete();
+                const { supabaseAdmin } = await import("@/lib/supabase/admin");
+                await supabaseAdmin.from("bot_locks").delete().eq("id", lockId);
             } catch (err) {
                 console.error("Failed to release bot lock:", err);
             }

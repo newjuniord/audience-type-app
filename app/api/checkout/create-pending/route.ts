@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
 import { v4 as uuidv4 } from "uuid";
 
 export async function POST(req: Request) {
@@ -24,8 +22,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "targetProductId manquant" }, { status: 400 });
         }
 
-        const adminDb = getAdminDb();
-        const usersRef = adminDb.collection("users");
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
         
         let userId = "";
         let userEmail = "";
@@ -33,100 +30,114 @@ export async function POST(req: Request) {
         let userDocFound = false;
 
         if (bodyUserId) {
-            const docSnap = await usersRef.doc(bodyUserId).get();
-            if (docSnap.exists) {
+            const { data: userDoc } = await supabaseAdmin.from("users").select("*").eq("id", bodyUserId).maybeSingle();
+            if (userDoc) {
                 userDocFound = true;
-                const userData = docSnap.data();
                 userId = bodyUserId;
-                userEmail = userData?.email || email || "";
-                userName = userData?.name || "Client";
+                userEmail = userDoc.email || email || "";
+                userName = userDoc.name || "Client";
             }
         }
 
         if (!userDocFound) {
             // 1. Rechercher si l'utilisateur existe déjà par email ou téléphone
-            let querySnapshot;
+            let querySnapshot = null;
             if (contactMethod === 'email' && email) {
-                querySnapshot = await usersRef.where("email", "==", email.trim().toLowerCase()).get();
+                const { data } = await supabaseAdmin.from("users").select("*").eq("email", email.trim().toLowerCase()).limit(1);
+                querySnapshot = data;
             } else if (phone) {
-                querySnapshot = await usersRef.where("phone", "==", phone.trim()).get();
+                const { data } = await supabaseAdmin.from("users").select("*").eq("phone", phone.trim()).limit(1);
+                querySnapshot = data;
             }
 
-            if (querySnapshot && !querySnapshot.empty) {
+            if (querySnapshot && querySnapshot.length > 0) {
                 // L'utilisateur existe déjà !
-                const userDoc = querySnapshot.docs[0];
+                const userDoc = querySnapshot[0];
                 userId = userDoc.id;
-                const userData = userDoc.data();
-                userEmail = userData.email || email || "";
-                userName = userData.name || "Client";
+                userEmail = userDoc.email || email || "";
+                userName = userDoc.name || "Client";
                 userDocFound = true;
             }
         }
 
         if (!userDocFound) {
-            // L'utilisateur n'existe pas ! On le crée d'abord dans Firebase Authentication pour obtenir l'UID officiel
-            const adminAuth = getAdminAuth();
+            // L'utilisateur n'existe pas ! On le crée d'abord dans Supabase Auth pour obtenir l'ID officiel
             let newUserId = "";
             const rawEmail = email ? email.trim().toLowerCase() : undefined;
             const rawPhone = phone ? phone.trim() : undefined;
             userName = email ? email.split('@')[0] : "Client";
 
             try {
-                // Essayer de créer l'utilisateur dans Firebase Auth
-                const authUser = await adminAuth.createUser({
+                // Essayer de créer l'utilisateur dans Supabase Auth
+                const { data: authUser, error: authErr } = await supabaseAdmin.auth.admin.createUser({
                     email: rawEmail,
-                    phoneNumber: rawPhone,
-                    displayName: userName,
+                    phone: rawPhone,
+                    email_confirm: true,
+                    phone_confirm: true,
+                    user_metadata: { displayName: userName },
+                    password: crypto.randomUUID() + "A1!" // Mot de passe aléatoire
                 });
-                newUserId = authUser.uid;
-                console.log("👤 [AUTH] Utilisateur créé dans Firebase Authentication:", newUserId);
+                
+                if (authErr) {
+                    throw authErr;
+                }
+                
+                if (authUser.user) {
+                    newUserId = authUser.user.id;
+                    console.log("👤 [AUTH] Utilisateur créé dans Supabase Auth:", newUserId);
+                }
             } catch (authErr: any) {
-                console.warn("⚠️ [AUTH] Erreur création Firebase Auth, tentative de récupération...", authErr.message);
+                console.warn("⚠️ [AUTH] Erreur création Supabase Auth, tentative de récupération...", authErr.message);
                 try {
+                    // We check if it's already registered and try to query public.users again
+                    let queryAuthData = null;
                     if (rawEmail) {
-                        const existingAuthUser = await adminAuth.getUserByEmail(rawEmail);
-                        newUserId = existingAuthUser.uid;
+                        const { data } = await supabaseAdmin.from("users").select("id").eq("email", rawEmail).limit(1);
+                        queryAuthData = data;
                     } else if (rawPhone) {
-                        const existingAuthUser = await adminAuth.getUserByPhoneNumber(rawPhone);
-                        newUserId = existingAuthUser.uid;
+                        const { data } = await supabaseAdmin.from("users").select("id").eq("phone", rawPhone).limit(1);
+                        queryAuthData = data;
+                    }
+                    if (queryAuthData && queryAuthData.length > 0) {
+                        newUserId = queryAuthData[0].id;
                     } else {
-                        throw authErr;
+                        // Fallback de sécurité, though Supabase requires Auth user for JWT
+                        newUserId = crypto.randomUUID();
                     }
                 } catch {
                     // Fallback de sécurité
-                    newUserId = `usr_${Math.random().toString(36).substring(2, 15)}`;
+                    newUserId = crypto.randomUUID();
                 }
             }
 
+            const now = new Date().toISOString();
             const newUserDoc = {
-                uid: newUserId,
+                id: newUserId,
                 email: rawEmail || "",
                 phone: rawPhone || "",
                 name: userName,
                 role: "customer",
-                MAGIC_LINK_CLICK: uuidv4().replace(/-/g, ''),
-                createdAt: FieldValue.serverTimestamp(),
+                createdAt: now,
+                updatedAt: now,
                 status: "active",
-                enrollmentCount: 0,
-                tempLinksCount: 0
+                enrollmentCount: 0
             };
 
-            await usersRef.doc(newUserId).set(newUserDoc);
+            await supabaseAdmin.from("users").upsert(newUserDoc, { onConflict: "id" });
             userId = newUserId;
             userEmail = rawEmail || "";
-            console.log("👤 [FIRESTORE] Profil utilisateur créé dans Firestore:", newUserId);
+            console.log("👤 [DB] Profil utilisateur créé dans Supabase public.users:", newUserId);
         }
 
         // 2. Créer l'ordre (order) en attente (pending) de manière sécurisée (Server-side) uniquement pour MonCash (car Lemon Squeezy le fait déjà lui-même)
         let orderId = "";
-        if (paymentMethod === 'moncash') {
-            const collectionName = productType === 'ebook' ? 'ebooks' : (productType === 'service' ? 'services' : 'courses');
-            const productRef = adminDb.collection(collectionName).doc(targetProductId);
-
+        if (paymentMethod === 'moncash' || paymentMethod === 'bazik') {
+            const newOrderId = crypto.randomUUID();
             const orderData = {
+                id: newOrderId,
                 userId: userId,
                 userEmail: userEmail,
-                productId: productRef,
+                productId: targetProductId,
                 productThumbnailUrl: videoPoster || "",
                 productTitle: headline || "Formation",
                 productType: productType || "course",
@@ -135,11 +146,12 @@ export async function POST(req: Request) {
                 currency: currency || "HTG",
                 status: "pending",
                 paymentMethod: "moncash",
-                createdAt: FieldValue.serverTimestamp()
+                createdAt: new Date().toISOString()
             };
 
-            const orderRef = await adminDb.collection("orders").add(orderData);
-            orderId = orderRef.id;
+            const { error: orderError } = await supabaseAdmin.from("orders").insert(orderData);
+            if (orderError) throw orderError;
+            orderId = newOrderId;
         }
 
         return NextResponse.json({

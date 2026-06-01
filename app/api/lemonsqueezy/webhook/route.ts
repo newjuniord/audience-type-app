@@ -45,20 +45,19 @@ export async function POST(req: Request) {
 
         const lsStatus = attributes.status?.toLowerCase();
         
-        // Initialisation de Firestore
-        const { getAdminDb, getAdminAuth } = await import("@/lib/firebase-admin");
-        const adminDb = getAdminDb();
-        const adminAuth = getAdminAuth();
+        // Initialisation de Supabase Admin
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
 
-        const orderRef = adminDb.collection("orders").doc(internalOrderId);
-        const orderSnap = await orderRef.get();
+        const { data: orderData, error: orderError } = await supabaseAdmin
+            .from("orders")
+            .select("*")
+            .eq("id", internalOrderId)
+            .single();
 
-        if (!orderSnap.exists) {
+        if (orderError || !orderData) {
             console.error(`❌ [WEBHOOK] Order ${internalOrderId} not found.`);
             return NextResponse.json({ error: "Order not found" }, { status: 404 });
         }
-
-        let orderData = orderSnap.data();
 
         // Eviter de traiter deux fois la même commande
         if (orderData?.status === "paid") {
@@ -76,12 +75,14 @@ export async function POST(req: Request) {
             // Self-healing: Update user profile with real email & customer ID
             if (orderData?.userId) {
                 try {
-                    const userRef = adminDb.collection("users").doc(orderData.userId);
-                    const userSnap = await userRef.get();
+                    const { data: userData } = await supabaseAdmin
+                        .from("users")
+                        .select("*")
+                        .eq("id", orderData.userId)
+                        .single();
 
-                    if (userSnap.exists) {
-                        const userData = userSnap.data();
-                        const currentEmail = userData?.email || "";
+                    if (userData) {
+                        const currentEmail = userData.email || "";
                         const isFakeEmail = !currentEmail || currentEmail.endsWith("@audiencetype.com");
 
                         const userUpdates: any = {};
@@ -95,14 +96,14 @@ export async function POST(req: Request) {
                             finalUserEmail = customerEmail;
 
                             try {
-                                await adminAuth.updateUser(orderData.userId, { email: customerEmail });
+                                await supabaseAdmin.auth.admin.updateUserById(orderData.userId, { email: customerEmail });
                             } catch (authErr: any) {
-                                console.warn(`⚠️ [WEBHOOK] Failed to update email in Firebase Auth:`, authErr.message);
+                                console.warn(`⚠️ [WEBHOOK] Failed to update email in Supabase Auth:`, authErr.message);
                             }
                         }
 
                         if (Object.keys(userUpdates).length > 0) {
-                            await userRef.update(userUpdates);
+                            await supabaseAdmin.from("users").update(userUpdates).eq("id", orderData.userId);
                         }
                     }
                 } catch (userErr: any) {
@@ -110,7 +111,7 @@ export async function POST(req: Request) {
                 }
             }
 
-            const now = new Date();
+            const now = new Date().toISOString();
             const updateData: any = {
                 status: "paid",
                 amount: finalAmount,
@@ -122,21 +123,23 @@ export async function POST(req: Request) {
                 updateData.userEmail = finalUserEmail;
             }
             
-            await orderRef.update(updateData);
+            await supabaseAdmin.from("orders").update(updateData).eq("id", internalOrderId);
 
             // ── COURS / EBOOK : Création de l'inscription ──────────────────────
             if (orderData && orderData.productType !== "service" && orderData.productType !== "booking") {
-                const enrollmentsRef = adminDb.collection("enrollments");
-
-                const existingEnrollment = await enrollmentsRef
-                    .where("userId", "==", orderData?.userId)
-                    .where("productId", "==", orderData?.productId)
+                const { data: existingEnrollment } = await supabaseAdmin
+                    .from("enrollments")
+                    .select("id")
+                    .eq("userId", orderData.userId)
+                    .eq("productId", orderData.productId)
                     .limit(1)
-                    .get();
+                    .maybeSingle();
 
-                if (existingEnrollment.empty) {
+                if (!existingEnrollment) {
                     console.log(`📚 [WEBHOOK] Création de l'inscription pour ${finalUserEmail}`);
-                    await enrollmentsRef.add({
+                    
+                    const newEnrollment = {
+                        id: crypto.randomUUID(),
                         accessGranted: true,
                         completedLessons: [],
                         currentLessonId: "",
@@ -144,22 +147,25 @@ export async function POST(req: Request) {
                         enrolledAt: now,
                         lastAccessedAt: now,
                         orderId: internalOrderId,
-                        productId: orderData?.productId,
-                        productThumbnailUrl: orderData?.productThumbnailUrl,
-                        productTitle: orderData?.productTitle,
-                        productType: orderData?.productType,
+                        productId: orderData.productId,
+                        productThumbnailUrl: orderData.productThumbnailUrl,
+                        productTitle: orderData.productTitle,
+                        productType: orderData.productType,
                         progress: 0,
                         status: "active",
                         totalLessons: 0,
                         userEmail: finalUserEmail,
-                        userId: orderData?.userId,
-                        userName: orderData?.userName || "Étudiant"
-                    });
+                        userId: orderData.userId,
+                        userName: orderData.userName || "Étudiant"
+                    };
+
+                    await supabaseAdmin.from("enrollments").insert(newEnrollment);
                 }
 
                 try {
                     const typeLabel = orderData?.productType === "course" ? "Kou" : "Ebook";
-                    await adminDb.collection("alerts").add({
+                    await supabaseAdmin.from("alerts").insert({
+                        id: crypto.randomUUID(),
                         userId: orderData?.userId,
                         category: "utility",
                         type: "payment_success",
@@ -184,30 +190,25 @@ export async function POST(req: Request) {
                     console.log(`📅 [WEBHOOK] Recherche du bookingApplication pour userId=${orderData.userId} / serviceId=${orderData.productId}`);
 
                     // Chercher toutes les réservations pending de cet utilisateur pour ce service
-                    const bookingSnap = await adminDb.collection("bookingApplications")
-                        .where("usersId", "==", orderData.userId)
-                        .where("bookingsId", "==", orderData.productId)
-                        .where("status", "==", "pending")
-                        .get();
+                    const { data: bookingDocs, error: bookingErr } = await supabaseAdmin
+                        .from("bookingApplications")
+                        .select("*")
+                        .eq("usersId", orderData.userId)
+                        .eq("bookingsId", orderData.productId)
+                        .eq("status", "pending")
+                        .order("createdAt", { ascending: false });
 
-                    if (bookingSnap.empty) {
+                    if (bookingErr || !bookingDocs || bookingDocs.length === 0) {
                         console.warn(`⚠️ [WEBHOOK] Aucun bookingApplication pending trouvé pour userId=${orderData.userId} / serviceId=${orderData.productId}`);
                     } else {
-                        // Trier par createdAt pour confirmer le plus récent
-                        const sorted = bookingSnap.docs.sort((a, b) => {
-                            const aMs = a.data().createdAt?.toMillis?.() || 0;
-                            const bMs = b.data().createdAt?.toMillis?.() || 0;
-                            return bMs - aMs; // plus récent en premier
-                        });
+                        const bookingDoc = bookingDocs[0];
+                        const bookingData = bookingDoc;
 
-                        const bookingDoc = sorted[0];
-                        const bookingData = bookingDoc.data();
-
-                        await bookingDoc.ref.update({
+                        await supabaseAdmin.from("bookingApplications").update({
                             status: "accepted",
                             paidAt: now,
                             orderId: internalOrderId,
-                        });
+                        }).eq("id", bookingDoc.id);
 
                         console.log(`✅ [WEBHOOK] bookingApplication ${bookingDoc.id} → status: accepted`);
 
@@ -239,7 +240,8 @@ export async function POST(req: Request) {
                                 ? `Konsiltasyon ou a konfime pou ${dateLabel} a ${timeLabel}. Nou pral kontakte w pa WhatsApp pou konfime detay yo.`
                                 : `Konsiltasyon ou a konfime. Nou pral kontakte w pa WhatsApp pou planifye lè egzak la.`;
 
-                            await adminDb.collection("alerts").add({
+                            await supabaseAdmin.from("alerts").insert({
+                                id: crypto.randomUUID(),
                                 userId: orderData.userId,
                                 category: "utility",
                                 type: "booking_reminder",

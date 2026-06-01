@@ -1,10 +1,9 @@
 "use server";
 
 import { sendSmsMessage, formatMessageTemplate } from "@/lib/whatsapp";
-import { getAdminDb } from "@/lib/firebase-admin";
 import { v4 as uuidv4 } from "uuid";
-import { Timestamp } from "firebase-admin/firestore";
 import { getOrCreateUserMagicToken } from "@/lib/magicLink";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function sendGiftNotification(
     userId: string,
@@ -16,37 +15,39 @@ export async function sendGiftNotification(
     if (!userId) return { success: false, error: "userId manquant." };
     
     try {
-        const adminDb = getAdminDb();
-
         // 1. Check if user already has an active (unused) temp link
-        const existingLinks = await adminDb.collection("temp_links")
-            .where("userId", "==", userId)
-            .where("used", "==", false)
-            .limit(1)
-            .get();
+        const { data: existingLinks, error: fetchError } = await supabaseAdmin
+            .from("temp_links")
+            .select("*")
+            .eq("userId", userId)
+            .eq("used", false)
+            .limit(1);
 
         let token = "";
         let code = "";
 
-        if (existingLinks.empty) {
+        if (!existingLinks || existingLinks.length === 0) {
             token = uuidv4();
             code = Math.floor(1000 + Math.random() * 9000).toString(); // 4 digits
             
             const expiresAt = new Date();
             expiresAt.setFullYear(expiresAt.getFullYear() + 100);
 
-            // Store in temp_links collection
-            await adminDb.collection("temp_links").doc(token).set({
+            // Store in temp_links table
+            const { error: insertError } = await supabaseAdmin.from("temp_links").insert({
+                id: token,
                 userId: userId,
                 code: code,
-                expiresAt: Timestamp.fromDate(expiresAt),
+                expiresAt: expiresAt.toISOString(),
                 used: false,
-                createdAt: Timestamp.now()
+                createdAt: new Date().toISOString()
             });
+            
+            if (insertError) throw insertError;
         } else {
-            const existingDoc = existingLinks.docs[0];
+            const existingDoc = existingLinks[0];
             token = existingDoc.id;
-            code = existingDoc.data().code;
+            code = existingDoc.code;
         }
 
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://audiencetype.com";
@@ -73,17 +74,19 @@ export async function generateAdminTempLink(userId: string) {
     if (!userId) return { success: false, error: "userId manquant." };
     
     try {
-        const adminDb = getAdminDb();
         const token = uuidv4();
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 24); // Expire dans 24h
 
-        await adminDb.collection("temp_links").doc(token).set({
+        const { error: insertError } = await supabaseAdmin.from("temp_links").insert({
+            id: token,
             userId: userId,
-            expiresAt: Timestamp.fromDate(expiresAt),
+            expiresAt: expiresAt.toISOString(),
             used: false,
-            createdAt: Timestamp.now()
+            createdAt: new Date().toISOString()
         });
+        
+        if (insertError) throw insertError;
 
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://audiencetype.com";
         const link = `${baseUrl}/login/temp?token=${token}`;

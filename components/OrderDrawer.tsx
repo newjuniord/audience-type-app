@@ -26,17 +26,15 @@ export default function OrderDrawer({ isOpen, onClose, order }: OrderDrawerProps
     if (!isVisible && !isOpen) return null;
     if (!order) return null;
 
-    // Helper functions for formatting
     const formatDate = (dateValue: any) => {
         if (!dateValue) return "N/A";
-        if (dateValue.toDate) {
-            return dateValue.toDate().toLocaleString();
-        }
-        if (typeof dateValue === 'string') {
-            return new Date(dateValue).toLocaleString();
-        }
-        if (dateValue.seconds) { // Raw firebase timestamp
-             return new Date(dateValue.seconds * 1000).toLocaleString();
+        try {
+            const parsed = new Date(dateValue);
+            if (!isNaN(parsed.getTime())) {
+                return parsed.toLocaleString();
+            }
+        } catch (e) {
+            // Ignore parse errors
         }
         return String(dateValue);
     };

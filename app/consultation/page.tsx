@@ -7,8 +7,7 @@ import { Service } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardFooter from "@/components/DashboardFooter";
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { createClient } from "@/lib/supabase/client";
 import ConsultationBookingModal from "@/components/ConsultationBookingModal";
 
 function normalizeAvailability(avail: any) {
@@ -49,6 +48,7 @@ function normalizeAvailability(avail: any) {
 
 export default function ConsultationPage() {
   const { user } = useAuth();
+  const supabase = createClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [service, setService] = useState<Service | null>(null);
@@ -64,12 +64,18 @@ export default function ConsultationPage() {
     }
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const q = query(collection(db, "bookingApplications"), where("usersId", "==", user.uid));
+    const userId = user.id || (user as any).uid;
     
-    getDocs(q).then(snap => {
+    supabase.from("bookingApplications").select("*").eq("usersId", userId)
+    .then(({ data: snap, error }) => {
+      if (error) {
+        console.error("Error checking active consultations", error);
+        setCheckingActive(false);
+        return;
+      }
+      
       const validStatuses = ["accepted", "confirmed", "approved", "paid", "success", "active"];
-      const hasActive = snap.docs.some(doc => {
-        const d = doc.data();
+      const hasActive = (snap || []).some((d: any) => {
         return d.bookingDate && d.bookingDate >= todayStr && validStatuses.includes((d.status || "").toLowerCase());
       });
       setHasActiveConsultation(hasActive);
@@ -78,7 +84,7 @@ export default function ConsultationPage() {
       console.error("Error checking active consultations", err);
       setCheckingActive(false);
     });
-  }, [user]);
+  }, [user, supabase]);
 
   useEffect(() => {
     getServices().then(services => {

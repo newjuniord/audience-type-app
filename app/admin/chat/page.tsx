@@ -2,10 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import {
-    doc, setDoc, addDoc, collection, query, orderBy, onSnapshot, Timestamp, writeBatch, deleteDoc, getDocs, where, limit
-} from "firebase/firestore";
+import { createClient } from "@/lib/supabase/client";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { uploadChatMedia, compressImage } from "@/lib/chatMedia";
 import UserEnrollmentsModal from "@/components/UserEnrollmentsModal";
@@ -35,10 +32,12 @@ interface Message {
     mediaUrl?: string;
     voiceDuration?: number;
     createdAt: any;
+    chatId?: string;
 }
 
 export default function AdminChatPage() {
     const { user, userData } = useAuth();
+    const supabase = createClient();
     const [threads, setThreads] = useState<ChatThread[]>([]);
     const [selectedThread, setSelectedThread] = useState<ChatThread | null>(null);
     const [isEnrollmentsOpen, setIsEnrollmentsOpen] = useState(false);
@@ -62,33 +61,36 @@ export default function AdminChatPage() {
 
     // 1. Fetch all chat threads in real-time
     useEffect(() => {
-        const chatRef = collection(db, "chats");
-        const q = query(chatRef, orderBy("lastMessageAt", "desc"));
+        const fetchThreads = async () => {
+            const { data } = await supabase.from("chats").select("*").order("lastMessageAt", { ascending: false });
+            if (data) {
+                setThreads(data.map((d: any) => ({
+                    id: d.id,
+                    userId: d.userId || d.id,
+                    userName: d.userName || "Etidyan",
+                    userEmail: d.userEmail || "",
+                    userPhone: d.userPhone || "",
+                    lastMessage: d.lastMessage || "",
+                    lastMessageSenderId: d.lastMessageSenderId || "",
+                    lastMessageAt: d.lastMessageAt,
+                    unreadByAdmin: !!d.unreadByAdmin,
+                    unreadByUser: !!d.unreadByUser
+                })));
+            }
+        };
 
-        const unsub = onSnapshot(q, (snapshot) => {
-            const list: ChatThread[] = [];
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                list.push({
-                    id: doc.id,
-                    userId: data.userId || doc.id,
-                    userName: data.userName || "Etidyan",
-                    userEmail: data.userEmail || "",
-                    userPhone: data.userPhone || "",
-                    lastMessage: data.lastMessage || "",
-                    lastMessageSenderId: data.lastMessageSenderId || "",
-                    lastMessageAt: data.lastMessageAt,
-                    unreadByAdmin: !!data.unreadByAdmin,
-                    unreadByUser: !!data.unreadByUser
-                });
-            });
-            setThreads(list);
-        }, (err) => {
-            console.error("Error loading chat threads:", err);
-        });
+        fetchThreads();
 
-        return () => unsub();
-    }, []);
+        const channel = supabase.channel('admin-chats-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => {
+                fetchThreads();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [supabase]);
 
     // 2. Fetch messages for active thread
     useEffect(() => {
@@ -97,60 +99,65 @@ export default function AdminChatPage() {
             return;
         }
 
-        const messagesRef = collection(db, "chats", selectedThread.id, "messages");
-        const q = query(messagesRef, orderBy("createdAt", "asc"));
-
-        const unsub = onSnapshot(q, (snapshot) => {
-            const list: Message[] = [];
-            const unreadRefs: any[] = [];
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                list.push({
-                    id: doc.id,
-                    senderId: data.senderId,
-                    senderName: data.senderName || "",
-                    text: data.text || "",
-                    type: data.type || "text",
-                    mediaUrl: data.mediaUrl || "",
-                    voiceDuration: data.voiceDuration || 0,
-                    createdAt: data.createdAt
-                });
-                if (data.senderId !== "admin" && !data.isRead) {
-                    unreadRefs.push(doc.ref);
-                }
-            });
-            setMessages(list);
+        const fetchMessages = async () => {
+            const { data } = await supabase.from("messages")
+                .select("*")
+                .eq("chatId", selectedThread.id)
+                .order("createdAt", { ascending: true });
             
-            // Mark individual messages as read so the student sees the double-checkmark
-            if (unreadRefs.length > 0) {
-                const batch = writeBatch(db);
-                unreadRefs.forEach(ref => batch.update(ref, { isRead: true }));
-                batch.commit().catch(err => console.error("Error marking messages as read:", err));
-            }
+            if (data) {
+                const unreadIds: string[] = [];
+                const list: Message[] = data.map((d: any) => {
+                    if (d.senderId !== "admin" && !d.isRead) {
+                        unreadIds.push(d.id);
+                    }
+                    return {
+                        id: d.id,
+                        senderId: d.senderId,
+                        senderName: d.senderName || "",
+                        text: d.text || "",
+                        type: d.type || "text",
+                        mediaUrl: d.mediaUrl || "",
+                        voiceDuration: d.voiceDuration || 0,
+                        createdAt: d.createdAt,
+                        chatId: d.chatId
+                    };
+                });
+                
+                setMessages(list);
 
-            // Auto scroll to bottom
-            setTimeout(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-            }, 100);
-        });
+                if (unreadIds.length > 0) {
+                    await supabase.from("messages").update({ isRead: true }).in("id", unreadIds);
+                }
+
+                setTimeout(() => {
+                    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+            }
+        };
+
+        fetchMessages();
+
+        const channel = supabase.channel(`messages-${selectedThread.id}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chatId=eq.${selectedThread.id}` }, () => {
+                fetchMessages();
+            })
+            .subscribe();
 
         // Reset unread indicator when thread is opened
-        const threadDocRef = doc(db, "chats", selectedThread.id);
-        setDoc(threadDocRef, { unreadByAdmin: false }, { merge: true }).catch((err) => {
-            console.error("Error updating unreadByAdmin status:", err);
-        });
+        supabase.from("chats").update({ unreadByAdmin: false }).eq("id", selectedThread.id).then();
 
-        return () => unsub();
-    }, [selectedThread]);
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [selectedThread, supabase]);
 
     const sendAdminMessage = useCallback(async (type: "text" | "image", mediaBlob?: Blob, mediaName?: string) => {
         if (!selectedThread) return;
         setSending(true);
         try {
             const adminName = userData?.displayName || user?.displayName || "Admin";
-            const messagesRef = collection(db, "chats", selectedThread.id, "messages");
-            const chatRef = doc(db, "chats", selectedThread.id);
-            const now = Timestamp.now();
+            const now = new Date().toISOString();
 
             let mediaUrl = "";
             let textContent = inputText.trim();
@@ -160,12 +167,27 @@ export default function AdminChatPage() {
                 textContent = "📷 Image";
             }
 
-            const msgData: any = { senderId: "admin", senderName: adminName, text: textContent, type, createdAt: now };
+            const msgData: any = { 
+                id: crypto.randomUUID(),
+                chatId: selectedThread.id,
+                senderId: "admin", 
+                senderName: adminName, 
+                text: textContent, 
+                type, 
+                createdAt: now 
+            };
+            
             if (mediaUrl) msgData.mediaUrl = mediaUrl;
 
-            await addDoc(messagesRef, msgData);
-            await setDoc(chatRef, { lastMessage: textContent, lastMessageSenderId: "admin", lastMessageAt: now, unreadByAdmin: false, unreadByUser: true }, { merge: true });
-
+            await supabase.from("messages").insert(msgData);
+            
+            await supabase.from("chats").update({ 
+                lastMessage: textContent, 
+                lastMessageSenderId: "admin", 
+                lastMessageAt: now, 
+                unreadByAdmin: false, 
+                unreadByUser: true 
+            }).eq("id", selectedThread.id);
 
             setInputText("");
             setImagePreview(null);
@@ -176,7 +198,7 @@ export default function AdminChatPage() {
             setErrorMessage("Erreur lors de l'envoi du message. Veuillez réessayer.");
             setIsErrorModalOpen(true);
         } finally { setSending(false); }
-    }, [selectedThread, user, userData, inputText]);
+    }, [selectedThread, user, userData, inputText, supabase]);
 
     const handleSendText = (e: React.FormEvent) => {
         e.preventDefault();
@@ -220,7 +242,7 @@ export default function AdminChatPage() {
     const confirmDeleteMessage = async () => {
         if (!messageToDelete || !selectedThread) return;
         try {
-            await deleteDoc(doc(db, "chats", selectedThread.id, "messages", messageToDelete.id));
+            await supabase.from("messages").delete().eq("id", messageToDelete.id);
             setMessageToDelete(null);
         } catch (err) {
             console.error("Error deleting message:", err);
@@ -236,19 +258,11 @@ export default function AdminChatPage() {
         if (!selectedThread) return;
         try {
             setSending(true);
-            const messagesRef = collection(db, "chats", selectedThread.id, "messages");
-            const snapshot = await getDocs(messagesRef);
-            
-            const batch = writeBatch(db);
-            snapshot.docs.forEach((docSnap) => {
-                batch.delete(docSnap.ref);
-            });
-            batch.delete(doc(db, "chats", selectedThread.id));
-            await batch.commit();
+            await supabase.from("messages").delete().eq("chatId", selectedThread.id);
+            await supabase.from("chats").delete().eq("id", selectedThread.id);
 
             setSelectedThread(null);
             setIsDeleteChatModalOpen(false);
-            // Optionally, we could show a toast here, but just clearing the selection is enough
         } catch (err) {
             console.error("Error deleting conversation:", err);
             setErrorMessage("Erreur lors de la suppression de la conversation.");
@@ -264,13 +278,11 @@ export default function AdminChatPage() {
         setIsSavingUser(true);
         try {
             const currentUserId = selectedThread.userId || selectedThread.id;
-            const usersRef = collection(db, "users");
 
             // Check if email already exists
             if (editUserEmail.trim() !== "") {
-                const emailQuery = query(usersRef, where("email", "==", editUserEmail.trim()), limit(1));
-                const emailSnap = await getDocs(emailQuery);
-                if (!emailSnap.empty && emailSnap.docs[0].id !== currentUserId) {
+                const { data: emailSnap } = await supabase.from("users").select("id").eq("email", editUserEmail.trim()).limit(1);
+                if (emailSnap && emailSnap.length > 0 && emailSnap[0].id !== currentUserId) {
                     setErrorMessage("Cette adresse email est déjà utilisée par un autre utilisateur.");
                     setIsErrorModalOpen(true);
                     setIsSavingUser(false);
@@ -280,9 +292,8 @@ export default function AdminChatPage() {
 
             // Check if phone already exists
             if (editUserPhone.trim() !== "") {
-                const phoneQuery = query(usersRef, where("phone", "==", editUserPhone.trim()), limit(1));
-                const phoneSnap = await getDocs(phoneQuery);
-                if (!phoneSnap.empty && phoneSnap.docs[0].id !== currentUserId) {
+                const { data: phoneSnap } = await supabase.from("users").select("id").eq("phone", editUserPhone.trim()).limit(1);
+                if (phoneSnap && phoneSnap.length > 0 && phoneSnap[0].id !== currentUserId) {
                     setErrorMessage("Ce numéro de téléphone est déjà utilisé par un autre utilisateur.");
                     setIsErrorModalOpen(true);
                     setIsSavingUser(false);
@@ -290,20 +301,18 @@ export default function AdminChatPage() {
                 }
             }
 
-            const threadDocRef = doc(db, "chats", selectedThread.id);
-            await setDoc(threadDocRef, {
+            await supabase.from("chats").update({
                 userName: editUserName,
                 userEmail: editUserEmail,
                 userPhone: editUserPhone
-            }, { merge: true });
+            }).eq("id", selectedThread.id);
             
             // Also update in users collection
-            const userDocRef = doc(db, "users", selectedThread.userId || selectedThread.id);
-            await setDoc(userDocRef, {
+            await supabase.from("users").update({
                 displayName: editUserName,
                 email: editUserEmail,
                 phone: editUserPhone
-            }, { merge: true });
+            }).eq("id", currentUserId);
 
             setIsEditUserOpen(false);
         } catch(err) {
@@ -317,7 +326,7 @@ export default function AdminChatPage() {
 
     const formatTime = (timestamp: any) => {
         if (!timestamp) return "";
-        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        const date = new Date(timestamp);
         return date.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + 
                date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     };

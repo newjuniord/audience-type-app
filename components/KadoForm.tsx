@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createClient } from "@/lib/supabase/client";
 import { createGift, updateGift } from "@/lib/gifts";
 import { Gift } from "@/lib/types";
-import { Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 interface ProductOption {
@@ -16,13 +14,14 @@ interface ProductOption {
 }
 
 interface KadoFormProps {
-    initialData?: Gift;
+    initialData?: any; // any to handle Supabase type mismatches easily here
     giftId?: string;
 }
 
 export default function KadoForm({ initialData, giftId }: KadoFormProps) {
     const router = useRouter();
     const isEditing = !!giftId;
+    const supabase = createClient();
 
     const [products, setProducts] = useState<ProductOption[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(true);
@@ -40,7 +39,9 @@ export default function KadoForm({ initialData, giftId }: KadoFormProps) {
     // Options avancées
     const [hasExpiration, setHasExpiration] = useState(!!initialData?.expirationDate);
     const [expirationDate, setExpirationDate] = useState(
-        initialData?.expirationDate ? initialData.expirationDate.toDate().toISOString().split("T")[0] : ""
+        initialData?.expirationDate 
+            ? (typeof initialData.expirationDate === 'string' ? initialData.expirationDate.split("T")[0] : new Date(initialData.expirationDate).toISOString().split("T")[0]) 
+            : ""
     );
     const [hasMaxUses, setHasMaxUses] = useState(initialData?.maxUses !== null && initialData?.maxUses !== undefined);
     const [maxUses, setMaxUses] = useState(initialData?.maxUses?.toString() || "");
@@ -51,24 +52,24 @@ export default function KadoForm({ initialData, giftId }: KadoFormProps) {
     useEffect(() => {
         const load = async () => {
             try {
-                const [coursesSnap, ebooksSnap, servicesSnap] = await Promise.all([
-                    getDocs(collection(db, "courses")),
-                    getDocs(collection(db, "ebooks")),
-                    getDocs(collection(db, "services")),
+                const [courses, ebooks, services] = await Promise.all([
+                    supabase.from('courses').select('id, title, thumbnail, cover_image'),
+                    supabase.from('ebooks').select('id, title, cover_image'),
+                    supabase.from('services').select('id, title, image_url'),
                 ]);
 
                 const all: ProductOption[] = [
-                    ...coursesSnap.docs.map(d => ({
-                        id: d.id, title: d.data().title || "Sans titre", type: "course" as const,
-                        thumbnailUrl: d.data().thumbnail || d.data().coverImage
+                    ...(courses.data || []).map(d => ({
+                        id: d.id, title: d.title || "Sans titre", type: "course" as const,
+                        thumbnailUrl: d.thumbnail || d.cover_image
                     })),
-                    ...ebooksSnap.docs.map(d => ({
-                        id: d.id, title: d.data().title || "Sans titre", type: "ebook" as const,
-                        thumbnailUrl: d.data().coverImage
+                    ...(ebooks.data || []).map(d => ({
+                        id: d.id, title: d.title || "Sans titre", type: "ebook" as const,
+                        thumbnailUrl: d.cover_image
                     })),
-                    ...servicesSnap.docs.map(d => ({
-                        id: d.id, title: d.data().title || "Sans titre", type: "service" as const,
-                        thumbnailUrl: d.data().imageUrl
+                    ...(services.data || []).map(d => ({
+                        id: d.id, title: d.title || "Sans titre", type: "service" as const,
+                        thumbnailUrl: d.image_url
                     })),
                 ];
                 setProducts(all);
@@ -107,7 +108,7 @@ export default function KadoForm({ initialData, giftId }: KadoFormProps) {
                 giftProductThumbnailUrl: selectedGiftProduct?.thumbnailUrl || "",
                 isActive,
                 expirationDate: hasExpiration && expirationDate
-                    ? Timestamp.fromDate(new Date(expirationDate))
+                    ? new Date(expirationDate).toISOString() as any
                     : null,
                 maxUses: hasMaxUses && maxUses ? parseInt(maxUses) : null,
                 requiresInvitation,

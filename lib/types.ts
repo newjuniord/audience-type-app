@@ -1,252 +1,150 @@
-import { Timestamp } from "firebase/firestore";
+/**
+ * Adapted types for Supabase
+ */
 
 /**
- * Interface représentant un Ebook dans notre collection Firestore.
- * 
- * Cette interface définit la structure des données pour un livre numérique (Ebook).
- * Chaque champ correspond à une colonne dans la base de données ou une propriété de l'objet.
- * 
- * @interface Ebook
+ * Interface représentant un Ebook
  */
 export interface Ebook {
-    /**
-     * L'identifiant unique du document dans Firestore.
-     * Ce champ est optionnel lors de la création car il est généré par Firestore,
-     * mais il est présent lorsque nous lisons les données.
-     */
     id?: string;
-
-    /**
-     * ID du produit dans Lemon Squeezy (pour le paiement).
-     */
     lemonSqueezyProductId?: string;
-
-    /**
-     * L'URL de l'image de couverture du livre.
-     * Typiquement une URL pointant vers Firebase Storage ou un autre service d'hébergement d'images.
-     */
     coverImage: string;
-
-    /**
-     * La date et l'heure de la création de l'enregistrement.
-     * Utilise le type `Timestamp` de Firestore pour une gestion précise du temps.
-     */
-    createdAt: Timestamp;
-
-    /**
-     * Une description détaillée du contenu du livre.
-     * Utile pour afficher sur la page de détail du produit pour informer le client.
-     */
+    createdAt: string;
     description: string;
-
-    /**
-     * L'URL de téléchargement du fichier du livre (PDF, EPUB, etc.).
-     * C'est le lien que l'utilisateur recevra après l'achat.
-     */
     fileUrl: string;
-
-    /**
-     * Une liste des éléments inclus avec ce livre.
-     * Par exemple : ["Guide PDF", "Accès vidéo", "Templates"].
-     * C'est un tableau de chaînes de caractères.
-     */
     includedItems: string[];
-
-    /**
-     * Le prix du livre en format numérique.
-     * Utilisez un nombre (e.g., 19.99).
-     */
     price: number;
-
-    /**
-     * Le nombre total de ventes pour ce livre.
-     * Utile pour suivre la popularité et les performances.
-     */
     sales: number;
-
-    /**
-     * Le statut actuel du livre.
-     * Peut être "published" (publié), "draft" (brouillon), ou "archived" (archivé).
-     * Nous utilisons le type `string` ici, mais on pourrait restreindre les valeurs avec un type union.
-     */
     status: string;
-
-    /**
-     * Le titre du livre.
-     * C'est le nom principal qui sera affiché partout.
-     */
     title: string;
-
-    /**
-     * La date et l'heure de la dernière mise à jour de l'enregistrement.
-     * Permet de savoir quand les informations ont été modifiées pour la dernière fois.
-     */
-    updatedAt: Timestamp;
+    updatedAt: string;
     isInvitationOnly?: boolean;
     invitationCode?: string;
     priceHTG?: number;
 }
 
-/**
- * Interface représentant une Leçon dans un Module.
- * Fait partie de la liste `lessons` d'un Module.
- */
 export interface Lesson {
     id: string;
     title: string;
     description: string;
-    duration: string; // Ex: "10:00" or "10m"
+    duration: string;
     videoUrl: string;
     resourceFileUrl?: string;
     completed?: boolean;
 }
 
-/**
- * Interface représentant un Module de cours.
- * Les modules sont une SOUS-COLLECTION de chaque document `course`.
- * Chemin : /courses/{courseId}/modules/{moduleId}
- */
 export interface Module {
-    id?: string; // ID du document dans la sous-collection
+    id?: string;
     title: string;
-    lessons: Lesson[]; // Liste des leçons contenues dans ce module
-    duration?: string; // Durée totale du module (ex: "45m")
-    createdAt?: Timestamp;
+    lessons: Lesson[];
+    duration?: string;
+    createdAt?: string;
 }
 
-/**
- * Interface représentant un Cours (Course) dans la collection principale.
- */
 export interface Course {
     id?: string;
-    lemonSqueezyProductId?: string; // ID Lemon Squeezy
-    createdAt: Timestamp;
+    lemonSqueezyProductId?: string;
+    createdAt: string;
     description: string;
     includedItems: string[];
     price: number;
     sales: number;
-    statut: string; // "published", "draft", etc. (Note: champ nommé 'statut' dans la DB)
-    thumbnail: string; // Image miniature du cours
+    statut: string;
+    thumbnail: string;
     title: string;
-    updatedAt: Timestamp;
+    updatedAt: string;
     isInvitationOnly?: boolean;
     invitationCode?: string;
     priceHTG?: number;
 }
 
-/**
- * Interface représentant une Réservation (Booking).
- * Correspond à la collection `bookings` dans Firestore.
- */
 export interface Booking {
     id?: string;
-    createdAt: Timestamp;
+    createdAt: string;
     description: string;
-    price: string; // Note: Défini comme string selon votre demande (ex: "100€" ou "100")
-    serviceName: string; // Nom du service réservé
-    status: string; // "pending", "confirmed", etc.
-    userNumber: number; // Numéro d'utilisateur ou identifiant numérique
-    whatIncluded: string[]; // Liste des éléments inclus
+    price: string;
+    serviceName: string;
+    status: string;
+    userNumber: number;
+    whatIncluded: string[];
 }
 
-import { DocumentReference } from "firebase/firestore";
-
-/**
- * Interface représentant un Avis (Review).
- * Correspond à la collection `reviews` dans Firestore.
- */
 export interface Review {
     id?: string;
-    isVisible: boolean; // Corrigé de "IsVible"
+    isVisible: boolean;
     comment: string;
-    createdAt: Timestamp;
-    productId: DocumentReference; // Référence au produit concerné
-    productTitle: string; // Titre du produit
-    rating: number; // Note (ex: 1 à 5)
-    userId: DocumentReference | string; // Référence à l'utilisateur ou ID string
-    userName: string; // Nom de l'utilisateur
-    userEmail: string; // Email de l'utilisateur
+    createdAt: string;
+    productId: string;
+    productTitle: string;
+    rating: number;
+    userId: string;
+    userName: string;
+    userEmail: string;
 }
 
-/**
- * Interface représentant une Demande de Réservation (BookingApplication).
- * Correspond à la collection `bookingApplications` dans Firestore.
- */
 export interface BookingApplication {
     id?: string;
-    bookingsId: DocumentReference | string; // Référence à l'objet Booking ou son ID en string
-    createdAt: Timestamp;
+    bookingsId: string;
+    createdAt: string;
     message: string;
-    serviceName?: string; // Nom du service (explicitly requested)
-    title?: string; // Titre du service (explicitly requested)
-    status: string; // "pending", "accepted", "rejected", etc.
+    serviceName?: string;
+    title?: string;
+    status: string;
     userName: string;
     userPhone?: string;
-    usersId: DocumentReference | string; // Référence à l'utilisateur ou son ID en string
+    usersId: string;
 }
 
-/**
- * Interface représentant une Commande (Order).
- * Correspond à la collection `orders` dans Firestore.
- */
 export interface Order {
     id?: string;
     amount: number;
     currency: string;
-    createdAt?: Timestamp; // J'ajoute ceci car c'est crucial pour trier les commandes, même si absent de votre liste immédiate
-    expiresAt?: Timestamp | string;
-    failedAt?: Timestamp | string;
+    createdAt?: string;
+    expiresAt?: string;
+    failedAt?: string;
     failedReason?: string;
-    productId: DocumentReference | string; // Référence au produit (Ebook, Course, etc.)
-    productThumbnailUrl: string;
-    productTitle: string;
-    productType: string; // Ex: "ebook", "course"
-    status: string; // "paid", "failed", "refunded"
-    transactionId: string;
-    userEmail: string;
-    userId: DocumentReference | string; // Référence à l'acheteur ou ID string
-    userName?: string;
-    paymentMethod?: string; // Ex: "card", "paypal"
-}
-
-/**
- * Interface représentant une Inscription (Enrollment).
- * Correspond à la collection `enrollments` dans Firestore.
- */
-export interface Enrollment {
-    id?: string;
-    accessGranted: boolean;
-    completedLessons: string[]; // Liste des IDs ou titres des leçons terminées
-    currentLessonId: string;
-    downloadCount: string; // Demandé en string par l'utilisateur
-    enrolledAt: Timestamp;
-    lastAccessedAt: Timestamp;
-    productId: DocumentReference; // Référence au cours ou produit
+    productId: string;
     productThumbnailUrl: string;
     productTitle: string;
     productType: string;
-    progress: number; // Pourcentage ou nombre d'étapes
-    status: string; // "active", "completed", "expired"
+    status: string;
+    transactionId: string;
+    userEmail: string;
+    userId: string;
+    userName?: string;
+    paymentMethod?: string;
+}
+
+export interface Enrollment {
+    id?: string;
+    accessGranted: boolean;
+    completedLessons: string[];
+    currentLessonId: string;
+    downloadCount: string;
+    enrolledAt: string;
+    lastAccessedAt: string;
+    productId: string;
+    productThumbnailUrl: string;
+    productTitle: string;
+    productType: string;
+    progress: number;
+    status: string;
     totalLessons: number;
     userEmail: string;
-    userId: DocumentReference;
+    userId: string;
     userName: string;
 }
 
-/**
- * Interface representing a file stored in Firebase Storage and indexed in Firestore.
- * Collection: `assets`
- */
 export interface StorageAsset {
     id?: string;
     name: string;
-    type: string; // MIME type or extension (e.g., "JPG", "PDF")
-    path: string; // Storage path (e.g., "/uploads/images/")
-    size: string; // Human readable size (e.g., "1.2 MB")
+    type: string;
+    path: string;
+    size: string;
     sizeBytes: number;
-    createdAt: Timestamp;
-    url: string; // Download URL
-    contentType: string; // Full MIME type (image/jpeg)
+    createdAt: string;
+    url: string;
+    contentType: string;
     metadata?: {
         width?: number;
         height?: number;
@@ -254,55 +152,41 @@ export interface StorageAsset {
     };
 }
 
-/**
- * Interface représentant un Utilisateur (User).
- * Correspond à la collection `users` dans Firestore.
- */
 export interface User {
-    uid: string; // Auth ID (aussi l'ID du document)
+    uid: string;
     email: string;
     displayName?: string;
     fullName?: string;
     photoURL?: string;
-    role?: 'admin' | 'customer'; // Rôle simple pour l'accès dashboard
-    createdAt: Timestamp;
-    lastLogin?: Timestamp;
+    role?: 'admin' | 'customer';
+    createdAt: string;
+    lastLogin?: string;
     phoneNumber?: string;
     phone?: string;
-    purchases?: string[]; // Liste des IDs produits achetés (optionnel)
+    purchases?: string[];
     isOnline?: boolean;
-    lastActive?: Timestamp;
-    canGenerateTempLinks?: boolean; // Autorisation admin pour générer des liens
-    tempLinksCount?: number; // Compteur de liens générés (max 2)
-    enrollmentCount?: number; // Nombre total d'inscriptions (cours, ebooks, services)
+    lastActive?: string;
+    canGenerateTempLinks?: boolean;
+    tempLinksCount?: number;
+    enrollmentCount?: number;
 }
 
-/**
- * Interface représentant un Lien de Connexion Temporaire.
- * Correspond à la collection `temp_links` dans Firestore.
- */
 export interface TempLink {
-    id?: string; // Le token lui-même
-    userId: string; // L'ID de l'utilisateur qui a généré le lien
-    expiresAt: Timestamp; // Date d'expiration (24h)
-    used: boolean; // Si le lien a déjà été utilisé
-    createdAt: Timestamp;
+    id?: string;
+    userId: string;
+    expiresAt: string;
+    used: boolean;
+    createdAt: string;
 }
 
-/**
- * Interface représentant une Offre de Service (Service Offering).
- * Correspond à la collection `services` dans Firestore.
- * Utilisé pour créer les types de rendez-vous disponibles.
- */
 export interface Service {
     id?: string;
-    lemonSqueezyProductId?: string; // ID Lemon Squeezy
+    lemonSqueezyProductId?: string;
     title: string;
     description: string;
-    price: string; // Ex: "150" ou "150$"
-    imageUrl?: string; // URL de l'image de couverture
+    price: string;
+    imageUrl?: string;
     includedItems: string[];
-    // Disponibilité hebdomadaire
     availability: {
         [key: string]: {
             enabled: boolean;
@@ -310,30 +194,21 @@ export interface Service {
             endTime: string;
         };
     };
-    active: boolean; // Si le service est visible pour les clients (Legacy)
-    status?: 'published' | 'draft' | 'archived'; // Nouveau champ de statut standardisé
-    createdAt: Timestamp;
-    updatedAt: Timestamp;
+    active: boolean;
+    status?: 'published' | 'draft' | 'archived';
+    createdAt: string;
+    updatedAt: string;
     isInvitationOnly?: boolean;
     invitationCode?: string;
     priceHTG?: number;
-    phone?: string; // Numéro de téléphone de destination pour les réservations
-    availabilityTimezoneOffset?: number; // Offset UTC du fuseau horaire de l'admin (ex: 9 pour KST, 1 pour France)
+    phone?: string;
+    availabilityTimezoneOffset?: number;
 }
 
-
-/**
- * Interface représentant une Page de Vente Dynamique (Funnel).
- * Correspond à la collection `funnels` dans Firestore.
- */
 export interface FunnelData {
     id?: string;
-    
-    // Liaison avec un produit existant (Course ou Ebook)
-    linkedProductId?: DocumentReference | string;
+    linkedProductId?: string;
     linkedProductType?: 'course' | 'ebook';
-
-    // Textes principaux
     badge: string;
     headline: string;
     subheadline: string;
@@ -342,54 +217,39 @@ export interface FunnelData {
     ctaText: string;
     ctaSubtext: string;
     urgencyText: string;
-    
-    // Prix & Paiement (surchargés ou issus du produit)
     originalPrice: number;
     currentPrice: number;
-    priceGourdes: number; // Prix spécifique pour MonCash (HTG)
-    lemonSqueezyId: string; // ID de variant/produit pour carte bancaire
+    priceGourdes: number;
+    lemonSqueezyId: string;
     currency: string;
-    
-    // Urgence & Disponibilité
     spotsLeft: number;
-    expirationDate: Timestamp | string | null;
-    
-    // Éléments dynamiques (Tableaux)
+    expirationDate: string | null;
     benefits: Array<{ icon: string; text: string }>;
     testimonials: Array<{ name: string; role: string; text: string; avatar: string; stars: number }>;
-    
-    // Metadonnées
-    createdAt?: Timestamp;
-    updatedAt?: Timestamp;
+    createdAt?: string;
+    updatedAt?: string;
     isActive: boolean;
 }
 
-/**
- * Interface représentant un Cadeau/Bonus (Kado).
- * Correspond à la collection `gifts` dans Firestore.
- * Un Kado est un produit offert gratuitement (enrollment) lié à un produit déclencheur.
- */
 export interface Gift {
     id?: string;
     title: string;
     description: string;
     photoLink: string;
     type: 'course' | 'ebook' | 'consultation';
-    triggerProductId?: string;          // Produit acheté qui déclenche ce cadeau (optionnel)
-    giftProductId: string;              // Produit (cours/ebook/service) à débloquer
-    giftProductTitle: string;           // Dénormalisé pour affichage rapide
+    triggerProductId?: string;
+    giftProductId: string;
+    giftProductTitle: string;
     giftProductType: 'course' | 'ebook' | 'service';
     giftProductThumbnailUrl?: string;
     isActive: boolean;
-    expirationDate: Timestamp | null;
+    expirationDate: string | null;
     maxUses: number | null;
     currentUsesCount: number;
     requiresInvitation: boolean;
     invitationCode: string | null;
-    createdAt: Timestamp;
+    createdAt: string;
 }
-
-// ─── Alert / Notification ───────────────────────────────────────────────────
 
 export type AlertCategory = 'utility' | 'marketing';
 
@@ -420,6 +280,6 @@ export interface Alert {
     iconBg: string;
     actionUrl?: string;
     actionLabel?: string;
-    createdAt: Timestamp;
-    expiresAt?: Timestamp;
+    createdAt: string;
+    expiresAt?: string;
 }

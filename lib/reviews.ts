@@ -1,34 +1,23 @@
-import {
-    collection,
-    getDocs,
-    doc,
-    getDoc,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    Timestamp,
-    query,
-    where,
-    orderBy,
-    limit,
-    DocumentReference
-} from "firebase/firestore";
-import { db } from "./firebase";
+import { createClient } from "./supabase/client";
 import { Review } from "./types";
 
 const COLLECTION_NAME = "reviews";
+
+const getSupabase = () => createClient();
 
 /**
  * Récupère tous les avis.
  */
 export const getReviews = async (): Promise<Review[]> => {
     try {
-        const ref = collection(db, COLLECTION_NAME);
-        const snapshot = await getDocs(ref);
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        })) as Review[];
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .order('createdAt', { ascending: false });
+
+        if (error) throw error;
+        return (data || []) as Review[];
     } catch (error) {
         console.error("Erreur récup reviews:", error);
         throw error;
@@ -37,40 +26,20 @@ export const getReviews = async (): Promise<Review[]> => {
 
 /**
  * Récupère les avis mis en avant (pour la page d'accueil).
- * Utilise la méthode côté client pour éviter d'imposer un index composite pour le moment.
  */
 export const getFeaturedReviews = async (max: number = 3): Promise<Review[]> => {
     try {
-        const ref = collection(db, COLLECTION_NAME);
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .eq('isVisible', true)
+            .order('rating', { ascending: false })
+            .order('createdAt', { ascending: false })
+            .limit(max);
 
-        // On récupère simplement tous les avis visibles (jusqu'à une limite raisonnable pour ne pas tout charger)
-        // La gestion complexe des index (tri + filtre) est évitée ici.
-        const q = query(
-            ref,
-            where("isVisible", "==", true),
-            limit(50)
-        );
-
-        const snapshot = await getDocs(q);
-
-        let allReviews = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        })) as Review[];
-
-        // Tri côté client : d'abord par note (desc), puis par date (desc)
-        allReviews.sort((a, b) => {
-            if (b.rating !== a.rating) {
-                return b.rating - a.rating;
-            }
-            // Si même note, le plus récent en premier
-            const dateA = a.createdAt?.seconds || 0;
-            const dateB = b.createdAt?.seconds || 0;
-            return dateB - dateA;
-        });
-
-        // Limite finale
-        return allReviews.slice(0, max);
+        if (error) throw error;
+        return (data || []) as Review[];
     } catch (error) {
         console.error("Erreur récup featured reviews:", error);
         throw error;
@@ -80,19 +49,19 @@ export const getFeaturedReviews = async (max: number = 3): Promise<Review[]> => 
 /**
  * Récupère les avis pour un produit spécifique.
  * 
- * @param {DocumentReference} productRef - La référence du produit.
+ * @param {string} productId - L'ID du produit.
  */
-export const getReviewsByProduct = async (productRef: DocumentReference): Promise<Review[]> => {
+export const getReviewsByProduct = async (productId: string): Promise<Review[]> => {
     try {
-        const ref = collection(db, COLLECTION_NAME);
-        // Filtre les avis où le champ 'productId' correspond à la référence donnée
-        const q = query(ref, where("productId", "==", productRef));
-        const snapshot = await getDocs(q);
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .eq('productId', productId)
+            .order('createdAt', { ascending: false });
 
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        })) as Review[];
+        if (error) throw error;
+        return (data || []) as Review[];
     } catch (error) {
         console.error("Erreur récup reviews par produit:", error);
         throw error;
@@ -104,11 +73,20 @@ export const getReviewsByProduct = async (productRef: DocumentReference): Promis
  */
 export const addReview = async (reviewData: Omit<Review, "id">): Promise<string> => {
     try {
-        const ref = await addDoc(collection(db, COLLECTION_NAME), {
+        const supabase = getSupabase();
+        const id = crypto.randomUUID();
+        const newReview = {
             ...reviewData,
-            createdAt: reviewData.createdAt || Timestamp.now()
-        });
-        return ref.id;
+            id,
+            createdAt: reviewData.createdAt || new Date().toISOString()
+        };
+
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .insert(newReview);
+
+        if (error) throw error;
+        return id;
     } catch (error) {
         console.error("Erreur ajout review:", error);
         throw error;
@@ -120,8 +98,13 @@ export const addReview = async (reviewData: Omit<Review, "id">): Promise<string>
  */
 export const updateReview = async (id: string, data: Partial<Review>): Promise<void> => {
     try {
-        const ref = doc(db, COLLECTION_NAME, id);
-        await updateDoc(ref, data);
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .update(data)
+            .eq('id', id);
+
+        if (error) throw error;
     } catch (error) {
         console.error("Erreur maj review:", error);
         throw error;
@@ -133,8 +116,13 @@ export const updateReview = async (id: string, data: Partial<Review>): Promise<v
  */
 export const deleteReview = async (id: string): Promise<void> => {
     try {
-        const ref = doc(db, COLLECTION_NAME, id);
-        await deleteDoc(ref);
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
     } catch (error) {
         console.error("Erreur suppression review:", error);
         throw error;

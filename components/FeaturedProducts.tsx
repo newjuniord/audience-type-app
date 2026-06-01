@@ -5,8 +5,6 @@ import { Product } from "@/types/product";
 import BubbleButton from "./BubbleButton";
 import { useAuth } from "@/context/AuthContext";
 import { getEnrollmentsByUser } from "@/lib/enrollments";
-import { doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import CheckoutModal from "./CheckoutModal";
 
@@ -38,8 +36,7 @@ export default function FeaturedProducts({
             }
 
             try {
-                const userRef = doc(db, "users", user.uid);
-                const enrollments = await getEnrollmentsByUser(userRef);
+                const enrollments = await getEnrollmentsByUser(user.uid || user.id as string);
                 const ownedIds = new Set<string>();
                 
                 enrollments.forEach(enrollment => {

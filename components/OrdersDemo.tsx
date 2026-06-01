@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { getOrders, createOrder } from "@/lib/orders";
 import { Order } from "@/lib/types";
-import { Timestamp, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 export default function OrdersDemo() {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -27,22 +25,18 @@ export default function OrdersDemo() {
     };
 
     const handleAddTestOrder = async () => {
-        // Refs fictives
-        const fakeProductRef = doc(db, "ebooks", "some-ebook-id");
-        const fakeUserRef = doc(db, "users", "some-user-id");
-
         const newOrder: Omit<Order, "id"> = {
             amount: 49.99,
             currency: "EUR",
-            createdAt: Timestamp.now(),
-            productId: fakeProductRef,
+            createdAt: new Date().toISOString() as any, // Using ISO string for Supabase
+            productId: "some-ebook-id" as any,
             productThumbnailUrl: "https://via.placeholder.com/50",
             productTitle: "Mon Super Ebook",
             productType: "ebook",
             status: "paid",
             transactionId: "TX_" + Math.random().toString(36).substr(2, 9),
             userEmail: "client@example.com",
-            userId: fakeUserRef
+            userId: "some-user-id" as any
         };
 
         await createOrder(newOrder);

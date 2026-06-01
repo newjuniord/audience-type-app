@@ -1,70 +1,89 @@
-// Alerts CRUD for Firestore collection "alerts"
-import {
-    collection,
-    query,
-    where,
-    orderBy,
-    onSnapshot,
-    updateDoc,
-    writeBatch,
-    doc,
-    getDocs,
-    addDoc,
-    Timestamp,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Alert } from "@/lib/types";
+import { createClient } from "./supabase/client";
+import { Alert } from "./types";
+
+const COLLECTION_NAME = "alerts";
+
+const getSupabase = () => createClient();
 
 /**
- * Subscribe to a user's alerts in real-time.
- * Returns an unsubscribe function.
+ * Fetch a user's alerts. (Replaces real-time subscribeToAlerts to save free tier connections)
  */
-export function subscribeToAlerts(userId: string, callback: (alerts: Alert[]) => void, onError?: (error: any) => void) {
-    const q = query(
-        collection(db, "alerts"),
-        where("userId", "==", userId),
-        orderBy("createdAt", "desc")
-    );
-    return onSnapshot(q, (snapshot) => {
-        const alerts = snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Alert[];
-        callback(alerts);
-    }, (error) => {
-        console.error("Error subscribing to alerts:", error);
-        if (onError) onError(error);
-    });
+export async function fetchAlerts(userId: string): Promise<Alert[]> {
+    try {
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .eq('userId', userId)
+            .order('createdAt', { ascending: false });
+
+        if (error) throw error;
+        return (data || []) as Alert[];
+    } catch (error) {
+        console.error("Error fetching alerts:", error);
+        return [];
+    }
 }
 
 /**
  * Mark a single alert as read.
  */
-export async function markAlertAsRead(alertId: string) {
-    await updateDoc(doc(db, "alerts", alertId), { isRead: true });
+export async function markAlertAsRead(alertId: string): Promise<void> {
+    try {
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .update({ isRead: true })
+            .eq('id', alertId);
+
+        if (error) throw error;
+    } catch (error) {
+        console.error("Error marking alert as read:", error);
+        throw error;
+    }
 }
 
 /**
- * Mark ALL alerts for a user as read (batch write).
+ * Mark ALL alerts for a user as read.
  */
-export async function markAllAlertsAsRead(userId: string) {
-    const q = query(
-        collection(db, "alerts"),
-        where("userId", "==", userId),
-        where("isRead", "==", false)
-    );
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return;
-    const batch = writeBatch(db);
-    snapshot.docs.forEach((d) => batch.update(d.ref, { isRead: true }));
-    await batch.commit();
+export async function markAllAlertsAsRead(userId: string): Promise<void> {
+    try {
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .update({ isRead: true })
+            .eq('userId', userId)
+            .eq('isRead', false);
+
+        if (error) throw error;
+    } catch (error) {
+        console.error("Error marking all alerts as read:", error);
+        throw error;
+    }
 }
 
 /**
  * Create a new alert (client-side, for direct creation from admin UI).
  */
 export async function createAlert(data: Omit<Alert, "id" | "createdAt">): Promise<string> {
-    const ref = await addDoc(collection(db, "alerts"), {
-        ...data,
-        isRead: false,
-        createdAt: Timestamp.now(),
-    });
-    return ref.id;
+    try {
+        const supabase = getSupabase();
+        const id = crypto.randomUUID();
+        const newAlert = {
+            ...data,
+            id,
+            isRead: false,
+            createdAt: new Date().toISOString()
+        };
+
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .insert(newAlert);
+
+        if (error) throw error;
+        return id;
+    } catch (error) {
+        console.error("Error creating alert:", error);
+        throw error;
+    }
 }

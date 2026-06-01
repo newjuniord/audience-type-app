@@ -2,12 +2,9 @@
 
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { auth } from "@/lib/firebase";
-import { signOut } from "firebase/auth";
 import { useState, useEffect, useRef } from "react";
-import { subscribeToAlerts } from "@/lib/alerts";
-import { db } from "@/lib/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
+import { fetchAlerts } from "@/lib/alerts";
+import { createClient } from "@/lib/supabase/client";
 import ConsultationBanner from "@/components/ConsultationBanner";
 
 export default function DashboardHeader() {
@@ -66,28 +63,29 @@ export default function DashboardHeader() {
         setIsDropdownOpen(false);
     };
 
-    // Subscribe to unread alerts count
+    // Fetch unread alerts count
     useEffect(() => {
         if (!user) return;
-        const unsub = subscribeToAlerts(user.uid, (alerts) => {
-            setUnreadCount(alerts.filter((a) => !a.isRead).length);
+        let isMounted = true;
+        fetchAlerts(user.uid).then((alerts) => {
+            if (isMounted) setUnreadCount(alerts.filter((a) => !a.isRead).length);
         });
-        return () => unsub();
+        return () => { isMounted = false; };
     }, [user]);
 
-    // Subscribe to support chat unread status
+    // Fetch support chat unread status
     useEffect(() => {
         if (!user) return;
-        const unsub = onSnapshot(doc(db, "chats", user.uid), (docSnap) => {
-            if (docSnap.exists()) {
-                setChatUnread(!!docSnap.data().unreadByUser);
-            } else {
-                setChatUnread(false);
+        let isMounted = true;
+        const supabase = createClient();
+        supabase.from('chats').select('unreadByUser').eq('id', user.uid).single().then(({ data, error }) => {
+            if (error) {
+                if (isMounted) setChatUnread(false);
+            } else if (data && isMounted) {
+                setChatUnread(!!data.unreadByUser);
             }
-        }, (err) => {
-            console.error("Error subscribing to chat unread status:", err);
         });
-        return () => unsub();
+        return () => { isMounted = false; };
     }, [user]);
 
     const renderMenuContent = (showClose: boolean = false) => {
