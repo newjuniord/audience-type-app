@@ -5,7 +5,7 @@ import { ActionModal } from "@/components/ui/ActionModal";
 import { useAuth } from "@/context/AuthContext";
 import { Service } from "@/lib/types";
 import CheckoutModal from "@/components/CheckoutModal";
-import { auth } from "@/lib/firebase";
+import { createClient } from "@/lib/supabase/client";
 
 // --- Timezone and Calendar Logic (Copied from consultation/page.tsx) ---
 
@@ -526,7 +526,9 @@ export default function ConsultationBookingModal({
         try {
             setSubmittingBooking(true);
             const slot = localSlots[selectedSlot];
-            const token = await auth.currentUser?.getIdToken();
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
 
             if (!token) {
                 alert("Koneksyon obligatwa pou w ka rezève.");

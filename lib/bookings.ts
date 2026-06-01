@@ -1,19 +1,9 @@
-import {
-    collection,
-    getDocs,
-    doc,
-    getDoc,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    Timestamp,
-    query,
-    orderBy
-} from "firebase/firestore";
-import { db } from "./firebase";
+import { createClient } from "./supabase/client";
 import { Booking } from "./types";
 
 const COLLECTION_NAME = "bookings";
+
+const getSupabase = () => createClient();
 
 /**
  * Récupère toutes les réservations.
@@ -22,13 +12,14 @@ const COLLECTION_NAME = "bookings";
  */
 export const getBookings = async (): Promise<Booking[]> => {
     try {
-        const ref = collection(db, COLLECTION_NAME);
-        const snapshot = await getDocs(ref);
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .order('createdAt', { ascending: false });
 
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        })) as Booking[];
+        if (error) throw error;
+        return (data || []) as Booking[];
     } catch (error) {
         console.error("Erreur récup bookings:", error);
         throw error;
@@ -42,12 +33,18 @@ export const getBookings = async (): Promise<Booking[]> => {
  */
 export const getBookingById = async (id: string): Promise<Booking | null> => {
     try {
-        const ref = doc(db, COLLECTION_NAME, id);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-            return { id: snap.id, ...snap.data() } as Booking;
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) {
+            console.log("Erreur récup booking par ID ou non trouvé:", error);
+            return null;
         }
-        return null;
+        return data as Booking;
     } catch (error) {
         console.error("Erreur récup booking:", error);
         throw error;
@@ -61,11 +58,20 @@ export const getBookingById = async (id: string): Promise<Booking | null> => {
  */
 export const addBooking = async (bookingData: Omit<Booking, "id">): Promise<string> => {
     try {
-        const ref = await addDoc(collection(db, COLLECTION_NAME), {
+        const supabase = getSupabase();
+        const id = crypto.randomUUID();
+        const newBooking = {
             ...bookingData,
-            createdAt: bookingData.createdAt || Timestamp.now()
-        });
-        return ref.id;
+            id,
+            createdAt: bookingData.createdAt || new Date().toISOString()
+        };
+
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .insert(newBooking);
+
+        if (error) throw error;
+        return id;
     } catch (error) {
         console.error("Erreur ajout booking:", error);
         throw error;
@@ -77,8 +83,13 @@ export const addBooking = async (bookingData: Omit<Booking, "id">): Promise<stri
  */
 export const updateBooking = async (id: string, data: Partial<Booking>): Promise<void> => {
     try {
-        const ref = doc(db, COLLECTION_NAME, id);
-        await updateDoc(ref, data);
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .update(data)
+            .eq('id', id);
+
+        if (error) throw error;
     } catch (error) {
         console.error("Erreur maj booking:", error);
         throw error;
@@ -90,8 +101,13 @@ export const updateBooking = async (id: string, data: Partial<Booking>): Promise
  */
 export const deleteBooking = async (id: string): Promise<void> => {
     try {
-        const ref = doc(db, COLLECTION_NAME, id);
-        await deleteDoc(ref);
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
     } catch (error) {
         console.error("Erreur suppression booking:", error);
         throw error;

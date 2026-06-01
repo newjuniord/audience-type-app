@@ -2,8 +2,6 @@
 
 import { useEffect, useState, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signInWithCustomToken } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 
 function TempLoginHandler() {
     const router = useRouter();
@@ -38,10 +36,12 @@ function TempLoginHandler() {
                 }
 
                 setStatus("Connexion réussie ! Redirection...");
-                await signInWithCustomToken(auth, data.customToken);
                 
-                // Redirection
-                router.push("/dashboard");
+                if (data.actionLink) {
+                    window.location.href = data.actionLink;
+                } else {
+                    router.push("/dashboard");
+                }
 
             } catch (err: any) {
                 console.error("Temp login error:", err);

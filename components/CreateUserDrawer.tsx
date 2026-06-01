@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createClient } from "@/lib/supabase/client";
 
 interface CreateUserDrawerProps {
     isOpen: boolean;
@@ -34,13 +33,12 @@ export default function CreateUserDrawer({ isOpen, onClose, onUserCreated }: Cre
         setLoading(true);
 
         try {
-            const usersRef = collection(db, "users");
+            const supabase = createClient();
 
             // Vérifier si l'email existe déjà
             if (email.trim()) {
-                const emailQuery = query(usersRef, where("email", "==", email.trim().toLowerCase()));
-                const emailSnap = await getDocs(emailQuery);
-                if (!emailSnap.empty) {
+                const { data: emailSnap } = await supabase.from("users").select("id").eq("email", email.trim().toLowerCase());
+                if (emailSnap && emailSnap.length > 0) {
                     setError("Cette adresse e-mail est déjà associée à un autre compte.");
                     setLoading(false);
                     return;
@@ -49,25 +47,26 @@ export default function CreateUserDrawer({ isOpen, onClose, onUserCreated }: Cre
 
             // Vérifier si le numéro existe déjà
             if (phone.trim()) {
-                const phoneQuery = query(usersRef, where("phone", "==", phone.trim()));
-                const phoneSnap = await getDocs(phoneQuery);
-                if (!phoneSnap.empty) {
+                const { data: phoneSnap } = await supabase.from("users").select("id").eq("phone", phone.trim());
+                if (phoneSnap && phoneSnap.length > 0) {
                     setError("Ce numéro de téléphone est déjà associé à un autre compte.");
                     setLoading(false);
                     return;
                 }
             }
 
-            // Créer l'utilisateur dans Firestore
-            await addDoc(usersRef, {
+            // Créer l'utilisateur dans Supabase
+            const { error: insertError } = await supabase.from("users").insert({
                 fullName: name.trim(),
                 displayName: name.trim(),
                 email: email.trim().toLowerCase(),
                 phone: phone.trim(),
                 role: "customer",
-                createdAt: serverTimestamp(),
+                createdAt: new Date().toISOString(),
                 enrollmentCount: 0,
             });
+            
+            if (insertError) throw insertError;
 
             // Réinitialiser le formulaire
             setName("");

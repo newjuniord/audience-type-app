@@ -1,7 +1,4 @@
 import { NextResponse } from "next/server";
-import { getAdminDb } from "@/lib/firebase-admin";
-import { Timestamp, FieldValue } from "firebase-admin/firestore";
-
 
 // Cette route est destinée à être appelée par un CRON job (ex: Vercel Cron ou externe)
 // Elle nettoie les commandes 'pending' après vérification.
@@ -23,36 +20,31 @@ export async function GET(req: Request) {
     console.log("⏰ [CRON] Démarrage du nettoyage des commandes expirées...");
 
     try {
-        const adminDb = getAdminDb();
-        const ordersRef = adminDb.collection("orders");
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
 
         // Date actuelle moins 72 heures
         const expirationThreshold = new Date(Date.now() - 72 * 60 * 60 * 1000);
 
         // Requête : status == 'pending' ET createdAt < threshold
-        // Note: Firestore nécessite un index composite pour cette requête.
-        // Si l'index manque, le serveur renverra une erreur avec un lien pour le créer.
-        // Requête : status == 'pending' ET createdAt < threshold
-        // On récupère toutes les commandes en attente (Dodo et Bazik)
-        const snapshot = await ordersRef
-            .where("status", "==", "pending")
-            .where("createdAt", "<", expirationThreshold)
-            .get();
+        const { data: pendingOrders, error: fetchError } = await supabaseAdmin
+            .from("orders")
+            .select("*")
+            .eq("status", "pending")
+            .lt("createdAt", expirationThreshold.toISOString());
 
-        if (snapshot.empty) {
+        if (fetchError || !pendingOrders || pendingOrders.length === 0) {
             console.log("✅ [CRON] Aucune commande en attente à vérifier.");
             return NextResponse.json({ message: "No pending orders found", count: 0 });
         }
 
-        console.log(`⚠️ [CRON] ${snapshot.size} commandes 'pending' à vérifier.`);
+        console.log(`⚠️ [CRON] ${pendingOrders.length} commandes 'pending' à vérifier.`);
 
         let processedCount = 0;
         let successCount = 0;
         let failedCount = 0;
 
-        for (const orderDoc of snapshot.docs) {
-            const orderData = orderDoc.data();
-            const orderId = orderDoc.id;
+        for (const orderData of pendingOrders) {
+            const orderId = orderData.id;
             const transactionId = orderData.transactionId;
 
             try {
@@ -102,72 +94,60 @@ export async function GET(req: Request) {
                     }
                 }
 
-                // 2. Application de la logique de mise à jour (Transaction)
-                await adminDb.runTransaction(async (t) => {
-                    const freshOrderSnap = await t.get(orderDoc.ref);
-                    if (!freshOrderSnap.exists) return;
-                    const freshData = freshOrderSnap.data();
-                    if (freshData?.status === "completed") return;
+                // 2. Application de la logique de mise à jour
+                if (isActuallyPaid && paymentDetails) {
+                    // SUCCÈS : On valide la commande
+                    await supabaseAdmin.from("orders").update({
+                        status: "completed",
+                        paymentMethod: paymentDetails.payment_method || "card",
+                        currency: paymentDetails.currency || "usd",
+                        paidAt: new Date().toISOString(),
+                        amount: paymentDetails.amount ? paymentDetails.amount / 100 : orderData.amount,
+                        transactionId: paymentDetails.payment_id || transactionId,
+                        updatedAt: new Date().toISOString()
+                    }).eq("id", orderId);
 
-                    if (isActuallyPaid && paymentDetails) {
-                        // SUCCÈS : On valide la commande comme dans verify-payment
-                        t.update(orderDoc.ref, {
-                            status: "completed",
-                            paymentMethod: paymentDetails.payment_method || "card",
-                            currency: paymentDetails.currency || "usd",
-                            paidAt: Timestamp.now(),
-                            amount: paymentDetails.amount ? paymentDetails.amount / 100 : freshData?.amount,
-                            expiresAt: FieldValue.delete(),
-                            transactionId: paymentDetails.payment_id || transactionId,
-                            updatedAt: new Date()
-                        });
+                    // Accès au produit
+                    const { userId, productId, productType } = orderData;
+                    const productCollection = productType === "course" ? "courses" : "ebooks";
+                    
+                    const { data: pData } = await supabaseAdmin.from(productCollection).select('*').eq("id", productId).maybeSingle();
+                    const { data: uData } = await supabaseAdmin.from("users").select('*').eq("id", userId).maybeSingle();
 
-                        // Accès au produit
-                        const { userId, productId, productType } = freshData as any;
-                        const productCollection = productType === "course" ? "courses" : "ebooks";
-                        
-                        const newEnrollmentRef = adminDb.collection("enrollments").doc();
-                        const userRef = adminDb.collection("users").doc(userId);
-                        const productRef = adminDb.collection(productCollection).doc(productId.id || productId);
+                    await supabaseAdmin.from("enrollments").insert({
+                        id: crypto.randomUUID(),
+                        userId: userId,
+                        productId: productId,
+                        productType,
+                        orderId,
+                        status: "active",
+                        accessGranted: true,
+                        enrolledAt: new Date().toISOString(),
+                        lastAccessedAt: new Date().toISOString(),
+                        progress: 0,
+                        completedLessons: [],
+                        productTitle: pData?.title || orderData?.productTitle || "",
+                        productThumbnailUrl: pData?.thumbnail || pData?.coverImage || orderData?.productThumbnailUrl || "",
+                        userEmail: uData?.email || orderData?.userEmail || "",
+                        userName: uData?.name || orderData?.userName || ""
+                    });
 
-                        const [pSnap, uSnap] = await Promise.all([productRef.get(), userRef.get()]);
-                        const pData = pSnap.exists ? pSnap.data() : {};
-                        const uData = uSnap.exists ? uSnap.data() : {};
-
-                        t.set(newEnrollmentRef, {
-                            userId: userRef,
-                            productId: productRef,
-                            productType,
-                            orderId,
-                            status: "active",
-                            accessGranted: true,
-                            enrolledAt: Timestamp.now(),
-                            lastAccessedAt: Timestamp.now(),
-                            progress: 0,
-                            completedLessons: [],
-                            productTitle: pData?.title || freshData?.productTitle || "",
-                            productThumbnailUrl: pData?.thumbnail || pData?.coverImage || freshData?.productThumbnailUrl || "",
-                            userEmail: uData?.email || freshData?.userEmail || "",
-                            userName: uData?.name || freshData?.userName || ""
-                        });
-
-                        successCount++;
-                    } else if (
-                        finalProviderStatus === "failed" || 
-                        finalProviderStatus === "cancelled" || 
-                        finalProviderStatus === "rejected" ||
-                        finalProviderStatus === "expired" ||
-                        (!isActuallyPaid && orderData.createdAt.toDate() < expirationThreshold)
-                    ) {
-                        // ÉCHEC : Commande expirée ou confirmée en échec par le prestataire
-                        t.update(orderDoc.ref, {
-                            status: "failed",
-                            failedReason: finalProviderStatus === "pending" ? "expired_timeout" : finalProviderStatus,
-                            updatedAt: new Date()
-                        });
-                        failedCount++;
-                    }
-                });
+                    successCount++;
+                } else if (
+                    finalProviderStatus === "failed" || 
+                    finalProviderStatus === "cancelled" || 
+                    finalProviderStatus === "rejected" ||
+                    finalProviderStatus === "expired" ||
+                    (!isActuallyPaid && new Date(orderData.createdAt) < expirationThreshold)
+                ) {
+                    // ÉCHEC : Commande expirée ou confirmée en échec par le prestataire
+                    await supabaseAdmin.from("orders").update({
+                        status: "failed",
+                        failedReason: finalProviderStatus === "pending" ? "expired_timeout" : finalProviderStatus,
+                        updatedAt: new Date().toISOString()
+                    }).eq("id", orderId);
+                    failedCount++;
+                }
 
                 processedCount++;
 
@@ -181,7 +161,7 @@ export async function GET(req: Request) {
         return NextResponse.json({
             message: "Cron completed successfully",
             summary: {
-                total_scanned: snapshot.size,
+                total_scanned: pendingOrders.length,
                 processed: processedCount,
                 validated: successCount,
                 expired_or_failed: failedCount

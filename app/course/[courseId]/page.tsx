@@ -9,8 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { getCourse, getModules } from "@/lib/courses";
 import { getEnrollmentsByUser } from "@/lib/enrollments";
 import { Course, Module, Lesson, Enrollment } from "@/lib/types";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createClient } from "@/lib/supabase/client";
 import confetti from "canvas-confetti";
 
 import ReviewModal from "@/components/ReviewModal";
@@ -19,6 +18,7 @@ export default function CoursePlayerPage() {
     const { courseId } = useParams();
     const { user } = useAuth();
     const router = useRouter();
+    const supabase = createClient();
 
     const [course, setCourse] = useState<Course | null>(null);
     const [modules, setModules] = useState<Module[]>([]);
@@ -56,9 +56,13 @@ export default function CoursePlayerPage() {
                 setModules(sanitizedModules);
 
                 // 3. Fetch Enrollment to get progress & completed lessons
-                const userRef = doc(db, "users", user.uid);
-                const enrollments = await getEnrollmentsByUser(userRef);
-                const currentEnrollment = enrollments.find(e => e.productId.id === courseId);
+                const userId = user.id || (user as any).uid;
+                const enrollments = await getEnrollmentsByUser(userId);
+                const currentEnrollment = enrollments.find(e => {
+                    // Check if productId is a string or an object depending on schema
+                    const pId = typeof e.productId === 'object' ? (e.productId as any).id : e.productId;
+                    return pId === courseId;
+                });
 
                 if (currentEnrollment) {
                     setEnrollment(currentEnrollment);
@@ -125,15 +129,11 @@ export default function CoursePlayerPage() {
         const updates: any = {
             completedLessons: newCompleted,
             progress: newProgress,
-            lastAccessedAt: new Date()
+            lastAccessedAt: new Date().toISOString()
         };
 
-        // Only advance if we found a next lesson and it has a valid ID
-        /* currentLessonId update removed per request */
-
         try {
-            const enrollmentRef = doc(db, "enrollments", enrollment.id);
-            await updateDoc(enrollmentRef, updates);
+            await supabase.from("enrollments").update(updates).eq("id", enrollment.id);
 
             // Update local state
             setEnrollment({

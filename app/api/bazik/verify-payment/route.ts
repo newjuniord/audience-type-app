@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { getAdminDb } from "@/lib/firebase-admin";
-import { Timestamp } from "firebase-admin/firestore";
 
 export async function POST(request: Request) {
     try {
@@ -48,59 +46,55 @@ export async function POST(request: Request) {
         const statusData = await statusResponse.json();
         console.log(`📦 [BAZIK VERIFY] Status Data for ${verificationId}:`, JSON.stringify(statusData, null, 2));
 
-        const adminDb = getAdminDb();
-        const orderRef = adminDb.collection("orders").doc(orderId);
-        const orderSnap = await orderRef.get();
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
+        const { data: orderData } = await supabaseAdmin.from("orders").select("*").eq("id", orderId).maybeSingle();
 
-        if (!orderSnap.exists) {
+        if (!orderData) {
             return NextResponse.json({ error: "Order not found" }, { status: 404 });
         }
 
-        const orderData = orderSnap.data();
         const normalizedStatus = (statusData.status || "").toLowerCase();
         const successStatuses = ["completed", "success", "paid", "success_payment", "successful", "succeeded"];
+
+        const now = new Date().toISOString();
 
         if (orderData?.status === "completed" || successStatuses.includes(normalizedStatus)) {
             if (orderData?.status !== "completed") {
                 console.log("✅ [BAZIK VERIFY] Payment confirmed manually. Updating order...");
-                await orderRef.update({
+                
+                const transactionId = statusData.transactionId || `manual_verify_${verificationId}`;
+                await supabaseAdmin.from("orders").update({
                     status: "completed",
                     paymentMethod: "moncash",
-                    paidAt: Timestamp.now(),
-                    transactionId: statusData.transactionId || `manual_verify_${verificationId}`,
-                });
+                    paidAt: now,
+                    transactionId: transactionId,
+                }).eq("id", orderId);
 
                 // Unlock Content
-                const { userId, productId, productType } = orderData as any;
+                const { userId, productId, productType } = orderData;
                 if (productType === "course" || productType === "ebook") {
-                    const userRef = adminDb.collection("users").doc(userId);
                     const productCollection = productType === "course" ? "courses" : "ebooks";
-                    const productRef = adminDb.collection(productCollection).doc(productId.id || productId);
 
-                    const [productSnap, userSnap] = await Promise.all([
-                        productRef.get(),
-                        userRef.get()
-                    ]);
+                    const { data: pData } = await supabaseAdmin.from(productCollection).select("*").eq("id", productId).maybeSingle();
+                    const { data: uData } = await supabaseAdmin.from("users").select("*").eq("id", userId).maybeSingle();
 
-                    const pData = productSnap.exists ? productSnap.data() : {};
-                    const uData = userSnap.exists ? userSnap.data() : {};
+                    const { data: existingEnrollment } = await supabaseAdmin.from("enrollments")
+                        .select("id")
+                        .eq("userId", userId)
+                        .eq("productId", productId)
+                        .maybeSingle();
 
-                    const enrollmentsRef = adminDb.collection("enrollments");
-                    const existingEnrollment = await enrollmentsRef
-                        .where("userId", "==", userRef)
-                        .where("productId", "==", productRef)
-                        .get();
-
-                    if (existingEnrollment.empty) {
-                        await enrollmentsRef.add({
-                            userId: userRef,
-                            productId: productRef,
+                    if (!existingEnrollment) {
+                        await supabaseAdmin.from("enrollments").insert({
+                            id: crypto.randomUUID(),
+                            userId: userId,
+                            productId: productId,
                             productType: productType,
                             orderId: orderId,
                             status: "active",
                             accessGranted: true,
-                            enrolledAt: Timestamp.now(),
-                            lastAccessedAt: Timestamp.now(),
+                            enrolledAt: now,
+                            lastAccessedAt: now,
                             progress: 0,
                             completedLessons: [],
                             currentLessonId: "",
@@ -115,12 +109,13 @@ export async function POST(request: Request) {
                 }
             }
 
-            return NextResponse.json({ status: "succeeded", order: (await orderRef.get()).data() });
+            const { data: updatedOrder } = await supabaseAdmin.from("orders").select("*").eq("id", orderId).maybeSingle();
+            return NextResponse.json({ status: "succeeded", order: updatedOrder });
         }
 
         return NextResponse.json({
             status: normalizedStatus === "failed" ? "failed" : "pending",
-            order: orderSnap.data()
+            order: orderData
         });
 
     } catch (error: any) {

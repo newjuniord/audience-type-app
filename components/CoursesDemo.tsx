@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { getCourses, getModules, addCourse, addModule } from "@/lib/courses";
 import { Course, Module } from "@/lib/types";
-import { Timestamp } from "firebase/firestore";
 
 /**
  * Démo pour la gestion des Cours et Modules (Sous-collection)
@@ -40,8 +39,8 @@ export default function CoursesDemo() {
             statut: "draft",
             thumbnail: "url_image",
             includedItems: ["pdf"],
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now()
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         });
         loadCourses();
     };

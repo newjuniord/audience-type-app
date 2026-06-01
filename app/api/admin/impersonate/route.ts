@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
 
 export async function POST(req: Request) {
     try {
@@ -9,16 +8,19 @@ export async function POST(req: Request) {
         }
 
         const idToken = authHeader.split("Bearer ")[1];
-        const adminAuth = getAdminAuth();
-        const adminDb = getAdminDb();
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
 
         // 1. Verify the ID token
-        const decodedToken = await adminAuth.verifyIdToken(idToken);
-        const adminUid = decodedToken.uid;
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(idToken);
+        if (authError || !user) {
+            return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+        }
+        
+        const adminUid = user.id;
 
         // 2. Verify the user is actually an admin in the database
-        const adminDoc = await adminDb.collection("users").doc(adminUid).get();
-        if (!adminDoc.exists || adminDoc.data()?.role !== "admin") {
+        const { data: adminDoc } = await supabaseAdmin.from("users").select("role").eq("id", adminUid).single();
+        if (!adminDoc || adminDoc.role !== "admin") {
             return NextResponse.json({ error: "Forbidden: Not an admin" }, { status: 403 });
         }
 
@@ -28,10 +30,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Missing userId" }, { status: 400 });
         }
 
-        // 4. Generate a custom token for the target user
-        const customToken = await adminAuth.createCustomToken(userId);
+        // Supabase does not natively support generating arbitrary custom tokens like Firebase.
+        // Impersonation requires either a custom JWT issuer, or using magic links and intercepting the token.
+        // For now, it is disabled.
+        return NextResponse.json({ error: "L'impersonation n'est pas encore disponible avec le nouveau système." }, { status: 501 });
 
-        return NextResponse.json({ customToken });
     } catch (error: any) {
         console.error("Error generating custom token:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });

@@ -2,11 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import {
-    doc, setDoc, addDoc, collection, query, orderBy,
-    onSnapshot, Timestamp, getDocs, where, getDoc, deleteDoc
-} from "firebase/firestore";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -23,11 +19,14 @@ interface Message {
     createdAt: any;
     isPending?: boolean;
     isRead?: boolean;
+    chatId?: string;
 }
 
 export default function StudentChatPage() {
     const { user, userData, role } = useAuth();
     const router = useRouter();
+    const supabase = createClient();
+    
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState("");
     const [sending, setSending] = useState(false);
@@ -69,23 +68,24 @@ export default function StudentChatPage() {
     // ──── Access check ────
     useEffect(() => {
         if (!user) return;
-        const uid = user.uid;
+        const uid = user.id || (user as any).uid;
+        
         async function checkAccess() {
             try {
                 // Read global chat settings first
-                const platformRef = doc(db, "settings", "platform");
-                const platformSnap = await getDoc(platformRef);
-                const chatRule = platformSnap.exists() ? platformSnap.data().chatAccessRule : "enrolled_only";
-                const limit = platformSnap.exists() ? (platformSnap.data().chatMessageLimit || 0) : 0;
-                const target = platformSnap.exists() ? (platformSnap.data().chatLimitTarget || "non_enrolled") : "non_enrolled";
+                const { data: platformSnap } = await supabase.from("settings").select("*").eq("id", "platform").single();
+                const chatRule = platformSnap ? platformSnap.chatAccessRule : "enrolled_only";
+                const limit = platformSnap ? (platformSnap.chatMessageLimit || 0) : 0;
+                const target = platformSnap ? (platformSnap.chatLimitTarget || "non_enrolled") : "non_enrolled";
 
                 setChatAccessRule(chatRule);
                 setChatMessageLimit(limit);
                 setChatLimitTarget(target);
 
-                const snapEnroll = await getDocs(query(collection(db, "enrollments"), where("userId", "==", uid)));
-                const snapBook = await getDocs(query(collection(db, "bookingApplications"), where("usersId", "==", uid)));
-                const enrolled = (snapEnroll.size + snapBook.size) > 0;
+                const { count: enrollCount } = await supabase.from("enrollments").select("*", { count: 'exact', head: true }).eq("userId", uid);
+                const { count: bookCount } = await supabase.from("bookingApplications").select("*", { count: 'exact', head: true }).eq("usersId", uid);
+                
+                const enrolled = ((enrollCount || 0) + (bookCount || 0)) > 0;
                 setIsEnrolled(enrolled);
 
                 if (role === "admin") {
@@ -101,25 +101,35 @@ export default function StudentChatPage() {
             finally { setLoadingAccess(false); }
         }
         checkAccess();
-    }, [user, role]);
+    }, [user, role, supabase]);
 
     // ──── Messages listener ────
     useEffect(() => {
         if (!user || hasAccess !== true) return;
-        const uid = user.uid;
-        const q = query(collection(db, "chats", uid, "messages"), orderBy("createdAt", "asc"));
-        const unsub = onSnapshot(q, { includeMetadataChanges: true }, (snap) => {
-            const msgs: Message[] = [];
-            snap.forEach((d) => {
-                const data = d.data();
-                msgs.push({ id: d.id, senderId: data.senderId, senderName: data.senderName || "", text: data.text || "", type: data.type || "text", mediaUrl: data.mediaUrl || "", voiceDuration: data.voiceDuration || 0, createdAt: data.createdAt, isPending: d.metadata.hasPendingWrites, isRead: data.isRead });
-            });
-            setMessages(msgs);
-            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-        });
-        setDoc(doc(db, "chats", uid), { unreadByUser: false }, { merge: true }).catch(() => {});
-        return () => unsub();
-    }, [user, hasAccess]);
+        const uid = user.id || (user as any).uid;
+        
+        const fetchMessages = async () => {
+            const { data } = await supabase.from("messages").select("*").eq("chatId", uid).order("createdAt", { ascending: true });
+            if (data) {
+                setMessages(data as Message[]);
+                setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+            }
+        };
+
+        fetchMessages();
+
+        const channel = supabase.channel(`student-messages-${uid}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chatId=eq.${uid}` }, () => {
+                fetchMessages();
+            })
+            .subscribe();
+            
+        supabase.from("chats").upsert({ id: uid, unreadByUser: false }).then();
+        
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user, hasAccess, supabase]);
 
     // ──── Toast helper ────
     const showToast = useCallback((msg: string) => {
@@ -128,7 +138,8 @@ export default function StudentChatPage() {
         toastTimerRef.current = setTimeout(() => setToast(null), 2500);
     }, []);
 
-    const userSentMessagesCount = user ? messages.filter(m => m.senderId === user.uid).length : 0;
+    const userUid = user?.id || (user as any)?.uid;
+    const userSentMessagesCount = user ? messages.filter(m => m.senderId === userUid).length : 0;
     const isLimitApplied = role !== "admin" && chatMessageLimit > 0 && (
         chatLimitTarget === "all" || (chatLimitTarget === "non_enrolled" && !isEnrolled)
     );
@@ -139,7 +150,7 @@ export default function StudentChatPage() {
     const pressTimer = useRef<NodeJS.Timeout | null>(null);
 
     const handlePressStart = (msg: Message) => {
-        if (msg.senderId !== user?.uid) return;
+        if (msg.senderId !== userUid) return;
         pressTimer.current = setTimeout(() => {
             setMessageToDelete(msg);
         }, 600);
@@ -155,7 +166,7 @@ export default function StudentChatPage() {
     const confirmDeleteMessage = async () => {
         if (!messageToDelete || !user) return;
         try {
-            await deleteDoc(doc(db, "chats", user.uid, "messages", messageToDelete.id));
+            await supabase.from("messages").delete().eq("id", messageToDelete.id);
             setMessageToDelete(null);
         } catch (err) {
             console.error("Error deleting message:", err);
@@ -174,13 +185,11 @@ export default function StudentChatPage() {
         }
         setSending(true);
         try {
-            const uid = user.uid;
+            const uid = user.id || (user as any).uid;
             const userName = userData?.displayName || user.displayName || "Etidyan";
             const userEmail = userData?.email || user.email || "";
-            const userPhone = userData?.phone || user.phoneNumber || "";
-            const chatRef = doc(db, "chats", uid);
-            const messagesRef = collection(db, "chats", uid, "messages");
-            const now = Timestamp.now();
+            const userPhone = userData?.phone || (user as any).phoneNumber || "";
+            const now = new Date().toISOString();
 
             let mediaUrl = "";
             let textContent = inputText.trim();
@@ -193,12 +202,32 @@ export default function StudentChatPage() {
                 textContent = "🎤 Mesaj vokal";
             }
 
-            const msgData: any = { senderId: uid, senderName: userName, text: textContent, type, createdAt: now };
+            const msgData: any = { 
+                id: crypto.randomUUID(),
+                chatId: uid,
+                senderId: uid, 
+                senderName: userName, 
+                text: textContent, 
+                type, 
+                createdAt: now 
+            };
             if (mediaUrl) msgData.mediaUrl = mediaUrl;
             if (duration) msgData.voiceDuration = duration;
 
-            await addDoc(messagesRef, msgData);
-            await setDoc(chatRef, { userId: uid, userName, userEmail, userPhone, lastMessage: textContent, lastMessageSenderId: uid, lastMessageAt: now, unreadByAdmin: true, unreadByUser: false }, { merge: true });
+            await supabase.from("messages").insert(msgData);
+            
+            await supabase.from("chats").upsert({ 
+                id: uid,
+                userId: uid, 
+                userName, 
+                userEmail, 
+                userPhone, 
+                lastMessage: textContent, 
+                lastMessageSenderId: uid, 
+                lastMessageAt: now, 
+                unreadByAdmin: true, 
+                unreadByUser: false 
+            });
 
             setInputText("");
             setImagePreview(null);
@@ -214,7 +243,7 @@ export default function StudentChatPage() {
             setErrorMessage("Echèk nan voye mesaj la. Tanpri re-eseye.");
             setIsErrorModalOpen(true);
         } finally { setSending(false); }
-    }, [user, userData, inputText, showToast, hasReachedLimit]);
+    }, [user, userData, inputText, showToast, hasReachedLimit, supabase]);
 
     // ──── Text send ────
     const handleSendText = (e: React.FormEvent) => {
@@ -589,7 +618,7 @@ export default function StudentChatPage() {
                             return (
                                 <div key={m.id}>
                                     {showSeparator && renderDaySeparator(getDateLabel(m.createdAt), true)}
-                                    {renderBubble(m, m.senderId === user?.uid)}
+                                    {renderBubble(m, m.senderId === userUid)}
                                 </div>
                             );
                         })
@@ -692,7 +721,7 @@ export default function StudentChatPage() {
                                 </div>
                             ) : (
                                 messages.map((m, i) => {
-                                    const isMe = m.senderId === user?.uid;
+                                    const isMe = m.senderId === userUid;
                                     const prevMsg = messages[i - 1];
                                     const showSeparator = i === 0 || getDateKey(m.createdAt) !== getDateKey(prevMsg?.createdAt);
                                     return (

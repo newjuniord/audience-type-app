@@ -39,19 +39,18 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Missing internal orderId" }, { status: 200 });
         }
         
-        // Initialisation de Firestore
-        const { getAdminDb } = await import("@/lib/firebase-admin");
-        const adminDb = getAdminDb();
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
 
-        const orderRef = adminDb.collection("orders").doc(internalOrderId);
-        const orderSnap = await orderRef.get();
+        const { data: orderData, error: orderError } = await supabaseAdmin
+            .from("orders")
+            .select("*")
+            .eq("id", internalOrderId)
+            .single();
 
-        if (!orderSnap.exists) {
+        if (orderError || !orderData) {
             console.error(`❌ [REFUND WEBHOOK] Order ${internalOrderId} not found.`);
             return NextResponse.json({ error: "Order not found" }, { status: 404 });
         }
-
-        const orderData = orderSnap.data();
 
         // Eviter de traiter deux fois le même remboursement
         if (orderData?.status === "refunded") {
@@ -59,11 +58,12 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Already processed" }, { status: 200 });
         }
 
-        const now = new Date();
-        await orderRef.update({
+        const now = new Date().toISOString();
+        await supabaseAdmin.from("orders").update({
             status: "refunded",
             updatedAt: now
-        });
+        }).eq("id", internalOrderId);
+
         console.log(`ℹ️ [REFUND WEBHOOK] Order ${internalOrderId} marked as refunded.`);
 
         try {
@@ -75,7 +75,8 @@ export async function POST(req: Request) {
             else if (productType === "ebook") productLabel = "Ebook la";
             else if (productType === "service" || productType === "booking") productLabel = "Konsiltasyon an";
 
-            await adminDb.collection("alerts").add({
+            await supabaseAdmin.from("alerts").insert({
+                id: crypto.randomUUID(),
                 userId: userId,
                 category: "utility",
                 type: "payment_refunded",
@@ -92,42 +93,34 @@ export async function POST(req: Request) {
 
             // 2. Revoke Course/Ebook Access
             if (productType === "course" || productType === "ebook") {
-                const enrollmentsRef = adminDb.collection("enrollments");
-                const existingEnrollment = await enrollmentsRef
-                    .where("userId", "==", userId)
-                    .where("productId", "==", productId)
+                const { data: existingEnrollment } = await supabaseAdmin
+                    .from("enrollments")
+                    .select("id")
+                    .eq("userId", userId)
+                    .eq("productId", productId)
                     .limit(1)
-                    .get();
+                    .maybeSingle();
 
-                if (!existingEnrollment.empty) {
-                    const enrollmentDoc = existingEnrollment.docs[0];
-                    await enrollmentDoc.ref.update({
+                if (existingEnrollment) {
+                    await supabaseAdmin.from("enrollments").update({
                         accessGranted: false,
                         status: "refunded"
-                    });
+                    }).eq("id", existingEnrollment.id);
                     console.log(`🔒 [REFUND WEBHOOK] Access revoked for user ${userId} on product ${productId}`);
                 }
             }
 
             // 3. Cancel Consultation
             if (productType === "service" || productType === "booking") {
-                const bookingSnap = await adminDb.collection("bookingApplications")
-                    .where("usersId", "==", userId)
-                    .where("bookingsId", "==", productId)
-                    .where("orderId", "==", internalOrderId)
-                    .get();
-
-                if (!bookingSnap.empty) {
-                    const batch = adminDb.batch();
-                    bookingSnap.docs.forEach((doc) => {
-                        batch.update(doc.ref, {
-                            status: "cancelled",
-                            updatedAt: now
-                        });
-                    });
-                    await batch.commit();
-                    console.log(`🚫 [REFUND WEBHOOK] Consultation cancelled for user ${userId} on service ${productId}`);
-                }
+                await supabaseAdmin.from("bookingApplications")
+                    .update({
+                        status: "cancelled"
+                    })
+                    .eq("usersId", userId)
+                    .eq("bookingsId", productId)
+                    .eq("orderId", internalOrderId);
+                    
+                console.log(`🚫 [REFUND WEBHOOK] Consultation cancelled for user ${userId} on service ${productId}`);
             }
         } catch (e) {
             console.error("❌ [REFUND WEBHOOK] Error handling refund logic:", e);

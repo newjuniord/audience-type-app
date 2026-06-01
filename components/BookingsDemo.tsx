@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { getBookings, addBooking, deleteBooking } from "@/lib/bookings";
 import { Booking } from "@/lib/types";
-import { Timestamp } from "firebase/firestore";
 
 export default function BookingsDemo() {
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -27,7 +26,7 @@ export default function BookingsDemo() {
 
     const handleAddTestBooking = async () => {
         const newBooking: Omit<Booking, "id"> = {
-            createdAt: Timestamp.now(),
+            createdAt: new Date().toISOString(),
             description: "Réservation test pour coaching",
             price: "150€",
             serviceName: "Coaching 1h",

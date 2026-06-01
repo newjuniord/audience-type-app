@@ -4,8 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
+import { createClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
     {
@@ -49,16 +48,30 @@ export default function BottomNav() {
     // Subscribe to unread messages for student
     useEffect(() => {
         if (!user) return;
-        const unsub = onSnapshot(doc(db, "chats", user.uid), (docSnap) => {
-            if (docSnap.exists()) {
-                setHasUnread(!!docSnap.data().unreadByUser);
+        const supabase = createClient();
+        const uid = user.id || (user as any).uid;
+
+        // Fetch initial state
+        supabase.from("chats").select("unreadByUser").eq("id", uid).single().then(({ data }) => {
+            if (data) {
+                setHasUnread(!!data.unreadByUser);
             } else {
                 setHasUnread(false);
             }
-        }, (err) => {
-            console.error("Error subscribing to chat unread status:", err);
         });
-        return () => unsub();
+
+        // Subscribe to changes
+        const channel = supabase.channel(`bottom-nav-chats-${uid}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `id=eq.${uid}` }, (payload) => {
+                if (payload.new) {
+                    setHasUnread(!!(payload.new as any).unreadByUser);
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [user]);
 
     // Only show for authenticated users, on mobile

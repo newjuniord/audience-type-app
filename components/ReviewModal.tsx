@@ -1,11 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { addReview } from "@/lib/reviews";
-import { Timestamp } from "firebase/firestore";
 
 interface ReviewModalProps {
     isOpen: boolean;
@@ -31,11 +28,11 @@ export default function ReviewModal({ isOpen, onClose, courseId, courseTitle }: 
             await addReview({
                 isVisible: false, // Default to hidden for moderation
                 comment: comment,
-                createdAt: Timestamp.now(),
-                productId: doc(db, "courses", courseId),
+                createdAt: new Date().toISOString() as any, // Using ISO string for Supabase
+                productId: courseId as any,
                 productTitle: courseTitle,
                 rating: rating,
-                userId: user.uid,
+                userId: user.uid || user.id as string,
                 userName: userData?.fullName || userData?.displayName || user.displayName || "Itilizatè",
                 userEmail: user.email || "",
             });

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getAdminDb, getAdminAuth } from "@/lib/firebase-admin";
 
 export async function POST(req: Request) {
     try {
@@ -10,41 +9,61 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Token manquant ou invalide." }, { status: 400 });
         }
 
-        const db = getAdminDb();
-        const auth = getAdminAuth();
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
 
-        const docRef = db.collection("temp_links").doc(token);
-        const docSnap = await docRef.get();
+        const { data: tempLinkData } = await supabaseAdmin
+            .from("temp_links")
+            .select("*")
+            .eq("id", token)
+            .single();
 
-        if (!docSnap.exists) {
+        if (!tempLinkData) {
             return NextResponse.json({ error: "Lien invalide ou introuvable." }, { status: 400 });
         }
 
-        const data = docSnap.data();
-
-        if (data?.used === true) {
+        if (tempLinkData.used === true) {
             return NextResponse.json({ error: "Ce lien a déjà été utilisé. Veuillez redemander un nouveau lien." }, { status: 400 });
         }
 
-        if (data?.expiresAt && data.expiresAt.toDate().getTime() < Date.now()) {
+        if (tempLinkData.expiresAt && new Date(tempLinkData.expiresAt).getTime() < Date.now()) {
             return NextResponse.json({ error: "Ce lien a expiré. Veuillez redemander un nouveau lien." }, { status: 400 });
         }
 
-        const userId = data?.userId;
+        const userId = tempLinkData.userId;
         if (!userId) {
             return NextResponse.json({ error: "Utilisateur introuvable pour ce lien." }, { status: 400 });
         }
 
-        // Generate Custom Token
-        const customToken = await auth.createCustomToken(userId);
+        // Get user email
+        const { data: userData } = await supabaseAdmin
+            .from("users")
+            .select("email")
+            .eq("id", userId)
+            .single();
 
-        // Mark as used
-        await docRef.update({
-            used: true,
-            usedAt: new Date()
+        if (!userData || !userData.email) {
+            return NextResponse.json({ error: "Email introuvable pour cet utilisateur." }, { status: 400 });
+        }
+
+        // Generate Supabase Magic Link
+        const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+            type: "magiclink",
+            email: userData.email
         });
 
-        return NextResponse.json({ customToken });
+        if (linkError || !linkData?.properties?.action_link) {
+            console.error("Error generating magic link:", linkError);
+            return NextResponse.json({ error: "Impossible de générer le lien de connexion." }, { status: 500 });
+        }
+
+        // Mark as used
+        await supabaseAdmin.from("temp_links").update({
+            used: true,
+            usedAt: new Date().toISOString()
+        }).eq("id", token);
+
+        // Return the action link so the frontend can redirect the user
+        return NextResponse.json({ actionLink: linkData.properties.action_link });
 
     } catch (error: any) {
         console.error("[TEMP_LOGIN_ERROR]", error);

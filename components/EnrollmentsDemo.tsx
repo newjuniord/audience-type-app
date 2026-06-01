@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { getEnrollments, createEnrollment, updateEnrollmentProgress } from "@/lib/enrollments";
 import { Enrollment } from "@/lib/types";
-import { Timestamp, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 export default function EnrollmentsDemo() {
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -27,18 +25,14 @@ export default function EnrollmentsDemo() {
     };
 
     const handleAddTestEnrollment = async () => {
-        // Refs fictives
-        const fakeProductRef = doc(db, "courses", "some-course-id");
-        const fakeUserRef = doc(db, "users", "some-user-id");
-
         const newEnrollment: Omit<Enrollment, "id"> = {
             accessGranted: true,
             completedLessons: [],
             currentLessonId: "lesson-1",
             downloadCount: "0",
-            enrolledAt: Timestamp.now(),
-            lastAccessedAt: Timestamp.now(),
-            productId: fakeProductRef,
+            enrolledAt: new Date().toISOString() as any, // Using ISO string for Supabase
+            lastAccessedAt: new Date().toISOString() as any, // Using ISO string for Supabase
+            productId: "some-course-id" as any,
             productThumbnailUrl: "https://via.placeholder.com/50",
             productTitle: "Mon Cours Complet",
             productType: "course",
@@ -46,7 +40,7 @@ export default function EnrollmentsDemo() {
             status: "active",
             totalLessons: 10,
             userEmail: "student@example.com",
-            userId: fakeUserRef,
+            userId: "some-user-id" as any,
             userName: "Sophie Étudiante"
         };
 

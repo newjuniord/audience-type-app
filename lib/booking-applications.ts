@@ -1,25 +1,29 @@
-import {
-    collection,
-    addDoc,
-    Timestamp,
-    doc,
-    DocumentReference
-} from "firebase/firestore";
-import { db } from "./firebase";
+import { createClient } from "./supabase/client";
 import { BookingApplication } from "./types";
 
 const COLLECTION_NAME = "bookingApplications";
+
+const getSupabase = () => createClient();
 
 /**
  * Crée une nouvelle demande de réservation (Application).
  */
 export const createBookingApplication = async (data: Omit<BookingApplication, "id">): Promise<string> => {
     try {
-        const ref = await addDoc(collection(db, COLLECTION_NAME), {
+        const supabase = getSupabase();
+        const id = crypto.randomUUID();
+        const newApp = {
             ...data,
-            createdAt: data.createdAt || Timestamp.now()
-        });
-        return ref.id;
+            id,
+            createdAt: data.createdAt || new Date().toISOString()
+        };
+
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .insert(newApp);
+
+        if (error) throw error;
+        return id;
     } catch (error) {
         console.error("Erreur création booking application:", error);
         throw error;
@@ -29,31 +33,17 @@ export const createBookingApplication = async (data: Omit<BookingApplication, "i
 /**
  * Récupère les demandes de réservation d'un utilisateur.
  */
-
-/**
- * Récupère les demandes de réservation d'un utilisateur.
- */
-import { query, where, getDocs, updateDoc, deleteDoc } from "firebase/firestore";
-
-export const getBookingApplicationsByUser = async (userRef: DocumentReference | string): Promise<BookingApplication[]> => {
+export const getBookingApplicationsByUser = async (userId: string): Promise<BookingApplication[]> => {
     try {
-        const refObj = typeof userRef === 'string' ? doc(db, "users", userRef) : userRef;
-        const refStr = typeof userRef === 'string' ? userRef : userRef.id;
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .eq('usersId', userId)
+            .order('createdAt', { ascending: false });
 
-        const [snapRef, snapStr] = await Promise.all([
-            getDocs(query(collection(db, COLLECTION_NAME), where("usersId", "==", refObj))),
-            getDocs(query(collection(db, COLLECTION_NAME), where("usersId", "==", refStr)))
-        ]);
-
-        const merged: { [id: string]: BookingApplication } = {};
-        snapRef.docs.forEach(d => {
-            merged[d.id] = { id: d.id, ...d.data() } as BookingApplication;
-        });
-        snapStr.docs.forEach(d => {
-            merged[d.id] = { id: d.id, ...d.data() } as BookingApplication;
-        });
-
-        return Object.values(merged);
+        if (error) throw error;
+        return (data || []) as BookingApplication[];
     } catch (error) {
         console.error("Erreur récupération booking applications:", error);
         return [];
@@ -65,8 +55,14 @@ export const getBookingApplicationsByUser = async (userRef: DocumentReference | 
  */
 export const getBookingApplications = async (): Promise<BookingApplication[]> => {
     try {
-        const snapshot = await getDocs(collection(db, COLLECTION_NAME));
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BookingApplication));
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .order('createdAt', { ascending: false });
+
+        if (error) throw error;
+        return (data || []) as BookingApplication[];
     } catch (error) {
         console.error("Erreur récupération all booking applications:", error);
         return [];
@@ -78,7 +74,13 @@ export const getBookingApplications = async (): Promise<BookingApplication[]> =>
  */
 export const updateBookingApplicationStatus = async (id: string, status: string): Promise<void> => {
     try {
-        await updateDoc(doc(db, COLLECTION_NAME, id), { status });
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .update({ status })
+            .eq('id', id);
+
+        if (error) throw error;
     } catch (error) {
         console.error("Erreur update status:", error);
         throw error;
@@ -90,7 +92,13 @@ export const updateBookingApplicationStatus = async (id: string, status: string)
  */
 export const deleteBookingApplication = async (id: string): Promise<void> => {
     try {
-        await deleteDoc(doc(db, COLLECTION_NAME, id));
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
     } catch (error) {
         console.error("Erreur suppression application:", error);
         throw error;

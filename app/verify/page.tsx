@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { verifyMagicLinkAction } from "@/app/actions/auth";
 
 // ─── Composant interne qui utilise useSearchParams ────────────────────────────
 function VerifyContent() {
@@ -21,14 +20,9 @@ function VerifyContent() {
             }
 
             try {
-                const result = await verifyMagicLinkAction(token);
-                if (result.error) {
-                    setStatus("error");
-                    setMessage(result.error);
-                } else {
-                    setStatus("success");
-                    setMessage("Koneksyon an reyalize avèk siksè! Ou ka fèmen paj sa a epi tounen sou òdinatè w.");
-                }
+                // Feature disabled during Supabase migration to pure Email/Password
+                setStatus("error");
+                setMessage("Lyen sa a pa valab ankò. Tanpri itilize imel ak modpas ou pou konekte.");
             } catch (err: any) {
                 setStatus("error");
                 setMessage("Gen yon erè ki fèt pandan n ap verifye.");

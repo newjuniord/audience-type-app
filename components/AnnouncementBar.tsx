@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getAnnouncementSettings, AnnouncementBarSettings, defaultSettings } from "@/lib/announcement";
 import { getEnrollmentsByUser } from "@/lib/enrollments";
-import { doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import Link from "next/link";
 
 export default function AnnouncementBar() {
@@ -53,8 +51,8 @@ export default function AnnouncementBar() {
             // Check productFilter
             if (currentSettings.productFilter !== 'all' && user) {
                 try {
-                    const userRef = doc(db, "users", user.uid);
-                    const enrollments = await getEnrollmentsByUser(userRef);
+                    const uid = user.id || (user as any).uid;
+                    const enrollments = await getEnrollmentsByUser(uid);
                     const hasProduct = enrollments.length > 0;
 
                     if (currentSettings.productFilter === 'has-product' && !hasProduct) {

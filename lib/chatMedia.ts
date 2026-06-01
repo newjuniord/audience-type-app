@@ -1,9 +1,9 @@
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase";
+import { createClient } from "@/lib/supabase/client";
 
 /**
- * Upload a chat media file (image or voice) to Firebase Storage.
- * Path: chat-media/{userId}/{timestamp}_{filename}
+ * Upload a chat media file (image or voice) to Supabase Storage.
+ * Bucket: chat-media
+ * Path: {userId}/{timestamp}_{filename}
  * Returns the public download URL.
  */
 export async function uploadChatMedia(
@@ -11,10 +11,24 @@ export async function uploadChatMedia(
     file: Blob,
     filename: string
 ): Promise<string> {
+    const supabase = createClient();
     const timestamp = Date.now();
-    const storageRef = ref(storage, `chat-media/${userId}/${timestamp}_${filename}`);
-    await uploadBytes(storageRef, file);
-    return getDownloadURL(storageRef);
+    const path = `${userId}/${timestamp}_${filename}`;
+
+    const { data, error } = await supabase.storage
+        .from('chat-media')
+        .upload(path, file);
+
+    if (error) {
+        console.error('Error uploading chat media:', error);
+        throw error;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+        .from('chat-media')
+        .getPublicUrl(path);
+
+    return publicUrl;
 }
 
 /**

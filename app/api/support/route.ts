@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { getAdminDb } from "@/lib/firebase-admin";
-import { Timestamp } from "firebase-admin/firestore";
 
 export async function POST(request: Request) {
     try {
@@ -11,15 +9,20 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Tous les champs sont obligatoires." }, { status: 400 });
         }
 
-        const adminDb = getAdminDb();
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
 
-        await adminDb.collection("support_messages").add({
+        const { error } = await supabaseAdmin.from("support_messages").insert({
+            id: crypto.randomUUID(),
             fullName,
             email,
             subject,
             message,
-            createdAt: Timestamp.now(),
+            createdAt: new Date().toISOString(),
         });
+
+        if (error) {
+            throw error;
+        }
 
         return NextResponse.json({ success: true });
     } catch (error: any) {

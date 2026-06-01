@@ -1,33 +1,23 @@
-import {
-    collection,
-    getDocs,
-    doc,
-    getDoc,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    Timestamp,
-    query,
-    where,
-    DocumentReference,
-    increment
-} from "firebase/firestore";
-import { db } from "./firebase";
+import { createClient } from "./supabase/client";
 import { Enrollment } from "./types";
 
 const COLLECTION_NAME = "enrollments";
+
+const getSupabase = () => createClient();
 
 /**
  * Récupère toutes les inscriptions.
  */
 export const getEnrollments = async (): Promise<Enrollment[]> => {
     try {
-        const ref = collection(db, COLLECTION_NAME);
-        const snapshot = await getDocs(ref);
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        })) as Enrollment[];
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .order('enrolledAt', { ascending: false });
+
+        if (error) throw error;
+        return (data || []) as Enrollment[];
     } catch (error) {
         console.error("Erreur récup enrollments:", error);
         throw error;
@@ -37,36 +27,41 @@ export const getEnrollments = async (): Promise<Enrollment[]> => {
 /**
  * Récupère les inscriptions d'un utilisateur.
  */
-export const getEnrollmentsByUser = async (userRef: DocumentReference | string): Promise<Enrollment[]> => {
+export const getEnrollmentsByUser = async (userId: string): Promise<Enrollment[]> => {
     try {
-        const ref = collection(db, COLLECTION_NAME);
+        console.log("🔍 Fetching enrollments for UID:", userId);
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(COLLECTION_NAME)
+            .select('*')
+            .eq('userId', userId)
+            .order('enrolledAt', { ascending: false });
+
+        if (error) {
+            console.error("Erreur Supabase:", error.message);
+            throw error;
+        }
         
-        // On s'assure d'avoir les deux formats proprement
-        const uid = typeof userRef === 'string' ? userRef : userRef.id;
-        const userDocRef = typeof userRef === 'string' ? doc(db, "users", userRef) : userRef;
-
-        console.log("🔍 Fetching enrollments for UID:", uid);
-
-        // On lance les deux requêtes
-        const qString = query(ref, where("userId", "==", uid));
-        const qRef = query(ref, where("userId", "==", userDocRef));
-
-        const [snapString, snapRef] = await Promise.all([
-            getDocs(qString),
-            getDocs(qRef)
-        ]);
-
-        // Fusion des résultats par ID unique
-        const resultsMap = new Map<string, Enrollment>();
-        
-        [...snapString.docs, ...snapRef.docs].forEach(doc => {
-            resultsMap.set(doc.id, { id: doc.id, ...doc.data() } as Enrollment);
-        });
-
-        return Array.from(resultsMap.values());
+        return (data || []) as Enrollment[];
     } catch (error) {
         console.error("Erreur récup enrollments par user:", error);
-        return []; // On retourne un tableau vide au lieu de bloquer le chargement
+        return [];
+    }
+};
+
+/**
+ * Helper: Increments or decrements user enrollment count
+ */
+const updateEnrollmentCount = async (userId: string, amount: number) => {
+    const supabase = getSupabase();
+    try {
+        const { data: user } = await supabase.from('users').select('enrollmentCount').eq('id', userId).single();
+        if (user) {
+            const currentCount = user.enrollmentCount || 0;
+            await supabase.from('users').update({ enrollmentCount: currentCount + amount }).eq('id', userId);
+        }
+    } catch (err) {
+        console.error("Erreur update enrollmentCount:", err);
     }
 };
 
@@ -75,21 +70,27 @@ export const getEnrollmentsByUser = async (userRef: DocumentReference | string):
  */
 export const createEnrollment = async (data: Omit<Enrollment, "id">): Promise<string> => {
     try {
-        const ref = await addDoc(collection(db, COLLECTION_NAME), {
+        const supabase = getSupabase();
+        const id = crypto.randomUUID();
+        const newEnrollment = {
             ...data,
-            enrolledAt: data.enrolledAt || Timestamp.now(),
-            lastAccessedAt: data.lastAccessedAt || Timestamp.now()
-        });
+            id,
+            enrolledAt: data.enrolledAt || new Date().toISOString(),
+            lastAccessedAt: data.lastAccessedAt || new Date().toISOString()
+        };
+
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .insert(newEnrollment);
+
+        if (error) throw error;
 
         // Mettre à jour le compteur global de l'utilisateur
         if (data.userId) {
-            const userRef = typeof data.userId === 'string' ? doc(db, "users", data.userId) : data.userId;
-            await updateDoc(userRef, {
-                enrollmentCount: increment(1)
-            }).catch(err => console.error("Erreur increment enrollmentCount:", err));
+            await updateEnrollmentCount(data.userId, 1);
         }
 
-        return ref.id;
+        return id;
     } catch (error) {
         console.error("Erreur ajout enrollment:", error);
         throw error;
@@ -106,13 +107,18 @@ export const updateEnrollmentProgress = async (
     progress: number
 ): Promise<void> => {
     try {
-        const ref = doc(db, COLLECTION_NAME, id);
-        await updateDoc(ref, {
-            completedLessons,
-            currentLessonId,
-            progress,
-            lastAccessedAt: Timestamp.now()
-        });
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .update({
+                completedLessons,
+                currentLessonId,
+                progress,
+                lastAccessedAt: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (error) throw error;
     } catch (error) {
         console.error("Erreur maj enrollment progress:", error);
         throw error;
@@ -124,40 +130,49 @@ export const updateEnrollmentProgress = async (
  */
 export const incrementEnrollmentDownloadCount = async (id: string): Promise<void> => {
     try {
-        const ref = doc(db, COLLECTION_NAME, id);
-        const docSnap = await getDoc(ref);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            const currentCount = parseInt(data.downloadCount || "0");
-            await updateDoc(ref, {
-                downloadCount: (currentCount + 1).toString(),
-                lastAccessedAt: Timestamp.now()
-            });
+        const supabase = getSupabase();
+        const { data: enrollment } = await supabase
+            .from(COLLECTION_NAME)
+            .select('downloadCount')
+            .eq('id', id)
+            .single();
+
+        if (enrollment) {
+            const currentCount = parseInt(enrollment.downloadCount || "0");
+            await supabase
+                .from(COLLECTION_NAME)
+                .update({
+                    downloadCount: (currentCount + 1).toString(),
+                    lastAccessedAt: new Date().toISOString()
+                })
+                .eq('id', id);
         }
     } catch (error) {
         console.error("Erreur increment download count:", error);
         throw error;
     }
 };
+
 /**
  * Supprime une inscription (retrait d'accès).
  */
 export const deleteEnrollment = async (id: string): Promise<void> => {
     try {
-        const ref = doc(db, COLLECTION_NAME, id);
-        const snap = await getDoc(ref);
+        const supabase = getSupabase();
         
-        if (snap.exists()) {
-            const data = snap.data();
-            await deleteDoc(ref);
+        // Fetch to get userId before delete
+        const { data: enrollment } = await supabase.from(COLLECTION_NAME).select('userId').eq('id', id).single();
+        
+        const { error } = await supabase
+            .from(COLLECTION_NAME)
+            .delete()
+            .eq('id', id);
 
-            // Mettre à jour le compteur global de l'utilisateur
-            if (data.userId) {
-                const userRef = typeof data.userId === 'string' ? doc(db, "users", data.userId) : data.userId;
-                await updateDoc(userRef, {
-                    enrollmentCount: increment(-1)
-                }).catch(err => console.error("Erreur decrement enrollmentCount:", err));
-            }
+        if (error) throw error;
+
+        // Mettre à jour le compteur global de l'utilisateur
+        if (enrollment && enrollment.userId) {
+            await updateEnrollmentCount(enrollment.userId, -1);
         }
     } catch (error) {
         console.error("Erreur suppression enrollment:", error);

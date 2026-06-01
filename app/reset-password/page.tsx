@@ -1,9 +1,8 @@
 "use client";
  
-import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { confirmPasswordReset } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { useState, Suspense, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
  
 function ResetPasswordForm() {
@@ -13,20 +12,12 @@ function ResetPasswordForm() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     
-    const searchParams = useSearchParams();
     const router = useRouter();
+    const supabase = createClient();
     
-    // Firebase inclut un paramètre 'oobCode' dans le lien envoyé par e-mail
-    const oobCode = searchParams.get("oobCode");
- 
     const handleReset = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (!oobCode) {
-            setError("Kòd pou chanje modpas la pa bon oswa li manke.");
-            return;
-        }
- 
         if (newPassword !== confirmPassword) {
             setError("Modpas yo pa menm.");
             return;
@@ -41,15 +32,15 @@ function ResetPasswordForm() {
         setError(null);
         
         try {
-            await confirmPasswordReset(auth, oobCode, newPassword);
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword
+            });
+
+            if (error) throw error;
             setSuccess(true);
         } catch (err: any) {
             console.error("Password reset error:", err);
-            if (err.code === "auth/invalid-action-code" || err.code === "auth/expired-action-code") {
-                setError("Lyen an pa bon oswa li ekspire. Tanpri fè yon lòt demann.");
-            } else {
-                setError("Gen yon erè ki fèt. Tanpri reyezi.");
-            }
+            setError(err.message || "Gen yon erè ki fèt. Tanpri reyezi.");
         } finally {
             setIsLoading(false);
         }
@@ -85,12 +76,6 @@ function ResetPasswordForm() {
                 </div>
             )}
             
-            {!oobCode && !error && (
-                <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-sm font-medium text-center">
-                    Lyen an sanble pa bon. Asire w ou klike sou tout lyen ki nan imèl ou a.
-                </div>
-            )}
- 
             <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-primary/80 dark:text-white/80">Nouvo modpas</label>
                 <input 
@@ -119,7 +104,7 @@ function ResetPasswordForm() {
  
             <button 
                 type="submit"
-                disabled={isLoading || !oobCode}
+                disabled={isLoading || newPassword.length < 6}
                 className="w-full py-3 mt-2 bg-black dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
             >
                 {isLoading ? (

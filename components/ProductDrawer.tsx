@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import BubbleButton from "./BubbleButton";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import { doc, Timestamp } from "firebase/firestore";
 import { createOrder } from "@/lib/orders";
 import { createEnrollment } from "@/lib/enrollments";
 import { createBookingApplication } from "@/lib/booking-applications";
@@ -59,14 +57,14 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
         try {
             await createBookingApplication({
                 bookingsId: product.id,
-                createdAt: Timestamp.now(),
+                createdAt: new Date().toISOString() as any,
                 message: applicationMessage,
                 serviceName: product.title,
                 title: product.title, // Add title as requested
                 status: "pending", // Default to pending
                 userName: user.displayName || "Utilisateur",
                 userPhone: userPhone,
-                usersId: user.uid
+                usersId: user.uid || user.id as string
             });
 
             // Show success modal instead of alert

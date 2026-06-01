@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { getAdminDb } from "@/lib/firebase-admin";
-import { Timestamp, FieldValue } from "firebase-admin/firestore";
 
 export async function POST(req: Request) {
     console.log("🔔 [BAZIK WEBHOOK] Event received");
@@ -34,17 +32,19 @@ export async function POST(req: Request) {
 
         console.log(`🔎 [BAZIK WEBHOOK] Processing Order ID: ${orderId}, Raw Status: ${rawStatus}`);
 
-        const adminDb = getAdminDb();
-        const orderRef = adminDb.collection("orders").doc(orderId);
-        const orderSnap = await orderRef.get();
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
 
-        if (!orderSnap.exists) {
+        const { data: orderData, error: orderError } = await supabaseAdmin
+            .from("orders")
+            .select("*")
+            .eq("id", orderId)
+            .single();
+
+        if (orderError || !orderData) {
             console.error(`❌ [BAZIK WEBHOOK] Order ${orderId} not found!`);
             // Return 200 to stop retries if order doesn't exist
             return NextResponse.json({ message: "Order not found" }, { status: 200 });
         }
-
-        const orderData = orderSnap.data();
 
         // Check if already processed
         if (orderData?.status === "completed") {
@@ -54,54 +54,49 @@ export async function POST(req: Request) {
 
         const successStatuses = ["completed", "success", "paid", "success_payment", "successful"];
         const failureStatuses = ["failed", "cancelled", "canceled", "rejected", "error"];
+        
+        const now = new Date().toISOString();
 
         if (successStatuses.includes(rawStatus) || payload.success === true) {
             console.log("💰 [BAZIK WEBHOOK] Payment successful. Updating order...");
 
-            await orderRef.update({
+            await supabaseAdmin.from("orders").update({
                 status: "completed",
                 paymentMethod: "moncash",
-                paidAt: Timestamp.now(),
+                paidAt: now,
                 transactionId: transactionId || "bazik_unknown",
-            });
+            }).eq("id", orderId);
 
             // Create Enrollment / Unlock Content
             const { userId, productId, productType } = orderData as any;
-            // Note: userId is stored as string in Order, but we need Reference for Enrollment
 
             console.log(`🔓 [BAZIK WEBHOOK] Unlocking content (${productType}) for user ${userId}...`);
 
             if (productType === "course" || productType === "ebook") {
-                const enrollmentsRef = adminDb.collection("enrollments");
                 const productCollection = productType === "course" ? "courses" : "ebooks";
 
-                const userRef = adminDb.collection("users").doc(userId);
-                const productRef = adminDb.collection(productCollection).doc(productId.id || productId);
-
                 // Fetch extra metadata for enrollment
-                const [productSnap, userSnap] = await Promise.all([
-                    productRef.get(),
-                    userRef.get()
-                ]);
+                const { data: pData } = await supabaseAdmin.from(productCollection).select("*").eq("id", productId).maybeSingle();
+                const { data: uData } = await supabaseAdmin.from("users").select("*").eq("id", userId).maybeSingle();
 
-                const pData = productSnap.exists ? productSnap.data() : {};
-                const uData = userSnap.exists ? userSnap.data() : {};
+                const { data: existingEnrollment } = await supabaseAdmin
+                    .from("enrollments")
+                    .select("id")
+                    .eq("userId", userId)
+                    .eq("productId", productId)
+                    .maybeSingle();
 
-                const existingEnrollment = await enrollmentsRef
-                    .where("userId", "==", userRef)
-                    .where("productId", "==", productRef)
-                    .get();
-
-                if (existingEnrollment.empty) {
-                    await enrollmentsRef.add({
-                        userId: userRef,
-                        productId: productRef,
+                if (!existingEnrollment) {
+                    await supabaseAdmin.from("enrollments").insert({
+                        id: crypto.randomUUID(),
+                        userId: userId,
+                        productId: productId,
                         productType: productType,
                         orderId: orderId,
                         status: "active",
                         accessGranted: true,
-                        enrolledAt: Timestamp.now(),
-                        lastAccessedAt: Timestamp.now(),
+                        enrolledAt: now,
+                        lastAccessedAt: now,
                         progress: 0,
                         completedLessons: [],
                         currentLessonId: "",
@@ -121,7 +116,8 @@ export async function POST(req: Request) {
                 // Create alert for course/ebook
                 try {
                     const typeLabel = productType === "course" ? "Kou" : "Ebook";
-                    await adminDb.collection("alerts").add({
+                    await supabaseAdmin.from("alerts").insert({
+                        id: crypto.randomUUID(),
                         userId: userId,
                         category: "utility",
                         type: "payment_success",
@@ -133,7 +129,7 @@ export async function POST(req: Request) {
                         iconBg: "bg-emerald-500/10",
                         actionUrl: "/dashboard",
                         actionLabel: "Wè pwodwi m yo",
-                        createdAt: Timestamp.now(),
+                        createdAt: now,
                     });
                 } catch (e) {
                     console.error("❌ [BAZIK WEBHOOK] Error creating alert:", e);
@@ -141,27 +137,22 @@ export async function POST(req: Request) {
 
             } else if (productType === "service" || productType === "booking") {
                 try {
-                    const svcId = productId.id || productId;
-                    const bookingSnap = await adminDb.collection("bookingApplications")
-                        .where("usersId", "==", userId)
-                        .where("bookingsId", "==", svcId)
-                        .where("status", "==", "pending")
-                        .get();
+                    const { data: bookingDocs, error: bookingErr } = await supabaseAdmin.from("bookingApplications")
+                        .select("*")
+                        .eq("usersId", userId)
+                        .eq("bookingsId", productId)
+                        .eq("status", "pending")
+                        .order("createdAt", { ascending: false });
 
-                    if (!bookingSnap.empty) {
-                        const sorted = bookingSnap.docs.sort((a, b) => {
-                            const aMs = a.data().createdAt?.toMillis?.() || 0;
-                            const bMs = b.data().createdAt?.toMillis?.() || 0;
-                            return bMs - aMs;
-                        });
-                        const bookingDoc = sorted[0];
-                        const bookingData = bookingDoc.data();
+                    if (bookingDocs && bookingDocs.length > 0) {
+                        const bookingDoc = bookingDocs[0];
+                        const bookingData = bookingDoc;
 
-                        await bookingDoc.ref.update({
+                        await supabaseAdmin.from("bookingApplications").update({
                             status: "accepted",
-                            paidAt: Timestamp.now(),
+                            paidAt: now,
                             orderId: orderId,
-                        });
+                        }).eq("id", bookingDoc.id);
 
                         const bookingDate = bookingData.bookingDate || "";
                         const bookingTime = bookingData.bookingTime || "";
@@ -187,7 +178,8 @@ export async function POST(req: Request) {
                             ? `Konsiltasyon ou a konfime pou ${dateLabel} a ${timeLabel}. Nou pral kontakte w pa WhatsApp.`
                             : `Konsiltasyon ou a konfime. Nou pral kontakte w pa WhatsApp.`;
 
-                        await adminDb.collection("alerts").add({
+                        await supabaseAdmin.from("alerts").insert({
+                            id: crypto.randomUUID(),
                             userId: userId,
                             category: "utility",
                             type: "booking_reminder",
@@ -199,7 +191,7 @@ export async function POST(req: Request) {
                             iconBg: "bg-emerald-500/10",
                             actionUrl: "/dashboard",
                             actionLabel: "Wè detay",
-                            createdAt: Timestamp.now(),
+                            createdAt: now,
                         });
                     }
                 } catch (e) {
@@ -209,11 +201,11 @@ export async function POST(req: Request) {
 
         } else if (failureStatuses.includes(rawStatus)) {
             console.log("❌ [BAZIK WEBHOOK] Payment failed/cancelled.");
-            await orderRef.update({
+            await supabaseAdmin.from("orders").update({
                 status: "failed",
-                failedAt: Timestamp.now(),
+                failedAt: now,
                 transactionId: transactionId || "bazik_failed"
-            });
+            }).eq("id", orderId);
             
             try {
                 const { userId, productType } = orderData as any;
@@ -222,7 +214,8 @@ export async function POST(req: Request) {
                 else if (productType === "ebook") productLabel = "Ebook la";
                 else if (productType === "service" || productType === "booking") productLabel = "Konsiltasyon an";
 
-                await adminDb.collection("alerts").add({
+                await supabaseAdmin.from("alerts").insert({
+                    id: crypto.randomUUID(),
                     userId: userId,
                     category: "utility",
                     type: "payment_failed",
@@ -234,7 +227,7 @@ export async function POST(req: Request) {
                     iconBg: "bg-red-500/10",
                     actionUrl: "/dashboard/chat",
                     actionLabel: "Kontakte nou",
-                    createdAt: Timestamp.now(),
+                    createdAt: now,
                 });
             } catch (e) {
                 console.error("❌ [BAZIK WEBHOOK] Error creating failure alert:", e);

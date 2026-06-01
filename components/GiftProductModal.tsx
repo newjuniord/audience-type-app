@@ -5,8 +5,6 @@ import { User, Course, Ebook } from "@/lib/types";
 import { getCourses } from "@/lib/courses";
 import { getEbooks } from "@/lib/ebooks";
 import { createEnrollment } from "@/lib/enrollments";
-import { Timestamp, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import ConfirmModal from "./ui/ConfirmModal";
 import { sendGiftNotification } from "@/app/actions/notify";
 
@@ -73,9 +71,8 @@ export default function GiftProductModal({ isOpen, onClose, user }: GiftProductM
             if (!product) return;
 
             // Create references
-            const userRef = doc(db, "users", user.uid);
-            const productCollection = product.type === 'course' ? 'courses' : 'ebooks';
-            const productRef = doc(db, productCollection, product.id);
+            const userId = user.uid || user.id as string;
+            const productId = product.id;
 
             // Send direct SMS notification if they have a phone number
             const targetPhone = user.phone || user.phoneNumber;
@@ -83,7 +80,7 @@ export default function GiftProductModal({ isOpen, onClose, user }: GiftProductM
             if (targetPhone) {
                 try {
                     const res = await sendGiftNotification(
-                        user.uid,
+                        userId,
                         targetPhone,
                         user.displayName || user.fullName || "Cher(e) membre",
                         product.title
@@ -97,16 +94,16 @@ export default function GiftProductModal({ isOpen, onClose, user }: GiftProductM
             }
 
             await createEnrollment({
-                userId: userRef,
-                productId: productRef,
+                userId: userId as any,
+                productId: productId as any,
                 productType: product.type === 'course' ? 'Course' : 'Ebook',
                 accessGranted: true,
-                enrolledAt: Timestamp.now(),
+                enrolledAt: new Date().toISOString() as any,
                 status: 'active',
                 progress: 0,
                 completedLessons: [],
                 currentLessonId: '',
-                lastAccessedAt: Timestamp.now(),
+                lastAccessedAt: new Date().toISOString() as any,
                 productTitle: product.title,
                 productThumbnailUrl: product.thumbnailUrl || "",
                 totalLessons: 0, // Default or fetch if needed

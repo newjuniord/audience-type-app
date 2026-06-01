@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getAdminDb } from "@/lib/firebase-admin";
 
 export async function GET(req: Request) {
   try {
@@ -11,21 +10,24 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "date and serviceId are required" }, { status: 400 });
     }
 
-    const db = getAdminDb();
+    const { supabaseAdmin } = await import("@/lib/supabase/admin");
 
     // 1. Fetch booking applications for the selected date and service
-    const appsSnap = await db
-      .collection("bookingApplications")
-      .where("bookingDate", "==", date)
-      .where("bookingsId", "==", serviceId)
-      .get();
+    const { data: appsSnap, error } = await supabaseAdmin
+      .from("bookingApplications")
+      .select("*")
+      .eq("bookingDate", date)
+      .eq("bookingsId", serviceId);
 
-    const apps = appsSnap.docs.map(doc => {
-      const data = doc.data() as any;
+    if (error) {
+      throw error;
+    }
+
+    const apps = (appsSnap || []).map(data => {
       return {
-        id: doc.id,
+        id: data.id,
         ...data,
-        createdAtMs: data.createdAt ? (data.createdAt.toMillis ? data.createdAt.toMillis() : data.createdAt.toDate().getTime()) : 0
+        createdAtMs: data.createdAt ? new Date(data.createdAt).getTime() : 0
       } as any;
     });
 

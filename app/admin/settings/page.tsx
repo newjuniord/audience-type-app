@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createClient } from "@/lib/supabase/client";
 import VideoPlayer from "@/components/VideoPlayer";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
 export default function SettingsPage() {
+    const supabase = createClient();
     const [videoUrl, setVideoUrl] = useState("");
     const [videoVisible, setVideoVisible] = useState(false);
     const [chatAccessRule, setChatAccessRule] = useState<"all" | "enrolled_only" | "closed">("enrolled_only");
@@ -19,19 +19,15 @@ export default function SettingsPage() {
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const docRef = doc(db, "settings", "homepage");
-                const docSnap = await getDoc(docRef);
+                const { data: homepageData } = await supabase.from("settings").select("*").eq("id", "homepage").single();
 
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    setVideoUrl(data.videoUrl || "");
-                    setVideoVisible(!!data.videoVisible);
+                if (homepageData) {
+                    setVideoUrl(homepageData.videoUrl || "");
+                    setVideoVisible(!!homepageData.videoVisible);
                 }
 
-                const platformRef = doc(db, "settings", "platform");
-                const platformSnap = await getDoc(platformRef);
-                if (platformSnap.exists()) {
-                    const platformData = platformSnap.data();
+                const { data: platformData } = await supabase.from("settings").select("*").eq("id", "platform").single();
+                if (platformData) {
                     setChatAccessRule(platformData.chatAccessRule || "enrolled_only");
                     setChatMessageLimit(platformData.chatMessageLimit || 0);
                     setChatLimitTarget(platformData.chatLimitTarget || "non_enrolled");
@@ -44,22 +40,23 @@ export default function SettingsPage() {
         };
 
         fetchSettings();
-    }, []);
+    }, [supabase]);
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const docRef = doc(db, "settings", "homepage");
-            await setDoc(docRef, {
+            await supabase.from("settings").upsert({
+                id: "homepage",
                 videoUrl,
                 videoVisible
-            }, { merge: true });
+            });
 
-            await setDoc(doc(db, "settings", "platform"), {
+            await supabase.from("settings").upsert({
+                id: "platform",
                 chatAccessRule,
                 chatMessageLimit,
                 chatLimitTarget
-            }, { merge: true });
+            });
             
             // Show success toast
             setMessageModal({

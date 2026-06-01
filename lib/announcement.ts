@@ -1,5 +1,4 @@
-import { db } from "./firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { createClient } from "./supabase/client";
 
 export interface AnnouncementBarSettings {
     text: string;
@@ -24,16 +23,22 @@ export const defaultSettings: AnnouncementBarSettings = {
     link: ""
 };
 
+const getSupabase = () => createClient();
+
 export async function getAnnouncementSettings(): Promise<AnnouncementBarSettings> {
     try {
-        const docRef = doc(db, SETTINGS_COLLECTION, ANNOUNCEMENT_DOC);
-        const docSnap = await getDoc(docRef);
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from(SETTINGS_COLLECTION)
+            .select('value')
+            .eq('id', ANNOUNCEMENT_DOC)
+            .single();
 
-        if (docSnap.exists()) {
-            return docSnap.data() as AnnouncementBarSettings;
-        } else {
+        if (error || !data) {
             return defaultSettings;
         }
+
+        return data.value as AnnouncementBarSettings;
     } catch (error) {
         console.error("Error fetching announcement settings:", error);
         return defaultSettings;
@@ -42,8 +47,17 @@ export async function getAnnouncementSettings(): Promise<AnnouncementBarSettings
 
 export async function updateAnnouncementSettings(settings: AnnouncementBarSettings): Promise<void> {
     try {
-        const docRef = doc(db, SETTINGS_COLLECTION, ANNOUNCEMENT_DOC);
-        await setDoc(docRef, settings, { merge: true });
+        const supabase = getSupabase();
+        
+        // Use upsert to handle both insert and update
+        const { error } = await supabase
+            .from(SETTINGS_COLLECTION)
+            .upsert({ 
+                id: ANNOUNCEMENT_DOC, 
+                value: settings 
+            }, { onConflict: 'id' });
+
+        if (error) throw error;
     } catch (error) {
         console.error("Error updating announcement settings:", error);
         throw error;

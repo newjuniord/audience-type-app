@@ -1,16 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import {
-    collection,
-    query,
-    orderBy,
-    onSnapshot,
-    deleteDoc,
-    doc,
-    Timestamp
-} from "firebase/firestore";
+import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
@@ -26,6 +17,7 @@ interface SupportMessage {
 export default function AdminMessagesPage() {
     const { role, loading } = useAuth();
     const router = useRouter();
+    const supabase = createClient();
     const [messages, setMessages] = useState<SupportMessage[]>([]);
     const [filter, setFilter] = useState("");
 
@@ -38,26 +30,38 @@ export default function AdminMessagesPage() {
     useEffect(() => {
         if (role !== "admin") return;
 
-        console.log("📡 [ADMIN MESSAGES] Starting listener for support_messages...");
-        const q = query(collection(db, "support_messages"), orderBy("createdAt", "desc"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            console.log(`✅ [ADMIN MESSAGES] Received ${snapshot.size} messages.`);
-            const msgs = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as SupportMessage[];
-            setMessages(msgs);
-        }, (error) => {
-            console.error("❌ [ADMIN MESSAGES] Snapshot error:", error);
-        });
+        console.log("📡 [ADMIN MESSAGES] Fetching support_messages...");
+        
+        const fetchMessages = async () => {
+            const { data, error } = await supabase.from("support_messages").select("*").order("createdAt", { ascending: false });
+            if (error) {
+                console.error("❌ [ADMIN MESSAGES] Fetch error:", error);
+                return;
+            }
+            if (data) {
+                console.log(`✅ [ADMIN MESSAGES] Received ${data.length} messages.`);
+                setMessages(data as SupportMessage[]);
+            }
+        };
 
-        return () => unsubscribe();
-    }, [role]);
+        fetchMessages();
+
+        const channel = supabase.channel('support-messages-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages' }, () => {
+                fetchMessages();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [role, supabase]);
 
     const handleDelete = async (id: string) => {
         if (!confirm("Voulez-vous vraiment supprimer ce message ?")) return;
         try {
-            await deleteDoc(doc(db, "support_messages", id));
+            await supabase.from("support_messages").delete().eq("id", id);
+            setMessages(prev => prev.filter(m => m.id !== id));
         } catch (error) {
             console.error("Error deleting message:", error);
             alert("Erreur lors de la suppression.");
@@ -66,7 +70,7 @@ export default function AdminMessagesPage() {
 
     const formatDate = (timestamp: any) => {
         if (!timestamp) return "";
-        const date = timestamp instanceof Timestamp ? timestamp.toDate() : new Date(timestamp);
+        const date = new Date(timestamp);
         return date.toLocaleDateString("fr-FR", {
             day: "2-digit",
             month: "short",
