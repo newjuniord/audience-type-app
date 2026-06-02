@@ -23,7 +23,14 @@ export default function DashboardLayout({
     }, [user, loading, router]);
 
     if (loading) {
-        return null; // loading.tsx gère le skeleton
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background-dark text-white">
+                <div className="flex flex-col items-center gap-4 animate-pulse">
+                    <div className="size-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+                    <p>Chajman...</p>
+                </div>
+            </div>
+        );
     }
 
     if (!user) {
