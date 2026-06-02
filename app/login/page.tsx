@@ -68,34 +68,30 @@ export default function LoginPage() {
                 options: {
                     data: {
                         displayName: fullName.trim(),
+                        full_name: fullName.trim(),
                         name: fullName.trim(),
                         role: "customer"
                     }
                 }
             });
 
-            if (error) throw error;
+            if (error) {
+                // Handle specific Supabase errors with friendly messages
+                if (error.message.includes('already registered') || error.message.includes('already exists') || error.message.includes('User already registered')) {
+                    setError("Yon kont deja egziste ak imel sa a. Tanpri konekte.");
+                    setIsLoginView(true); // Switch to login tab automatically
+                } else {
+                    setError(error.message || "Gen yon erè ki fèt pandan enskripsyon an.");
+                }
+                return;
+            }
 
             if (data.user) {
-                // Check if we need to manually insert into users table if trigger doesn't exist
-                const { error: insertError } = await supabase.from('users').upsert({
-                    id: data.user.id,
-                    email: data.user.email,
-                    name: fullName.trim(),
-                    role: "customer",
-                    status: "active"
-                }, { onConflict: 'id' });
-                
-                if (insertError) {
-                    console.error("Error creating user profile:", insertError);
-                }
-                
-                setMessage("Enskripsyon an reyisi! Tanpri verifye imel ou.");
-                // router.push("/dashboard");
+                setMessage("Enskripsyon an reyisi! Tanpri verifye imel ou pou aktive kont ou.");
             }
         } catch (err: any) {
             console.error("Registration error:", err);
-            setError(err.message || "Gen yon erè ki fèt pandan enskripsyon an.");
+            setError("Gen yon erè ki fèt pandan enskripsyon an. Eseye ankò.");
         } finally {
             setIsLoading(false);
         }
