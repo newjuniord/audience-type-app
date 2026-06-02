@@ -2,12 +2,8 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from './lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
-  try {
-    return await updateSession(request)
-  } catch (e) {
-    console.error('Middleware execution failed:', e)
-    return new NextResponse('Middleware Error: ' + (e as Error).message + '\nStack: ' + (e as Error).stack, { status: 500 })
-  }
+  // temporarily bypass supabase to see if it fixes the 500 error
+  return NextResponse.next()
 }
 
 export const config = {
