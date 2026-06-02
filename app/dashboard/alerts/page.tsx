@@ -39,6 +39,7 @@ export default function AlertsPage() {
                 title: "Bienvenue sur Audience Type",
                 body: "Merci de nous rejoindre. Votre compte a été configuré avec succès.",
                 category: "utility",
+                type: "account_security",
                 isRead: false,
                 icon: "waving_hand",
                 iconColor: "text-primary",
