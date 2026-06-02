@@ -137,7 +137,7 @@ export default function ConsultationBanner() {
                 const today = new Date();
                 const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
                 
-                const userId = user!.uid || user!.id as string;
+                const userId = (user as any)!.uid || user!.id as string;
                 const { data: bookings, error } = await supabase
                     .from("bookingApplications")
                     .select("*")

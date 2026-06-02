@@ -41,7 +41,7 @@ export default function UserEnrollmentsDrawer({ isOpen, onClose, user }: UserEnr
         if (!user) return;
         setLoading(true);
         try {
-            const userId = user.uid || user.id as string;
+            const userId = (user as any).uid || (user as any).id as string;
             const data = await getEnrollmentsByUser(userId);
             setEnrollments(data);
         } catch (error) {
@@ -55,7 +55,7 @@ export default function UserEnrollmentsDrawer({ isOpen, onClose, user }: UserEnr
         if (!user) return;
         setLoadingOrders(true);
         try {
-            const userId = user.uid || user.id as string;
+            const userId = (user as any).uid || (user as any).id as string;
             const data = await getOrdersByUser(userId);
             // Sort by date descending
             const sortedData = [...data].sort((a, b) => {

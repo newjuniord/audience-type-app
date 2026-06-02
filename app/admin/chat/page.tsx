@@ -156,7 +156,7 @@ export default function AdminChatPage() {
         if (!selectedThread) return;
         setSending(true);
         try {
-            const adminName = userData?.displayName || user?.displayName || "Admin";
+            const adminName = userData?.displayName || userData?.fullName || user?.user_metadata?.full_name || "Admin";
             const now = new Date().toISOString();
 
             let mediaUrl = "";

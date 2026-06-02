@@ -43,7 +43,7 @@ export default function ServiceDetailsDrawer({ isOpen, onClose, enrollment }: Se
                         <div>
                             <h2 className="text-2xl font-black tracking-tight">{enrollment?.productTitle || "Detay Sèvis la"}</h2>
                             <p className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mt-1">
-                                {enrollment?.enrolledAt ? `Enskri nan dat ${enrollment.enrolledAt.toDate().toLocaleDateString()}` : 'Sèvis Aktif'}
+                                {enrollment?.enrolledAt ? `Enskri nan dat ${new Date(enrollment.enrolledAt as any).toLocaleDateString()}` : 'Sèvis Aktif'}
                             </p>
                         </div>
                         <button

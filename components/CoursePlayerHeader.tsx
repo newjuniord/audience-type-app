@@ -25,8 +25,8 @@ export default function CoursePlayerHeader({ courseTitle, progress = 0 }: Course
                         <p className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold">Pwogrè Jeneral</p>
                         <p className="text-xs font-bold">Fini nan nivo {Math.round(progress)}%</p>
                     </div>
-                    {user?.photoURL ? (
-                        <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 bg-cover bg-center" style={{ backgroundImage: `url('${user.photoURL}')` }}></div>
+                    {(user as any)?.photoURL || user?.user_metadata?.photoURL || user?.user_metadata?.avatar_url ? (
+                        <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 bg-cover bg-center" style={{ backgroundImage: `url('${(user as any)?.photoURL || user?.user_metadata?.photoURL || user?.user_metadata?.avatar_url}')` }}></div>
                     ) : (
                         <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
                             <span className="material-symbols-outlined text-zinc-400">person</span>

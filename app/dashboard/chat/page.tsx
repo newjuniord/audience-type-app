@@ -186,7 +186,7 @@ export default function StudentChatPage() {
         setSending(true);
         try {
             const uid = user.id || (user as any).uid;
-            const userName = userData?.displayName || user.displayName || "Etidyan";
+            const userName = userData?.displayName || userData?.fullName || user?.user_metadata?.full_name || "Etidyan";
             const userEmail = userData?.email || user.email || "";
             const userPhone = userData?.phone || (user as any).phoneNumber || "";
             const now = new Date().toISOString();
@@ -368,7 +368,7 @@ export default function StudentChatPage() {
     // 12-hour AM/PM format
     const formatTime = (ts: any) => {
         if (!ts) return "";
-        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        const d = ts.toDate ? new Date(ts as any) : new Date(ts);
         return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
     };
 
@@ -377,7 +377,7 @@ export default function StudentChatPage() {
     // Day separator helpers
     const getDateKey = (ts: any): string => {
         if (!ts) return "";
-        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        const d = ts.toDate ? new Date(ts as any) : new Date(ts);
         return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     };
 
@@ -385,7 +385,7 @@ export default function StudentChatPage() {
 
     const getDateLabel = (ts: any): string => {
         if (!ts) return "";
-        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        const d = ts.toDate ? new Date(ts as any) : new Date(ts);
         const today = new Date();
         const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
         const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();

@@ -29,8 +29,8 @@ export default function AdminOrdersPage() {
                 if (isASuccess && !isBSuccess) return -1;
                 if (!isASuccess && isBSuccess) return 1;
 
-                const dateA = a.createdAt?.seconds || 0;
-                const dateB = b.createdAt?.seconds || 0;
+                const dateA = a.createdAt ? new Date(a.createdAt as any).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt as any).getTime() : 0;
                 return dateB - dateA;
             });
             setOrders(sorted.slice(0, 5));
@@ -53,14 +53,15 @@ export default function AdminOrdersPage() {
 
     const formatDate = (dateValue: any) => {
         if (!dateValue) return "N/A";
-        if (dateValue.toDate) {
-            return dateValue.toDate().toLocaleDateString();
-        }
+
         if (typeof dateValue === 'string') {
             return new Date(dateValue).toLocaleDateString();
         }
-        if (dateValue.seconds) {
-             return new Date(dateValue.seconds * 1000).toLocaleDateString();
+        if (dateValue) {
+             const parsedDate = new Date(dateValue as any);
+             if (!isNaN(parsedDate.getTime())) {
+                 return parsedDate.toLocaleDateString();
+             }
         }
         return "N/A";
     };

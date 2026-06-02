@@ -58,7 +58,7 @@ export default function UserManagementPage() {
                 const combined = reset ? newUsers : [...prev, ...newUsers];
                 // Utilisation d'une Map pour garantir l'unicité par UID
                 const uniqueMap = new Map();
-                combined.forEach(u => uniqueMap.set(u.uid || u.id, u));
+                combined.forEach(u => uniqueMap.set(u.uid || (u as any).id, u));
                 return Array.from(uniqueMap.values());
             });
 
@@ -263,16 +263,7 @@ export default function UserManagementPage() {
         if (!user.lastActive) return false;
         
         try {
-            let lastActiveTime = 0;
-            if (typeof (user.lastActive as any).toMillis === 'function') {
-                lastActiveTime = (user.lastActive as any).toMillis();
-            } else if (typeof (user.lastActive as any).toDate === 'function') {
-                lastActiveTime = (user.lastActive as any).toDate().getTime();
-            } else if (typeof user.lastActive === 'number') {
-                lastActiveTime = user.lastActive;
-            } else {
-                lastActiveTime = new Date(user.lastActive as any).getTime();
-            }
+            const lastActiveTime = new Date(user.lastActive as any).getTime();
                 
             if (isNaN(lastActiveTime)) return false;
             
@@ -291,14 +282,8 @@ export default function UserManagementPage() {
         newToday: users.filter(u => {
             if (!u.createdAt) return false;
             const today = new Date();
-            let created: Date;
-            if (typeof u.createdAt === 'string') {
-                created = new Date(u.createdAt);
-            } else if (typeof (u.createdAt as any).toDate === 'function') {
-                created = (u.createdAt as any).toDate();
-            } else {
-                return false;
-            }
+            const created = new Date(u.createdAt as any);
+            if (isNaN(created.getTime())) return false;
             return created.getDate() === today.getDate() &&
                 created.getMonth() === today.getMonth() &&
                 created.getFullYear() === today.getFullYear();
@@ -407,7 +392,7 @@ export default function UserManagementPage() {
                                 </tr>
                             ) : (
                                 displayedUsers.map((user) => (
-                                    <tr key={user.uid || user.id} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors group">
+                                    <tr key={user.uid || (user as any).id} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors group">
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
                                                 <div className="size-10 rounded-full bg-black/5 dark:bg-white/5 overflow-hidden flex items-center justify-center">
@@ -478,7 +463,7 @@ export default function UserManagementPage() {
                                             <p className="text-sm font-semibold">{user.enrollmentCount || 0} inscriptions</p>
                                         </td>
                                         <td className="px-8 py-6 text-sm text-black/60 dark:text-white/60">
-                                            {user.createdAt ? (typeof user.createdAt === 'string' ? new Date(user.createdAt).toLocaleDateString() : (user.createdAt as any).toDate?.().toLocaleDateString()) : "Inconnu"}
+                                            {user.createdAt ? new Date(user.createdAt as any).toLocaleDateString() : "Inconnu"}
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -526,7 +511,7 @@ export default function UserManagementPage() {
                                                     </button>
                                                 ) : null}
                                                 <button
-                                                    onClick={() => handleDeleteUser(user.uid || user.id!)}
+                                                    onClick={() => handleDeleteUser(user.uid || (user as any).id!)}
                                                     className="p-2.5 rounded-full border border-black/5 dark:border-white/10 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-300"
                                                     title="Remove"
                                                 >

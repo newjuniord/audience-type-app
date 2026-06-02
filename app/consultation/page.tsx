@@ -80,7 +80,7 @@ export default function ConsultationPage() {
       });
       setHasActiveConsultation(hasActive);
       setCheckingActive(false);
-    }).catch(err => {
+    }, err => {
       console.error("Error checking active consultations", err);
       setCheckingActive(false);
     });

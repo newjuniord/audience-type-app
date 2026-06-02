@@ -228,8 +228,8 @@ export default function ReviewsPage() {
                                             <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-1 max-w-[200px]">{review.comment}</p>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-medium">
-                                            {review.createdAt && typeof review.createdAt.toDate === 'function'
-                                                ? format(review.createdAt.toDate(), "d MMM yyyy")
+                                            {review.createdAt 
+                                                ? format(new Date(review.createdAt as any), "d MMM yyyy")
                                                 : "-"}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -349,8 +349,8 @@ export default function ReviewsPage() {
                             <section>
                                 <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Date de création</p>
                                 <p className="text-slate-600 dark:text-slate-400">
-                                    {selectedReview.createdAt && typeof selectedReview.createdAt.toDate === 'function'
-                                        ? format(selectedReview.createdAt.toDate(), "d MMMM yyyy 'à' HH:mm")
+                                    {selectedReview.createdAt 
+                                        ? format(new Date(selectedReview.createdAt as any), "d MMMM yyyy 'à' HH:mm")
                                         : "-"}
                                 </p>
                             </section>

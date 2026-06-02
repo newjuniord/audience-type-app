@@ -62,9 +62,9 @@ export default function ProductDrawer({ isOpen, onClose, product }: ProductDrawe
                 serviceName: product.title,
                 title: product.title, // Add title as requested
                 status: "pending", // Default to pending
-                userName: user.displayName || "Utilisateur",
+                userName: (user as any).displayName || user.user_metadata?.full_name || "Utilisateur",
                 userPhone: userPhone,
-                usersId: user.uid || user.id as string
+                usersId: (user as any).uid || user.id as string
             });
 
             // Show success modal instead of alert

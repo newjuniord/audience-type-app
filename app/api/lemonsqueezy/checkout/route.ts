@@ -198,7 +198,7 @@ export async function POST(req: Request) {
         const checkoutUrl = lsData.data.attributes.url;
 
         // Met à jour la transaction ID de façon asynchrone
-        supabaseAdmin.from("orders").update({ transactionId: lsData.data.id }).eq("id", orderId).catch(e => console.error(e));
+        supabaseAdmin.from("orders").update({ transactionId: lsData.data.id }).eq("id", orderId).then(({ error }) => { if (error) console.error(error); });
 
         console.log(`🚀 [SUCCESS] Redirection LemonSqueezy vers : ${checkoutUrl}`);
         return NextResponse.json({ checkoutUrl, sessionExpiresAtMs });

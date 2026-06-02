@@ -6,7 +6,7 @@ export default function DashboardHero() {
     const { user } = useAuth();
 
     // Fallback: DisplayName -> Email prefix -> "l'ami"
-    const userName = user?.displayName || user?.email?.split('@')[0] || "l'ami";
+    const userName = (user as any)?.displayName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || "l'ami";
 
     return (
         <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-8 mb-12">

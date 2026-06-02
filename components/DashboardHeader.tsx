@@ -67,7 +67,7 @@ export default function DashboardHeader() {
     useEffect(() => {
         if (!user) return;
         let isMounted = true;
-        fetchAlerts(user.uid).then((alerts) => {
+        fetchAlerts((user as any).uid || user.id).then((alerts) => {
             if (isMounted) setUnreadCount(alerts.filter((a) => !a.isRead).length);
         });
         return () => { isMounted = false; };
@@ -78,7 +78,7 @@ export default function DashboardHeader() {
         if (!user) return;
         let isMounted = true;
         const supabase = createClient();
-        supabase.from('chats').select('unreadByUser').eq('id', user.uid).single().then(({ data, error }) => {
+        supabase.from('chats').select('unreadByUser').eq('id', (user as any).uid || user.id).single().then(({ data, error }) => {
             if (error) {
                 if (isMounted) setChatUnread(false);
             } else if (data && isMounted) {
@@ -103,10 +103,10 @@ export default function DashboardHeader() {
                         </button>
                     )}
                     <div className="flex items-center gap-3">
-                        {user.photoURL ? (
+                        {(user as any).photoURL || user.user_metadata?.photoURL || user.user_metadata?.avatar_url ? (
                             <div
                                 className="size-11 rounded-2xl bg-cover bg-center border-2 border-white/10 shadow-md shrink-0"
-                                style={{ backgroundImage: `url("${user.photoURL}")` }}
+                                style={{ backgroundImage: `url("${(user as any).photoURL || user.user_metadata?.photoURL || user.user_metadata?.avatar_url}")` }}
                             />
                         ) : (
                             <div className="size-11 rounded-2xl bg-primary/10 border-2 border-white/10 flex items-center justify-center text-primary shadow-md shrink-0">
@@ -114,7 +114,7 @@ export default function DashboardHeader() {
                             </div>
                         )}
                         <div className="min-w-0">
-                            <p className="text-sm font-black truncate leading-tight text-white">{userData?.displayName || user.displayName || "Client"}</p>
+                            <p className="text-sm font-black truncate leading-tight text-white">{userData?.displayName || (user as any).displayName || user.user_metadata?.full_name || "Client"}</p>
                             <p className="text-[11px] text-white/40 truncate">{userData?.email || user.email || userData?.phone}</p>
                         </div>
                     </div>
@@ -256,7 +256,7 @@ export default function DashboardHeader() {
                         {user && (
                             <div className="hidden lg:flex flex-col items-end opacity-[0.1] hover:opacity-100 transition-opacity pointer-events-none select-none">
                                 <span className="text-[7px] font-mono leading-none">ROLE: {role || 'none'}</span>
-                                <span className="text-[7px] font-mono leading-none">UID: {user.uid.slice(0, 6)}...</span>
+                                <span className="text-[7px] font-mono leading-none">UID: {((user as any).uid || user.id).slice(0, 6)}...</span>
                             </div>
                         )}
                         {user && role === 'admin' && (

@@ -71,7 +71,7 @@ export default function GiftProductModal({ isOpen, onClose, user }: GiftProductM
             if (!product) return;
 
             // Create references
-            const userId = user.uid || user.id as string;
+            const userId = user.uid || (user as any).id as string;
             const productId = product.id;
 
             // Send direct SMS notification if they have a phone number

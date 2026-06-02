@@ -64,11 +64,11 @@ export default function ConsultationsHistoryPage() {
         if (!user) return;
         const fetchBookings = async () => {
             try {
-                const data = await getBookingApplicationsByUser(user.uid);
+                const data = await getBookingApplicationsByUser(user.id);
                 // Oldest first (chronological order)
                 data.sort((a, b) => {
-                    const tsA = a.createdAt?.toMillis?.() ?? 0;
-                    const tsB = b.createdAt?.toMillis?.() ?? 0;
+                    const tsA = a.createdAt ? new Date(a.createdAt as any).getTime() : 0;
+                    const tsB = b.createdAt ? new Date(b.createdAt as any).getTime() : 0;
                     return tsA - tsB;
                 });
                 setBookings(data);
@@ -210,7 +210,7 @@ export default function ConsultationsHistoryPage() {
 
                     <ol className="space-y-5">
                         {filtered.map((booking, idx) => {
-                            const date = booking.createdAt?.toDate?.();
+                            const date = booking.createdAt ? new Date(booking.createdAt as any) : undefined;
                             const day = date ? date.getDate() : "—";
                             const month = date ? MONTHS_HT[date.getMonth()] : "";
                             const year = date ? date.getFullYear() : "";

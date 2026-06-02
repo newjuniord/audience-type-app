@@ -67,8 +67,10 @@ export default function BookingsManagementPage() {
     const getBookingDate = (app: ExtendedApplication) => {
         if (app.bookingDate) return app.bookingDate;
         if (app.createdAt) {
-            const d = app.createdAt.toDate();
-            return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+            const d = new Date(app.createdAt as any);
+            if (!isNaN(d.getTime())) {
+                return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+            }
         }
         return new Date().toISOString().split('T')[0];
     };
@@ -250,9 +252,8 @@ export default function BookingsManagementPage() {
                     } catch (e) { console.error("Error fetching service", e); }
                 }
 
-                const userIdStr = typeof app.usersId === 'string' ? app.usersId : app.usersId?.id;
-                const altUserIdStr = (app as any).userId ? (typeof (app as any).userId === 'string' ? (app as any).userId : (app as any).userId?.id) : "";
-                const finalUserIdStr = userIdStr || altUserIdStr;
+                const rawUserId = app.usersId || (app as any).userId;
+                const finalUserIdStr = typeof rawUserId === 'string' ? rawUserId : rawUserId?.id || "";
 
                 if (finalUserIdStr) {
                     try {
@@ -272,8 +273,10 @@ export default function BookingsManagementPage() {
                     const serviceIdStr = serviceId || "";
 
                     const matches = orders.filter(o => {
-                        const oUserId = typeof o.userId === 'string' ? o.userId : o.userId?.id;
-                        const oProductId = typeof o.productId === 'string' ? o.productId : o.productId?.id;
+                        const rawOUserId = o.userId || (o as any).usersId;
+                        const oUserId = typeof rawOUserId === 'string' ? rawOUserId : rawOUserId?.id || "";
+                        const rawOProductId = o.productId || (o as any).productsId;
+                        const oProductId = typeof rawOProductId === 'string' ? rawOProductId : rawOProductId?.id || "";
                         return oUserId === finalUserIdStr &&
                                oProductId === serviceIdStr &&
                                o.productType === 'service';
@@ -281,8 +284,8 @@ export default function BookingsManagementPage() {
 
                     if (matches.length > 0) {
                         matches.sort((a, b) => {
-                            const dateA = a.createdAt?.seconds || 0;
-                            const dateB = b.createdAt?.seconds || 0;
+                            const dateA = a.createdAt ? new Date(a.createdAt as any).getTime() : 0;
+                            const dateB = b.createdAt ? new Date(b.createdAt as any).getTime() : 0;
                             return dateB - dateA;
                         });
                         matchingOrder = matches[0];
@@ -325,7 +328,7 @@ export default function BookingsManagementPage() {
                 };
             }));
 
-            extendedApps.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+            extendedApps.sort((a, b) => new Date(b.createdAt as any).getTime() - new Date(a.createdAt as any).getTime());
             setApplications(extendedApps);
         } catch (error) {
             console.error("Failed to load booking applications", error);
@@ -723,7 +726,7 @@ export default function BookingsManagementPage() {
                                                 </span>
                                                 {app.createdAt && (
                                                     <span className="text-[10px] text-black/30 dark:text-white/30">
-                                                        Reçue le {app.createdAt.toDate().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                        Reçue le {new Date(app.createdAt as any).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                     </span>
                                                 )}
                                             </div>

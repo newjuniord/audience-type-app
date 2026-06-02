@@ -9,7 +9,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 function timeAgo(timestamp: any): string {
     if (!timestamp) return "";
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const date = timestamp.toDate ? new Date(timestamp as any) : new Date(timestamp);
     const diff = Math.floor((Date.now() - date.getTime()) / 1000);
     if (diff < 60) return "Kounye a";
     if (diff < 3600) return `${Math.floor(diff / 60)} min`;
@@ -29,7 +29,7 @@ export default function AlertsPage() {
     useEffect(() => {
         if (!user) return;
         let isMounted = true;
-        fetchAlerts(user.uid)
+        fetchAlerts(user.id)
             .then((data) => {
                 if (isMounted) {
                     setAlerts(data);
@@ -46,7 +46,7 @@ export default function AlertsPage() {
     const handleMarkAll = async () => {
         if (!user) return;
         setMarkingAll(true);
-        await markAllAlertsAsRead(user.uid);
+        await markAllAlertsAsRead(user.id);
         setMarkingAll(false);
     };
 

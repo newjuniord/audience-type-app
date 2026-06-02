@@ -31,7 +31,7 @@ export default function UserEnrollmentsModal({ isOpen, onClose, user }: UserEnro
         if (!user) return;
         setLoading(true);
         try {
-            const list = await getEnrollmentsByUser(user.uid);
+            const list = await getEnrollmentsByUser((user as any).uid || (user as any).id);
             setEnrollments(list);
         } catch (error) {
             console.error("Failed to fetch user enrollments:", error);
@@ -68,7 +68,7 @@ export default function UserEnrollmentsModal({ isOpen, onClose, user }: UserEnro
 
     const formatTimestamp = (ts: any) => {
         if (!ts) return "";
-        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        const d = new Date(ts as any);
         return d.toLocaleDateString([], { day: "2-digit", month: "short", year: "numeric" });
     };
 

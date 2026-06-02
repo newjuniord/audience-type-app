@@ -180,7 +180,7 @@ export default function ProfilePage() {
                 const uid = user.id || (user as any).uid;
                 const userDoc = await getUserById(uid);
                 if (userDoc) {
-                    setDisplayName(userDoc.name || userDoc.displayName || user.user_metadata?.displayName || (user as any).displayName || "");
+                    setDisplayName((userDoc as any).name || userDoc.displayName || user.user_metadata?.displayName || (user as any).displayName || "");
                     setPhotoURL(userDoc.photoURL || user.user_metadata?.photoURL || (user as any).photoURL || "");
 
 

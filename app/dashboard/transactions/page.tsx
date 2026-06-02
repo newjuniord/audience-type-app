@@ -20,7 +20,7 @@ export default function TransactionsPage() {
             if (!user) return;
             try {
                 // Limite à 20 pour la lecture initiale, puis on trie
-                const userOrders = await getOrdersByUser(user.uid, 20);
+                const userOrders = await getOrdersByUser(user.id, 20);
                 userOrders.sort((a, b) => {
                     const statusA = (a.status || '').toLowerCase();
                     const statusB = (b.status || '').toLowerCase();
@@ -31,8 +31,8 @@ export default function TransactionsPage() {
                     if (isASuccess && !isBSuccess) return -1;
                     if (!isASuccess && isBSuccess) return 1;
 
-                    const dateA = a.createdAt?.toDate().getTime() || 0;
-                    const dateB = b.createdAt?.toDate().getTime() || 0;
+                    const dateA = new Date(a.createdAt as any).getTime() || 0;
+                    const dateB = new Date(b.createdAt as any).getTime() || 0;
                     return dateB - dateA;
                 });
                 setOrders(userOrders.slice(0, 5));
@@ -60,7 +60,7 @@ export default function TransactionsPage() {
 
     const formatDate = (timestamp: any) => {
         if (!timestamp) return "—";
-        return timestamp.toDate().toLocaleDateString("fr-FR", {
+        return new Date(timestamp as any).toLocaleDateString("fr-FR", {
             year: 'numeric', month: 'short', day: 'numeric'
         });
     };
@@ -91,7 +91,7 @@ export default function TransactionsPage() {
             return { label: 'Echwe', dot: 'bg-red-400', text: 'text-red-400', bg: 'bg-red-400/10 border-red-400/20' };
             
         if (createdAt) {
-            const orderDate = createdAt.toDate().getTime();
+            const orderDate = new Date(createdAt as any).getTime();
             const now = new Date().getTime();
             const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
             if ((now - orderDate) > threeDaysInMs) {

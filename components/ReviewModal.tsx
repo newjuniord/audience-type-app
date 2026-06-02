@@ -32,8 +32,8 @@ export default function ReviewModal({ isOpen, onClose, courseId, courseTitle }: 
                 productId: courseId as any,
                 productTitle: courseTitle,
                 rating: rating,
-                userId: user.uid || user.id as string,
-                userName: userData?.fullName || userData?.displayName || user.displayName || "Itilizatè",
+                userId: (user as any).uid || user.id as string,
+                userName: userData?.fullName || userData?.displayName || (user as any).displayName || user.user_metadata?.full_name || "Itilizatè",
                 userEmail: user.email || "",
             });
             onClose();

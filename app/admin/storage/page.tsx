@@ -231,7 +231,7 @@ export default function StoragePage() {
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <span className="material-symbols-outlined text-base">calendar_today</span>
-                                        {asset.createdAt ? format(asset.createdAt.toDate(), "d MMM yy", { locale: fr }) : "-"}
+                                        {asset.createdAt ? format(new Date(asset.createdAt as any), "d MMM yy", { locale: fr }) : "-"}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">

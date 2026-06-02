@@ -178,7 +178,7 @@ export default function AdminSidebar({ isOpen = true, onToggle }: AdminSidebarPr
                         )}
                     </div>
                     <div className="overflow-hidden">
-                        <p className="text-xs font-bold truncate max-w-[120px]">{userData?.displayName || userData?.name || (user as any)?.displayName || user?.user_metadata?.displayName || "Admin User"}</p>
+                        <p className="text-xs font-bold truncate max-w-[120px]">{userData?.displayName || (userData as any)?.name || (user as any)?.displayName || user?.user_metadata?.displayName || "Admin User"}</p>
                         <p className="text-[10px] text-black/50 dark:text-white/50 truncate max-w-[120px]">{userData?.email || user?.email || userData?.phone}</p>
                     </div>
                 </div>

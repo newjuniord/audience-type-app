@@ -40,8 +40,8 @@ export default async function KadoPage() {
         ...gifts
             .filter((g) => g.isActive)
             .map((g) => {
-                const isExpired = g.expirationDate && typeof g.expirationDate.toDate === 'function'
-                    ? g.expirationDate.toDate().getTime() < Date.now()
+                const isExpired = g.expirationDate 
+                    ? new Date(g.expirationDate as any).getTime() < Date.now()
                     : false;
 
                 return {

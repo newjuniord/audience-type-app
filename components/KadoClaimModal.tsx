@@ -85,9 +85,9 @@ export default function KadoClaimModal({ item, onClose }: KadoClaimModalProps) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     giftId: item.kadoId,
-                    userId: user.uid,
+                    userId: (user as any).uid || user.id,
                     userEmail: user.email,
-                    userName: user.displayName || "Itilizatè",
+                    userName: (user as any).displayName || user.user_metadata?.full_name || "Itilizatè",
                     invitationCode: invitationCode.trim(),
                 }),
             });

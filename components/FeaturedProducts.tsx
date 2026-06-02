@@ -36,12 +36,12 @@ export default function FeaturedProducts({
             }
 
             try {
-                const enrollments = await getEnrollmentsByUser(user.uid || user.id as string);
+                const enrollments = await getEnrollmentsByUser((user as any).uid || user.id as string);
                 const ownedIds = new Set<string>();
                 
                 enrollments.forEach(enrollment => {
                     if (enrollment.productId) {
-                        const pid = typeof enrollment.productId === 'string' ? enrollment.productId : enrollment.productId.id;
+                        const pid = typeof enrollment.productId === 'string' ? enrollment.productId : (enrollment.productId as any).id;
                         if (pid) ownedIds.add(pid);
                     }
                 });

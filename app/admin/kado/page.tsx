@@ -13,7 +13,7 @@ export default function AdminKadoPage() {
         try {
             setLoading(true);
             const data = await getGifts();
-            data.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+            data.sort((a, b) => (new Date(b.createdAt as any).getTime() || 0) - (new Date(a.createdAt as any).getTime() || 0));
             setGifts(data);
         } catch (e) {
             console.error(e);
@@ -158,7 +158,7 @@ export default function AdminKadoPage() {
                                     {gift.expirationDate && (
                                         <div className="flex items-center gap-2 text-xs text-orange-500">
                                             <span className="material-symbols-outlined text-[13px]">schedule</span>
-                                            <span>Expire le {gift.expirationDate.toDate().toLocaleDateString("fr-FR")}</span>
+                                            <span>Expire le {new Date(gift.expirationDate as any).toLocaleDateString("fr-FR")}</span>
                                         </div>
                                     )}
                                     {gift.requiresInvitation && (

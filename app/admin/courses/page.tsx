@@ -121,7 +121,7 @@ export default function CourseManagementPage() {
                                                 <div>
                                                     <p className="text-sm font-bold tracking-tight">{course.title}</p>
                                                     <p className="text-[10px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest">
-                                                        {course.updatedAt ? format(course.updatedAt.toDate(), "d MMM yyyy", { locale: fr }) : "-"}
+                                                        {course.updatedAt ? format(new Date(course.updatedAt as any), "d MMM yyyy", { locale: fr }) : "-"}
                                                     </p>
                                                 </div>
                                             </div>

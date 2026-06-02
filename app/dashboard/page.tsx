@@ -117,7 +117,7 @@ export default function Dashboard() {
             if (enrollment.productId) {
                 const courseId = typeof enrollment.productId === 'string' 
                     ? enrollment.productId 
-                    : enrollment.productId.id;
+                    : (enrollment.productId as any).id;
                 router.push(`/course/${courseId}`);
             }
         } else {
