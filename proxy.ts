@@ -1,9 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server'
-// import { updateSession } from './lib/supabase/middleware'
+import { updateSession } from './lib/supabase/middleware'
 
-export async function middleware(request: NextRequest) {
-  // temporarily bypass supabase to see if it fixes the 500 error
-  return NextResponse.next()
+export async function proxy(request: NextRequest) {
+  try {
+    return await updateSession(request)
+  } catch (e) {
+    console.error('Proxy execution failed:', e)
+    return new NextResponse('Proxy Error: ' + (e as Error).message, { status: 500 })
+  }
 }
 
 export const config = {
