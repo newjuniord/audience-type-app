@@ -175,75 +175,19 @@ export default function ProfilePage() {
 
     useEffect(() => {
         async function fetchProfileData() {
-            if (!user) return;
             try {
-                const uid = user.id || (user as any).uid;
-                const userDoc = await getUserById(uid);
-                if (userDoc) {
-                    setDisplayName((userDoc as any).name || userDoc.displayName || user.user_metadata?.displayName || (user as any).displayName || "");
-                    setPhotoURL(userDoc.photoURL || user.user_metadata?.photoURL || (user as any).photoURL || "");
-
-
-                    // For WhatsApp users: read-only display
-                    const rawPhone = userDoc.phone || user.phone || (user as any).phoneNumber || "";
-                    const cleanPhone = rawPhone
-                        .replace("whatsapp:", "")
-                        .replace(/"/g, "")
-                        .replace(/'/g, "")
-                        .trim();
-                    setPhoneDisplay(cleanPhone || "");
-
-                    // For email users: editable phone field (phoneNumber field)
-                    const rawPhoneNum = userDoc.phoneNumber || userDoc.phone || "";
-                    let cleanPhoneNum = rawPhoneNum.replace("whatsapp:", "").replace(/"/g, "").replace(/'/g, "").trim();
-
-                    if (cleanPhoneNum) {
-                        setIsPhoneVerified(true);
-                        let detectedCountry: any = COUNTRIES[0]; // default Haiti
-                        let displayDigits = cleanPhoneNum;
-
-                        if (cleanPhoneNum.startsWith('+')) {
-                            const sortedCountries = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
-                            const match = sortedCountries.find(c => cleanPhoneNum.startsWith(c.dial));
-                            if (match) {
-                                detectedCountry = match;
-                                displayDigits = cleanPhoneNum.slice(match.dial.length);
-                            }
-                        } else {
-                            detectedCountry = "-";
-                            displayDigits = cleanPhoneNum;
-                        }
-
-                        if (typeof detectedCountry !== "string") {
-                            setSelectedCountry(detectedCountry);
-                            setPhoneEditable(formatPhone(displayDigits.replace(/\D/g, ""), detectedCountry.code));
-                        } else {
-                            setPhoneEditable(cleanPhoneNum);
-                        }
-                    } else {
-                        setIsPhoneVerified(false);
-                        setPhoneEditable("");
-                    }
-
-                    if (userDoc.createdAt) {
-                        setMemberSince(new Date(userDoc.createdAt).toLocaleDateString('fr-FR', {
-                            month: 'long', year: 'numeric'
-                        }));
-                    }
-                } else {
-                    setDisplayName(user.user_metadata?.displayName || (user as any).displayName || "");
-                    setPhotoURL(user.user_metadata?.photoURL || (user as any).photoURL || "");
-                }
-
-                const [enrollments, bookings] = await Promise.all([
-                    getEnrollmentsByUser(uid).catch(() => []),
-                    getBookingApplicationsByUser(uid).catch(() => [])
-                ]);
+                // Mock Data
+                setDisplayName("Admin User");
+                setPhotoURL("");
+                setPhoneDisplay("");
+                setPhoneEditable("+509 30 00 0000");
+                setIsPhoneVerified(true);
+                setMemberSince("juin 2026");
 
                 setStats({
-                    coursesRaw: enrollments.filter(e => e.productType === 'Course' || e.productType === 'course').length,
-                    ebooks: enrollments.filter(e => e.productType === 'Ebook' || e.productType === 'ebook').length,
-                    bookings: bookings.filter(b => b.status === 'pending' || b.status === 'accepted').length,
+                    coursesRaw: 5,
+                    ebooks: 2,
+                    bookings: 1,
                 });
             } catch (error) {
                 console.error("Profile error:", error);

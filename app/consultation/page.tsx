@@ -87,16 +87,34 @@ export default function ConsultationPage() {
   }, [user, supabase]);
 
   useEffect(() => {
-    getServices().then(services => {
-      const published = services.find(s => s.status === 'published' || s.active);
-      if (published) {
-        published.availability = normalizeAvailability(published.availability);
-        setService(published);
-      } else {
-        setService(null);
-      }
-      setLoading(false);
-    }).catch(console.error);
+        // Mock data au lieu de `getServices()`
+        const mockService = {
+            id: 'mock-consultation-1',
+            title: 'Consultation Stratégique',
+            description: 'Une session de 45 minutes pour analyser vos besoins et élaborer un plan d\'action sur mesure pour votre projet web ou marketing.',
+            price: '150',
+            priceHTG: 22500, // Estimation (150 * 150)
+            imageUrl: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?q=80&w=2069&auto=format&fit=crop',
+            includedItems: [
+                'Analyse préalable de votre projet',
+                'Appel visio de 45 minutes',
+                'Plan d\'action détaillé envoyé après l\'appel',
+                'Support par email pendant 7 jours'
+            ],
+            availability: normalizeAvailability({
+                "1": { enabled: true, startTime: "09:00", endTime: "17:00" },
+                "2": { enabled: true, startTime: "09:00", endTime: "17:00" },
+                "3": { enabled: true, startTime: "09:00", endTime: "17:00" },
+                "4": { enabled: true, startTime: "09:00", endTime: "17:00" },
+                "5": { enabled: true, startTime: "09:00", endTime: "16:00" },
+            }),
+            active: true,
+            status: 'published',
+            availabilityTimezoneOffset: -240 // Eastern Time (EST/EDT) -4 hours roughly
+        };
+
+        setService(mockService as any);
+        setLoading(false);
   }, []);
 
 

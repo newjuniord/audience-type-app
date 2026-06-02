@@ -27,20 +27,29 @@ export default function AlertsPage() {
     const { permissionStatus, requestPermissionAndGetToken, isSupportedBrowser } = usePushNotifications();
 
     useEffect(() => {
-        if (!user) return;
-        let isMounted = true;
-        fetchAlerts(user.id)
-            .then((data) => {
-                if (isMounted) {
-                    setAlerts(data);
-                    setLoading(false);
-                }
-            })
-            .catch((error) => {
-                console.error(error);
-                if (isMounted) setLoading(false);
-            });
-        return () => { isMounted = false; };
+        if (!user) {
+            setLoading(false);
+            return;
+        }
+        // Mock data
+        const mockAlerts: Alert[] = [
+            {
+                id: "mock-alert-1",
+                userId: "mock-user-123",
+                title: "Bienvenue sur Audience Type",
+                body: "Merci de nous rejoindre. Votre compte a été configuré avec succès.",
+                category: "utility",
+                isRead: false,
+                icon: "waving_hand",
+                iconColor: "text-primary",
+                iconBg: "bg-primary/10",
+                createdAt: new Date().toISOString(),
+                actionLabel: "Voir Profil",
+                actionUrl: "/dashboard/profile"
+            }
+        ];
+        setAlerts(mockAlerts);
+        setLoading(false);
     }, [user]);
 
     const handleMarkAll = async () => {

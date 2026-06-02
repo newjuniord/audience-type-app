@@ -17,25 +17,29 @@ export default function TransactionsPage() {
 
     useEffect(() => {
         const fetchOrders = async () => {
-            if (!user) return;
+            if (!user) {
+                setLoading(false);
+                return;
+            }
             try {
-                // Limite à 20 pour la lecture initiale, puis on trie
-                const userOrders = await getOrdersByUser(user.id, 20);
-                userOrders.sort((a, b) => {
-                    const statusA = (a.status || '').toLowerCase();
-                    const statusB = (b.status || '').toLowerCase();
-                    
-                    const isASuccess = statusA === 'paid' || statusA === 'success' || statusA === 'completed';
-                    const isBSuccess = statusB === 'paid' || statusB === 'success' || statusB === 'completed';
-
-                    if (isASuccess && !isBSuccess) return -1;
-                    if (!isASuccess && isBSuccess) return 1;
-
-                    const dateA = new Date(a.createdAt as any).getTime() || 0;
-                    const dateB = new Date(b.createdAt as any).getTime() || 0;
-                    return dateB - dateA;
-                });
-                setOrders(userOrders.slice(0, 5));
+                // Mock data
+                const mockOrders: Order[] = [
+                    {
+                        id: "mock-order-1",
+                        transactionId: "tx_mock_123abc",
+                        userId: "mock-user-123",
+                        userEmail: "admin@audiencetype.com",
+                        productId: "mock-course-1",
+                        productTitle: "Formation Complète",
+                        productType: "course",
+                        amount: 100,
+                        currency: "USD",
+                        status: "paid",
+                        paymentMethod: "card",
+                        createdAt: new Date().toISOString()
+                    }
+                ];
+                setOrders(mockOrders);
             } catch (error) {
                 console.error("Error fetching transactions:", error);
             } finally {
@@ -43,8 +47,7 @@ export default function TransactionsPage() {
             }
         };
 
-        if (user) fetchOrders();
-        else setLoading(false);
+        fetchOrders();
     }, [user]);
 
     const filteredOrders = orders.filter(order =>

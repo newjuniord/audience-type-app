@@ -67,69 +67,41 @@ export default function StudentChatPage() {
 
     // ──── Access check ────
     useEffect(() => {
-        if (!user) return;
-        const uid = user.id || (user as any).uid;
-        
-        async function checkAccess() {
-            try {
-                // Read global chat settings first
-                const { data: platformSnap } = await supabase.from("settings").select("*").eq("id", "platform").single();
-                const chatRule = platformSnap ? platformSnap.chatAccessRule : "enrolled_only";
-                const limit = platformSnap ? (platformSnap.chatMessageLimit || 0) : 0;
-                const target = platformSnap ? (platformSnap.chatLimitTarget || "non_enrolled") : "non_enrolled";
-
-                setChatAccessRule(chatRule);
-                setChatMessageLimit(limit);
-                setChatLimitTarget(target);
-
-                const { count: enrollCount } = await supabase.from("enrollments").select("*", { count: 'exact', head: true }).eq("userId", uid);
-                const { count: bookCount } = await supabase.from("bookingApplications").select("*", { count: 'exact', head: true }).eq("usersId", uid);
-                
-                const enrolled = ((enrollCount || 0) + (bookCount || 0)) > 0;
-                setIsEnrolled(enrolled);
-
-                if (role === "admin") {
-                    setHasAccess(true);
-                } else if (chatRule === "closed") {
-                    setHasAccess("closed");
-                } else if (chatRule === "all") {
-                    setHasAccess(true);
-                } else {
-                    setHasAccess(enrolled);
-                }
-            } catch { setHasAccess(false); }
-            finally { setLoadingAccess(false); }
-        }
-        checkAccess();
-    }, [user, role, supabase]);
+        // Bypass Supabase and grant access
+        setChatAccessRule("enrolled_only");
+        setChatMessageLimit(0);
+        setChatLimitTarget("non_enrolled");
+        setIsEnrolled(true);
+        setHasAccess(true);
+        setLoadingAccess(false);
+    }, []);
 
     // ──── Messages listener ────
     useEffect(() => {
         if (!user || hasAccess !== true) return;
-        const uid = user.id || (user as any).uid;
         
-        const fetchMessages = async () => {
-            const { data } = await supabase.from("messages").select("*").eq("chatId", uid).order("createdAt", { ascending: true });
-            if (data) {
-                setMessages(data as Message[]);
-                setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        const mockMessages: Message[] = [
+            {
+                id: "msg-1",
+                senderId: "mock-user-123",
+                senderName: "Admin User",
+                text: "Bonjour! Ceci est un message de test.",
+                type: "text",
+                createdAt: new Date(Date.now() - 10000).toISOString(),
+            },
+            {
+                id: "msg-2",
+                senderId: "mock-admin-999",
+                senderName: "Support",
+                text: "Bienvenue sur le chat. Comment puis-je vous aider ?",
+                type: "text",
+                createdAt: new Date().toISOString(),
             }
-        };
-
-        fetchMessages();
-
-        const channel = supabase.channel(`student-messages-${uid}`)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chatId=eq.${uid}` }, () => {
-                fetchMessages();
-            })
-            .subscribe();
-            
-        supabase.from("chats").upsert({ id: uid, unreadByUser: false }).then();
+        ];
         
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [user, hasAccess, supabase]);
+        setMessages(mockMessages);
+        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    }, [user, hasAccess]);
 
     // ──── Toast helper ────
     const showToast = useCallback((msg: string) => {

@@ -52,12 +52,35 @@ export default function Dashboard() {
 
     useEffect(() => {
         const fetchEnrollments = async () => {
-            if (!user) return;
+            if (!user) {
+                setLoading(false);
+                return;
+            }
 
             try {
-                const uid = user.id || (user as any).uid;
-                const data = await getEnrollmentsByUser(uid);
-                setEnrollments(data);
+                // Mock data
+                const mockEnrollments: Enrollment[] = [
+                    {
+                        id: "mock-enroll-1",
+                        userId: "mock-user-123",
+                        userEmail: "admin@audiencetype.com",
+                        userName: "Admin User",
+                        productId: "mock-course-1",
+                        productTitle: "Formation Complète",
+                        productType: "course",
+                        productThumbnailUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop",
+                        status: "active",
+                        accessGranted: true,
+                        progress: 45,
+                        totalLessons: 10,
+                        completedLessons: ["1", "2", "3", "4"],
+                        currentLessonId: "5",
+                        enrolledAt: new Date().toISOString(),
+                        lastAccessedAt: new Date().toISOString(),
+                        downloadCount: "0"
+                    }
+                ];
+                setEnrollments(mockEnrollments);
             } catch (error) {
                 console.error("Failed to fetch enrollments", error);
             } finally {

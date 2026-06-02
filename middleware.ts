@@ -1,13 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { updateSession } from './lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
-  try {
-    return await updateSession(request)
-  } catch (e) {
-    console.error('Middleware failed:', e)
-    return NextResponse.next()
-  }
+  // Désactivé temporairement pour laisser l'accès libre au frontend
+  return NextResponse.next()
 }
 
 export const config = {

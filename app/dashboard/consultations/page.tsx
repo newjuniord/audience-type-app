@@ -61,17 +61,25 @@ export default function ConsultationsHistoryPage() {
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
-        if (!user) return;
+        if (!user) {
+            setLoading(false);
+            return;
+        }
         const fetchBookings = async () => {
             try {
-                const data = await getBookingApplicationsByUser(user.id);
-                // Oldest first (chronological order)
-                data.sort((a, b) => {
-                    const tsA = a.createdAt ? new Date(a.createdAt as any).getTime() : 0;
-                    const tsB = b.createdAt ? new Date(b.createdAt as any).getTime() : 0;
-                    return tsA - tsB;
-                });
-                setBookings(data);
+                // Mock data
+                const mockBookings: BookingApplication[] = [
+                    {
+                        id: "mock-booking-1",
+                        usersId: "mock-user-123",
+                        serviceId: "mock-consultation-1",
+                        serviceName: "Consultation Stratégique",
+                        status: "pending",
+                        message: "Kategori: Web Design\nSijè: Mwen vle kreye yon sit web pou biznis mwen.\nKréneau: 10:00 AM - 10:45 AM",
+                        createdAt: new Date().toISOString()
+                    }
+                ];
+                setBookings(mockBookings);
             } catch (err) {
                 console.error("Error fetching consultations", err);
             } finally {
