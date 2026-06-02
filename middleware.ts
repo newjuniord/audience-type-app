@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
     return await updateSession(request)
   } catch (e) {
     console.error('Middleware execution failed:', e)
-    return NextResponse.next()
+    return new NextResponse('Middleware Error: ' + (e as Error).message + '\nStack: ' + (e as Error).stack, { status: 500 })
   }
 }
 
