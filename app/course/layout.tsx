@@ -27,7 +27,14 @@ export default function CourseLayout({
     }
 
     if (!user) {
-        return null;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
+                <div className="flex flex-col items-center gap-4 animate-pulse">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-primary dark:text-white font-medium">Redireksyon...</p>
+                </div>
+            </div>
+        );
     }
 
     return (

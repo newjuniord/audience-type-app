@@ -38,7 +38,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     if (!user || role?.trim().toLowerCase() !== "admin") {
-        return null;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <div className="flex flex-col items-center gap-4 animate-pulse">
+                    <div className="w-8 h-8 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
+                    <p className="text-gray-500 font-medium">Redireksyon...</p>
+                </div>
+            </div>
+        );
     }
 
     return (
