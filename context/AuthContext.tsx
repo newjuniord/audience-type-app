@@ -63,33 +63,58 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
         };
 
+        let isMounted = true;
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
-                const authUser = session?.user;
-                if (authUser) {
-                    setUser(authUser);
-                    await fetchUserData(authUser);
-                } else {
-                    setUser(null);
-                    setUserData(null);
-                    setRole(null);
+                try {
+                    const authUser = session?.user;
+                    if (authUser) {
+                        if (isMounted) setUser(authUser);
+                        await fetchUserData(authUser);
+                    } else {
+                        if (isMounted) {
+                            setUser(null);
+                            setUserData(null);
+                            setRole(null);
+                        }
+                    }
+                } catch (err) {
+                    console.error("AuthContext: onAuthStateChange error", err);
+                } finally {
+                    if (isMounted) setLoading(false);
                 }
-                setLoading(false);
             }
         );
 
         // Initial check
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(({ data: { session }, error }) => {
+            if (error) throw error;
             const authUser = session?.user;
             if (authUser) {
-                setUser(authUser);
-                fetchUserData(authUser).then(() => setLoading(false));
+                if (isMounted) setUser(authUser);
+                fetchUserData(authUser).finally(() => {
+                    if (isMounted) setLoading(false);
+                });
             } else {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
+        }).catch(err => {
+            console.error("AuthContext: getSession error", err);
+            if (isMounted) setLoading(false);
         });
 
+        // Failsafe: force loading to false after 5 seconds max
+        const failsafeTimer = setTimeout(() => {
+            if (isMounted && loading) {
+                console.warn("AuthContext: Loading stuck for 5s, forcing false.");
+                setLoading(false);
+            }
+        }, 5000);
+
         return () => {
+            isMounted = false;
+            clearTimeout(failsafeTimer);
             subscription.unsubscribe();
         };
     }, []);
