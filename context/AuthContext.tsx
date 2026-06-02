@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const { data, error } = await supabase
                     .from('users')
                     .select('*')
-                    .eq('id', authUser.id)
+                    .eq('uid', authUser.id)
                     .single();
 
                 if (error) {
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                 if (data) {
                     // Update local data object
-                    setUserData(data as DBUser);
+                    setUserData({ ...data, uid: authUser.id } as DBUser);
                     const rawRole = (data.role || data.Role || data.ROLE || "customer")?.toString();
                     const finalRole = rawRole.trim().toLowerCase();
                     setRole(finalRole);

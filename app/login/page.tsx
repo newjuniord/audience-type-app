@@ -113,7 +113,7 @@ export default function LoginPage() {
             if (error) throw error;
 
             if (data.user) {
-                const { data: userData } = await supabase.from('users').select('role').eq('id', data.user.id).single();
+                const { data: userData } = await supabase.from('users').select('role').eq('uid', data.user.id).single();
                 
                 if (userData?.role?.trim().toLowerCase() === "admin") {
                     window.location.href = "/admin";
