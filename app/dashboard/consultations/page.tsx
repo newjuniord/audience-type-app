@@ -72,7 +72,8 @@ export default function ConsultationsHistoryPage() {
                     {
                         id: "mock-booking-1",
                         usersId: "mock-user-123",
-                        serviceId: "mock-consultation-1",
+                        userName: "Admin User",
+                        bookingsId: "mock-consultation-1",
                         serviceName: "Consultation Stratégique",
                         status: "pending",
                         message: "Kategori: Web Design\nSijè: Mwen vle kreye yon sit web pou biznis mwen.\nKréneau: 10:00 AM - 10:45 AM",
