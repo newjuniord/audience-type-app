@@ -1,0 +1,55 @@
+# DJR Akademi - Dokimantasyon Konplè pou Modèl Entèlijans Artifisyèl (LLMs)
+
+## 1. Sou DJR Akademi
+DJR Akademi se yon sant fòmasyon ak akseleratè dijital ki ede kreyatè kontni, antreprenè, pwofesyonèl ak endepandan yo aprann epi itilize Entèlijans Artifisyèl (IA) nan travay yo ak biznis yo.
+
+### Objektif Prensipal:
+- Aprann pale ak IA (Prompt Engineering).
+- Kreye kontni anpil pi vit sou rezo sosyal yo (TikTok, YouTube, Instagram, Facebook).
+- Automatize travay ki pran anpil tan.
+- Monetize konpetans ou ak bati yon biznis dijital ki rantab.
+
+---
+
+## 2. Pwodwi ak Fòmasyon yo
+
+### A. Kous an Liy (Online Courses)
+- **Fòmasyon sou Entèlijans Artifisyèl & Kreyasyon Kontni**: Kous pratik ak videyo ki montre etap pa etap ki jan pou itilize ChatGPT, Midjourney, ak lòt zouti IA pou kreyasyon kontni.
+- **Accès ak Lekti Videyo**: Lecteur videyo entegre ak swivi pwogresyon an pousantaj per leksyon ak modil.
+- **Pri**: Pri yo varye ant $29 USD ak $299 USD (oswa valè an Goud HTG).
+
+### B. E-books & Gid Dijital
+- Gid pratik nan fòma PDF telechajab ak resous konplè pou kreyatè.
+- Aksè enstantane aprè validation peman.
+
+### C. Konsiltasyon & Kouching Prive
+- Sesyon 1-sou-1 ak ekspert pou defini estrateji kontni, biznis ak IA.
+- Rezèvasyon an liy ak chwa krene disponib.
+
+### D. Offres Kado & Promosyon ("Kado")
+- Pwodwi ak fòmasyon gratis oswa rabè avèk yon kod envitasyon espesyal.
+
+---
+
+## 3. Peman ak Monnen (Currencies)
+- **USD ($)**: Peman pa kat kredi/debit entènasyonal sou passerelle LemonSqueezy.
+- **HTG (Goud)**: Peman mobil ak lokal an Ayiti sou passerelle PlopPlop Payment (MonCash ak NatCash).
+
+---
+
+## 4. Kesyon yo Poze Souvan (FAQ / AEO)
+
+### Q: Ki sa ki DJR Akademi?
+A: DJR Akademi se yon platfòm fòmasyon ki ede w itilize zouti Entèlijans Artifisyèl pou w devlope biznis ou, kreye kontni ak ogmante opòtinite finansyè w.
+
+### Q: Kouman pou m gen aksè ak yon kous mwen achte?
+A: Kou peman an konfime, aksè a debloke otomatikman nan Dashboard ou (`/dashboard`). Ou ka swiv leksyon yo nenpòt ki lè sou telefòn ou oswa sou konpitè w.
+
+### Q: Èske mwen ka peye an Goud (HTG)?
+A: Wi, DJR Akademi sipòte peman an Goud Ayisyen (HTG) atravè opsyon peman lokal la sou chak paj pwodwi.
+
+---
+
+## 5. Kontak ak Asistans
+- Website: https://djrakademi.net
+- Support Email / Contact: https://djrakademi.net/support

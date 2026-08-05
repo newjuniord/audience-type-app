@@ -1,6 +1,8 @@
-# Règles générales pour tous les robots (Google, Bing, et les IA comme ChatGPT)
+# Règles générales pour tous les robots (Google, Bing, ChatGPT, Claude, Perplexity, Gemini)
 User-agent: *
 Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /api/
@@ -9,4 +11,17 @@ Disallow: /register
 Disallow: /reset-password
 Disallow: /payment-success
 
-Sitemap: https://audiencetype.com/sitemap.xml
+# Agents d'IA et Crawlers d'IA Spécifiques
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://djrakademi.net/sitemap.xml

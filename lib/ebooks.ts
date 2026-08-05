@@ -1,118 +1,57 @@
-import { createClient } from "./supabase/client";
 import { Ebook } from "./types";
+import { db } from "./firebase";
+import { collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 
-const COLLECTION_NAME = "ebooks";
+export async function getEbooks(): Promise<Ebook[]> {
+    const ebooksRef = collection(db, "ebooks");
+    const snapshot = await getDocs(ebooksRef);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ebook));
+}
 
-const getSupabase = () => createClient();
-
-/**
- * Récupère tous les ebooks de la table 'ebooks'.
- */
-export const getEbooks = async (): Promise<Ebook[]> => {
-    try {
-        const supabase = getSupabase();
-        const { data, error } = await supabase
-            .from(COLLECTION_NAME)
-            .select('*')
-            .order('createdAt', { ascending: false });
-
-        if (error) throw error;
-        return (data || []) as Ebook[];
-    } catch (error) {
-        console.error("Erreur lors de la récupération des ebooks:", error);
-        throw error;
+export async function getEbook(ebookId: string): Promise<Ebook | null> {
+    const docRef = doc(db, "ebooks", ebookId);
+    const snapshot = await getDoc(docRef);
+    if (snapshot.exists()) {
+        return { id: snapshot.id, ...snapshot.data() } as Ebook;
     }
-};
+    return null;
+}
 
-/**
- * Récupère un ebook spécifique par son ID.
- */
-export const getEbookById = async (id: string): Promise<Ebook | null> => {
-    try {
-        const supabase = getSupabase();
-        const { data, error } = await supabase
-            .from(COLLECTION_NAME)
-            .select('*')
-            .eq('id', id)
-            .single();
+export const getEbookById = getEbook;
 
-        if (error) {
-            console.log("Aucun ebook trouvé avec cet ID ou erreur :", error);
-            return null;
-        }
-        
-        return data as Ebook;
-    } catch (error) {
-        console.error("Erreur lors de la récupération de l'ebook:", error);
-        throw error;
-    }
-};
+export async function addEbook(ebookData: Partial<Ebook>): Promise<string> {
+    const newEbookRef = doc(collection(db, "ebooks"));
+    const id = newEbookRef.id;
+    const newEbook: Ebook = {
+        id,
+        title: ebookData.title || "Nouvo Ebook",
+        description: ebookData.description || "",
+        price: ebookData.price || 0,
+        priceHTG: ebookData.priceHTG || 0,
+        sales: 0,
+        status: ebookData.status || "draft",
+        coverImage: ebookData.coverImage || "",
+        fileUrl: ebookData.fileUrl || "",
+        includedItems: ebookData.includedItems || [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        authorId: ebookData.authorId || "",
+        authorName: ebookData.authorName || "",
+        authorImage: ebookData.authorImage || ""
+    };
+    await setDoc(newEbookRef, newEbook);
+    return id;
+}
 
-/**
- * Ajoute un nouvel ebook à la table.
- */
-export const addEbook = async (ebookData: Omit<Ebook, "id">): Promise<string> => {
-    try {
-        const supabase = getSupabase();
-        const id = crypto.randomUUID();
-        const newEbook = {
-            ...ebookData,
-            id,
-            createdAt: ebookData.createdAt || new Date().toISOString(),
-            updatedAt: ebookData.updatedAt || new Date().toISOString()
-        };
+export async function updateEbook(ebookId: string, ebookData: Partial<Ebook>): Promise<void> {
+    const docRef = doc(db, "ebooks", ebookId);
+    await updateDoc(docRef, {
+        ...ebookData,
+        updatedAt: new Date().toISOString()
+    });
+}
 
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .insert(newEbook);
-
-        if (error) throw error;
-
-        console.log("Ebook ajouté avec l'ID: ", id);
-        return id;
-    } catch (error) {
-        console.error("Erreur lors de l'ajout de l'ebook:", error);
-        throw error;
-    }
-};
-
-/**
- * Met à jour un ebook existant.
- */
-export const updateEbook = async (id: string, data: Partial<Ebook>): Promise<void> => {
-    try {
-        const supabase = getSupabase();
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .update({
-                ...data,
-                updatedAt: new Date().toISOString()
-            })
-            .eq('id', id);
-
-        if (error) throw error;
-        console.log("Ebook mis à jour avec succès");
-    } catch (error) {
-        console.error("Erreur lors de la mise à jour de l'ebook:", error);
-        throw error;
-    }
-};
-
-/**
- * Supprime un ebook de la table.
- */
-export const deleteEbook = async (id: string): Promise<void> => {
-    try {
-        const supabase = getSupabase();
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-        console.log("Ebook supprimé avec succès");
-    } catch (error) {
-        console.error("Erreur lors de la suppression de l'ebook:", error);
-        throw error;
-    }
-};
+export async function deleteEbook(ebookId: string): Promise<void> {
+    const docRef = doc(db, "ebooks", ebookId);
+    await deleteDoc(docRef);
+}

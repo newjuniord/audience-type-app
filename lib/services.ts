@@ -1,113 +1,56 @@
-import { createClient } from "./supabase/client";
 import { Service } from "./types";
+import { db } from "./firebase";
+import { collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 
-const COLLECTION_NAME = "services";
+export async function getServices(): Promise<Service[]> {
+    const servicesRef = collection(db, "services");
+    const snapshot = await getDocs(servicesRef);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
+}
 
-const getSupabase = () => createClient();
-
-/**
- * Récupère tous les services (offres).
- */
-export const getServices = async (): Promise<Service[]> => {
-    try {
-        const supabase = getSupabase();
-        const { data, error } = await supabase
-            .from(COLLECTION_NAME)
-            .select('*')
-            .order('createdAt', { ascending: false });
-
-        if (error) throw error;
-        return (data || []) as Service[];
-    } catch (error) {
-        console.error("Erreur récup services:", error);
-        throw error;
+export async function getService(serviceId: string): Promise<Service | null> {
+    const docRef = doc(db, "services", serviceId);
+    const snapshot = await getDoc(docRef);
+    if (snapshot.exists()) {
+        return { id: snapshot.id, ...snapshot.data() } as Service;
     }
-};
+    return null;
+}
 
-/**
- * Récupère un service par son ID.
- */
-export const getServiceById = async (id: string): Promise<Service | null> => {
-    try {
-        const supabase = getSupabase();
-        const { data, error } = await supabase
-            .from(COLLECTION_NAME)
-            .select('*')
-            .eq('id', id)
-            .single();
+export const getServiceById = getService;
 
-        if (error) {
-            console.log("Erreur récup service par ID ou non trouvé:", error);
-            return null;
-        }
-        return data as Service;
-    } catch (error) {
-        console.error("Erreur récup service par ID:", error);
-        return null;
-    }
-};
+export async function addService(serviceData: Partial<Service>): Promise<string> {
+    const newServiceRef = doc(collection(db, "services"));
+    const id = newServiceRef.id;
+    const newService: Service = {
+        id,
+        title: serviceData.title || "",
+        description: serviceData.description || "",
+        price: serviceData.price || "$0",
+        priceHTG: serviceData.priceHTG || 0,
+        active: serviceData.active ?? true,
+        status: serviceData.status || "published",
+        imageUrl: serviceData.imageUrl || "",
+        includedItems: serviceData.includedItems || [],
+        availability: serviceData.availability || {
+            monday: { enabled: true, startTime: "09:00", endTime: "17:00" }
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+    await setDoc(newServiceRef, newService);
+    return id;
+}
 
-/**
- * Ajoute un nouveau service.
- */
-export const addService = async (data: Omit<Service, "id" | "createdAt" | "updatedAt">): Promise<string> => {
-    try {
-        const supabase = getSupabase();
-        const id = crypto.randomUUID();
-        const newService = {
-            ...data,
-            id,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
+export async function updateService(serviceId: string, serviceData: Partial<Service>): Promise<void> {
+    const docRef = doc(db, "services", serviceId);
+    await updateDoc(docRef, { 
+        ...serviceData, 
+        updatedAt: new Date().toISOString() 
+    });
+}
 
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .insert(newService);
-
-        if (error) throw error;
-        return id;
-    } catch (error) {
-        console.error("Erreur ajout service:", error);
-        throw error;
-    }
-};
-
-/**
- * Met à jour un service existant.
- */
-export const updateService = async (id: string, data: Partial<Service>): Promise<void> => {
-    try {
-        const supabase = getSupabase();
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .update({
-                ...data,
-                updatedAt: new Date().toISOString()
-            })
-            .eq('id', id);
-
-        if (error) throw error;
-    } catch (error) {
-        console.error("Erreur maj service:", error);
-        throw error;
-    }
-};
-
-/**
- * Supprime un service.
- */
-export const deleteService = async (id: string): Promise<void> => {
-    try {
-        const supabase = getSupabase();
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-    } catch (error) {
-        console.error("Erreur suppression service:", error);
-        throw error;
-    }
-};
+export async function deleteService(serviceId: string): Promise<void> {
+    const docRef = doc(db, "services", serviceId);
+    await deleteDoc(docRef);
+}

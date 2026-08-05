@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 
 export interface ActionModalProps {
   isOpen: boolean;
@@ -21,15 +21,22 @@ export function ActionModal({
 }: ActionModalProps) {
   const [isClosing, setIsClosing] = useState(false);
   const [dragY, setDragY] = useState(0);
-  const isDragging = useRef(false);
+  // État (et non ref) : la transition CSS dépend de cette valeur au rendu, et un ref
+  // lu pendant le rendu ne déclenche pas de mise à jour.
+  const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef(0);
 
-  useEffect(() => {
+  // Réinitialisation à la fermeture. Fait pendant le rendu (motif React « ajuster l'état
+  // quand une prop change ») plutôt que dans un effet : évite un rendu intermédiaire
+  // où le modal réapparaîtrait avec la position de glissement précédente.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen);
     if (!isOpen) {
       setIsClosing(false);
       setDragY(0);
     }
-  }, [isOpen]);
+  }
 
   const handleClose = () => {
     setIsClosing(true);
@@ -42,19 +49,19 @@ export function ActionModal({
 
   // Swipe-to-dismiss handlers
   const onDragStart = (e: React.TouchEvent | React.PointerEvent) => {
-    isDragging.current = true;
+    setIsDragging(true);
     dragStartY.current = "touches" in e ? e.touches[0].clientY : e.clientY;
   };
   
   const onDragMove = (e: React.TouchEvent | React.PointerEvent) => {
-    if (!isDragging.current) return;
+    if (!isDragging) return;
     const currentY = "touches" in e ? e.touches[0].clientY : e.clientY;
     const delta = Math.max(0, currentY - dragStartY.current);
     setDragY(delta);
   };
   
   const onDragEnd = () => {
-    isDragging.current = false;
+    setIsDragging(false);
     if (dragY > 80) {
       handleClose();
     } else {
@@ -80,7 +87,7 @@ export function ActionModal({
             ? `translateY(${dragY}px)`
             : "translateY(0)",
           opacity: isClosing ? 0 : dragY > 0 ? Math.max(0.3, 1 - dragY / 300) : 1,
-          transition: isDragging.current
+          transition: isDragging
             ? "none"
             : "transform 0.35s cubic-bezier(0.32,0.72,0,1), opacity 0.35s ease",
         }}
@@ -116,7 +123,9 @@ export function ActionModal({
           />
         </div>
 
-        <div className="p-6 lg:p-8 overflow-y-auto max-h-[85vh] lg:max-h-[90vh]">
+        {/* Sur mobile c'est une feuille ancrée en bas : 92vh laisse voir le fond
+            tout en évitant de faire défiler des formulaires courts. */}
+        <div className="p-6 lg:p-8 overflow-y-auto max-h-[92vh] lg:max-h-[90vh]">
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-3">

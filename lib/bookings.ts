@@ -1,115 +1,44 @@
-import { createClient } from "./supabase/client";
+import { db } from "./firebase";
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
 import { Booking } from "./types";
 
-const COLLECTION_NAME = "bookings";
+const COLLECTION = "bookings";
 
-const getSupabase = () => createClient();
+export async function getBookings(): Promise<Booking[]> {
+    const snapshot = await getDocs(query(collection(db, COLLECTION), orderBy("date", "desc")));
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Booking));
+}
 
-/**
- * Récupère toutes les réservations.
- * 
- * @returns {Promise<Booking[]>} Une liste de réservations.
- */
-export const getBookings = async (): Promise<Booking[]> => {
-    try {
-        const supabase = getSupabase();
-        const { data, error } = await supabase
-            .from(COLLECTION_NAME)
-            .select('*')
-            .order('createdAt', { ascending: false });
+export async function getBooking(bookingId: string): Promise<Booking | null> {
+    const snapshot = await getDoc(doc(db, COLLECTION, bookingId));
+    return snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as Booking) : null;
+}
 
-        if (error) throw error;
-        return (data || []) as Booking[];
-    } catch (error) {
-        console.error("Erreur récup bookings:", error);
-        throw error;
-    }
-};
+export async function addBooking(bookingData: Partial<Booking>): Promise<string> {
+    const ref = doc(collection(db, COLLECTION));
+    const newBooking: Booking = {
+        id: ref.id,
+        customerName: bookingData.customerName || "",
+        customerEmail: bookingData.customerEmail || "",
+        customerImage: bookingData.customerImage || "",
+        serviceName: bookingData.serviceName || "",
+        date: bookingData.date || "",
+        time: bookingData.time || "",
+        duration: bookingData.duration || "60 min",
+        price: bookingData.price || "$0",
+        status: bookingData.status || "pending",
+        phone: bookingData.phone || "",
+        meetingLink: bookingData.meetingLink || "",
+        message: bookingData.message || "",
+    };
+    await setDoc(ref, newBooking);
+    return ref.id;
+}
 
-/**
- * Récupère une réservation spécifique.
- * 
- * @param {string} id - ID de la réservation.
- */
-export const getBookingById = async (id: string): Promise<Booking | null> => {
-    try {
-        const supabase = getSupabase();
-        const { data, error } = await supabase
-            .from(COLLECTION_NAME)
-            .select('*')
-            .eq('id', id)
-            .single();
+export async function updateBooking(bookingId: string, bookingData: Partial<Booking>): Promise<void> {
+    await updateDoc(doc(db, COLLECTION, bookingId), { ...bookingData });
+}
 
-        if (error) {
-            console.log("Erreur récup booking par ID ou non trouvé:", error);
-            return null;
-        }
-        return data as Booking;
-    } catch (error) {
-        console.error("Erreur récup booking:", error);
-        throw error;
-    }
-};
-
-/**
- * Ajoute une nouvelle réservation.
- * 
- * @param {Omit<Booking, "id">} bookingData - Données de la réservation.
- */
-export const addBooking = async (bookingData: Omit<Booking, "id">): Promise<string> => {
-    try {
-        const supabase = getSupabase();
-        const id = crypto.randomUUID();
-        const newBooking = {
-            ...bookingData,
-            id,
-            createdAt: bookingData.createdAt || new Date().toISOString()
-        };
-
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .insert(newBooking);
-
-        if (error) throw error;
-        return id;
-    } catch (error) {
-        console.error("Erreur ajout booking:", error);
-        throw error;
-    }
-};
-
-/**
- * Met à jour une réservation.
- */
-export const updateBooking = async (id: string, data: Partial<Booking>): Promise<void> => {
-    try {
-        const supabase = getSupabase();
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .update(data)
-            .eq('id', id);
-
-        if (error) throw error;
-    } catch (error) {
-        console.error("Erreur maj booking:", error);
-        throw error;
-    }
-};
-
-/**
- * Supprime une réservation.
- */
-export const deleteBooking = async (id: string): Promise<void> => {
-    try {
-        const supabase = getSupabase();
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-    } catch (error) {
-        console.error("Erreur suppression booking:", error);
-        throw error;
-    }
-};
+export async function deleteBooking(bookingId: string): Promise<void> {
+    await deleteDoc(doc(db, COLLECTION, bookingId));
+}

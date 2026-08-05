@@ -1,0 +1,27 @@
+# DJR Akademi
+
+> DJR Akademi se yon akademi ak platfòm fòmasyon an liy ki fèt pou kreyatè kontni, antreprenè, pwofesyonèl ak lidè ki vle aprann sèvi ak Entèlijans Artifisyèl (IA) pou kreyasyon kontni, kwasans biznis, ak devlopman pèsonèl.
+
+## Vizyon ak Misyon
+DJR Akademi (fondé par Jean Ronald Dumervil) ede kreyatè ak antreprenè yo metrize zouti IA modèn yo (ChatGPT, Midjourney, Claude, Gemini, otomatizasyon) pou yo ka kreye kontni pi vit, vann pi byen, epi bati opòtinite finansyè ak pwofesyonèl dirab.
+
+## Offres ak Pwodwi Prensipal
+- **Kous an Liy (Courses)**: Fòmasyon sou Entèlijans Artifisyèl, Kreyasyon Kontni, Monetizasyon ak Kwasans sou Rezo Sosyal yo.
+- **E-books & Liv Dijital**: Gid pratik, prompt engineering, ak estrateji biznis.
+- **Kouching ak Konsiltasyon**: Sesyon kouching prive an mwayen vizyo pou akonpaye pwojè w yo sou mezi.
+- **Offres Kado & Pwomosyon**: Pwodwi ak fòmasyon aksesib avèk kod envitasyon.
+
+## Devises ak Peman
+- Peman aksepte an Dola Ameriken ($ USD) ak Goud Ayisyen (HTG).
+- Mètod peman: Kat credit/debit (LemonSqueezy) ak peman mobil/lokal (PlopPlop MonCash/Natcash).
+
+## Lyen Prensipal
+- [Paj Akèy](https://djrakademi.net/): Prezantasyon ak pwodwi vedèt.
+- [Katalòg Kous](https://djrakademi.net/products): Tout fòmasyon ak leksyon an liy.
+- [E-books](https://djrakademi.net/products): Liv ak gid dijital.
+- [Konsiltasyon & Kouching](https://djrakademi.net/coaching): Rezèvasyon sesyon prive.
+- [Offres Kado](https://djrakademi.net/kado): Pwodwi ak fòmasyon espesyal.
+- [Sipò ak Kontak](https://djrakademi.net/support): Sant asistans ak FAQ.
+
+## Dokimantasyon konplè pou IA
+- [LLMs Full Documentation](https://djrakademi.net/llms-full.txt): Tout detay sou fòmasyon yo, modil yo, FAQ ak estrikti akademi an.

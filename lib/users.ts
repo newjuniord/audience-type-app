@@ -1,33 +1,24 @@
-import { createClient } from "./supabase/client";
 import { User } from "./types";
+import { db } from "./firebase";
+import { collection, doc, getDoc, getDocs, query, updateDoc, deleteDoc, orderBy, limit } from "firebase/firestore";
 
 const COLLECTION_NAME = "users";
 
-const getSupabase = () => createClient();
-
-/**
- * Récupère les utilisateurs avec pagination.
- * @param pageSize Nombre d'utilisateurs à charger
- * @param page Numéro de la page (commence à 1)
- * @returns Liste des utilisateurs et s'il y en a plus
- */
-export async function getUsers(pageSize: number = 20, page: number = 1): Promise<{ users: User[], hasMore: boolean }> {
+export async function getUsers(pageSize: number = 1000, page: number = 1): Promise<{ users: User[], hasMore: boolean }> {
     try {
-        const supabase = getSupabase();
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize - 1;
-
-        const { data, error, count } = await supabase
-            .from(COLLECTION_NAME)
-            .select('*', { count: 'exact' })
-            .order('createdAt', { ascending: false })
-            .range(from, to);
-
-        if (error) throw error;
+        const usersRef = collection(db, COLLECTION_NAME);
+        // We fetch up to 1000 users by default to allow fast client-side searching and pagination
+        const q = query(usersRef, orderBy("createdAt", "desc"), limit(pageSize));
+        const querySnapshot = await getDocs(q);
         
+        const users: User[] = [];
+        querySnapshot.forEach((docSnap) => {
+            users.push({ id: docSnap.id, ...docSnap.data() } as User);
+        });
+
         return {
-            users: (data || []) as User[],
-            hasMore: count !== null && to < count - 1
+            users,
+            hasMore: false // Handled client-side now
         };
     } catch (error) {
         console.error("Error fetching users:", error);
@@ -35,91 +26,46 @@ export async function getUsers(pageSize: number = 20, page: number = 1): Promise
     }
 }
 
-/**
- * Récupère un utilisateur par son ID.
- */
 export async function getUserById(uid: string): Promise<User | null> {
     try {
-        const supabase = getSupabase();
-        const { data, error } = await supabase
-            .from(COLLECTION_NAME)
-            .select('*')
-            .eq('id', uid)
-            .single();
-
-        if (error) {
-            console.log("Aucun utilisateur trouvé ou erreur:", error);
-            return null;
+        const userRef = doc(db, COLLECTION_NAME, uid);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as User;
         }
-        
-        // Supabase stores user id as 'id', but old code used 'uid'. Let's ensure 'uid' is mapped if needed
-        const user = data as any;
-        if (user.id && !user.uid) {
-            user.uid = user.id;
-        }
-        
-        return user as User;
+        return null;
     } catch (error) {
-        console.error(`Error fetching user ${uid}:`, error);
+        console.error("Error fetching user by ID:", error);
         return null;
     }
 }
 
-/**
- * Met à jour le rôle d'un utilisateur.
- * @param uid ID de l'utilisateur
- * @param role Nouveau rôle ('admin' | 'customer')
- */
 export async function updateUserRole(uid: string, role: 'admin' | 'customer'): Promise<void> {
     try {
-        const supabase = getSupabase();
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .update({ role })
-            .eq('id', uid);
-            
-        if (error) throw error;
+        const userRef = doc(db, COLLECTION_NAME, uid);
+        await updateDoc(userRef, { role, updatedAt: new Date().toISOString() });
     } catch (error) {
-        console.error(`Error updating role for user ${uid}:`, error);
+        console.error("Error updating user role:", error);
         throw error;
     }
 }
 
-/**
- * Met à jour les informations d'un utilisateur.
- * @param uid ID de l'utilisateur
- * @param data Données à mettre à jour
- */
 export async function updateUser(uid: string, data: Partial<User>): Promise<void> {
     try {
-        const supabase = getSupabase();
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .update(data)
-            .eq('id', uid);
-            
-        if (error) throw error;
+        const userRef = doc(db, COLLECTION_NAME, uid);
+        await updateDoc(userRef, { ...data, updatedAt: new Date().toISOString() });
     } catch (error) {
-        console.error(`Error updating user ${uid}:`, error);
+        console.error("Error updating user:", error);
         throw error;
     }
 }
 
-/**
- * Supprime un document utilisateur de Postgres.
- * Note: Cela ne supprime pas le compte d'authentification (nécessite Admin SDK).
- */
 export async function deleteUserDocument(uid: string): Promise<void> {
     try {
-        const supabase = getSupabase();
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .delete()
-            .eq('id', uid);
-            
-        if (error) throw error;
+        const userRef = doc(db, COLLECTION_NAME, uid);
+        await deleteDoc(userRef);
     } catch (error) {
-        console.error(`Error deleting user document ${uid}:`, error);
+        console.error("Error deleting user document:", error);
         throw error;
     }
 }

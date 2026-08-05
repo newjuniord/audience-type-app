@@ -1,65 +1,78 @@
-import { createClient } from "./supabase/client";
+export interface Announcement {
+    id: string;
+    message: string;
+    linkUrl?: string;
+    linkText?: string;
+    isActive: boolean;
+    createdAt?: string;
+}
 
 export interface AnnouncementBarSettings {
-    text: string;
-    isActive: boolean;
-    backgroundColor: string;
-    textColor: string;
-    displayFor: 'all' | 'logged-in' | 'guest';
-    productFilter: 'all' | 'has-product' | 'no-product';
+    isEnabled?: boolean;
+    isActive?: boolean;
+    text?: string;
+    messageText?: string;
+    ctaText?: string;
+    ctaUrl?: string;
     link?: string;
+    backgroundColor?: string;
+    textColor?: string;
+    displayFor?: string;
+    productFilter?: string;
 }
-
-const SETTINGS_COLLECTION = "settings";
-const ANNOUNCEMENT_DOC = "announcement-bar";
 
 export const defaultSettings: AnnouncementBarSettings = {
-    text: "Bienvenue sur DJR Akademi ! Profitez de nos promotions.",
-    isActive: false,
-    backgroundColor: "#000000",
-    textColor: "#ffffff",
-    displayFor: 'all',
-    productFilter: 'all',
-    link: ""
+    isEnabled: true,
+    messageText: "Byenvini sou DJR Akademi!",
+    ctaText: "Kòmanse",
+    ctaUrl: "/courses"
 };
 
-const getSupabase = () => createClient();
+let settingsMemory: AnnouncementBarSettings = { ...defaultSettings };
+
+let announcementsMemory: Announcement[] = [
+    {
+        id: "ann-1",
+        message: "Byenvini sou nouvo platfòm DJR Akademi an!",
+        linkUrl: "/admin/kado",
+        linkText: "Nouvèl",
+        isActive: true,
+        createdAt: new Date().toISOString()
+    }
+];
 
 export async function getAnnouncementSettings(): Promise<AnnouncementBarSettings> {
-    try {
-        const supabase = getSupabase();
-        const { data, error } = await supabase
-            .from(SETTINGS_COLLECTION)
-            .select('value')
-            .eq('id', ANNOUNCEMENT_DOC)
-            .single();
-
-        if (error || !data) {
-            return defaultSettings;
-        }
-
-        return data.value as AnnouncementBarSettings;
-    } catch (error) {
-        console.error("Error fetching announcement settings:", error);
-        return defaultSettings;
-    }
+    return settingsMemory;
 }
 
-export async function updateAnnouncementSettings(settings: AnnouncementBarSettings): Promise<void> {
-    try {
-        const supabase = getSupabase();
-        
-        // Use upsert to handle both insert and update
-        const { error } = await supabase
-            .from(SETTINGS_COLLECTION)
-            .upsert({ 
-                id: ANNOUNCEMENT_DOC, 
-                value: settings 
-            }, { onConflict: 'id' });
+export async function saveAnnouncementSettings(settings: Partial<AnnouncementBarSettings>): Promise<void> {
+    settingsMemory = { ...settingsMemory, ...settings };
+}
+export const updateAnnouncementSettings = saveAnnouncementSettings;
 
-        if (error) throw error;
-    } catch (error) {
-        console.error("Error updating announcement settings:", error);
-        throw error;
+export async function getActiveAnnouncement(): Promise<Announcement | null> {
+    return announcementsMemory.find(a => a.isActive) || null;
+}
+
+export async function getAnnouncements(): Promise<Announcement[]> {
+    return announcementsMemory;
+}
+
+export async function saveAnnouncement(data: Partial<Announcement>): Promise<void> {
+    if (data.id) {
+        const idx = announcementsMemory.findIndex(a => a.id === data.id);
+        if (idx !== -1) {
+            announcementsMemory[idx] = { ...announcementsMemory[idx], ...data };
+        }
+    } else {
+        const id = crypto.randomUUID();
+        announcementsMemory.unshift({
+            id,
+            message: data.message || "",
+            linkUrl: data.linkUrl || "",
+            linkText: data.linkText || "",
+            isActive: data.isActive ?? true,
+            createdAt: new Date().toISOString()
+        });
     }
 }

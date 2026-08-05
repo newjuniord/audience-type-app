@@ -1,0 +1,38 @@
+rules_version = '2';
+
+// Craft rules based on the provided project requirements:
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Fonction utilitaire : vérifier si l'utilisateur est connecté
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Fonction utilitaire : vérifier si l'utilisateur est admin
+    // Note : Cela nécessite que Firebase Storage ait les permissions de lire Firestore
+    function isAdmin() {
+      return isAuthenticated() && 
+             firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Dossier "uploads" : Lecture publique, Écriture Admin uniquement (pour les images de cours, ebooks, cadeaux)
+    match /uploads/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Dossier "avatars" ou "profiles" : L'utilisateur peut modifier sa propre photo
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Règle par défaut (fallback)
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

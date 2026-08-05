@@ -1,12 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User as SupabaseUser } from "@supabase/supabase-js";
-import { createClient } from "../lib/supabase/client";
 import { User as DBUser } from "../lib/types";
+import { auth, db } from "@/lib/firebase";
+import { onAuthStateChanged, signOut, User as FirebaseUser } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
 
 interface AuthContextType {
-    user: SupabaseUser | null;
+    user: FirebaseUser | null;
     userData: DBUser | null;
     role: string | null;
     loading: boolean;
@@ -22,110 +23,56 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState<SupabaseUser | null>(null);
+    const [user, setUser] = useState<FirebaseUser | null>(null);
     const [userData, setUserData] = useState<DBUser | null>(null);
     const [role, setRole] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const supabase = createClient();
-
     useEffect(() => {
-        const fetchUserData = async (authUser: SupabaseUser) => {
-            try {
-                // Fetch user data from Supabase "users" table
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('uid', authUser.id)
-                    .single();
-
-                if (error) {
-                    // Si PGRST116 (0 rows), l'utilisateur n'est pas encore dans la table users
-                    if (error.code !== 'PGRST116') {
-                        console.error("AuthContext: Error fetching user data:", error);
-                    }
-                    setUserData(null);
-                    setRole("customer");
-                    return;
-                }
-
-                if (data) {
-                    // Update local data object
-                    setUserData({ ...data, uid: authUser.id } as DBUser);
-                    const rawRole = (data.role || data.Role || data.ROLE || "customer")?.toString();
-                    const finalRole = rawRole.trim().toLowerCase();
-                    setRole(finalRole);
-                } else {
-                    setUserData(null);
-                    setRole("customer");
-                }
-            } catch (error) {
-                console.error("AuthContext: Error fetching user data:", error);
-                setUserData(null);
-                setRole("customer");
-            }
-        };
-
-        let isMounted = true;
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                try {
-                    const authUser = session?.user;
-                    if (authUser) {
-                        if (isMounted) setUser(authUser);
-                        await fetchUserData(authUser);
+        const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+            setUser(firebaseUser);
+            if (firebaseUser) {
+                // Écouter les données du profil utilisateur depuis Firestore
+                const userRef = doc(db, "users", firebaseUser.uid);
+                
+                const unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data() as DBUser;
+                        data.id = docSnap.id;
+                        data.uid = docSnap.id;
+                        setUserData(data);
+                        setRole(data.role || "customer");
                     } else {
-                        if (isMounted) {
-                            setUser(null);
-                            setUserData(null);
-                            setRole(null);
-                        }
+                        setUserData(null);
+                        setRole("customer"); // fallback par défaut
                     }
-                } catch (err) {
-                    console.error("AuthContext: onAuthStateChange error", err);
-                } finally {
-                    if (isMounted) setLoading(false);
-                }
-            }
-        );
-
-        // Initial check
-        supabase.auth.getSession().then(({ data: { session }, error }) => {
-            if (error) throw error;
-            const authUser = session?.user;
-            if (authUser) {
-                if (isMounted) setUser(authUser);
-                fetchUserData(authUser).finally(() => {
-                    if (isMounted) setLoading(false);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Erreur de récupération des données utilisateur:", error);
+                    setUserData(null);
+                    setRole("customer");
+                    setLoading(false);
                 });
+                
+                return () => unsubscribeDoc();
             } else {
-                if (isMounted) setLoading(false);
-            }
-        }).catch(err => {
-            console.error("AuthContext: getSession error", err);
-            if (isMounted) setLoading(false);
-        });
-
-        // Failsafe: force loading to false after 5 seconds max
-        const failsafeTimer = setTimeout(() => {
-            if (isMounted && loading) {
-                console.warn("AuthContext: Loading stuck for 5s, forcing false.");
+                setUserData(null);
+                setRole(null);
                 setLoading(false);
             }
-        }, 5000);
+        });
 
-        return () => {
-            isMounted = false;
-            clearTimeout(failsafeTimer);
-            subscription.unsubscribe();
-        };
+        return () => unsubscribeAuth();
     }, []);
 
     const signOutUser = async () => {
-        // Remove logged_in cookie
-        document.cookie = "logged_in=; path=/; max-age=0; SameSite=Strict; Secure";
-        await supabase.auth.signOut();
+        try {
+            await signOut(auth);
+            document.cookie = "logged_in=; path=/; max-age=0; SameSite=Strict;";
+            window.location.href = "/";
+        } catch (error) {
+            console.error("Erreur lors de la déconnexion:", error);
+        }
     };
 
     return (

@@ -1,5 +1,5 @@
 {
-  "name": "audience-type-v0.1",
+  "name": "djrakademi",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -14,19 +14,17 @@
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
     "@serwist/next": "^9.5.11",
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.106.2",
     "@types/uuid": "^10.0.0",
     "canvas-confetti": "^1.9.4",
     "date-fns": "^4.1.0",
     "dotenv": "^17.4.2",
+    "firebase": "^12.17.0",
     "framer-motion": "^12.39.0",
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "next": "16.2.12",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "react-phone-number-input": "^3.4.16",
     "serwist": "^9.5.11",
-    "twilio": "^6.0.2",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
@@ -36,7 +34,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.2.12",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

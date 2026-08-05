@@ -1,181 +1,82 @@
-import { createClient } from "./supabase/client";
 import { Enrollment } from "./types";
 
-const COLLECTION_NAME = "enrollments";
+import { db } from "./firebase";
+import { collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, query, where, addDoc } from "firebase/firestore";
 
-const getSupabase = () => createClient();
-
-/**
- * Récupère toutes les inscriptions.
- */
 export const getEnrollments = async (): Promise<Enrollment[]> => {
-    try {
-        const supabase = getSupabase();
-        const { data, error } = await supabase
-            .from(COLLECTION_NAME)
-            .select('*')
-            .order('enrolledAt', { ascending: false });
-
-        if (error) throw error;
-        return (data || []) as Enrollment[];
-    } catch (error) {
-        console.error("Erreur récup enrollments:", error);
-        throw error;
-    }
+    const enrollmentsRef = collection(db, "enrollments");
+    const snapshot = await getDocs(enrollmentsRef);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Enrollment));
 };
 
-/**
- * Récupère les inscriptions d'un utilisateur.
- */
 export const getEnrollmentsByUser = async (userId: string): Promise<Enrollment[]> => {
-    try {
-        console.log("🔍 Fetching enrollments for UID:", userId);
-        const supabase = getSupabase();
-        const { data, error } = await supabase
-            .from(COLLECTION_NAME)
-            .select('*')
-            .eq('userId', userId)
-            .order('enrolledAt', { ascending: false });
-
-        if (error) {
-            console.error("Erreur Supabase:", error.message);
-            throw error;
-        }
-        
-        return (data || []) as Enrollment[];
-    } catch (error) {
-        console.error("Erreur récup enrollments par user:", error);
-        return [];
-    }
+    const enrollmentsRef = collection(db, "enrollments");
+    const q = query(enrollmentsRef, where("userId", "==", userId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Enrollment));
 };
 
-/**
- * Helper: Increments or decrements user enrollment count
- */
-const updateEnrollmentCount = async (userId: string, amount: number) => {
-    const supabase = getSupabase();
-    try {
-        const { data: user } = await supabase.from('users').select('enrollmentCount').eq('id', userId).single();
-        if (user) {
-            const currentCount = user.enrollmentCount || 0;
-            await supabase.from('users').update({ enrollmentCount: currentCount + amount }).eq('id', userId);
+/** Les horodatages sont posés ici : les appelants n'ont pas à les fournir. */
+type NewEnrollment = Omit<Enrollment, "id" | "enrolledAt" | "lastAccessedAt"> &
+    Partial<Pick<Enrollment, "enrolledAt" | "lastAccessedAt">>;
+
+export const createEnrollment = async (data: NewEnrollment): Promise<string> => {
+    const newEnrollmentRef = doc(collection(db, "enrollments"));
+    const id = newEnrollmentRef.id;
+    const newEnrollment: Enrollment = {
+        ...data,
+        id,
+        enrolledAt: data.enrolledAt || new Date().toISOString(),
+        lastAccessedAt: data.lastAccessedAt || new Date().toISOString()
+    };
+    await setDoc(newEnrollmentRef, newEnrollment);
+
+    // Mettre à jour le nombre d'inscriptions de l'utilisateur
+    if (data.userId) {
+        try {
+            const userRef = doc(db, "users", data.userId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                const currentCount = userSnap.data().enrollmentCount || 0;
+                await updateDoc(userRef, { enrollmentCount: currentCount + 1 });
+            }
+        } catch (err) {
+            console.error("Erreur lors de la mise à jour du compteur d'inscriptions utilisateur:", err);
         }
-    } catch (err) {
-        console.error("Erreur update enrollmentCount:", err);
     }
+
+    return id;
 };
 
-/**
- * Ajoute une nouvelle inscription.
- */
-export const createEnrollment = async (data: Omit<Enrollment, "id">): Promise<string> => {
-    try {
-        const supabase = getSupabase();
-        const id = crypto.randomUUID();
-        const newEnrollment = {
-            ...data,
-            id,
-            enrolledAt: data.enrolledAt || new Date().toISOString(),
-            lastAccessedAt: data.lastAccessedAt || new Date().toISOString()
-        };
-
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .insert(newEnrollment);
-
-        if (error) throw error;
-
-        // Mettre à jour le compteur global de l'utilisateur
-        if (data.userId) {
-            await updateEnrollmentCount(data.userId, 1);
-        }
-
-        return id;
-    } catch (error) {
-        console.error("Erreur ajout enrollment:", error);
-        throw error;
-    }
-};
-
-/**
- * Met à jour la progression d'une inscription.
- */
 export const updateEnrollmentProgress = async (
     id: string,
     completedLessons: string[],
     currentLessonId: string,
     progress: number
 ): Promise<void> => {
-    try {
-        const supabase = getSupabase();
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .update({
-                completedLessons,
-                currentLessonId,
-                progress,
-                lastAccessedAt: new Date().toISOString()
-            })
-            .eq('id', id);
-
-        if (error) throw error;
-    } catch (error) {
-        console.error("Erreur maj enrollment progress:", error);
-        throw error;
-    }
+    const docRef = doc(db, "enrollments", id);
+    await updateDoc(docRef, {
+        completedLessons,
+        currentLessonId,
+        progress,
+        lastAccessedAt: new Date().toISOString()
+    });
 };
 
-/**
- * Incrémente le compteur de téléchargements d'une inscription (ebook).
- */
 export const incrementEnrollmentDownloadCount = async (id: string): Promise<void> => {
-    try {
-        const supabase = getSupabase();
-        const { data: enrollment } = await supabase
-            .from(COLLECTION_NAME)
-            .select('downloadCount')
-            .eq('id', id)
-            .single();
-
-        if (enrollment) {
-            const currentCount = parseInt(enrollment.downloadCount || "0");
-            await supabase
-                .from(COLLECTION_NAME)
-                .update({
-                    downloadCount: (currentCount + 1).toString(),
-                    lastAccessedAt: new Date().toISOString()
-                })
-                .eq('id', id);
-        }
-    } catch (error) {
-        console.error("Erreur increment download count:", error);
-        throw error;
+    const docRef = doc(db, "enrollments", id);
+    const snapshot = await getDoc(docRef);
+    if (snapshot.exists()) {
+        const enr = snapshot.data() as Enrollment;
+        const currentCount = parseInt(enr.downloadCount || "0");
+        await updateDoc(docRef, {
+            downloadCount: (currentCount + 1).toString(),
+            lastAccessedAt: new Date().toISOString()
+        });
     }
 };
 
-/**
- * Supprime une inscription (retrait d'accès).
- */
 export const deleteEnrollment = async (id: string): Promise<void> => {
-    try {
-        const supabase = getSupabase();
-        
-        // Fetch to get userId before delete
-        const { data: enrollment } = await supabase.from(COLLECTION_NAME).select('userId').eq('id', id).single();
-        
-        const { error } = await supabase
-            .from(COLLECTION_NAME)
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        // Mettre à jour le compteur global de l'utilisateur
-        if (enrollment && enrollment.userId) {
-            await updateEnrollmentCount(enrollment.userId, -1);
-        }
-    } catch (error) {
-        console.error("Erreur suppression enrollment:", error);
-        throw error;
-    }
+    const docRef = doc(db, "enrollments", id);
+    await deleteDoc(docRef);
 };

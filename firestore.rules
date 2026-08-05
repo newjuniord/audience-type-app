@@ -63,10 +63,8 @@ service cloud.firestore {
 
     // Produits, Cours, Ebooks, Services : Lecture publique, Écriture Admin.
     match /products/{productId} { allow read: if true; allow write: if isAdmin(); }
-    match /courses/{courseId} { 
-      allow read: if true; allow write: if isAdmin();
-      match /modules/{moduleId} { allow read: if true; allow write: if isAdmin(); }
-    }
+    match /courses/{courseId} { allow read: if true; allow write: if isAdmin(); }
+    match /modules/{moduleId} { allow read: if true; allow write: if isAdmin(); }
     match /ebooks/{ebookId} { allow read: if true; allow write: if isAdmin(); }
     match /services/{serviceId} { allow read: if true; allow write: if isAdmin(); }
     match /assets/{assetId} { allow read: if true; allow write: if isAdmin(); }
@@ -74,7 +72,6 @@ service cloud.firestore {
     match /funnels/{funnelId} { allow read: if true; allow write: if isAdmin(); }
 
     // Cadeaux / Bonus (Kado) : Lecture publique (pour affichage), écriture Admin.
-    match /gifts/{giftId} { allow read: if true; allow write: if isAdmin(); }
 
     // Commandes (Orders)
     match /orders/{orderId} {
@@ -90,17 +87,36 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Demandes de réservation (Booking Applications)
+    // Demandes de réservation (Booking Applications) : contiennent des données
+    // personnelles (téléphone, sujet). Lecture strictement limitée au client et à l'admin.
     match /bookingApplications/{applicationId} {
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.usersId == request.auth.uid;
       allow read, update: if isAdmin() || isDataOwner('usersId'); // Utilise usersId
       allow delete: if isAdmin();
     }
 
-    // Parrainages (Referrals)
-    match /referrals/{referralId} {
-      allow read: if isAdmin() || isDataOwner('referrerId') || isDataOwner('refereeId');
-      allow write: if isAdmin();
+    // Créneaux de service : miroir PUBLIC et sans donnée personnelle des réservations.
+    // Permet à n'importe quel visiteur de voir quels horaires sont déjà pris, sans jamais
+    // exposer qui a réservé ni pourquoi.
+    match /serviceSlots/{slotId} {
+      allow read: if true;
+
+      allow create: if isAuthenticated() && request.resource.data.heldBy == request.auth.uid;
+
+      // Le détenteur gère son créneau (payer, libérer, annuler).
+      // Un autre client ne peut le reprendre que s'il n'est pas payé ET que la
+      // réservation temporaire a expiré — c'est la garantie anti-double-réservation.
+      // `holdExpiresAt` est un Timestamp : comparaison directe avec l'horloge serveur,
+      // sans arithmétique de millisecondes. Un document ancien sans ce champ est
+      // considéré comme expiré (date par défaut à l'epoch), donc reprenable.
+      allow update: if isAdmin()
+        || (isAuthenticated() && resource.data.heldBy == request.auth.uid)
+        || (isAuthenticated()
+            && request.resource.data.heldBy == request.auth.uid
+            && resource.data.status != 'booked'
+            && request.time > resource.data.get('holdExpiresAt', timestamp.value(0)));
+
+      allow delete: if isAdmin();
     }
 
     // Avis (Reviews)
@@ -148,6 +164,38 @@ service cloud.firestore {
       );
     }
     
+    // Surveys
+    match /surveys/{surveyId} {
+      allow read: if isAdmin() || resource.data.isActive == true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['responseCount']) &&
+        request.resource.data.responseCount == resource.data.responseCount + 1
+      );
+
+      match /responses/{responseId} {
+        allow create: if true;
+        allow read, update, delete: if isAdmin();
+      }
+    }
+
+    // Gifts
+    match /gifts/{giftId} {
+      allow read: if isAuthenticated();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentUsesCount']) &&
+        request.resource.data.currentUsesCount == resource.data.currentUsesCount + 1
+      );
+    }
+
+    // Announcements
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Support Chat
     match /chats/{userId} {
       allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());

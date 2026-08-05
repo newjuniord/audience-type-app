@@ -3,7 +3,6 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
-import { getMessaging } from "firebase-admin/messaging";
 import * as crypto from "crypto";
 
 // Initialize Firebase Admin
@@ -861,119 +860,5 @@ export const webhookbotmessage = onRequest({
         }
     }
 });
-
-/**
- * Cloud Function: sendAlertPushNotification
- * Triggered when a new alert is created in alerts/{alertId}
- */
-export const sendAlertPushNotification = onDocumentCreated(
-    { document: "alerts/{alertId}", region: "us-central1" },
-    async (event) => {
-        const snapshot = event.data;
-        if (!snapshot) return;
-
-        const alertData = snapshot.data();
-        const userId = alertData.userId;
-
-        if (!userId) {
-            console.log(`[PUSH] Alert document ${event.params.alertId} has no userId`);
-            return;
-        }
-
-        try {
-            // Get the user's FCM token
-            const userRef = db.collection("users").doc(userId);
-            const userSnap = await userRef.get();
-
-            if (!userSnap.exists) {
-                console.log(`[PUSH] User ${userId} not found`);
-                return;
-            }
-
-            const userData = userSnap.data();
-            const fcmToken = userData?.fcmToken;
-
-            if (!fcmToken) {
-                console.log(`[PUSH] No FCM token for user ${userId}. Skipping push notification.`);
-                return;
-            }
-
-            // Construct payload
-            const payload = {
-                notification: {
-                    title: alertData.title || 'Notifikasyon',
-                    body: alertData.body || 'Ou gen yon nouvo alèt nan kont ou.',
-                },
-                token: fcmToken,
-            };
-
-            // Send via FCM Admin
-            const response = await getMessaging().send(payload);
-            console.log(`✅ [PUSH] Successfully sent message:`, response);
-        } catch (error) {
-            console.error(`❌ [PUSH] Error sending message:`, error);
-        }
-    }
-);
-
-/**
- * Cloud Function: onchatmessagecreated
- * Triggered when a new message document is created in chats/{userId}/messages/{messageId}.
- * Sends a push notification to the student when the admin sends a message.
- */
-export const onchatmessagecreated = onDocumentCreated(
-    { document: "chats/{userId}/messages/{messageId}", region: "us-central1" },
-    async (event) => {
-        const snapshot = event.data;
-        if (!snapshot) return;
-
-        const messageData = snapshot.data();
-        const senderId = messageData.senderId;
-
-        // We only send push notifications to the student if the admin was the sender
-        if (senderId !== "admin") {
-            return;
-        }
-
-        const userId = event.params.userId;
-        if (!userId) return;
-
-        try {
-            // Get the user's FCM token
-            const userRef = db.collection("users").doc(userId);
-            const userSnap = await userRef.get();
-
-            if (!userSnap.exists) {
-                console.log(`[CHAT PUSH] User ${userId} not found`);
-                return;
-            }
-
-            const userData = userSnap.data();
-            const fcmToken = userData?.fcmToken;
-
-            if (!fcmToken) {
-                console.log(`[CHAT PUSH] No FCM token for user ${userId}. Skipping push notification.`);
-                return;
-            }
-
-            const alertBody = messageData.type === "image" ? "📷 Ou resevwa yon nouvo imaj" : messageData.text;
-
-            // Construct payload
-            const payload = {
-                notification: {
-                    title: "DJR Akademi",
-                    body: alertBody || "Ou gen yon nouvo mesaj nan chat la.",
-                },
-                token: fcmToken,
-            };
-
-            // Send via FCM Admin
-            const response = await getMessaging().send(payload);
-            console.log(`✅ [CHAT PUSH] Successfully sent chat push to user ${userId}:`, response);
-        } catch (error) {
-            console.error(`❌ [CHAT PUSH] Error sending chat push:`, error);
-        }
-    }
-);
 
 

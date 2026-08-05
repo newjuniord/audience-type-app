@@ -5,19 +5,19 @@ env:
       - BUILD
       - RUNTIME
   - variable: FIREBASE_PROJECT_ID
-    value: audience-type
+    value: djrakademi
     availability:
       - BUILD
       - RUNTIME
   - variable: FIREBASE_CLIENT_EMAIL
-    value: firebase-adminsdk-fbsvc@audience-type.iam.gserviceaccount.com
+    value: firebase-adminsdk-fbsvc@djrakademi.iam.gserviceaccount.com
     availability:
       - BUILD
       - RUNTIME
-  - variable: BAZIK_USER_ID
-    secret: BAZIK_USER_ID
-  - variable: BAZIK_SECRET_KEY
-    secret: BAZIK_SECRET_KEY
+  - variable: PLOPPLOP_CLIENT_ID
+    secret: PLOPPLOP_CLIENT_ID
+  - variable: PLOPPLOP_KEY_API
+    secret: PLOPPLOP_KEY_API
   - variable: FIREBASE_PRIVATE_KEY
     secret: FIREBASE_PRIVATE_KEY
   - variable: CRON_SECRET
